@@ -1,0 +1,475 @@
+## spellcraft_system.gd
+## 法术构建系统 (Autoload)
+## 管理序列器、手动施法、和弦构建、弹体生成
+extends Node
+
+# ============================================================
+# 信号
+# ============================================================
+signal spell_cast(spell_data: Dictionary)
+signal chord_cast(chord_data: Dictionary)
+signal modifier_applied(modifier: MusicData.ModifierEffect)
+signal sequencer_updated(sequence: Array)
+signal rhythm_pattern_changed(pattern: MusicData.RhythmPattern)
+
+# ============================================================
+# 序列器配置
+# ============================================================
+## 序列器长度：4小节 × 4拍 = 16拍
+const SEQUENCER_LENGTH: int = 16
+const BEATS_PER_MEASURE: int = 4
+const MEASURES: int = 4
+
+# ============================================================
+# 序列器状态
+# ============================================================
+
+## 序列器数据：每个位置可以是音符、和弦或休止符
+## [{ "type": "note"|"chord"|"rest", "note": WhiteKey, "chord_notes": Array, ... }]
+var sequencer: Array[Dictionary] = []
+
+## 当前序列器播放位置
+var _sequencer_position: int = 0
+
+## 当前小节的节奏型
+var _measure_rhythm_patterns: Array[MusicData.RhythmPattern] = []
+
+## 手动施法槽 (2-4个)
+var manual_cast_slots: Array[Dictionary] = []
+const MAX_MANUAL_SLOTS: int = 3
+
+## 待生效的黑键修饰符
+var _pending_modifier: MusicData.ModifierEffect = -1
+var _has_pending_modifier: bool = false
+
+## 和弦构建缓冲区
+var _chord_buffer: Array[int] = []
+var _chord_buffer_timeout: float = 0.0
+const CHORD_BUFFER_WINDOW: float = 0.3  # 和弦输入窗口（秒）
+
+# ============================================================
+# 生命周期
+# ============================================================
+
+func _ready() -> void:
+	_init_sequencer()
+	_init_manual_slots()
+
+	# 连接节拍信号
+	GameManager.beat_tick.connect(_on_beat_tick)
+	GameManager.half_beat_tick.connect(_on_half_beat_tick)
+	GameManager.measure_complete.connect(_on_measure_complete)
+
+func _process(delta: float) -> void:
+	# 和弦缓冲区超时处理
+	if not _chord_buffer.is_empty():
+		_chord_buffer_timeout -= delta
+		if _chord_buffer_timeout <= 0.0:
+			_flush_chord_buffer()
+
+# ============================================================
+# 序列器初始化
+# ============================================================
+
+func _init_sequencer() -> void:
+	sequencer.clear()
+	for i in range(SEQUENCER_LENGTH):
+		sequencer.append({ "type": "rest" })
+
+	_measure_rhythm_patterns.clear()
+	for i in range(MEASURES):
+		_measure_rhythm_patterns.append(MusicData.RhythmPattern.REST)
+
+func _init_manual_slots() -> void:
+	manual_cast_slots.clear()
+	for i in range(MAX_MANUAL_SLOTS):
+		manual_cast_slots.append({ "type": "empty" })
+
+# ============================================================
+# 序列器编辑
+# ============================================================
+
+## 在序列器指定位置放置音符
+func set_sequencer_note(position: int, white_key: MusicData.WhiteKey) -> void:
+	if position < 0 or position >= SEQUENCER_LENGTH:
+		return
+
+	sequencer[position] = {
+		"type": "note",
+		"note": white_key,
+	}
+
+	_update_measure_rhythm(position / BEATS_PER_MEASURE)
+	sequencer_updated.emit(sequencer)
+
+## 在序列器指定位置放置和弦（占据整个小节）
+func set_sequencer_chord(measure: int, chord_notes: Array) -> void:
+	if measure < 0 or measure >= MEASURES:
+		return
+
+	var start_pos := measure * BEATS_PER_MEASURE
+	# 和弦占据整个小节
+	for i in range(BEATS_PER_MEASURE):
+		if i == 0:
+			sequencer[start_pos + i] = {
+				"type": "chord",
+				"chord_notes": chord_notes,
+			}
+		else:
+			sequencer[start_pos + i] = { "type": "chord_sustain" }
+
+	_update_measure_rhythm(measure)
+	sequencer_updated.emit(sequencer)
+
+## 在序列器指定位置放置休止符
+func set_sequencer_rest(position: int) -> void:
+	if position < 0 or position >= SEQUENCER_LENGTH:
+		return
+
+	sequencer[position] = { "type": "rest" }
+	_update_measure_rhythm(position / BEATS_PER_MEASURE)
+	sequencer_updated.emit(sequencer)
+
+## 清空序列器
+func clear_sequencer() -> void:
+	_init_sequencer()
+	sequencer_updated.emit(sequencer)
+
+# ============================================================
+# 手动施法槽
+# ============================================================
+
+## 设置手动施法槽
+func set_manual_slot(slot_index: int, spell_data: Dictionary) -> void:
+	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
+		return
+	manual_cast_slots[slot_index] = spell_data
+
+## 触发手动施法
+func trigger_manual_cast(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
+		return
+
+	var slot := manual_cast_slots[slot_index]
+	if slot.get("type", "empty") == "empty":
+		return
+
+	_execute_spell(slot)
+
+# ============================================================
+# 黑键修饰符
+# ============================================================
+
+## 使用黑键作为修饰符
+func apply_black_key_modifier(black_key: MusicData.BlackKey) -> void:
+	var mod_data = MusicData.BLACK_KEY_MODIFIERS.get(black_key, null)
+	if mod_data == null:
+		return
+
+	_pending_modifier = mod_data["effect"]
+	_has_pending_modifier = true
+	modifier_applied.emit(_pending_modifier)
+
+## 消耗待生效的修饰符
+func _consume_modifier() -> MusicData.ModifierEffect:
+	if _has_pending_modifier:
+		_has_pending_modifier = false
+		var mod := _pending_modifier
+		_pending_modifier = -1
+		return mod
+	return -1
+
+# ============================================================
+# 和弦构建
+# ============================================================
+
+## 向和弦缓冲区添加音符
+func add_to_chord_buffer(note: int) -> void:
+	if _chord_buffer.is_empty():
+		_chord_buffer_timeout = CHORD_BUFFER_WINDOW
+
+	if note not in _chord_buffer:
+		_chord_buffer.append(note)
+
+	# 如果已经有3个音符，尝试识别和弦
+	if _chord_buffer.size() >= 3:
+		_chord_buffer_timeout = 0.1  # 缩短等待时间
+
+func _flush_chord_buffer() -> void:
+	if _chord_buffer.size() >= 3:
+		# 尝试识别和弦
+		var chord_result = MusicTheoryEngine.identify_chord(_chord_buffer)
+		if chord_result != null:
+			_cast_chord(chord_result)
+		else:
+			# 无法识别为和弦，逐个施放
+			for note in _chord_buffer:
+				_cast_single_note(note)
+	elif _chord_buffer.size() > 0:
+		# 不足3个音符，逐个施放
+		for note in _chord_buffer:
+			_cast_single_note(note)
+
+	_chord_buffer.clear()
+
+# ============================================================
+# 节拍回调
+# ============================================================
+
+func _on_beat_tick(beat_index: int) -> void:
+	if GameManager.current_state != GameManager.GameState.PLAYING:
+		return
+
+	# 自动施法：执行序列器当前位置
+	var pos := beat_index % SEQUENCER_LENGTH
+	_sequencer_position = pos
+	_execute_sequencer_position(pos)
+
+func _on_half_beat_tick(half_beat_index: int) -> void:
+	# 八分音符精度的手动施法时机
+	pass
+
+func _on_measure_complete(measure_index: int) -> void:
+	# 小节完成时的处理
+	pass
+
+# ============================================================
+# 法术执行
+# ============================================================
+
+func _execute_sequencer_position(pos: int) -> void:
+	var slot := sequencer[pos]
+	var slot_type: String = slot.get("type", "rest")
+
+	match slot_type:
+		"note":
+			_cast_single_note_from_sequencer(slot, pos)
+		"chord":
+			_cast_chord_from_sequencer(slot, pos)
+		"rest":
+			# 休止符 - 不施法，但记录用于蓄力计算
+			pass
+		"chord_sustain":
+			# 和弦持续 - 不做额外操作
+			pass
+
+func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
+	var white_key: MusicData.WhiteKey = slot["note"]
+	var stats := GameManager.get_note_effective_stats(white_key)
+
+	# 应用节奏型修饰
+	var measure_idx := pos / BEATS_PER_MEASURE
+	var rhythm := _measure_rhythm_patterns[measure_idx]
+	stats = _apply_rhythm_modifier(stats, rhythm, measure_idx)
+
+	# 应用疲劳惩罚
+	var fatigue := FatigueManager.query_fatigue()
+	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
+
+	var spell_data := {
+		"type": "note",
+		"note": white_key,
+		"stats": stats,
+		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult,
+		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
+		"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
+		"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
+		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
+		"modifier": _consume_modifier(),
+		"rhythm_pattern": rhythm,
+	}
+
+	# 记录疲劳事件
+	FatigueManager.record_spell({
+		"time": GameManager.game_time,
+		"note": white_key,
+		"is_chord": false,
+	})
+
+	spell_cast.emit(spell_data)
+
+func _cast_single_note(note: int) -> void:
+	# 将 MIDI 音符转为白键
+	var white_key := _note_to_white_key(note)
+	if white_key < 0:
+		return
+
+	var stats := GameManager.get_note_effective_stats(white_key)
+	var fatigue := FatigueManager.query_fatigue()
+	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
+
+	var spell_data := {
+		"type": "note",
+		"note": white_key,
+		"stats": stats,
+		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult,
+		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
+		"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
+		"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
+		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
+		"modifier": _consume_modifier(),
+	}
+
+	FatigueManager.record_spell({
+		"time": GameManager.game_time,
+		"note": white_key,
+		"is_chord": false,
+	})
+
+	spell_cast.emit(spell_data)
+
+func _cast_chord(chord_result: Dictionary) -> void:
+	var chord_type: MusicData.ChordType = chord_result["type"]
+
+	# 检查扩展和弦是否已解锁
+	if MusicTheoryEngine.is_extended_chord(chord_type) and not GameManager.extended_chords_unlocked:
+		return
+
+	var spell_info := MusicTheoryEngine.get_spell_form_info(chord_type)
+	if spell_info.is_empty():
+		return
+
+	# 计算和弦伤害（基于根音）
+	var root_white_key := _note_to_white_key(chord_result["root"])
+	var root_stats := GameManager.get_note_effective_stats(root_white_key) if root_white_key >= 0 else { "dmg": 3.0 }
+
+	var fatigue := FatigueManager.query_fatigue()
+	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
+	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
+
+	# 不和谐度处理
+	var dissonance := MusicTheoryEngine.get_chord_dissonance(chord_type)
+	if dissonance > 2.0:
+		GameManager.apply_dissonance_damage(dissonance)
+
+	# 扩展和弦额外疲劳
+	var extra_fatigue: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)
+
+	var chord_data := {
+		"type": "chord",
+		"chord_type": chord_type,
+		"spell_form": spell_info["form"],
+		"spell_name": spell_info["name"],
+		"damage": root_stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * chord_multiplier * damage_mult,
+		"dissonance": dissonance,
+		"extra_fatigue": extra_fatigue,
+		"modifier": _consume_modifier(),
+	}
+
+	# 记录疲劳事件
+	FatigueManager.record_spell({
+		"time": GameManager.game_time,
+		"note": chord_result["root"],
+		"is_chord": true,
+		"chord_type": chord_type,
+	})
+
+	# 记录和弦进行
+	var progression := MusicTheoryEngine.record_chord(chord_type)
+	if not progression.is_empty():
+		chord_data["progression"] = progression
+
+	chord_cast.emit(chord_data)
+
+func _cast_chord_from_sequencer(slot: Dictionary, _pos: int) -> void:
+	var chord_notes: Array = slot.get("chord_notes", [])
+	if chord_notes.size() < 3:
+		return
+
+	var chord_result = MusicTheoryEngine.identify_chord(chord_notes)
+	if chord_result != null:
+		_cast_chord(chord_result)
+
+# ============================================================
+# 节奏型分析
+# ============================================================
+
+func _update_measure_rhythm(measure_idx: int) -> void:
+	if measure_idx < 0 or measure_idx >= MEASURES:
+		return
+
+	var start := measure_idx * BEATS_PER_MEASURE
+	var pattern := _analyze_rhythm_pattern(start)
+	_measure_rhythm_patterns[measure_idx] = pattern
+	rhythm_pattern_changed.emit(pattern)
+
+func _analyze_rhythm_pattern(start_pos: int) -> MusicData.RhythmPattern:
+	var notes := 0
+	var rests := 0
+
+	for i in range(BEATS_PER_MEASURE):
+		var pos := start_pos + i
+		if pos >= SEQUENCER_LENGTH:
+			break
+		match sequencer[pos].get("type", "rest"):
+			"note":
+				notes += 1
+			"rest":
+				rests += 1
+
+	# 简化的节奏型判定
+	if rests == BEATS_PER_MEASURE:
+		return MusicData.RhythmPattern.REST
+	elif notes == BEATS_PER_MEASURE:
+		return MusicData.RhythmPattern.EVEN_EIGHTH
+	elif rests >= 2:
+		return MusicData.RhythmPattern.REST
+	else:
+		return MusicData.RhythmPattern.EVEN_EIGHTH
+
+func _apply_rhythm_modifier(stats: Dictionary, rhythm: MusicData.RhythmPattern, _measure_idx: int) -> Dictionary:
+	var modified := stats.duplicate()
+	var rhythm_data: Dictionary = MusicData.RHYTHM_MODIFIERS.get(rhythm, {})
+
+	if rhythm_data.is_empty():
+		return modified
+
+	# 应用修饰
+	if rhythm_data.has("size_mod"):
+		modified["size"] = max(1.0, modified["size"] + rhythm_data["size_mod"])
+	if rhythm_data.has("spd_mod"):
+		modified["spd"] = max(1.0, modified["spd"] + rhythm_data["spd_mod"])
+	if rhythm_data.has("dmg_mod"):
+		modified["dmg"] += rhythm_data["dmg_mod"]
+	if rhythm_data.has("dmg_mod_mult"):
+		modified["dmg"] *= rhythm_data["dmg_mod_mult"]
+
+	# 休止符蓄力加成
+	if rhythm == MusicData.RhythmPattern.REST:
+		var rest_count := 0
+		var start := _measure_idx * BEATS_PER_MEASURE
+		for i in range(BEATS_PER_MEASURE):
+			if start + i < SEQUENCER_LENGTH and sequencer[start + i].get("type", "") == "rest":
+				rest_count += 1
+		var boost: float = rest_count * rhythm_data.get("boost_per_rest", 0.5)
+		modified["dmg"] += boost
+		modified["size"] += boost
+
+	return modified
+
+# ============================================================
+# 工具函数
+# ============================================================
+
+func _note_to_white_key(note: int) -> int:
+	var pc := note % 12
+	match pc:
+		0: return MusicData.WhiteKey.C
+		2: return MusicData.WhiteKey.D
+		4: return MusicData.WhiteKey.E
+		5: return MusicData.WhiteKey.F
+		7: return MusicData.WhiteKey.G
+		9: return MusicData.WhiteKey.A
+		11: return MusicData.WhiteKey.B
+		_: return -1  # 黑键
+
+func _execute_spell(spell_data: Dictionary) -> void:
+	spell_cast.emit(spell_data)
+
+## 获取序列器当前位置
+func get_sequencer_position() -> int:
+	return _sequencer_position
+
+## 获取序列器数据
+func get_sequencer_data() -> Array:
+	return sequencer.duplicate(true)

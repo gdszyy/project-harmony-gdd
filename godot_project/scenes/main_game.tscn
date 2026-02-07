@@ -1,0 +1,130 @@
+[gd_scene load_steps=8 format=3 uid="uid://main_game"]
+
+[ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
+[ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/systems/enemy_spawner.gd" id="3_spawner"]
+[ext_resource type="Script" path="res://scripts/systems/projectile_manager.gd" id="4_projectile"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5_hud"]
+[ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="6_sequencer"]
+[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="7_upgrade"]
+
+[node name="MainGame" type="Node2D"]
+script = ExtResource("1_main_game")
+
+[node name="Ground" type="Node2D" parent="."]
+
+[node name="EventHorizon" type="Node2D" parent="."]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+script = ExtResource("2_player")
+
+[node name="PlayerVisual" type="Polygon2D" parent="Player"]
+color = Color(0, 0.9, 0.7, 1)
+polygon = PackedVector2Array(-12, 0, -6, -10, 6, -10, 12, 0, 6, 10, -6, 10)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+
+[node name="InvincibilityTimer" type="Timer" parent="Player"]
+one_shot = true
+
+[node name="PickupArea" type="Area2D" parent="Player"]
+
+[node name="PickupCollision" type="CollisionShape2D" parent="Player/PickupArea"]
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position_smoothing_enabled = true
+position_smoothing_speed = 5.0
+
+[node name="EnemySpawner" type="Node2D" parent="."]
+script = ExtResource("3_spawner")
+
+[node name="ProjectileManager" type="Node2D" parent="."]
+script = ExtResource("4_projectile")
+
+[node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
+script = ExtResource("5_hud")
+
+[node name="HPBar" type="Control" parent="HUD"]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 340.0
+offset_bottom = 70.0
+
+[node name="FatigueBar" type="Control" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -230.0
+offset_top = 20.0
+offset_right = -10.0
+offset_bottom = 150.0
+
+[node name="InfoPanel" type="VBoxContainer" parent="HUD"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -60.0
+offset_top = 10.0
+offset_right = 60.0
+offset_bottom = 70.0
+
+[node name="BPMLabel" type="Label" parent="HUD/InfoPanel"]
+text = "BPM: 120"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="HUD/InfoPanel"]
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="HUD/InfoPanel"]
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="EnemyCountLabel" type="Label" parent="HUD/InfoPanel"]
+text = "Enemies: 0"
+horizontal_alignment = 1
+
+[node name="SuggestionPanel" type="PanelContainer" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = -60.0
+
+[node name="SuggestionLabel" type="Label" parent="HUD/SuggestionPanel"]
+text = ""
+horizontal_alignment = 1
+
+[node name="SequencerPanel" type="Control" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -60.0
+offset_right = 300.0
+offset_bottom = 0.0
+script = ExtResource("6_sequencer")
+
+[node name="UpgradePanel" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("7_upgrade")
+
+[node name="FatigueFilter" type="ColorRect" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
