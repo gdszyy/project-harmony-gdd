@@ -291,6 +291,116 @@ def plot_extended_chord_penalty():
     print("  [OK] extended_chord_penalty.png")
 
 
+def plot_delay_range_analysis(chord_registry):
+    """图7: 延迟与距离风险分析图 (v2.1新增)。"""
+    from balance_scorer import StrategySimulator, SPD_PER_POINT, DUR_PER_POINT
+
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+
+    # --- 子图1: 音符射程与距离因子 ---
+    ax1 = axes[0]
+    notes = create_base_notes()
+    note_names = list(notes.keys())
+    ranges = [n.effective_range for n in notes.values()]
+    # 计算调整后的range_hit
+    sim = StrategySimulator(PlayerBuild(), chord_registry)
+    range_hits = []
+    for n in notes.values():
+        rh = min(1.0, n.effective_range / sim.REFERENCE_RANGE)
+        sc = min(sim.SIZE_COMP_CAP, max(0, n.total_size - sim.SIZE_BASELINE) * sim.SIZE_COMP_FACTOR)
+        rh = rh + sc * (1.0 - rh)
+        range_hits.append(rh)
+
+    x = np.arange(len(note_names))
+    bars = ax1.bar(x, ranges, color=['#2ecc71' if rh >= 0.9 else '#f39c12' if rh >= 0.7 else '#e74c3c' for rh in range_hits],
+                   edgecolor='white', linewidth=0.5)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(note_names, fontsize=11)
+    ax1.set_ylabel('有效射程 (px)', fontsize=10)
+    ax1.set_title('音符有效射程', fontsize=12, fontweight='bold')
+    ax1.axhline(y=sim.REFERENCE_RANGE, color='blue', linestyle='--', alpha=0.5, label=f'基准射程({sim.REFERENCE_RANGE:.0f}px)')
+    ax1.legend(fontsize=8)
+
+    # 在柱子上标注range_hit
+    for bar, rh in zip(bars, range_hits):
+        ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 20,
+                 f'{rh:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+    # --- 子图2: 和弦延迟命中折扣 ---
+    ax2 = axes[1]
+    delay_chords = [(name, c) for name, c in chord_registry.items() if c.delay_beats > 0]
+    if delay_chords:
+        names = [n for n, _ in delay_chords]
+        delays = [c.delay_beats for _, c in delay_chords]
+        base_hits = [1.0 / (1.0 + sim.DELAY_PENALTY_RATE * c.delay_beats) for _, c in delay_chords]
+        aoe_comps = [min(sim.AOE_COMP_CAP, c.aoe_radius_mult * sim.AOE_COMP_FACTOR) for _, c in delay_chords]
+        adjusted_hits = [bh + ac * (1.0 - bh) for bh, ac in zip(base_hits, aoe_comps)]
+        dmg_mults = [c.dmg_multiplier for _, c in delay_chords]
+
+        x = np.arange(len(names))
+        width = 0.35
+        bars1 = ax2.bar(x - width/2, base_hits, width, label='基础命中率', color='#e74c3c', alpha=0.8)
+        bars2 = ax2.bar(x + width/2, adjusted_hits, width, label='AOE补偿后', color='#2ecc71', alpha=0.8)
+
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(names, rotation=30, ha='right', fontsize=8)
+        ax2.set_ylabel('延迟命中率', fontsize=10)
+        ax2.set_title('延迟法术命中折扣', fontsize=12, fontweight='bold')
+        ax2.legend(fontsize=8)
+        ax2.set_ylim(0, 1.1)
+
+        # 标注延迟拍数和伤害倍率
+        for bar, d, dm in zip(bars2, delays, dmg_mults):
+            ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
+                     f'{d:.0f}拍/{dm:.1f}x', ha='center', va='bottom', fontsize=7)
+
+    # --- 子图3: 风险-补偿平衡散点图 ---
+    ax3 = axes[2]
+    # 对每个和弦计算 "实际有效倍率" = dmg_multiplier * delay_hit
+    for name, c in chord_registry.items():
+        if c.dmg_multiplier > 0:
+            delay_hit = 1.0
+            if c.delay_beats > 0:
+                delay_hit = 1.0 / (1.0 + sim.DELAY_PENALTY_RATE * c.delay_beats)
+                aoe_comp = min(sim.AOE_COMP_CAP, c.aoe_radius_mult * sim.AOE_COMP_FACTOR)
+                delay_hit = delay_hit + aoe_comp * (1.0 - delay_hit)
+
+            raw_power = c.dmg_multiplier
+            eff_power = c.dmg_multiplier * delay_hit
+            risk = c.fatigue_dissonance * 100 + c.delay_beats * 10
+
+            color = '#e74c3c' if c.is_extended else '#3498db'
+            marker = 's' if c.delay_beats > 0 else 'o'
+            ax3.scatter(risk, eff_power, s=c.note_count * 40, c=color,
+                       marker=marker, alpha=0.7, edgecolors='black', linewidth=0.5)
+            ax3.annotate(name[:4], (risk, eff_power), fontsize=6, ha='center', va='bottom')
+
+            # 画一条从raw到eff的竖线表示延迟损失
+            if c.delay_beats > 0:
+                ax3.plot([risk, risk], [eff_power, raw_power], color='gray', linestyle=':', alpha=0.5)
+                ax3.scatter(risk, raw_power, s=20, c='gray', marker='x', alpha=0.5)
+
+    ax3.set_xlabel('综合风险 (疲劳代价+延迟)', fontsize=10)
+    ax3.set_ylabel('有效伤害倍率', fontsize=10)
+    ax3.set_title('风险-补偿平衡图', fontsize=12, fontweight='bold')
+    ax3.grid(True, alpha=0.3)
+
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='#3498db', markersize=8, label='基础和弦(无延迟)'),
+        Line2D([0], [0], marker='s', color='w', markerfacecolor='#3498db', markersize=8, label='基础和弦(有延迟)'),
+        Line2D([0], [0], marker='s', color='w', markerfacecolor='#e74c3c', markersize=8, label='扩展和弦(有延迟)'),
+        Line2D([0], [0], marker='x', color='gray', markersize=8, label='延迟前原始倍率'),
+    ]
+    ax3.legend(handles=legend_elements, fontsize=7, loc='upper left')
+
+    fig.suptitle('Project Harmony — 延迟与距离风险分析 (v2.1)', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(os.path.join(REPORT_DIR, 'delay_range_analysis.png'), bbox_inches='tight')
+    plt.close()
+    print("  [OK] delay_range_analysis.png")
+
+
 def generate_json_report(all_results: dict[str, list[SimulationResult]]):
     """生成JSON格式的结构化跑分报告。"""
     report = {}
@@ -312,6 +422,12 @@ def generate_json_report(all_results: dict[str, list[SimulationResult]]):
                 "lockout_beats": r.lockout_beats,
                 "total_healing": round(r.total_healing, 1),
                 "total_shielding": round(r.total_shielding, 1),
+                # v2.1 新增
+                "total_delay_discount": round(r.total_delay_discount, 3),
+                "total_range_discount": round(r.total_range_discount, 3),
+                "delay_exposure_time": round(r.delay_exposure_time, 1),
+                "avg_range_factor": round(r.avg_range_factor, 3),
+                "proximity_risk": round(r.proximity_risk, 2),
             })
         report[phase] = phase_data
 
@@ -348,6 +464,7 @@ def main():
     plot_growth_curve()
     plot_chord_dissonance_curve()
     plot_extended_chord_penalty()
+    plot_delay_range_analysis(chord_registry)
 
     # 生成JSON报告
     print("\n正在生成结构化报告...")

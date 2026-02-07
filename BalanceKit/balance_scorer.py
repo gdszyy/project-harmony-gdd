@@ -20,7 +20,7 @@ Project Harmony — 平衡性跑分系统 (Balance Scoring System)
         S_risk     = 风险评分（不和谐扣血 + 密度过载 + 单调锁定的期望损失）
 
 作者：Manus AI
-版本：v2.0 (同步听感系统 v2.0)
+版本：v2.1 (新增延迟/距离风险维度)
 日期：2026年2月7日
 =============================================================================
 """
@@ -105,6 +105,11 @@ class NoteStats:
     def hit_factor(self) -> float:
         """命中因子：基于SIZE和SPD的综合估算。"""
         return min(1.0, (self.total_size * self.total_spd) / 12.0)
+
+    @property
+    def effective_range(self) -> float:
+        """有效射程（像素）= 速度 × 存活时间。"""
+        return self.actual_speed * self.actual_duration
 
     @property
     def effective_dps(self) -> float:
@@ -535,7 +540,13 @@ class SimulationResult:
     dissonance_damage: float = 0.0  # 不和谐扣血总量
     lockout_beats: int = 0          # 被锁定的拍数
     density_penalty_beats: int = 0  # 密度过载的拍数
-    risk_score: float = 0.0         # 风险综合评分
+    # v2.1 新增：延迟和距离风险
+    total_delay_discount: float = 0.0   # 延迟命中折扣总量
+    total_range_discount: float = 0.0   # 距离命中折扣总量
+    delay_exposure_time: float = 0.0    # 延迟空窗期总时间(秒)
+    avg_range_factor: float = 1.0       # 平均射程因子
+    proximity_risk: float = 0.0         # 近身风险总量
+    risk_score: float = 0.0             # 风险综合评分
     # 疲劳状态
     peak_monotony: float = 0.0
     peak_density: float = 0.0
@@ -573,6 +584,19 @@ class StrategySimulator:
     SUSTAINED_START = 8.0       # 持续施法起始阈值（8秒）
     SUSTAINED_MAX = 20.0        # 持续施法最大阈值（20秒）
     EFFECTIVE_REST = 1.0        # 有效休息阈值（暂停>1秒）
+
+    # v2.1 新增：延迟风险参数
+    DELAY_PENALTY_RATE = 0.3    # 延迟惩罚系数（每拍延迟降低约23%命中率）
+    AOE_COMP_FACTOR = 0.05      # AOE补偿因子（每点aoe_radius_mult补偿5%）
+    AOE_COMP_CAP = 0.5          # AOE补偿上限（50%）
+    DELAY_EXPOSURE_RISK = 2.0   # 延迟空窗期每秒风险值
+    
+    # v2.1 新增：距离风险参数
+    REFERENCE_RANGE = 900.0     # 参考射程（C音符的射程，像素）
+    SIZE_COMP_FACTOR = 0.1      # SIZE补偿因子（每点超出基准SIZE补偿10%）
+    SIZE_COMP_CAP = 0.3         # SIZE补偿上限（30%）
+    SIZE_BASELINE = 2.0         # SIZE基准值（大多数音符的SIZE）
+    PROXIMITY_RISK_WEIGHT = 1.0 # 近身风险权重（每拍）
 
     # 疲劳等级阈值
     MONOTONY_WARN = 40
@@ -715,6 +739,42 @@ class StrategySimulator:
             raw_dmg = (base_dmg + rest_dmg_add) * chord_mult * mod_mult
             total_raw_damage += raw_dmg
 
+            # ---- v2.1: 延迟风险计算 ----
+            delay_hit = 1.0
+            delay_beats = 0.0
+            if action.is_chord and action.chord_type in self.chords:
+                chord = self.chords[action.chord_type]
+                delay_beats = chord.delay_beats
+                if delay_beats > 0:
+                    # 基础延迟命中折扣
+                    delay_hit = 1.0 / (1.0 + self.DELAY_PENALTY_RATE * delay_beats)
+                    # AOE补偿：大范围AOE部分抵消延迟风险
+                    aoe_comp = min(self.AOE_COMP_CAP,
+                                   chord.aoe_radius_mult * self.AOE_COMP_FACTOR)
+                    delay_hit = delay_hit + aoe_comp * (1.0 - delay_hit)
+                    # 记录延迟空窗期
+                    result.delay_exposure_time += delay_beats * build.beat_interval
+            result.total_delay_discount += (1.0 - delay_hit)
+
+            # ---- v2.1: 距离风险计算 ----
+            note_obj = build.notes[note_name]
+            eff_range = note_obj.effective_range
+            range_hit = min(1.0, eff_range / self.REFERENCE_RANGE)
+            # SIZE补偿：大弹体更容易命中，部分抵消短射程劣势
+            size_comp = min(self.SIZE_COMP_CAP,
+                           max(0, note_obj.total_size - self.SIZE_BASELINE) * self.SIZE_COMP_FACTOR)
+            range_hit = range_hit + size_comp * (1.0 - range_hit)
+            # 和弦AOE也补偿距离风险（如冲击波、区域法术不需要精确射程）
+            if action.is_chord and action.chord_type in self.chords:
+                chord = self.chords[action.chord_type]
+                if chord.aoe_radius_mult > 0 or chord.zone_tick_ratio > 0:
+                    # AOE/区域法术不依赖弹体射程，距离风险大幅降低
+                    range_hit = min(1.0, range_hit + 0.3)
+            result.total_range_discount += (1.0 - range_hit)
+            # 近身风险：射程越短，玩家越需要贴近敌人
+            proximity_penalty = max(0, 1.0 - range_hit) * self.PROXIMITY_RISK_WEIGHT
+            result.proximity_risk += proximity_penalty * build.beat_interval
+
             # ---- 疲劳惩罚计算 ----
             # 1. 单调值
             note_mono = monotony_per_note.get(note_name, 0.0)
@@ -785,8 +845,8 @@ class StrategySimulator:
                 dissonance_hp_loss = 1.0 * build.beat_interval * density_amplifier
             result.dissonance_damage += dissonance_hp_loss
 
-            # 有效伤害
-            eff_dmg = raw_dmg * mono_dmg_mult * density_dmg_mult
+            # 有效伤害 (v2.1: 加入延迟和距离折扣)
+            eff_dmg = raw_dmg * mono_dmg_mult * density_dmg_mult * delay_hit * range_hit
             total_damage += eff_dmg
 
             # 更新峰值
@@ -802,6 +862,8 @@ class StrategySimulator:
             beat_info["monotony"] = round(note_mono, 1)
             beat_info["density"] = round(density, 1)
             beat_info["dissonance"] = round(dissonance, 1)
+            beat_info["delay_hit"] = round(delay_hit, 3)
+            beat_info["range_hit"] = round(range_hit, 3)
             result.beat_log.append(beat_info)
 
             # 简化AFI估算（基于多样性）
@@ -821,11 +883,27 @@ class StrategySimulator:
         dodge_score = build.dodge_chance * 200
         result.survival_score = min(100, heal_score + shield_score + dodge_score)
 
-        # 风险评分 (归一化到0-100)
-        hp_loss_ratio = result.dissonance_damage / build.max_hp
+        # 平均射程因子
+        cast_beats = max(1, total_beats - sum(1 for a in strategy.actions if a.is_rest))
+        result.avg_range_factor = 1.0 - (result.total_range_discount / cast_beats) if cast_beats > 0 else 1.0
+
+        # 风险评分 (v2.1: 归一化到0-100，加入延迟和距离风险)
+        # 所有分量归一化到0-1范围，最终加权和映射到0-100
+        hp_loss_ratio = min(1.0, result.dissonance_damage / build.max_hp)
         lockout_ratio = result.lockout_beats / max(1, total_beats)
         density_ratio = result.density_penalty_beats / max(1, total_beats)
-        result.risk_score = min(100, (hp_loss_ratio * 40 + lockout_ratio * 40 + density_ratio * 20) * 100)
+        # 延迟风险：空窗期时间占比 (归一化到0-1)
+        delay_ratio = min(1.0, result.delay_exposure_time / total_time) if total_time > 0 else 0
+        # 近身风险：平均射程缺失比例 (归一化到0-1)
+        avg_range_deficit = max(0, 1.0 - result.avg_range_factor)
+        # 加权和（权重总和=100），每个分量的最大贡献等于其权重
+        result.risk_score = min(100, (
+            hp_loss_ratio * 30       # 不和谐扣血: 最高贡献30分
+            + lockout_ratio * 25     # 单调锁定: 最高贡献25分
+            + density_ratio * 15     # 密度过载: 最高贡献15分
+            + delay_ratio * 15       # v2.1 延迟空窗: 最高贡献15分
+            + avg_range_deficit * 15  # v2.1 近身风险: 最高贡献15分
+        ))
 
         # DPS评分 (归一化到0-100, 基准DPS=100)
         dps_score = min(100, (result.effective_dps / 100.0) * 50)
