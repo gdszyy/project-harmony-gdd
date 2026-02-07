@@ -11,6 +11,7 @@ signal chord_cast(chord_data: Dictionary)
 signal modifier_applied(modifier: MusicData.ModifierEffect)
 signal sequencer_updated(sequence: Array)
 signal rhythm_pattern_changed(pattern: MusicData.RhythmPattern)
+signal timbre_changed(timbre: MusicData.TimbreType)
 
 # ============================================================
 # 序列器配置
@@ -41,6 +42,9 @@ const MAX_MANUAL_SLOTS: int = 3
 ## 待生效的黑键修饰符
 var _pending_modifier: MusicData.ModifierEffect = -1
 var _has_pending_modifier: bool = false
+
+## 当前音色系别
+var _current_timbre: MusicData.TimbreType = MusicData.TimbreType.NONE
 
 ## 和弦构建缓冲区
 var _chord_buffer: Array[int] = []
@@ -266,17 +270,26 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	var fatigue := FatigueManager.query_fatigue()
 	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
 
+	# 获取音色信息
+	var timbre := _current_timbre
+	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
+	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
+		FatigueManager.current_level, 1.0
+	)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
 		"stats": stats,
-		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult,
+		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
 		"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
 		"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
 		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
 		"modifier": _consume_modifier(),
 		"rhythm_pattern": rhythm,
+		"timbre": timbre,
+		"timbre_name": timbre_data.get("name", "合成器"),
 	}
 
 	# 记录疲劳事件
@@ -285,6 +298,12 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"note": white_key,
 		"is_chord": false,
 	})
+
+	# 播放音符音效
+	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("play_note_sound"):
+		gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
 
 	spell_cast.emit(spell_data)
 
@@ -298,16 +317,24 @@ func _cast_single_note(note: int) -> void:
 	var fatigue := FatigueManager.query_fatigue()
 	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
 
+	var timbre := _current_timbre
+	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
+	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
+		FatigueManager.current_level, 1.0
+	)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
 		"stats": stats,
-		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult,
+		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
 		"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
 		"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
 		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
 		"modifier": _consume_modifier(),
+		"timbre": timbre,
+		"timbre_name": timbre_data.get("name", "合成器"),
 	}
 
 	FatigueManager.record_spell({
@@ -315,6 +342,12 @@ func _cast_single_note(note: int) -> void:
 		"note": white_key,
 		"is_chord": false,
 	})
+
+	# 播放音符音效
+	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("play_note_sound"):
+		gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
 
 	spell_cast.emit(spell_data)
 
@@ -345,15 +378,23 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	# 扩展和弦额外疲劳
 	var extra_fatigue: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)
 
+	var timbre := _current_timbre
+	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
+	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
+		FatigueManager.current_level, 1.0
+	)
+
 	var chord_data := {
 		"type": "chord",
 		"chord_type": chord_type,
 		"spell_form": spell_info["form"],
 		"spell_name": spell_info["name"],
-		"damage": root_stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * chord_multiplier * damage_mult,
+		"damage": root_stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * chord_multiplier * damage_mult * timbre_fatigue_mult,
 		"dissonance": dissonance,
 		"extra_fatigue": extra_fatigue,
 		"modifier": _consume_modifier(),
+		"timbre": timbre,
+		"timbre_name": timbre_data.get("name", "合成器"),
 	}
 
 	# 记录疲劳事件
@@ -368,6 +409,15 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	var progression := MusicTheoryEngine.record_chord(chord_type)
 	if not progression.is_empty():
 		chord_data["progression"] = progression
+
+	# 播放和弦音效
+	var chord_notes_for_sound: Array = chord_result.get("notes", [])
+	var note_enums: Array = []
+	for n in chord_notes_for_sound:
+		note_enums.append(n % 12)  # 转换为 Note 枚举 (0-11)
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("play_chord_sound"):
+		gmm.play_chord_sound(note_enums, 0.5, timbre)
 
 	chord_cast.emit(chord_data)
 
@@ -473,3 +523,38 @@ func get_sequencer_position() -> int:
 ## 获取序列器数据
 func get_sequencer_data() -> Array:
 	return sequencer.duplicate(true)
+
+# ============================================================
+# 音色系统接口
+# ============================================================
+
+## 切换音色系别
+## 切换时会产生少量疲劳代价
+func set_timbre(timbre: MusicData.TimbreType) -> void:
+	if timbre == _current_timbre:
+		return
+
+	_current_timbre = timbre
+
+	# 音色切换产生疲劳代价
+	FatigueManager.record_spell({
+		"time": GameManager.game_time,
+		"note": -1,
+		"is_chord": false,
+		"is_timbre_switch": true,
+	})
+
+	# 同步到 GlobalMusicManager
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("set_timbre"):
+		gmm.set_timbre(timbre)
+
+	timbre_changed.emit(timbre)
+
+## 获取当前音色系别
+func get_current_timbre() -> MusicData.TimbreType:
+	return _current_timbre
+
+## 获取音色系别信息
+func get_timbre_info(timbre: MusicData.TimbreType) -> Dictionary:
+	return MusicData.TIMBRE_ADSR.get(timbre, {})

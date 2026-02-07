@@ -239,7 +239,7 @@ func _generate_procedural_sounds() -> void:
 	_generated_sounds["bitcrush_sharp"] = _gen_bitcrush(0.06, 2)
 	_generated_sounds["glitch_burst_small"] = _gen_glitch_burst(0.15, 0.6)
 	_generated_sounds["glitch_burst_large"] = _gen_glitch_burst(0.3, 1.0)
-	_generated_sounds["low_hum"] = _gen_low_hum(0.2)
+	_generated_sounds["low_hum"] = _gen_low_hum()
 	_generated_sounds["void_impact"] = _gen_void_impact()
 	_generated_sounds["implosion"] = _gen_implosion()
 	_generated_sounds["feedback_whine"] = _gen_feedback_whine()
@@ -804,6 +804,27 @@ func play_spell_cast_sfx(position: Vector2, is_perfect_beat: bool = false) -> vo
 	else:
 		_play_2d_sound("cast_chime", position, -8.0,
 			randf_range(0.95, 1.05), PLAYER_BUS_NAME)
+
+## 播放音符音效 (委托给 GlobalMusicManager 的合成器)
+## 此接口供外部系统调用，内部转发到 GlobalMusicManager
+func play_note_sfx(note: int, position: Vector2,
+		timbre: int = MusicData.TimbreType.NONE,
+		velocity: float = 0.8) -> void:
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("play_note_sound"):
+		gmm.play_note_sound(note, 0.3, timbre, velocity)
+	# 同时播放位置音效反馈
+	_play_2d_sound("cast_chime", position, -12.0,
+		randf_range(0.95, 1.05), PLAYER_BUS_NAME)
+
+## 播放和弦音效 (委托给 GlobalMusicManager 的合成器)
+func play_chord_sfx(notes: Array, position: Vector2,
+		timbre: int = MusicData.TimbreType.NONE,
+		velocity: float = 0.7) -> void:
+	var gmm := get_node_or_null("/root/GlobalMusicManager")
+	if gmm and gmm.has_method("play_chord_sound"):
+		gmm.play_chord_sound(notes, 0.5, timbre, velocity)
+	_play_2d_sound("chord_resolve", position, -10.0, 1.0, PLAYER_BUS_NAME)
 
 ## 播放和弦施放音效
 func play_chord_cast_sfx(position: Vector2) -> void:

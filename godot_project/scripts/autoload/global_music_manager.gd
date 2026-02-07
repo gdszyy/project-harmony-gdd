@@ -1,6 +1,6 @@
 ## global_music_manager.gd
 ## 全局音乐管理器 (Autoload)
-## 负责背景音乐播放、频谱分析、节拍能量提取
+## 负责背景音乐播放、频谱分析、节拍能量提取、音符/和弦音效播放
 extends Node
 
 # ============================================================
@@ -8,6 +8,8 @@ extends Node
 # ============================================================
 signal beat_energy_updated(energy: float)
 signal spectrum_updated(low: float, mid: float, high: float)
+signal note_played(note: int, timbre: int)       ## 音符播放时发出
+signal chord_played(notes: Array, timbre: int)    ## 和弦播放时发出
 
 # ============================================================
 # 配置
@@ -15,6 +17,7 @@ signal spectrum_updated(low: float, mid: float, high: float)
 ## 音频总线名称
 const MUSIC_BUS_NAME := "Music"
 const SFX_BUS_NAME := "SFX"
+const NOTE_BUS_NAME := "Player"  # 音符音效使用 Player 总线
 
 ## 频谱分析频率范围
 const LOW_FREQ_MIN := 20.0
@@ -27,6 +30,12 @@ const HIGH_FREQ_MAX := 16000.0
 ## 能量平滑系数
 const ENERGY_SMOOTHING := 0.15
 
+## 音符播放器池大小
+const NOTE_POOL_SIZE: int = 12
+
+## 音符最小播放间隔（秒）— 防止同一音符连续触发
+const NOTE_COOLDOWN: float = 0.05
+
 # ============================================================
 # 状态
 # ============================================================
@@ -38,23 +47,24 @@ var _mid_energy: float = 0.0
 var _high_energy: float = 0.0
 
 # ============================================================
-# 音符音频 (合成器音色)
+# 音符音频系统
 # ============================================================
-## 音符频率映射 (A4 = 440Hz, 中央C = C4)
-const NOTE_FREQUENCIES: Dictionary = {
-	MusicData.Note.C:  261.63,
-	MusicData.Note.CS: 277.18,
-	MusicData.Note.D:  293.66,
-	MusicData.Note.DS: 311.13,
-	MusicData.Note.E:  329.63,
-	MusicData.Note.F:  349.23,
-	MusicData.Note.FS: 369.99,
-	MusicData.Note.G:  392.00,
-	MusicData.Note.GS: 415.30,
-	MusicData.Note.A:  440.00,
-	MusicData.Note.AS: 466.16,
-	MusicData.Note.B:  493.88,
-}
+
+## 音符频率映射 — 引用 MusicData.NOTE_FREQUENCIES
+## 见 scripts/data/music_data.gd 中的完整定义
+
+## 音符合成器实例
+var _synthesizer: NoteSynthesizer = null
+
+## 当前活跃音色
+var _current_timbre: int = MusicData.TimbreType.NONE
+
+## 音符播放器对象池 (AudioStreamPlayer)
+var _note_pool: Array[AudioStreamPlayer] = []
+var _note_pool_index: int = 0
+
+## 音符冷却记录
+var _note_cooldowns: Dictionary = {}
 
 # ============================================================
 # 生命周期
@@ -62,6 +72,8 @@ const NOTE_FREQUENCIES: Dictionary = {
 
 func _ready() -> void:
 	_setup_audio_buses()
+	_init_synthesizer()
+	_init_note_pool()
 
 func _process(_delta: float) -> void:
 	_update_spectrum_analysis()
@@ -103,6 +115,20 @@ func _setup_audio_buses() -> void:
 		AudioServer.set_bus_name(sfx_bus_idx, SFX_BUS_NAME)
 
 # ============================================================
+# 合成器初始化
+# ============================================================
+
+func _init_synthesizer() -> void:
+	_synthesizer = NoteSynthesizer.new()
+
+func _init_note_pool() -> void:
+	for i in range(NOTE_POOL_SIZE):
+		var player := AudioStreamPlayer.new()
+		player.bus = NOTE_BUS_NAME
+		add_child(player)
+		_note_pool.append(player)
+
+# ============================================================
 # 频谱分析
 # ============================================================
 
@@ -139,12 +165,65 @@ func get_spectrum() -> Dictionary:
 	}
 
 # ============================================================
+# 音色管理
+# ============================================================
+
+## 设置当前音色系别
+func set_timbre(timbre: int) -> void:
+	if timbre == _current_timbre:
+		return
+	_current_timbre = timbre
+	# 预生成该音色的常用音符以减少延迟
+	if _synthesizer:
+		_synthesizer.pregenerate_common_notes(timbre)
+
+## 获取当前音色系别
+func get_current_timbre() -> int:
+	return _current_timbre
+
+# ============================================================
 # 法术音效播放
 # ============================================================
 
 ## 播放音符音效
-func play_note_sound(note: MusicData.Note, duration: float = 0.2) -> void:
-	# 通过 AudioManager 播放法术施放音效
+## note: MusicData.Note 枚举值
+## duration: 音符时长（秒）
+## timbre_override: 音色覆盖，-1 表示使用当前音色
+## velocity: 力度 (0.0 ~ 1.0)
+## pitch_shift: 音高偏移（半音数，用于八度变化）
+func play_note_sound(note: int, duration: float = 0.3,
+		timbre_override: int = -1, velocity: float = 0.8,
+		pitch_shift: int = 0) -> void:
+
+	# 冷却检查
+	var cooldown_key := "note_%d" % note
+	if not _check_note_cooldown(cooldown_key):
+		return
+
+	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
+	var octave := 4 + (pitch_shift / 12)
+
+	# 通过合成器生成音效
+	if _synthesizer == null:
+		_init_synthesizer()
+
+	var wav := _synthesizer.generate_note(note, timbre, octave, duration, velocity)
+	if wav == null:
+		return
+
+	# 获取播放器并播放
+	var player := _get_note_player()
+	if player == null:
+		return
+
+	player.stream = wav
+	player.volume_db = _velocity_to_db(velocity)
+	player.pitch_scale = 1.0
+	player.play()
+
+	note_played.emit(note, timbre)
+
+	# 同时通知 AudioManager 播放法术施放音效（视觉反馈用）
 	var audio_mgr := get_node_or_null("/root/AudioManager")
 	if audio_mgr and audio_mgr.has_method("play_spell_cast_sfx"):
 		var player_node := get_tree().get_first_node_in_group("player")
@@ -152,8 +231,42 @@ func play_note_sound(note: MusicData.Note, duration: float = 0.2) -> void:
 		audio_mgr.play_spell_cast_sfx(pos, false)
 
 ## 播放和弦音效
-func play_chord_sound(notes: Array, duration: float = 0.3) -> void:
-	# 通过 AudioManager 播放和弦施放音效
+## notes: MusicData.Note 枚举值数组
+## duration: 和弦时长（秒）
+## timbre_override: 音色覆盖
+## velocity: 力度
+func play_chord_sound(notes: Array, duration: float = 0.5,
+		timbre_override: int = -1, velocity: float = 0.7) -> void:
+
+	if notes.is_empty():
+		return
+
+	# 冷却检查
+	var cooldown_key := "chord_%s" % str(notes)
+	if not _check_note_cooldown(cooldown_key):
+		return
+
+	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
+
+	if _synthesizer == null:
+		_init_synthesizer()
+
+	var wav := _synthesizer.generate_chord(notes, timbre, 4, duration, velocity)
+	if wav == null:
+		return
+
+	var player := _get_note_player()
+	if player == null:
+		return
+
+	player.stream = wav
+	player.volume_db = _velocity_to_db(velocity)
+	player.pitch_scale = 1.0
+	player.play()
+
+	chord_played.emit(notes, timbre)
+
+	# 通知 AudioManager
 	var audio_mgr := get_node_or_null("/root/AudioManager")
 	if audio_mgr and audio_mgr.has_method("play_chord_cast_sfx"):
 		var player_node := get_tree().get_first_node_in_group("player")
@@ -176,3 +289,33 @@ func play_ui_sound(sound_name: String) -> void:
 			audio_mgr.play_ui_cancel()
 		"level_up":
 			audio_mgr.play_level_up_sfx()
+
+# ============================================================
+# 内部工具
+# ============================================================
+
+## 从对象池获取可用的音符播放器
+func _get_note_player() -> AudioStreamPlayer:
+	for i in range(NOTE_POOL_SIZE):
+		var idx := (_note_pool_index + i) % NOTE_POOL_SIZE
+		if not _note_pool[idx].playing:
+			_note_pool_index = (idx + 1) % NOTE_POOL_SIZE
+			return _note_pool[idx]
+	# 池满，覆盖最旧的
+	_note_pool_index = (_note_pool_index + 1) % NOTE_POOL_SIZE
+	return _note_pool[_note_pool_index]
+
+## 冷却检查
+func _check_note_cooldown(key: String) -> bool:
+	var current_time := Time.get_ticks_msec() / 1000.0
+	var last_time: float = _note_cooldowns.get(key, 0.0)
+	if current_time - last_time < NOTE_COOLDOWN:
+		return false
+	_note_cooldowns[key] = current_time
+	return true
+
+## 力度转分贝
+func _velocity_to_db(velocity: float) -> float:
+	# velocity 0.0 ~ 1.0 映射到 -24dB ~ 0dB
+	velocity = clampf(velocity, 0.01, 1.0)
+	return linear_to_db(velocity) * 0.5  # 缩小动态范围

@@ -93,6 +93,15 @@ enum FatigueLevel {
 	CRITICAL,
 }
 
+## 音色系别
+enum TimbreType {
+	NONE,           # 默认/无音色 (基础合成器)
+	PLUCKED,        # 弹拨系 (古筝、琵琶)
+	BOWED,          # 拉弦系 (二胡、大提琴)
+	WIND,           # 吹奏系 (笛子、长笛)
+	PERCUSSIVE,     # 打击系 (钢琴、贝斯)
+}
+
 # ============================================================
 # 静态数据表
 # ============================================================
@@ -247,4 +256,90 @@ const COMPLETENESS_BONUS: Dictionary = {
 	2: 1.0,
 	3: 1.5,
 	4: 2.0,
+}
+
+# ============================================================
+# 音色系统数据
+# ============================================================
+
+## 音色切换疲劳代价
+const TIMBRE_SWITCH_FATIGUE_COST: float = 0.05
+
+## 疲劳对音色效能的影响倍率
+const TIMBRE_FATIGUE_PENALTY: Dictionary = {
+	FatigueLevel.NONE: 1.0,       # 无衰减
+	FatigueLevel.MILD: 1.0,       # 无衰减
+	FatigueLevel.MODERATE: 0.8,   # 效能降低20%
+	FatigueLevel.SEVERE: 0.5,     # 效能降低50%，神韵失效
+	FatigueLevel.CRITICAL: 0.2,   # 效能降低80%，神韵失效
+}
+
+## 音色系别 ADSR 包络参数
+## attack_time: 起音时间(秒), decay_time: 衰减时间(秒),
+## sustain_level: 持续电平(0-1), release_time: 释放时间(秒)
+## harmonics: 泛音结构 [基频倍率, 振幅] 列表
+## wave_shape: 波形类型 ("sine", "triangle", "sawtooth", "square")
+const TIMBRE_ADSR: Dictionary = {
+	TimbreType.NONE: {
+		"attack_time": 0.01, "decay_time": 0.1,
+		"sustain_level": 0.6, "release_time": 0.05,
+		"wave_shape": "sine",
+		"harmonics": [[1.0, 1.0], [2.0, 0.3], [3.0, 0.1]],
+		"name": "合成器", "desc": "基础合成器音色",
+	},
+	TimbreType.PLUCKED: {
+		"attack_time": 0.005, "decay_time": 0.15,
+		"sustain_level": 0.2, "release_time": 0.0,
+		"wave_shape": "triangle",
+		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.35], [4.0, 0.2], [5.0, 0.1], [6.0, 0.05]],
+		"name": "弹拨", "desc": "颗粒感、快速衰减的瞬态爆发",
+	},
+	TimbreType.BOWED: {
+		"attack_time": 0.08, "decay_time": 0.0,
+		"sustain_level": 0.85, "release_time": 0.15,
+		"wave_shape": "sawtooth",
+		"harmonics": [[1.0, 1.0], [2.0, 0.4], [3.0, 0.25], [4.0, 0.15], [5.0, 0.08]],
+		"name": "拉弦", "desc": "持续性、连绵共振的拉弓质感",
+	},
+	TimbreType.WIND: {
+		"attack_time": 0.04, "decay_time": 0.08,
+		"sustain_level": 0.65, "release_time": 0.06,
+		"wave_shape": "sine",
+		"harmonics": [[1.0, 1.0], [2.0, 0.15], [3.0, 0.4], [4.0, 0.05], [5.0, 0.15]],
+		"name": "吹奏", "desc": "穿透性、气息聚焦的管乐质感",
+	},
+	TimbreType.PERCUSSIVE: {
+		"attack_time": 0.002, "decay_time": 0.0,
+		"sustain_level": 0.75, "release_time": 0.03,
+		"wave_shape": "square",
+		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.0], [4.0, 0.25], [5.0, 0.0], [6.0, 0.12]],
+		"name": "打击", "desc": "节奏感、重音冲击的钢琴质感",
+	},
+}
+
+## 12 半音的标准频率 (C4 = 中央C, A4 = 440Hz)
+const NOTE_FREQUENCIES: Dictionary = {
+	Note.C:  261.63,
+	Note.CS: 277.18,
+	Note.D:  293.66,
+	Note.DS: 311.13,
+	Note.E:  329.63,
+	Note.F:  349.23,
+	Note.FS: 369.99,
+	Note.G:  392.00,
+	Note.GS: 415.30,
+	Note.A:  440.00,
+	Note.AS: 466.16,
+	Note.B:  493.88,
+}
+
+## 白键到 Note 枚举的映射
+const WHITE_KEY_TO_NOTE: Dictionary = {
+	WhiteKey.C: Note.C,
+	WhiteKey.D: Note.D,
+	WhiteKey.E: Note.E,
+	WhiteKey.F: Note.F,
+	WhiteKey.G: Note.G,
+	WhiteKey.A: Note.A,
+	WhiteKey.B: Note.B,
 }

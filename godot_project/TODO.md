@@ -7,14 +7,23 @@
 
 ## 一、音频系统 (Audio System)
 ### 1.1 音符音效生成 ✅ `P0-Critical` — 已完成 (2026-02-07)
-**文件：** `scripts/autoload/audio_manager.gd` + `scripts/autoload/global_music_manager.gd`
+**文件：** `scripts/autoload/audio_manager.gd` + `scripts/autoload/global_music_manager.gd` + `scripts/systems/note_synthesizer.gd` + `scripts/data/music_data.gd`
 **完成内容：**
 - 创建了全局 `AudioManager` 单例，使用 `AudioStreamWAV` 程序化生成所有音效
 - 玩家音效：施法音 (`cast_chime`)、和弦音 (`chord_resolve`)、完美卡拍音 (`perfect_beat_ring`)、和弦进行音 (`progression_fanfare`)
 - UI 音效：点击 (`ui_click`)、悬停 (`ui_hover`)、确认 (`ui_confirm`)、取消 (`ui_cancel`)、升级 (`level_up`)
 - `global_music_manager.gd` 的 `play_note_sound()`、`play_chord_sound()`、`play_ui_sound()` 已接入 AudioManager
 - 对象池系统：32个 2D 播放器 + 8个全局播放器，避免频繁创建销毁
-- 音效冷却系统防止过度叠加"
+- 音效冷却系统防止过度叠加
+- **音色系统集成 (Issue #1)**：
+  - 新建 `NoteSynthesizer` 类（`scripts/systems/note_synthesizer.gd`），实现基于 ADSR 包络 + 波形合成 + 泛音结构的程序化音符合成
+  - 支持五种音色系别：默认合成器 / 弹拨系(古筝、琵琶) / 拉弦系(二胡、大提琴) / 吹奏系(笛子、长笛) / 打击系(钢琴、马林巴)
+  - 每种音色具有独立的 ADSR 参数、波形类型、泛音结构和音效时长
+  - 支持外部采样加载（优先检查 `res://audio/samples/{timbre}/` 目录）
+  - 音符音效缓存机制：首次生成后缓存，后续直接复用
+  - `SpellcraftSystem` 已集成音色信息：施法时自动播放对应音色的音符/和弦音效
+  - `MusicData` 新增 `TimbreType` 枚举、`TIMBRE_ADSR` 数据表、`NOTE_FREQUENCIES` 频率表、`WHITE_KEY_TO_NOTE` 映射表
+  - 采样目录结构已创建（`audio/samples/`），附带详细的采样规范和推荐来源文档
 
 ### 1.2 背景音乐 (BGM) ✅ `P0-Critical` — 已完成 (2026-02-07)
 **文件：** `scripts/autoload/bgm_manager.gd` + `audio_bus_layout.tres`
@@ -426,8 +435,9 @@
 
 | 文件 | 待完善项数 | 关键问题 |
 |:---|:---:|:---|
-| `global_music_manager.gd` | 0 | ✅ 音效已接入 AudioManager、BGM 系统已实现、频谱总线已配置 |
-| `audio_manager.gd` | 0 | ✅ 新建：全局音效管理器，程序化音效生成 + 对象池 + 信号驱动 |
+| `global_music_manager.gd` | 0 | ✅ 音效已接入 AudioManager、BGM 系统已实现、频谱总线已配置、音色合成器已集成 |
+| `audio_manager.gd` | 0 | ✅ 全局音效管理器，程序化音效生成 + 对象池 + 信号驱动 + 音符/和弦播放接口 |
+| `note_synthesizer.gd` | 0 | ✅ 新建：音符合成器，ADSR + 波形合成 + 泛音结构 + 采样加载 + 缓存 |
 | `bgm_manager.gd` | 0 | ✅ 新建：BGM 管理器，交叉淡入淡出 + BPM 同步 + 场景适配 |
 | `spellcraft_system.gd` | 4 | 小节完成处理、手动施法、和弦进行效果、黑键双重身份 |
 | `projectile_manager.gd` | 3 | 碰撞优化、扩展和弦形态、Shader 接入 |
