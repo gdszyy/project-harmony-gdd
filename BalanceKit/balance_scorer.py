@@ -20,7 +20,7 @@ Project Harmony — 平衡性跑分系统 (Balance Scoring System)
         S_risk     = 风险评分（不和谐扣血 + 密度过载 + 单调锁定的期望损失）
 
 作者：Manus AI
-版本：v1.0
+版本：v2.0 (同步听感系统 v2.0)
 日期：2026年2月7日
 =============================================================================
 """
@@ -551,13 +551,28 @@ class StrategySimulator:
     """
     策略模拟器：在给定Build下模拟一个策略的8小节执行过程，
     逐拍计算DPS、疲劳累积、惩罚效果。
+    
+    v2.0 更新：同步听感系统 v2.0，引入密度/留白/持续压力维度。
     """
 
-    # 单音寂静系统参数
+    # 单音寂静系统参数 (v1.0 维度)
     MONOTONY_PER_REPEAT = 15.0
-    DENSITY_PER_CAST = 8.0
     MONOTONY_SWITCH_REDUCTION = 20.0
     DISSONANCE_HARMONY_REDUCTION = 15.0
+    
+    # v2.0 新增：密度维度参数
+    DENSITY_WINDOW = 4.0        # 密度计算窗口（4秒 = 8拍）
+    OPTIMAL_RATE = 1.0          # 最佳施法频率（1次/秒 = 2拍/秒）
+    MAX_RATE = 2.5              # 最大施法频率（2.5次/秒 = 5拍/秒）
+    
+    # v2.0 新增：留白维度参数
+    REST_THRESHOLD = 1.5        # 休止阈值（间隔>1.5秒认为留白）
+    IDEAL_REST_RATIO = 0.20     # 理想休止比例（20%）
+    
+    # v2.0 新增：持续压力维度参数
+    SUSTAINED_START = 8.0       # 持续施法起始阈值（8秒）
+    SUSTAINED_MAX = 20.0        # 持续施法最大阈值（20秒）
+    EFFECTIVE_REST = 1.0        # 有效休息阈值（暂停>1秒）
 
     # 疲劳等级阈值
     MONOTONY_WARN = 40
@@ -587,13 +602,12 @@ class StrategySimulator:
         self.w_risk = 0.25
 
     def simulate(self, strategy: StrategyDefinition) -> SimulationResult:
-        """模拟一个策略的完整执行。"""
+        """模拟一个策略的完整执行 (v2.0)。"""
         result = SimulationResult(strategy_name=strategy.name)
         build = self.build
 
-        # 状态变量
+        # v1.0 状态变量
         monotony_per_note: dict[str, float] = {}
-        density = 0.0
         dissonance = 0.0
         last_note = ""
         total_damage = 0.0
@@ -602,6 +616,13 @@ class StrategySimulator:
         rest_count_in_measure = 0
         cast_count_in_measure = 0
         unique_notes_used = set()
+        
+        # v2.0 新增状态变量
+        event_timestamps = []           # 所有事件的时间戳
+        last_cast_time = -999.0         # 上次施法时间
+        continuous_cast_start = 0.0     # 连续施法开始时间
+        last_effective_rest = 0.0       # 上次有效休息时间
+        density = 0.0                   # 当前密度值
 
         # 简化的AFI估算
         afi_level = 0
@@ -624,11 +645,14 @@ class StrategySimulator:
             }
 
             if action.is_rest:
-                # 休止符处理
+                # 休止符处理 (v2.0: 更新连续施法追踪)
                 rest_count_in_measure += 1
-                density = max(0, density - build.rest_density_reduction)
+                # 检查是否为有效休息
+                if last_cast_time > 0 and (beat_time - last_cast_time) >= self.EFFECTIVE_REST:
+                    last_effective_rest = beat_time
+                    continuous_cast_start = beat_time  # 重置连续施法计时
                 beat_info["action"] = "REST"
-                beat_info["density"] = round(density, 1)
+                beat_info["density"] = 0
                 result.beat_log.append(beat_info)
                 continue
 
@@ -636,6 +660,11 @@ class StrategySimulator:
             cast_count_in_measure += 1
             note_name = action.note
             unique_notes_used.add(note_name)
+            
+            # v2.0: 更新施法时间追踪
+            if last_cast_time < 0:
+                continuous_cast_start = beat_time
+            last_cast_time = beat_time
 
             # 计算基础伤害
             base_dmg = build.get_note_damage(note_name)
@@ -712,10 +741,16 @@ class StrategySimulator:
             elif note_mono >= self.MONOTONY_WARN:
                 mono_dmg_mult = 0.85
 
-            # 2. 密度值
-            density += self.DENSITY_PER_CAST * build.density_rate_mult * afi_amp
-            density = max(0, density - build.density_decay_rate * build.beat_interval)
-            density = min(100, density)
+            # 2. 密度值 (v2.0: 基于瞬时频率)
+            event_timestamps.append(beat_time)
+            # 计算瞬时频率：过去3秒内的事件数
+            recent_events = [t for t in event_timestamps if beat_time - t <= self.DENSITY_WINDOW]
+            instant_rate = len(recent_events) / self.DENSITY_WINDOW
+            
+            # 密度疲劳 = clip((instant_rate - optimal) / (max - optimal), 0, 1)
+            density_fatigue = max(0, min(1, (instant_rate - self.OPTIMAL_RATE) / (self.MAX_RATE - self.OPTIMAL_RATE)))
+            density_fatigue *= build.density_rate_mult  # 应用成长系数
+            density = density_fatigue * 100  # 转换为0-100范围
 
             density_dmg_mult = 1.0
             if density >= self.DENSITY_CRASH:
