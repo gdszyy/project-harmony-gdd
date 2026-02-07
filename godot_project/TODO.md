@@ -55,41 +55,42 @@
 - 当同屏弹体超过 500 个时，当前 O(n×m) 复杂度将成为瓶颈
 - 考虑使用 `PhysicsServer2D.space_get_direct_state()` 进行批量射线/形状查询
 
-### 2.3 敌人碰撞层配置 ⬜ `P1-High`
-**文件：** `scripts/entities/enemy_base.gd`
-**现状：** 敌人脚本中引用了碰撞层，但实际的 `CollisionShape2D` 和 `Area2D` 节点需要在场景中创建。
-**需求：**
-- 创建敌人 PackedScene 模板（`.tscn`），包含 `CharacterBody2D` + `CollisionShape2D` + `Area2D`
-- 配置碰撞层：Layer 2 (enemies)，Mask 1 (player) + 3 (player_projectiles)
+### 2.3 敌人碰撞层配置 ✅ `P1-High` — 已完成 (2026-02-07)
+**文件：** `scenes/enemies/enemy_*.tscn`
+**完成内容：**
+- 5 种敌人 PackedScene 模板已创建，每个包含 `CharacterBody2D` + `CollisionShape2D` + `Area2D`
+- 碰撞层配置：Layer 2 (enemies)，Mask 1 (player) + 4 (player_projectiles)
+- 每种敌人有独立的碰撞半径（Static: 12px, Silence: 18px, Screech: 8px, Pulse: 14px, Wall: 28px）
 
 ---
 
 ## 三、敌人系统 (Enemy System)
 
-### 3.1 敌人场景模板 ⬜ `P0-Critical`
-**文件：** `scripts/systems/enemy_spawner.gd` (第29行)
-**现状：** 注释标注 "在实际项目中，这些会是 PackedScene 引用"，当前使用代码动态创建节点。
-**需求：**
-- 为 4 种敌人类型（Basic, Fast, Tank, Swarm）分别创建 `.tscn` 场景文件
-- 每个场景包含：`CharacterBody2D` + `Polygon2D`（锯齿碎片造型）+ `CollisionShape2D` + `Area2D`
-- 在 `EnemySpawner` 中使用 `PackedScene.instantiate()` 替代动态节点创建
+### 3.1 敌人场景模板 ✅ `P0-Critical` — 已完成 (2026-02-07)
+**文件：** `scenes/enemies/enemy_*.tscn` (5个场景)
+**完成内容：**
+- 为 5 种敌人类型（Static, Silence, Screech, Pulse, Wall）分别创建了 `.tscn` 场景文件
+- 每个场景包含：`CharacterBody2D` + `Polygon2D`（类型特化造型）+ `CollisionShape2D` + `Area2D`
+- `EnemySpawner` 已使用 `PackedScene.instantiate()` 替代动态节点创建
+- 每个场景应用了 `enemy_glitch.gdshader`，Silence 额外应用 `silence_aura.gdshader`
 
-### 3.2 敌人 AI 行为扩展 🔲 `P2-Medium`
-**文件：** `scripts/entities/enemy_base.gd`
-**现状：** 所有敌人类型共享同一个简单的追踪逻辑（朝玩家方向移动）。
-**需求：**
-- **Fast 敌人**：增加冲刺行为（间歇性加速）
-- **Tank 敌人**：增加护盾机制或减伤状态
-- **Swarm 敌人**：增加群体行为（Boids 算法或简化版集群移动）
-- 所有敌人增加攻击行为（近战碰撞伤害已有，需增加远程攻击变种）
+### 3.2 敌人 AI 行为扩展 ✅ `P2-Medium` — 已完成 (2026-02-07)
+**文件：** `scripts/entities/enemies/enemy_*.gd` (5个子类)
+**完成内容：**
+- **Static (底噪)**：群体加速机制（附近同类越多速度越快，最高 1.6x）
+- **Silence (寂静)**：静音光环（120px，增加疲劳度 + 法术削减 40%）
+- **Screech (尖啸)**：冲刺行为（3x 速度，200px 触发距离）+ 死亡不和谐爆发
+- **Pulse (脉冲)**：蓄力-释放周期（4拍蓄力 → 冲刺/8发环形弹幕交替）
+- **Wall (音墙)**：护盾机制（50HP 额外层）+ 地震冲击波 + 推力
 
-### 3.3 敌人死亡特效与掉落 🔲 `P1-High`
-**文件：** `scripts/entities/enemy_base.gd`
-**现状：** `die()` 函数仅发出信号并调用 `queue_free()`，无视觉反馈。
-**需求：**
-- 实现 GDD 美术方向中的死亡效果："瞬间破碎成像素块，或像老式电视关机一样闪烁并消失"
-- 生成经验值拾取物（音符符号或正四面体）
-- 添加死亡音效
+### 3.3 敌人死亡特效与掉落 ✅ `P1-High` — 已完成 (2026-02-07)
+**文件：** `scripts/systems/death_vfx_manager.gd` + `scripts/entities/xp_pickup.gd`
+**完成内容：**
+- 实现了 GDD 美术方向中的死亡效果：膨胀→压缩成线→淡出（老式电视关机效果）
+- `death_vfx_manager.gd`：对象池碎片系统 + 5种类型差异化特效 + 屏幕震动
+- `xp_pickup.gd`：经验值拾取物（4级颜色分级 + 磁吸机制 + 节拍脉冲 + 合并机制）
+- 每种敌人类型有独特的死亡特效（爆发环、内爆、涟漪、地震环等）
+- **待完善**：死亡音效（需音频资源）
 
 ### 3.4 Boss 敌人 ⬜ `P3-Low`
 **现状：** 完全未实现。
@@ -168,13 +169,16 @@
 - 添加神圣几何 Shader 材质
 - 实现受伤时的故障（Glitch）效果
 
-### 5.2 敌人视觉完善 🔲 `P1-High`
-**文件：** `scripts/entities/enemy_base.gd`
-**现状：** 使用代码生成的随机锯齿多边形，无 Shader 效果。
-**需求：**
-- 应用故障效果 Shader（已有 `sacred_geometry.gdshader` 的 `glitch_intensity` 参数）
-- 实现 12 FPS 量化步进动画的视觉表现
-- 不同敌人类型应有不同的颜色和形态特征
+### 5.2 敌人视觉完善 ✅ `P1-High` — 已完成 (2026-02-07)
+**文件：** `shaders/enemy_glitch.gdshader` + `shaders/silence_aura.gdshader`
+**完成内容：**
+- 创建了专用 `enemy_glitch.gdshader`（色差、扫描线、水平撕裂、像素化、噪点）
+- 创建了 Silence 专用 `silence_aura.gdshader`（吸收光环、螺旋纹理、粒子效果）
+- 量化步进动画已在基类中实现（不同类型不同帧率：4~20 FPS）
+- 5 种敌人类型各有独特的颜色和形态：
+  - Static: 红色锯齿碎片 | Silence: 深紫色八角旋涡
+  - Screech: 黄色尖锐三角 | Pulse: 蓝色菱形
+  - Wall: 灰紫色巨大多边形
 
 ### 5.3 伤害数字显示 ⬜ `P2-Medium`
 **现状：** 完全未实现。
@@ -185,12 +189,16 @@
   - **不和谐伤害（自伤）**：紫色，向下流淌效果
 - 创建 `DamageNumber` 场景和脚本
 
-### 5.4 经验值拾取物 ⬜ `P1-High`
-**现状：** 完全未实现。
-**需求：**
-- GDD §2.3 拾取物设计：漂浮的音符符号或微小正四面体
-- 被玩家吸收时化作光线汇入玩家核心
-- 创建 `XPPickup` 场景，包含 `Area2D` + 视觉效果 + 吸附逻辑
+### 5.4 经验值拾取物 ✅ `P1-High` — 已完成 (2026-02-07)
+**文件：** `scripts/entities/xp_pickup.gd`
+**完成内容：**
+- 4 级颜色分级（青色/蓝色/紫色/金色）对应不同 XP 价值
+- 4 种形状（三角/正方/菱形/六角星）对应不同价值等级
+- 磁吸机制：100px 半径内自动飞向玩家，越近越快（最高 3x）
+- 收集视觉：闪光 + 缩小消失
+- 节拍脉冲：强拍时微微发光
+- 合并机制：附近小经验球可合并为大经验球
+- 15 秒自动消失（最后 3 秒闪烁警告）
 
 ### 5.5 障碍物系统 ⬜ `P2-Medium`
 **现状：** 完全未实现。
@@ -332,13 +340,14 @@
 - 重置 `FatigueManager`、`SpellcraftSystem` 的内部状态
 - 重置序列器内容
 
-### 8.2 难度曲线调优 🔲 `P2-Medium`
+### 8.2 难度曲线调优 ✅ `P2-Medium` — 已完成 (2026-02-07)
 **文件：** `scripts/systems/enemy_spawner.gd`
-**现状：** 基础的时间-难度递增已实现，但参数需要调优。
-**需求：**
-- 根据 GDD 数值文档调整敌人 HP、速度、生成频率的成长曲线
-- 实现波次系统（每 N 秒一波，波间有短暂休息）
-- 实现精英敌人（增强版普通敌人）的生成逻辑
+**完成内容：**
+- 指数难度递增：HP ×1.15^level, 速度 ×1.03^level, 伤害 ×1.10^level
+- 波次系统：每波 20 秒 + 3 秒休息，5 种波次类型（Normal/Swarm/Elite/SilenceTide/PulseStorm）
+- 精英敌人：HP +50%, 伤害 +30%, 体型 +20%, 金色视觉标记
+- BPM 节奏生成：敌人在弱拍时刻生成
+- 权重选择：基于难度等级解锁不同敌人类型
 
 ### 8.3 游戏结束统计完善 🔲 `P2-Medium`
 **文件：** `scripts/scenes/game_over.gd`
@@ -405,11 +414,12 @@
 
 | 优先级 | 数量 | 说明 |
 |:---|:---:|:---|
-| **P0-Critical** | 4 | 游戏无法正常运行的阻塞项 |
-| **P1-High** | 15 | 核心游戏体验所必需的功能 |
-| **P2-Medium** | 11 | 提升游戏品质和完整度的功能 |
+| **P0-Critical** | 3 (原4，已完成1) | 游戏无法正常运行的阻塞项 |
+| **P1-High** | 10 (原15，已完成5) | 核心游戏体验所必需的功能 |
+| **P2-Medium** | 9 (原11，已完成2) | 提升游戏品质和完整度的功能 |
 | **P3-Low** | 4 | 长线扩展和锦上添花的功能 |
-| **总计** | **34** | |
+| **已完成** | **8** | 敌人系统全面重构完成 |
+| **剩余** | **26** | |
 
 ---
 
