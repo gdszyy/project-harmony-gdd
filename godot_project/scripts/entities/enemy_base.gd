@@ -118,6 +118,7 @@ func _ready() -> void:
 
 	_find_player()
 	_connect_beat_signals()
+	_register_audio_signals()
 	_on_enemy_ready()
 
 ## 子类重写此方法以执行额外的初始化
@@ -203,6 +204,18 @@ func _get_beat_interval() -> float:
 	return 60.0 / GameManager.current_bpm
 
 # ============================================================
+# 音效信号注册
+# ============================================================
+
+## 将敌人的信号注册到全局 AudioManager
+## AudioManager 通过监听信号来播放对应音效，避免在敌人脚本中直接播放
+func _register_audio_signals() -> void:
+	if Engine.has_singleton("AudioManager") or has_node("/root/AudioManager"):
+		var audio_mgr := get_node_or_null("/root/AudioManager")
+		if audio_mgr and audio_mgr.has_method("register_enemy"):
+			audio_mgr.register_enemy(self, _get_type_name())
+
+# ============================================================
 # 量化步进移动
 # ============================================================
 
@@ -231,6 +244,16 @@ func _quantized_movement(delta: float) -> void:
 		move_and_slide()
 
 		_last_quantized_position = global_position
+
+		# 量化步进音效：每次位置跳变时播放机械卡顿声
+		_play_quantized_step_sound()
+
+## 播放量化步进移动音效
+## 每次位置跳变时触发，让敌人移动听起来像坏掉的时钟
+func _play_quantized_step_sound() -> void:
+	var audio_mgr := get_node_or_null("/root/AudioManager")
+	if audio_mgr and audio_mgr.has_method("play_enemy_move_sfx"):
+		audio_mgr.play_enemy_move_sfx(_get_type_name(), global_position)
 
 ## 子类重写此方法以实现不同的移动逻辑
 ## 默认：直线追踪玩家

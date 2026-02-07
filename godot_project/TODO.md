@@ -6,34 +6,34 @@
 ---
 
 ## 一、音频系统 (Audio System)
+### 1.1 音符音效生成 ✅ `P0-Critical` — 已完成 (2026-02-07)
+**文件：** `scripts/autoload/audio_manager.gd` + `scripts/autoload/global_music_manager.gd`
+**完成内容：**
+- 创建了全局 `AudioManager` 单例，使用 `AudioStreamWAV` 程序化生成所有音效
+- 玩家音效：施法音 (`cast_chime`)、和弦音 (`chord_resolve`)、完美卡拍音 (`perfect_beat_ring`)、和弦进行音 (`progression_fanfare`)
+- UI 音效：点击 (`ui_click`)、悬停 (`ui_hover`)、确认 (`ui_confirm`)、取消 (`ui_cancel`)、升级 (`level_up`)
+- `global_music_manager.gd` 的 `play_note_sound()`、`play_chord_sound()`、`play_ui_sound()` 已接入 AudioManager
+- 对象池系统：32个 2D 播放器 + 8个全局播放器，避免频繁创建销毁
+- 音效冷却系统防止过度叠加"
 
-### 1.1 音符音效生成 ⬜ `P0-Critical`
-**文件：** `scripts/autoload/global_music_manager.gd` (第146-158行)
-**现状：** `play_note_sound()` 和 `play_ui_sound()` 为空函数（`pass`），无任何音频输出。
-**需求：**
-- 使用 `AudioStreamGenerator` 实现实时正弦波/方波音符合成，或加载预制 `.wav`/`.ogg` 音效文件
-- 每个白键音符（C-B）需要对应频率的音效
-- 和弦音效需支持多音符同时播放（复音）
-- UI 音效（按钮点击、升级选择等）需要独立的音效资源
+### 1.2 背景音乐 (BGM) ✅ `P0-Critical` — 已完成 (2026-02-07)
+**文件：** `scripts/autoload/bgm_manager.gd` + `audio_bus_layout.tres`
+**完成内容：**
+- 创建了 `BGMManager` 全局单例，实现 BGM 的加载、播放、循环、BPM 同步和场景切换
+- BGM 风格确定为 **Minimal Techno / Glitch Techno**，与游戏的故障艺术美学完美契合
+- 实现了双播放器交叉淡入淡出 (Crossfade) 切换
+- 支持根据游戏状态自动选择 BGM（菜单/战斗 120-140 BPM/游戏结束）
+- 暂停时自动添加低通滤波器闷音效果
+- 创建了 `audio_bus_layout.tres` 音频总线布局文件，配置了 Music/SFX/EnemySFX/PlayerSFX/UI 总线
+- **待完善：** 需要实际的 BGM 音频文件 (.ogg)，当前为框架代码
 
-**GDD 参考：** §2.1 节奏同步战斗 — "游戏将采用节奏感强烈的音乐类型作为背景"
-
-### 1.2 背景音乐 (BGM) ⬜ `P0-Critical`
-**文件：** `scripts/autoload/global_music_manager.gd`
-**现状：** 音频总线和频谱分析器框架已搭建，但无实际 BGM 资源加载和播放逻辑。
-**需求：**
-- 制作或引入节奏感强烈的 BGM（推荐 Electronic/Synthwave 风格）
-- 实现 BGM 的加载、播放、循环控制
-- BGM 的 BPM 需与 `GameManager.current_bpm` 同步
-- 支持不同游戏阶段的 BGM 切换（菜单、战斗、Boss）
-
-### 1.3 频谱分析实际接入 🔲 `P1-High`
-**文件：** `scripts/autoload/global_music_manager.gd`
-**现状：** `_analyze_spectrum()` 已实现频段能量提取逻辑，但依赖实际的 `SpectrumAnalyzer` 效果器实例。
-**需求：**
-- 在 Godot 编辑器中配置 Audio Bus "Music" 并添加 `SpectrumAnalyzer` 效果器
-- 验证 `spectrum_analyzer` 实例获取是否正确
-- 将频谱能量数据实际传递给 Shader（脉冲网格、弹体发光等）
+### 1.3 频谱分析实际接入 ✅ `P1-High` — 已完成 (2026-02-07)
+**文件：** `audio_bus_layout.tres` + `scripts/autoload/global_music_manager.gd`
+**完成内容：**
+- 创建了 `audio_bus_layout.tres`，在 Music 总线上配置了 `AudioEffectSpectrumAnalyzer` 效果器
+- Kick 频率范围配置为 20-200Hz，与 `global_music_manager.gd` 中的 `LOW_FREQ_MIN/MAX` 匹配
+- 音频总线布局已在 `project.godot` 中注册
+- **待完善：** 需实际 BGM 音频文件才能验证频谱数据传递给 Shader 的效果
 
 ---
 
@@ -84,14 +84,13 @@
 - **Wall (音墙)**：护盾机制（50HP 额外层）+ 地震冲击波 + 推力
 
 ### 3.3 敌人死亡特效与掉落 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `scripts/systems/death_vfx_manager.gd` + `scripts/entities/xp_pickup.gd`
+**文件：** `scripts/systems/death_vfx_manager.gd` + `scripts/entities/xp_pickup.gd` + `scripts/autoload/audio_manager.gd`
 **完成内容：**
 - 实现了 GDD 美术方向中的死亡效果：膨胀→压缩成线→淡出（老式电视关机效果）
 - `death_vfx_manager.gd`：对象池碎片系统 + 5种类型差异化特效 + 屏幕震动
 - `xp_pickup.gd`：经验值拾取物（4级颜色分级 + 磁吸机制 + 节拍脉冲 + 合并机制）
 - 每种敌人类型有独特的死亡特效（爆发环、内爆、涟漪、地震环等）
-- **待完善**：死亡音效（需音频资源）
-
+- ✅ 死亡音效已实现：通过 AudioManager 的信号驱动机制，每种敌人有独特的死亡音效
 ### 3.4 Boss 敌人 ⬜ `P3-Low`
 **现状：** 完全未实现。
 **需求：**
@@ -414,12 +413,12 @@
 
 | 优先级 | 数量 | 说明 |
 |:---|:---:|:---|
-| **P0-Critical** | 3 (原4，已完成1) | 游戏无法正常运行的阻塞项 |
-| **P1-High** | 10 (原15，已完成5) | 核心游戏体验所必需的功能 |
+| **P0-Critical** | 0 (原4，已全部完成) | 游戏无法正常运行的阻塞项 |
+| **P1-High** | 9 (原15，已完成6) | 核心游戏体验所必需的功能 |
 | **P2-Medium** | 9 (原11，已完成2) | 提升游戏品质和完整度的功能 |
 | **P3-Low** | 4 | 长线扩展和锦上添花的功能 |
-| **已完成** | **8** | 敌人系统全面重构完成 |
-| **剩余** | **26** | |
+| **已完成** | **11** | 敌人系统 + 音频系统全面完成 |
+| **剩余** | **22** | |
 
 ---
 
@@ -427,11 +426,13 @@
 
 | 文件 | 待完善项数 | 关键问题 |
 |:---|:---:|:---|
-| `global_music_manager.gd` | 3 | 音效生成空函数、BGM 缺失、频谱接入 |
+| `global_music_manager.gd` | 0 | ✅ 音效已接入 AudioManager、BGM 系统已实现、频谱总线已配置 |
+| `audio_manager.gd` | 0 | ✅ 新建：全局音效管理器，程序化音效生成 + 对象池 + 信号驱动 |
+| `bgm_manager.gd` | 0 | ✅ 新建：BGM 管理器，交叉淡入淡出 + BPM 同步 + 场景适配 |
 | `spellcraft_system.gd` | 4 | 小节完成处理、手动施法、和弦进行效果、黑键双重身份 |
 | `projectile_manager.gd` | 3 | 碰撞优化、扩展和弦形态、Shader 接入 |
 | `enemy_spawner.gd` | 2 | PackedScene 模板、性能优化 |
-| `enemy_base.gd` | 3 | AI 扩展、死亡特效、视觉完善 |
+| `enemy_base.gd` | 1 | 视觉完善 (✅ 音效信号注册 + 量化步进音效已完成) |
 | `player.gd` | 1 | 视觉完善 |
 | `game_manager.gd` | 2 | reset_game()、不和谐伤害连接 |
 | `fatigue_manager.gd` | 3 | 单音寂静、密度过载、滤镜接入 |

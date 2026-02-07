@@ -144,15 +144,35 @@ func get_spectrum() -> Dictionary:
 
 ## 播放音符音效
 func play_note_sound(note: MusicData.Note, duration: float = 0.2) -> void:
-	# 在实际项目中，这里会使用 AudioStreamGenerator 或预制音频
-	# 目前作为接口预留
-	pass
+	# 通过 AudioManager 播放法术施放音效
+	var audio_mgr := get_node_or_null("/root/AudioManager")
+	if audio_mgr and audio_mgr.has_method("play_spell_cast_sfx"):
+		var player_node := get_tree().get_first_node_in_group("player")
+		var pos := player_node.global_position if player_node else Vector2.ZERO
+		audio_mgr.play_spell_cast_sfx(pos, false)
 
 ## 播放和弦音效
 func play_chord_sound(notes: Array, duration: float = 0.3) -> void:
-	for note in notes:
-		play_note_sound(note, duration)
+	# 通过 AudioManager 播放和弦施放音效
+	var audio_mgr := get_node_or_null("/root/AudioManager")
+	if audio_mgr and audio_mgr.has_method("play_chord_cast_sfx"):
+		var player_node := get_tree().get_first_node_in_group("player")
+		var pos := player_node.global_position if player_node else Vector2.ZERO
+		audio_mgr.play_chord_cast_sfx(pos)
 
 ## 播放UI音效
 func play_ui_sound(sound_name: String) -> void:
-	pass
+	var audio_mgr := get_node_or_null("/root/AudioManager")
+	if audio_mgr == null:
+		return
+	match sound_name:
+		"click":
+			audio_mgr.play_ui_click()
+		"hover":
+			audio_mgr.play_ui_hover()
+		"confirm":
+			audio_mgr.play_ui_confirm()
+		"cancel":
+			audio_mgr.play_ui_cancel()
+		"level_up":
+			audio_mgr.play_level_up_sfx()
