@@ -1,6 +1,6 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.0 (Live Document)
+**版本：** 2.1 (Live Document)
 **最后更新：** 2026年2月7日
 
 ---
@@ -21,9 +21,9 @@ project-harmony-gdd/
 │   └── generalized_progression_v5.png
 ├── Docs/                   # 专项设计文档与技术文档
 │   ├── AestheticFatigueSystem_Documentation.md
-│   └── Numerical_Design_Documentation.md    # [v2.0] 含成长系统与扩展和弦
-├── BalanceKit/             # [新增] 平衡性跑分系统
-│   ├── Methodology.md      # 跑分系统方法论文档
+│   └── Numerical_Design_Documentation.md    # [v2.1] 含成长系统、扩展和弦、延迟/距离风险
+├── BalanceKit/             # [新增] 平衡性跑分系统 (v2.1)
+│   ├── Methodology.md      # 跑分系统方法论文档 (v2.1)
 │   ├── balance_scorer.py   # 核心跑分引擎（含数据定义、成长系统、策略模拟器）
 │   ├── generate_report.py  # 可视化报告生成器
 │   └── Reports/            # 跑分输出（图表与JSON报告）
@@ -33,16 +33,18 @@ project-harmony-gdd/
 │       ├── growth_curve.png
 │       ├── chord_dissonance_power.png
 │       ├── extended_chord_penalty.png
+│       ├── delay_range_analysis.png    # v2.1新增
 │       └── benchmark_results.json
 ├── Scripts/                # 原型代码与计算模型
 │   └── aesthetic_fatigue_system.py
-└── Archive/                # 历史版本存档（v1-v5 迭代方案及旧图表）
+└── Archive/                # 历史版本存档（v1-v5 迭代方案、旧文档及图表）
     ├── Project_Harmony_Proposal_v1.md
     ├── Project_Harmony_Proposal_v2.md
     ├── Project_Harmony_Proposal_v3.md
     ├── Project_Harmony_Proposal_v4.md
     ├── Project_Harmony_Proposal_v5.md
     ├── Numerical_Design_Documentation_v1.md
+    ├── Assessment_Report_Density_Fatigue.md  # v2.0密度疲劳评估报告
     └── Assets/             # 历史版本图表
 ```
 
@@ -59,5 +61,6 @@ project-harmony-gdd/
 7.  **单音寂静系统**：三维惩罚模型（单调值/密度值/不和谐值），取代传统冷却机制。
 8.  **肉鸽数值成长**：五大类升级（音符属性/疲劳耐受/节奏精通/和弦精通/生存强化），支持多样化Build构建。
 9.  **平衡性跑分系统**：自动化的策略评估工具，支持一键验证数值平衡性。
+10. **延迟与距离风险系统 (v2.1)**：将法术的延迟和短射程纳入风险评估，验证伤害/范围补偿的合理性。
 
 详细内容请查阅 **[GDD.md](GDD.md)** 和 **[数值设计文档](Docs/Numerical_Design_Documentation.md)**。
