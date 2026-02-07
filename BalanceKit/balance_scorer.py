@@ -20,7 +20,7 @@ Project Harmony — 平衡性跑分系统 (Balance Scoring System)
         S_risk     = 风险评分（不和谐扣血 + 密度过载 + 单调锁定的期望损失）
 
 作者：Manus AI
-版本：v2.1 (新增延迟/距离风险维度)
+版本：v2.2 (新增局外成长系统接口)
 日期：2026年2月7日
 =============================================================================
 """
@@ -31,7 +31,7 @@ import math
 import json
 import copy
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Set
 from enum import Enum
 
 
@@ -63,7 +63,7 @@ class NoteStats:
     base_spd: int
     base_dur: int
     base_size: int
-    # 成长加成（来自肉鸽升级）
+    # 局内成长加成（来自肉鸽升级）
     bonus_dmg: float = 0.0
     bonus_spd: float = 0.0
     bonus_dur: float = 0.0
@@ -250,7 +250,7 @@ def create_chord_registry() -> dict[str, ChordType]:
 
 
 # =============================================================================
-# 第三部分：数值成长系统
+# 第三部分：数值成长系统 (局内)
 # =============================================================================
 
 class UpgradeCategory(Enum):
@@ -395,13 +395,38 @@ def create_upgrade_pool() -> list[Upgrade]:
 
 
 # =============================================================================
-# 第四部分：玩家Build状态
+# 第四部分：玩家Build与局外成长接口
 # =============================================================================
+
+@dataclass
+class MetaProgressionManager:
+    """
+    【架构预留】
+    局外成长系统的模拟管理器。
+    在实际游戏中，这将是一个读取玩家存档数据的单例。
+    在跑分器中，我们用它来模拟一个点满了局外升级的玩家状态。
+    """
+    # 模块A: 乐器调优 (基础属性)
+    base_hp_bonus: float = 100.0  # 满级: +100 HP
+    base_damage_multiplier: float = 1.5  # 满级: +50% 伤害
+    base_projectile_speed_multiplier: float = 1.15 # 满级: +15% 弹速
+
+    # 模块B: 乐理研习 (机制解锁)
+    unlocked_modifiers: Set[str] = field(default_factory=lambda: {"C#", "F#", "D#", "G#", "A#"})
+    unlocked_chords: Set[str] = field(default_factory=lambda: {"减三和弦", "增三和弦", "属七和弦", "大七和弦", "小七和弦", "减七和弦"})
+
+    # 模块C: 调式风格 (职业/流派)
+    # 在跑分器中，我们假设玩家可以选择任意职业，这部分在构建Build时处理
+
+    # 模块D: 声学降噪 (疲劳系统缓解)
+    fatigue_rate_multiplier: float = 0.7  # 满级: -30% 疲劳累积
+    dissonance_damage_reduction: float = 2.0 # 满级: -2 HP/跳
+
 
 @dataclass
 class PlayerBuild:
     """
-    表示一个玩家的完整Build状态，包含所有升级和数值修正。
+    表示一个玩家的完整Build状态，包含局内和局外所有升级和数值修正。
     这是跑分系统的核心输入。
     """
     # 音符属性
@@ -427,23 +452,33 @@ class PlayerBuild:
     max_hp: float = 200.0
     hp_regen: float = 1.0
     dodge_chance: float = 0.0
-    # 和弦解锁
+    # 和弦解锁 (局内)
     extended_chord_enabled: bool = False
     # D→T解决消减
     resolution_reduction: float = 30.0
 
+    # 【架构预留】局外成长解锁内容
+    meta_unlocked_chords: Set[str] = field(default_factory=set)
+
     @property
     def beat_interval(self) -> float:
+        """每拍间隔（秒）。"""
         return 60.0 / self.bpm
+
+    # 保持向后兼容的 apply_upgrade 别名
+    def apply_upgrade(self, upgrade: 'Upgrade', level: int = 1,
+                      target_note: Optional[str] = None):
+        """apply_in_game_upgrade 的别名，保持向后兼容。"""
+        self.apply_in_game_upgrade(upgrade, level, target_note)
 
     def get_note_damage(self, note_name: str) -> float:
         """获取音符的实际伤害（含全局加成）。"""
         note = self.notes[note_name]
         return (note.total_dmg + self.global_dmg_bonus) * DMG_PER_POINT
 
-    def apply_upgrade(self, upgrade: Upgrade, level: int = 1,
-                      target_note: Optional[str] = None):
-        """应用一个升级到Build上。"""
+    def apply_in_game_upgrade(self, upgrade: Upgrade, level: int = 1,
+                              target_note: Optional[str] = None):
+        """【局内】应用一个肉鸽升级到Build上。"""
         for key, val in upgrade.effect_per_level.items():
             total = val * level
             if key == "dmg" and target_note:
@@ -492,6 +527,25 @@ class PlayerBuild:
                 self.hp_regen += total
             elif key == "dodge_chance":
                 self.dodge_chance = min(0.5, self.dodge_chance + total)
+
+    def apply_meta_upgrades(self, meta_manager: MetaProgressionManager):
+        """
+        【架构预留】
+        在模拟开始前，应用局外成长系统的永久加成。
+        """
+        # 应用基础属性加成
+        self.max_hp += meta_manager.base_hp_bonus
+        self.global_dmg_bonus += (self.notes["C"].base_dmg * (meta_manager.base_damage_multiplier - 1.0))
+        # ... 其他属性如弹速等
+
+        # 应用疲劳系统减免
+        self.monotony_rate_mult *= meta_manager.fatigue_rate_multiplier
+        self.density_rate_mult *= meta_manager.fatigue_rate_multiplier
+        self.dissonance_rate_mult *= meta_manager.fatigue_rate_multiplier
+        # ... 其他如不和谐伤害减免等
+
+        # 记录已解锁的和弦
+        self.meta_unlocked_chords = meta_manager.unlocked_chords
 
 
 # =============================================================================
@@ -562,8 +616,6 @@ class StrategySimulator:
     """
     策略模拟器：在给定Build下模拟一个策略的8小节执行过程，
     逐拍计算DPS、疲劳累积、惩罚效果。
-    
-    v2.0 更新：同步听感系统 v2.0，引入密度/留白/持续压力维度。
     """
 
     # 单音寂静系统参数 (v1.0 维度)
@@ -626,11 +678,11 @@ class StrategySimulator:
         self.w_risk = 0.25
 
     def simulate(self, strategy: StrategyDefinition) -> SimulationResult:
-        """模拟一个策略的完整执行 (v2.0)。"""
+        """模拟一个策略的完整执行。"""
         result = SimulationResult(strategy_name=strategy.name)
         build = self.build
 
-        # v1.0 状态变量
+        # 状态变量
         monotony_per_note: dict[str, float] = {}
         dissonance = 0.0
         last_note = ""
@@ -640,15 +692,11 @@ class StrategySimulator:
         rest_count_in_measure = 0
         cast_count_in_measure = 0
         unique_notes_used = set()
-        
-        # v2.0 新增状态变量
-        event_timestamps = []           # 所有事件的时间戳
-        last_cast_time = -999.0         # 上次施法时间
-        continuous_cast_start = 0.0     # 连续施法开始时间
-        last_effective_rest = 0.0       # 上次有效休息时间
-        density = 0.0                   # 当前密度值
-
-        # 简化的AFI估算
+        event_timestamps = []
+        last_cast_time = -999.0
+        continuous_cast_start = 0.0
+        last_effective_rest = 0.0
+        density = 0.0
         afi_level = 0
 
         for i, action in enumerate(strategy.actions):
@@ -656,7 +704,6 @@ class StrategySimulator:
             measure_idx = i // 4
             beat_in_measure = i % 4
 
-            # 每小节开始时重置小节内计数
             if beat_in_measure == 0:
                 rest_count_in_measure = 0
                 cast_count_in_measure = 0
@@ -669,121 +716,96 @@ class StrategySimulator:
             }
 
             if action.is_rest:
-                # 休止符处理 (v2.0: 更新连续施法追踪)
                 rest_count_in_measure += 1
-                # 检查是否为有效休息
                 if last_cast_time > 0 and (beat_time - last_cast_time) >= self.EFFECTIVE_REST:
                     last_effective_rest = beat_time
-                    continuous_cast_start = beat_time  # 重置连续施法计时
+                    continuous_cast_start = beat_time
                 beat_info["action"] = "REST"
                 beat_info["density"] = 0
                 result.beat_log.append(beat_info)
                 continue
 
-            # ---- 施法处理 ----
             cast_count_in_measure += 1
             note_name = action.note
             unique_notes_used.add(note_name)
             
-            # v2.0: 更新施法时间追踪
             if last_cast_time < 0:
                 continuous_cast_start = beat_time
             last_cast_time = beat_time
 
-            # 计算基础伤害
             base_dmg = build.get_note_damage(note_name)
 
-            # 和弦倍率
             chord_mult = 1.0
             chord_dissonance_add = 0.0
             if action.is_chord and action.chord_type in self.chords:
                 chord = self.chords[action.chord_type]
-                # 检查扩展和弦是否解锁
-                if chord.is_extended and not build.extended_chord_enabled:
-                    chord_mult = 1.0  # 未解锁则无效
+                
+                # 检查和弦是否解锁 (局内或局外)
+                is_unlocked = (chord.name in build.meta_unlocked_chords) or \
+                              (chord.is_extended and build.extended_chord_enabled)
+                
+                if not is_unlocked and not chord.is_extended and chord.name not in {"大三和弦", "小三和弦"}:
+                    chord_mult = 0.0 # 未解锁则无效
                 else:
                     chord_mult = chord.dmg_multiplier + build.chord_dmg_bonus
                     chord_dissonance_add = chord.fatigue_dissonance * build.chord_dissonance_mult
 
-                    # 治疗/护盾
                     if chord.heal_ratio > 0:
                         heal = (build.notes[note_name].total_dmg + build.global_dmg_bonus) * chord.heal_ratio
                         result.total_healing += heal
                     if chord.shield_ratio > 0:
                         shield = (build.notes[note_name].total_dmg + build.global_dmg_bonus) * chord.shield_ratio
                         result.total_shielding += shield
-
-                    # DOT额外伤害
                     if chord.dot_total_ratio > 0:
                         chord_mult = chord.dot_total_ratio
-
-                    # 区域/召唤的持续伤害
                     if chord.zone_tick_ratio > 0:
                         ticks = chord.zone_duration_mult * build.notes[note_name].total_dur / 0.5
                         chord_mult = chord.zone_tick_ratio * ticks
-
-                    # 召唤物持续伤害
                     if chord.summon_dps_ratio > 0 and chord.zone_tick_ratio == 0:
                         summon_dur = chord.summon_duration_mult * build.notes[note_name].total_dur * DUR_PER_POINT
                         chord_mult = chord.summon_dps_ratio * summon_dur
 
-            # 修饰符倍率
             mod_mult = 1.0
             if action.modifier and action.modifier in self.MODIFIER_MULTIPLIERS:
                 mod_mult = self.MODIFIER_MULTIPLIERS[action.modifier]
 
-            # 休止符蓄力加成
             rest_bonus = rest_count_in_measure * (0.5 + build.rest_charge_bonus)
             rest_dmg_add = rest_bonus * DMG_PER_POINT
 
             raw_dmg = (base_dmg + rest_dmg_add) * chord_mult * mod_mult
             total_raw_damage += raw_dmg
 
-            # ---- v2.1: 延迟风险计算 ----
             delay_hit = 1.0
             delay_beats = 0.0
             if action.is_chord and action.chord_type in self.chords:
                 chord = self.chords[action.chord_type]
                 delay_beats = chord.delay_beats
                 if delay_beats > 0:
-                    # 基础延迟命中折扣
                     delay_hit = 1.0 / (1.0 + self.DELAY_PENALTY_RATE * delay_beats)
-                    # AOE补偿：大范围AOE部分抵消延迟风险
-                    aoe_comp = min(self.AOE_COMP_CAP,
-                                   chord.aoe_radius_mult * self.AOE_COMP_FACTOR)
+                    aoe_comp = min(self.AOE_COMP_CAP, chord.aoe_radius_mult * self.AOE_COMP_FACTOR)
                     delay_hit = delay_hit + aoe_comp * (1.0 - delay_hit)
-                    # 记录延迟空窗期
                     result.delay_exposure_time += delay_beats * build.beat_interval
             result.total_delay_discount += (1.0 - delay_hit)
 
-            # ---- v2.1: 距离风险计算 ----
             note_obj = build.notes[note_name]
             eff_range = note_obj.effective_range
             range_hit = min(1.0, eff_range / self.REFERENCE_RANGE)
-            # SIZE补偿：大弹体更容易命中，部分抵消短射程劣势
-            size_comp = min(self.SIZE_COMP_CAP,
-                           max(0, note_obj.total_size - self.SIZE_BASELINE) * self.SIZE_COMP_FACTOR)
+            size_comp = min(self.SIZE_COMP_CAP, max(0, note_obj.total_size - self.SIZE_BASELINE) * self.SIZE_COMP_FACTOR)
             range_hit = range_hit + size_comp * (1.0 - range_hit)
-            # 和弦AOE也补偿距离风险（如冲击波、区域法术不需要精确射程）
             if action.is_chord and action.chord_type in self.chords:
                 chord = self.chords[action.chord_type]
                 if chord.aoe_radius_mult > 0 or chord.zone_tick_ratio > 0:
-                    # AOE/区域法术不依赖弹体射程，距离风险大幅降低
                     range_hit = min(1.0, range_hit + 0.3)
             result.total_range_discount += (1.0 - range_hit)
-            # 近身风险：射程越短，玩家越需要贴近敌人
             proximity_penalty = max(0, 1.0 - range_hit) * self.PROXIMITY_RISK_WEIGHT
             result.proximity_risk += proximity_penalty * build.beat_interval
 
-            # ---- 疲劳惩罚计算 ----
-            # 1. 单调值
             note_mono = monotony_per_note.get(note_name, 0.0)
             afi_amp = max(1.0, self.AFI_AMPLIFIERS.get(afi_level, 1.0) - build.afi_amplify_reduction)
 
             if note_name == last_note:
                 note_mono += self.MONOTONY_PER_REPEAT * build.monotony_rate_mult * afi_amp
             else:
-                # 切换音符降低单调值
                 if last_note:
                     old_mono = monotony_per_note.get(last_note, 0)
                     monotony_per_note[last_note] = max(0, old_mono - self.MONOTONY_SWITCH_REDUCTION)
@@ -791,7 +813,6 @@ class StrategySimulator:
             note_mono = min(100, note_mono)
             monotony_per_note[note_name] = note_mono
 
-            # 单调值惩罚
             mono_dmg_mult = 1.0
             if note_mono >= self.MONOTONY_LOCK:
                 mono_dmg_mult = 0.0
@@ -801,16 +822,13 @@ class StrategySimulator:
             elif note_mono >= self.MONOTONY_WARN:
                 mono_dmg_mult = 0.85
 
-            # 2. 密度值 (v2.0: 基于瞬时频率)
             event_timestamps.append(beat_time)
-            # 计算瞬时频率：过去3秒内的事件数
             recent_events = [t for t in event_timestamps if beat_time - t <= self.DENSITY_WINDOW]
             instant_rate = len(recent_events) / self.DENSITY_WINDOW
             
-            # 密度疲劳 = clip((instant_rate - optimal) / (max - optimal), 0, 1)
             density_fatigue = max(0, min(1, (instant_rate - self.OPTIMAL_RATE) / (self.MAX_RATE - self.OPTIMAL_RATE)))
-            density_fatigue *= build.density_rate_mult  # 应用成长系数
-            density = density_fatigue * 100  # 转换为0-100范围
+            density_fatigue *= build.density_rate_mult
+            density = density_fatigue * 100
 
             density_dmg_mult = 1.0
             if density >= self.DENSITY_CRASH:
@@ -822,19 +840,15 @@ class StrategySimulator:
             elif density >= self.DENSITY_MILD:
                 density_dmg_mult = 0.9
 
-            # 3. 不和谐值
             if chord_dissonance_add > 0:
                 dissonance += chord_dissonance_add * 100 * build.dissonance_rate_mult * afi_amp
-                # 不和谐降低单调值
                 for n in monotony_per_note:
                     monotony_per_note[n] = max(0, monotony_per_note[n] - 10)
             else:
-                # 和谐法术降低不和谐
                 dissonance = max(0, dissonance - self.DISSONANCE_HARMONY_REDUCTION)
             dissonance = max(0, dissonance - build.dissonance_decay_rate * build.beat_interval)
             dissonance = min(100, dissonance)
 
-            # 不和谐扣血
             dissonance_hp_loss = 0.0
             density_amplifier = 1.5 if density >= self.DENSITY_OVERLOAD else 1.0
             if dissonance >= self.DISSONANCE_DANGER:
@@ -845,11 +859,9 @@ class StrategySimulator:
                 dissonance_hp_loss = 1.0 * build.beat_interval * density_amplifier
             result.dissonance_damage += dissonance_hp_loss
 
-            # 有效伤害 (v2.1: 加入延迟和距离折扣)
             eff_dmg = raw_dmg * mono_dmg_mult * density_dmg_mult * delay_hit * range_hit
             total_damage += eff_dmg
 
-            # 更新峰值
             result.peak_monotony = max(result.peak_monotony, note_mono)
             result.peak_density = max(result.peak_density, density)
             result.peak_dissonance = max(result.peak_dissonance, dissonance)
@@ -866,49 +878,39 @@ class StrategySimulator:
             beat_info["range_hit"] = round(range_hit, 3)
             result.beat_log.append(beat_info)
 
-            # 简化AFI估算（基于多样性）
             diversity_ratio = len(unique_notes_used) / 7.0
             afi_level = max(0, int(4 * (1 - diversity_ratio)))
 
-        # ---- 计算综合结果 ----
         total_time = total_beats * build.beat_interval
         result.raw_dps = total_raw_damage / total_time if total_time > 0 else 0
         result.effective_dps = total_damage / total_time if total_time > 0 else 0
         result.sustained_dps = result.effective_dps
-        result.burst_dps = max((b["eff_dmg"] for b in result.beat_log if b.get("eff_dmg", 0) > 0), default=0) / build.beat_interval
+        result.burst_dps = max((b.get("eff_dmg", 0) for b in result.beat_log if b.get("eff_dmg", 0) > 0), default=0) / build.beat_interval
 
-        # 生存评分 (归一化到0-100)
         heal_score = min(100, (result.total_healing / build.max_hp) * 50)
         shield_score = min(100, (result.total_shielding / build.max_hp) * 50)
         dodge_score = build.dodge_chance * 200
         result.survival_score = min(100, heal_score + shield_score + dodge_score)
 
-        # 平均射程因子
         cast_beats = max(1, total_beats - sum(1 for a in strategy.actions if a.is_rest))
         result.avg_range_factor = 1.0 - (result.total_range_discount / cast_beats) if cast_beats > 0 else 1.0
 
-        # 风险评分 (v2.1: 归一化到0-100，加入延迟和距离风险)
-        # 所有分量归一化到0-1范围，最终加权和映射到0-100
         hp_loss_ratio = min(1.0, result.dissonance_damage / build.max_hp)
         lockout_ratio = result.lockout_beats / max(1, total_beats)
         density_ratio = result.density_penalty_beats / max(1, total_beats)
-        # 延迟风险：空窗期时间占比 (归一化到0-1)
         delay_ratio = min(1.0, result.delay_exposure_time / total_time) if total_time > 0 else 0
-        # 近身风险：平均射程缺失比例 (归一化到0-1)
         avg_range_deficit = max(0, 1.0 - result.avg_range_factor)
-        # 加权和（权重总和=100），每个分量的最大贡献等于其权重
+        
         result.risk_score = min(100, (
-            hp_loss_ratio * 30       # 不和谐扣血: 最高贡献30分
-            + lockout_ratio * 25     # 单调锁定: 最高贡献25分
-            + density_ratio * 15     # 密度过载: 最高贡献15分
-            + delay_ratio * 15       # v2.1 延迟空窗: 最高贡献15分
-            + avg_range_deficit * 15  # v2.1 近身风险: 最高贡献15分
+            hp_loss_ratio * 30
+            + lockout_ratio * 25
+            + density_ratio * 15
+            + delay_ratio * 15
+            + avg_range_deficit * 15
         ))
 
-        # DPS评分 (归一化到0-100, 基准DPS=100)
         dps_score = min(100, (result.effective_dps / 100.0) * 50)
 
-        # 综合得分
         result.composite_score = (
             self.w_dps * dps_score
             + self.w_survival * result.survival_score
@@ -925,6 +927,7 @@ class StrategySimulator:
 def create_strategy_library() -> list[StrategyDefinition]:
     """创建预定义的策略库用于跑分对比。"""
     strategies = []
+    notes7 = ["C", "D", "E", "F", "G", "A", "B"]
 
     # ---- 策略1: 纯C spam (最差策略基准) ----
     actions = [StrategyAction(i, "C") for i in range(32)]
@@ -948,7 +951,6 @@ def create_strategy_library() -> list[StrategyDefinition]:
         "四音符轮换(C-E-G-A)", "四个音符循环使用", actions))
 
     # ---- 策略5: 七音符全轮换 ----
-    notes7 = ["C", "D", "E", "F", "G", "A", "B"]
     actions = [StrategyAction(i, notes7[i % 7]) for i in range(32)]
     strategies.append(StrategyDefinition(
         "七音符全轮换", "使用全部七个白键音符循环", actions))
@@ -971,10 +973,8 @@ def create_strategy_library() -> list[StrategyDefinition]:
         if i % 8 == 0:
             actions.append(StrategyAction(i, "G", True, "减七和弦"))
         elif i % 8 in [1, 2]:
-            # 延迟拍（减七需要2拍延迟）
-            actions.append(StrategyAction(i, "C", False, "", True))  # 休止
+            actions.append(StrategyAction(i, "C", False, "", True))
         elif i % 8 == 3:
-            # 解决和弦
             actions.append(StrategyAction(i, "C", True, "大三和弦"))
         else:
             actions.append(StrategyAction(i, notes7[i % 7]))
@@ -984,7 +984,7 @@ def create_strategy_library() -> list[StrategyDefinition]:
     # ---- 策略8: 带休止符的节奏策略 ----
     actions = []
     for i in range(32):
-        if i % 4 == 3:  # 每小节第4拍休止
+        if i % 4 == 3:
             actions.append(StrategyAction(i, "", False, "", True))
         else:
             actions.append(StrategyAction(i, notes7[i % 7]))
@@ -1009,7 +1009,7 @@ def create_strategy_library() -> list[StrategyDefinition]:
         elif i % 8 == 4:
             actions.append(StrategyAction(i, "G", True, "大九和弦"))
         elif i % 8 in [2, 6]:
-            actions.append(StrategyAction(i, "", False, "", True))  # 休止
+            actions.append(StrategyAction(i, "", False, "", True))
         else:
             actions.append(StrategyAction(i, notes7[i % 7]))
     strategies.append(StrategyDefinition(
@@ -1021,9 +1021,9 @@ def create_strategy_library() -> list[StrategyDefinition]:
         if i % 16 == 0:
             actions.append(StrategyAction(i, "G", True, "属十三和弦"))
         elif i % 16 in [1, 2, 3]:
-            actions.append(StrategyAction(i, "", False, "", True))  # 休止恢复
+            actions.append(StrategyAction(i, "", False, "", True))
         elif i % 16 == 4:
-            actions.append(StrategyAction(i, "C", True, "大三和弦"))  # 解决
+            actions.append(StrategyAction(i, "C", True, "大三和弦"))
         else:
             actions.append(StrategyAction(i, notes7[i % 7]))
     strategies.append(StrategyDefinition(
@@ -1039,7 +1039,7 @@ def create_strategy_library() -> list[StrategyDefinition]:
         ("A", False, "", False, ""),
         ("D", False, "", False, "F#"),
         ("B", False, "", False, ""),
-        ("", False, "", True, ""),   # 休止
+        ("", False, "", True, ""),
         ("F", False, "", False, ""),
         ("G", True, "小三和弦", False, ""),
         ("E", False, "", False, "G#"),
@@ -1047,7 +1047,7 @@ def create_strategy_library() -> list[StrategyDefinition]:
         ("D", False, "", False, ""),
         ("C", False, "", False, ""),
         ("B", False, "", False, "A#"),
-        ("", False, "", True, ""),   # 休止
+        ("", False, "", True, ""),
     ]
     for i in range(32):
         p = pattern[i % len(pattern)]
@@ -1062,23 +1062,22 @@ def create_strategy_library() -> list[StrategyDefinition]:
 # 第七部分：跑分报告生成
 # =============================================================================
 
-def run_full_benchmark(build: PlayerBuild = None,
-                       strategies: list[StrategyDefinition] = None,
-                       chord_registry: dict[str, ChordType] = None,
-                       ) -> list[SimulationResult]:
+def run_full_benchmark(
+    build: PlayerBuild = None,
+    strategies: list[StrategyDefinition] = None,
+    chord_registry: dict[str, ChordType] = None,
+    meta_manager: Optional[MetaProgressionManager] = None
+) -> list[SimulationResult]:
     """
     执行完整的跑分基准测试。
-
-    Args:
-        build: 玩家Build状态，默认为初始Build
-        strategies: 策略列表，默认为预定义策略库
-        chord_registry: 和弦注册表，默认为完整注册表
-
-    Returns:
-        按综合得分降序排列的结果列表
     """
     if build is None:
         build = PlayerBuild()
+    
+    # 【架构预留】如果提供了局外成长管理器，则应用其效果
+    if meta_manager:
+        build.apply_meta_upgrades(meta_manager)
+
     if strategies is None:
         strategies = create_strategy_library()
     if chord_registry is None:
@@ -1091,7 +1090,6 @@ def run_full_benchmark(build: PlayerBuild = None,
         result = simulator.simulate(strategy)
         results.append(result)
 
-    # 按综合得分降序排列
     results.sort(key=lambda r: r.composite_score, reverse=True)
     return results
 
@@ -1123,74 +1121,60 @@ if __name__ == "__main__":
 
     print()
     print("╔══════════════════════════════════════════════════════════════════════════╗")
-    print("║     Project Harmony — 平衡性跑分系统 (Balance Scoring System)            ║")
+    print("║     Project Harmony — 平衡性跑分系统 (Balance Scoring System) v2.2         ║")
     print("╚══════════════════════════════════════════════════════════════════════════╝")
     print()
 
     chord_registry = create_chord_registry()
     strategies = create_strategy_library()
 
-    # ---- 场景A: 初始Build (无升级) ----
-    print("=" * 100)
-    print("  场景A：初始Build（无任何升级）")
-    print("=" * 100)
-    build_base = PlayerBuild()
-    results_base = run_full_benchmark(build_base, strategies, chord_registry)
-    print_benchmark_report(results_base, "初始Build跑分报告")
+    # ---- 场景A: 初始Build (无任何局内或局外升级) ----
+    results_base = run_full_benchmark(
+        build=PlayerBuild(), 
+        strategies=strategies, 
+        chord_registry=chord_registry
+    )
+    print_benchmark_report(results_base, "场景A: 初始Build 跑分报告")
 
-    # ---- 场景B: 中期Build (若干升级) ----
-    print("=" * 100)
-    print("  场景B：中期Build（约15次升级）")
-    print("=" * 100)
+    # ---- 场景B: 中期Build (仅局内升级) ----
     build_mid = PlayerBuild()
     upgrades = create_upgrade_pool()
     upgrade_map = {u.id: u for u in upgrades}
-    # 模拟中期升级
-    build_mid.apply_upgrade(upgrade_map["note_dmg"], 3, "G")      # G伤害+1.5
-    build_mid.apply_upgrade(upgrade_map["note_dmg"], 2, "B")      # B伤害+1.0
-    build_mid.apply_upgrade(upgrade_map["global_dmg"], 2)          # 全局伤害+0.6
-    build_mid.apply_upgrade(upgrade_map["monotony_tolerance"], 2)  # 单调耐受-20%
-    build_mid.apply_upgrade(upgrade_map["density_tolerance"], 1)   # 密度耐受-10%
-    build_mid.apply_upgrade(upgrade_map["chord_dmg"], 2)           # 和弦威力+0.2
-    build_mid.apply_upgrade(upgrade_map["bpm_boost"], 2)           # BPM+10
-    build_mid.apply_upgrade(upgrade_map["hp_boost"], 3)            # 生命+75
-    results_mid = run_full_benchmark(build_mid, strategies, chord_registry)
-    print_benchmark_report(results_mid, "中期Build跑分报告")
+    build_mid.apply_in_game_upgrade(upgrade_map["note_dmg"], 3, "G")
+    build_mid.apply_in_game_upgrade(upgrade_map["global_dmg"], 2)
+    build_mid.apply_in_game_upgrade(upgrade_map["monotony_tolerance"], 2)
+    build_mid.apply_in_game_upgrade(upgrade_map["chord_dmg"], 2)
+    build_mid.apply_in_game_upgrade(upgrade_map["hp_boost"], 3)
+    results_mid = run_full_benchmark(build=build_mid, strategies=strategies, chord_registry=chord_registry)
+    print_benchmark_report(results_mid, "场景B: 中期Build (仅局内升级) 跑分报告")
 
-    # ---- 场景C: 后期Build (大量升级+扩展和弦) ----
-    print("=" * 100)
-    print("  场景C：后期Build（约30次升级，含扩展和弦解锁）")
-    print("=" * 100)
+    # ---- 场景C: 【新增】满级局外成长Build (无局内升级) ----
+    build_meta = PlayerBuild()
+    meta_manager_full = MetaProgressionManager() # 创建一个满级局外成长的模拟器
+    results_meta = run_full_benchmark(
+        build=build_meta, 
+        strategies=strategies, 
+        chord_registry=chord_registry, 
+        meta_manager=meta_manager_full
+    )
+    print_benchmark_report(results_meta, "场景C: 满级局外成长Build 跑分报告")
+
+    # ---- 场景D: 毕业Build (满级局外 + 后期局内) ----
     build_late = PlayerBuild()
-    build_late.apply_upgrade(upgrade_map["note_dmg"], 5, "G")
-    build_late.apply_upgrade(upgrade_map["note_dmg"], 4, "B")
-    build_late.apply_upgrade(upgrade_map["note_spd"], 3, "D")
-    build_late.apply_upgrade(upgrade_map["note_size"], 3, "E")
-    build_late.apply_upgrade(upgrade_map["global_dmg"], 4)
-    build_late.apply_upgrade(upgrade_map["monotony_tolerance"], 4)
-    build_late.apply_upgrade(upgrade_map["density_tolerance"], 3)
-    build_late.apply_upgrade(upgrade_map["dissonance_tolerance"], 3)
-    build_late.apply_upgrade(upgrade_map["monotony_decay"], 2)
-    build_late.apply_upgrade(upgrade_map["chord_dmg"], 4)
-    build_late.apply_upgrade(upgrade_map["chord_dissonance_resist"], 3)
-    build_late.apply_upgrade(upgrade_map["extended_chord_unlock"], 1)
-    build_late.apply_upgrade(upgrade_map["bpm_boost"], 4)
-    build_late.apply_upgrade(upgrade_map["hp_boost"], 5)
-    build_late.apply_upgrade(upgrade_map["hp_regen"], 3)
-    build_late.apply_upgrade(upgrade_map["progression_power"], 2)
-    build_late.apply_upgrade(upgrade_map["resolution_mastery"], 2)
-    results_late = run_full_benchmark(build_late, strategies, chord_registry)
-    print_benchmark_report(results_late, "后期Build跑分报告")
-
-    # ---- 输出和弦扩展表 ----
-    print("\n" + "=" * 100)
-    print("  扩展和弦注册表")
-    print("=" * 100)
-    print(f"  {'和弦类型':^14} | {'音数':^4} | {'不和谐度':^8} | {'法术形态':^12} | {'伤害倍率':^8} | {'疲劳不和谐':^10} | {'扩展':^4} | {'特殊效果':^30}")
-    print(f"  {'-'*14}-+-{'-'*4}-+-{'-'*8}-+-{'-'*12}-+-{'-'*8}-+-{'-'*10}-+-{'-'*4}-+-{'-'*30}")
-    for name, c in chord_registry.items():
-        ext = "是" if c.is_extended else "否"
-        extra = c.extra_effect if c.extra_effect else "-"
-        print(f"  {name:^14} | {c.note_count:^4} | {c.base_dissonance:^8.2f} | {c.spell_form:^12} | {c.dmg_multiplier:^8.1f}x | {c.fatigue_dissonance:^10.2f} | {ext:^4} | {extra:^30}")
+    # 应用局内升级
+    build_late.apply_in_game_upgrade(upgrade_map["note_dmg"], 5, "G")
+    build_late.apply_in_game_upgrade(upgrade_map["global_dmg"], 4)
+    build_late.apply_in_game_upgrade(upgrade_map["monotony_tolerance"], 4)
+    build_late.apply_in_game_upgrade(upgrade_map["chord_dmg"], 4)
+    build_late.apply_in_game_upgrade(upgrade_map["extended_chord_unlock"], 1)
+    build_late.apply_in_game_upgrade(upgrade_map["hp_boost"], 5)
+    # 应用局外升级
+    results_late = run_full_benchmark(
+        build=build_late, 
+        strategies=strategies, 
+        chord_registry=chord_registry, 
+        meta_manager=meta_manager_full
+    )
+    print_benchmark_report(results_late, "场景D: 毕业Build (满级局外+后期局内) 跑分报告")
 
     print("\n所有跑分场景执行完毕。")

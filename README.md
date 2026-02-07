@@ -1,6 +1,6 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.1 (Live Document)
+**版本：** 2.2 (Live Document)
 **最后更新：** 2026年2月7日
 
 ---
@@ -21,10 +21,13 @@ project-harmony-gdd/
 │   └── generalized_progression_v5.png
 ├── Docs/                   # 专项设计文档与技术文档
 │   ├── AestheticFatigueSystem_Documentation.md
-│   └── Numerical_Design_Documentation.md    # [v2.1] 含成长系统、扩展和弦、延迟/距离风险
-├── BalanceKit/             # [新增] 平衡性跑分系统 (v2.1)
-│   ├── Methodology.md      # 跑分系统方法论文档 (v2.1)
-│   ├── balance_scorer.py   # 核心跑分引擎（含数据定义、成长系统、策略模拟器）
+│   ├── Numerical_Design_Documentation.md    # [v2.1] 含成长系统、扩展和弦、延迟/距离风险
+│   ├── MetaProgressionSystem_Documentation.md  # [v2.2 新增] 局外成长系统"和谐殿堂"设计文档
+│   ├── Enemy_System_Design.md
+│   └── Godot_Implementation_Guide.md
+├── BalanceKit/             # 平衡性跑分系统 (v2.2)
+│   ├── Methodology.md      # 跑分系统方法论文档
+│   ├── balance_scorer.py   # 核心跑分引擎（含局外成长接口预留）
 │   ├── generate_report.py  # 可视化报告生成器
 │   └── Reports/            # 跑分输出（图表与JSON报告）
 │       ├── strategy_comparison.png
@@ -33,7 +36,7 @@ project-harmony-gdd/
 │       ├── growth_curve.png
 │       ├── chord_dissonance_power.png
 │       ├── extended_chord_penalty.png
-│       ├── delay_range_analysis.png    # v2.1新增
+│       ├── delay_range_analysis.png
 │       └── benchmark_results.json
 ├── Scripts/                # 原型代码与计算模型
 │   └── aesthetic_fatigue_system.py
@@ -44,7 +47,7 @@ project-harmony-gdd/
     ├── Project_Harmony_Proposal_v4.md
     ├── Project_Harmony_Proposal_v5.md
     ├── Numerical_Design_Documentation_v1.md
-    ├── Assessment_Report_Density_Fatigue.md  # v2.0密度疲劳评估报告
+    ├── Assessment_Report_Density_Fatigue.md
     └── Assets/             # 历史版本图表
 ```
 
@@ -62,5 +65,6 @@ project-harmony-gdd/
 8.  **肉鸽数值成长**：五大类升级（音符属性/疲劳耐受/节奏精通/和弦精通/生存强化），支持多样化Build构建。
 9.  **平衡性跑分系统**：自动化的策略评估工具，支持一键验证数值平衡性。
 10. **延迟与距离风险系统 (v2.1)**：将法术的延迟和短射程纳入风险评估，验证伤害/范围补偿的合理性。
+11. **局外成长系统 (v2.2)**：名为"和谐殿堂"的永久成长系统，包含四大模块（乐器调优/乐理研习/调式风格/声学降噪），已在跑分系统中预留架构接口。
 
-详细内容请查阅 **[GDD.md](GDD.md)** 和 **[数值设计文档](Docs/Numerical_Design_Documentation.md)**。
+详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)** 和 **[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)**。

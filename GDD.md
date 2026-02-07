@@ -190,3 +190,18 @@
 **相关文档：**
 - [听感疲劳系统文档 v2.0](Docs/AestheticFatigueSystem_Documentation.md)
 - [密度疲劳评估报告](Archive/Assessment_Report_Density_Fatigue.md)
+
+
+### 4.2. 局外成长系统：和谐殿堂 (Meta-Progression)
+
+为了提供长线的游戏目标和持续的成长感，游戏引入了名为“和谐殿堂”的局外成长系统。玩家在每局游戏结束后，可以利用收集到的“共鸣碎片”来解锁永久性的强化、新的游戏机制和不同的开局职业（调式）。
+
+该系统的设计旨在辅助而非主导玩家的成长体验，其核心目标是逐步扩展玩家的策略选择空间，并平滑化游戏前期的学习曲线。所有数值加成都被严格限制在预设的边界内，以确保局内的肉鸽体验和平衡性始终是游戏的核心。
+
+**核心模块：**
+- **乐器调优 (Instrument Tuning)**：提供基础属性的永久加成。
+- **乐理研习 (Theory Archives)**：逐步解锁更复杂的黑键修饰符与和弦类型。
+- **调式风格 (Mode Mastery)**：解锁并选择拥有独特优劣势的开局“职业”。
+- **声学降噪 (Acoustic Treatment)**：提供对“听感疲劳”系统的永久性缓解措施。
+
+详细设计请参阅 **[局外成长系统设计文档](Docs/MetaProgressionSystem_Documentation.md)**。
