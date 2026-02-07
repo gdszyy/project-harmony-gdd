@@ -229,13 +229,40 @@ func _on_beat_tick(beat_index: int) -> void:
 	_sequencer_position = pos
 	_execute_sequencer_position(pos)
 
-func _on_half_beat_tick(half_beat_index: int) -> void:
-	# 八分音符精度的手动施法时机
-	pass
-
-func _on_measure_complete(measure_index: int) -> void:
-	# 小节完成时的处理
-	pass
+	func _on_half_beat_tick(half_beat_index: int) -> void:
+		# 八分音符精度的手动施法时机
+		# 允许在八分音符对齐点手动施法，消耗手动施法槽
+		if GameManager.current_state != GameManager.GameState.PLAYING:
+			return
+		
+		# 这里可以触发手动施法槽的冷却恢复或其他逻辑
+		# 目前手动施法由玩家输入触发，这里仅作为时机标记
+		pass
+	
+	func _on_measure_complete(measure_index: int) -> void:
+		# 小节完成时的处理
+		if GameManager.current_state != GameManager.GameState.PLAYING:
+			return
+		
+		# 获取当前小节的节奏型
+		var measure_idx := measure_index % MEASURES
+		var rhythm := _measure_rhythm_patterns[measure_idx]
+		
+		# 计算小节内的休止符数量
+		var start_pos := measure_idx * BEATS_PER_MEASURE
+		var rest_count := 0
+		for i in range(BEATS_PER_MEASURE):
+			var pos := start_pos + i
+			if pos < SEQUENCER_LENGTH and sequencer[pos].get("type", "") == "rest":
+				rest_count += 1
+		
+		# 如果小节内有休止符，应用精准蓄力加成
+		# 这个加成已经在 _apply_rhythm_modifier 中处理
+		# 这里可以触发视觉/音效反馈
+		if rest_count > 0:
+			var boost: float = rest_count * 0.5
+			# 可以发出信号通知 HUD 显示蓄力加成
+			pass
 
 # ============================================================
 # 法术执行
@@ -277,20 +304,24 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		FatigueManager.current_level, 1.0
 	)
 
-	var spell_data := {
-		"type": "note",
-		"note": white_key,
-		"stats": stats,
-		"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult,
-		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
-		"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
-		"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
-		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
-		"modifier": _consume_modifier(),
-		"rhythm_pattern": rhythm,
-		"timbre": timbre,
-		"timbre_name": timbre_data.get("name", "合成器"),
-	}
+		# 获取节奏型修饰数据
+		var rhythm_data: Dictionary = MusicData.RHYTHM_MODIFIERS.get(rhythm, {})
+		
+		var spell_data := {
+			"type": "note",
+			"note": white_key,
+			"stats": stats,
+			"damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult,
+			"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
+			"duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
+			"size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
+			"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
+			"modifier": _consume_modifier(),
+			"rhythm_pattern": rhythm,
+			"rhythm_data": rhythm_data,  # 添加节奏型数据
+			"timbre": timbre,
+			"timbre_name": timbre_data.get("name", "合成器"),
+		}
 
 	# 记录疲劳事件
 	FatigueManager.record_spell({
@@ -405,10 +436,12 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		"chord_type": chord_type,
 	})
 
-	# 记录和弦进行
-	var progression := MusicTheoryEngine.record_chord(chord_type)
-	if not progression.is_empty():
-		chord_data["progression"] = progression
+		# 记录和弦进行
+		var progression := MusicTheoryEngine.record_chord(chord_type)
+		if not progression.is_empty():
+			chord_data["progression"] = progression
+			# 触发和弦进行效果
+			_trigger_progression_effect(progression)
 
 	# 播放和弦音效
 	var chord_notes_for_sound: Array = chord_result.get("notes", [])
@@ -555,6 +588,66 @@ func set_timbre(timbre: MusicData.TimbreType) -> void:
 func get_current_timbre() -> MusicData.TimbreType:
 	return _current_timbre
 
-## 获取音色系别信息
-func get_timbre_info(timbre: MusicData.TimbreType) -> Dictionary:
-	return MusicData.TIMBRE_ADSR.get(timbre, {})
+	## 获取音色系别信息
+	func get_timbre_info(timbre: MusicData.TimbreType) -> Dictionary:
+		return MusicData.TIMBRE_ADSR.get(timbre, {})
+	
+	# ============================================================
+	# 和弦进行效果 (Issue #9)
+	# ============================================================
+	
+	## 触发和弦进行效果
+	func _trigger_progression_effect(progression: Dictionary) -> void:
+		var effect_type: String = progression.get("effect", {}).get("type", "")
+		var bonus_mult: float = progression.get("bonus_multiplier", 1.0)
+		
+		if effect_type.is_empty():
+			return
+		
+		match effect_type:
+			"burst_heal_or_damage":
+				# D→T: 全屏伤害或爆发治疗
+				_apply_burst_effect(bonus_mult)
+			"empower_next":
+				# T→D: 下一个法术伤害翻倍
+				_apply_empower_buff(bonus_mult)
+			"cooldown_reduction":
+				# PD→D: 全体冷却缩减
+				_apply_cooldown_reduction(bonus_mult)
+		
+		# 播放特效音效
+		var gmm := get_node_or_null("/root/GlobalMusicManager")
+		if gmm and gmm.has_method("play_ui_sound"):
+			gmm.play_ui_sound("confirm")
+	
+	## D→T: 爆发治疗或全屏伤害
+	func _apply_burst_effect(bonus_mult: float) -> void:
+		var player_hp_percent := GameManager.player_current_hp / GameManager.player_max_hp
+		
+		if player_hp_percent < 0.5:
+			# 生命值低于50%，触发爆发治疗
+			var heal_amount := 30.0 * bonus_mult
+			GameManager.heal_player(heal_amount)
+		else:
+			# 生命值高于50%，触发全屏伤害
+			var damage := 50.0 * bonus_mult
+			# 发出信号，由 EnemySpawner 监听并对所有敌人造成伤害
+			var event_data := {
+				"type": "aoe_damage",
+				"damage": damage,
+				"radius": 999999.0,  # 全屏
+			}
+			spell_cast.emit(event_data)
+	
+	## T→D: 下一个法术伤害翻倍
+	func _apply_empower_buff(bonus_mult: float) -> void:
+		# 这里需要实现一个 buff 系统
+		# 简化实现：直接在下一次施法时应用加成
+		# 这里可以设置一个标志位
+		pass
+	
+	## PD→D: 全体冷却缩减
+	func _apply_cooldown_reduction(bonus_mult: float) -> void:
+		# 简化实现：立即恢复所有手动施法槽
+		# 实际应该缩短冷却时间
+		pass

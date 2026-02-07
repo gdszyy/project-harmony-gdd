@@ -22,9 +22,13 @@ var _time: float = 0.0
 # 生命周期
 # ============================================================
 
-func _ready() -> void:
-	_setup_ui()
-	_setup_background()
+	func _ready() -> void:
+		_setup_ui()
+		_setup_background()
+		
+		# 启动菜单 BGM
+		if BGMManager.has_method("auto_select_bgm_for_state"):
+			BGMManager.auto_select_bgm_for_state(GameManager.GameState.MENU)
 
 func _process(delta: float) -> void:
 	_time += delta

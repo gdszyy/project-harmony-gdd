@@ -277,14 +277,150 @@ func _spawn_charged(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	proj["color"] = Color(1.0, 1.0, 0.0)
 	_projectiles.append(proj)
 
-func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
-	# 扩展和弦的通用处理
-	var proj := _base_projectile(data, pos, dir)
-	proj["damage"] *= data.get("damage", 50.0) / 30.0
-	proj["size"] *= 2.0
-	proj["duration"] *= 1.5
-	proj["color"] = Color(1.0, 0.0, 0.5)
-	_projectiles.append(proj)
+	func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+		# Issue #17: 扩展和弦法术形态
+		var spell_form = data.get("spell_form", -1)
+		
+		match spell_form:
+			MusicData.SpellForm.STORM_FIELD:
+				# 属九：风暴区域 - 持续伤害的旋转风暴
+				_spawn_storm_field(data, pos)
+			MusicData.SpellForm.HOLY_DOMAIN:
+				# 大九：圣光领域 - 治疗区域 + 持续恢复
+				_spawn_holy_domain(data, pos)
+			MusicData.SpellForm.ANNIHILATION_RAY:
+				# 减九：湟灭射线 - 穿透所有敌人的射线
+				_spawn_annihilation_ray(data, pos, dir)
+			MusicData.SpellForm.TIME_RIFT:
+				# 属十一：时空裂隙 - 减速区域
+				_spawn_time_rift(data, pos)
+			MusicData.SpellForm.SYMPHONY_STORM:
+				# 属十三：交响风暴 - 多波弹幕
+				_spawn_symphony_storm(data, pos)
+			MusicData.SpellForm.FINALE:
+				# 减十三：终焉乐章 - 全屏爆发
+				_spawn_finale(data, pos)
+			_:
+				# 默认处理
+				var proj := _base_projectile(data, pos, dir)
+				proj["damage"] *= data.get("damage", 50.0) / 30.0
+				proj["size"] *= 2.0
+				proj["duration"] *= 1.5
+				proj["color"] = Color(1.0, 0.0, 0.5)
+				_projectiles.append(proj)
+	
+	## 属九：风暴区域
+	func _spawn_storm_field(data: Dictionary, pos: Vector2) -> void:
+		# 创建一个旋转的风暴区域，持续伤害
+		var field := {
+			"position": pos,
+			"velocity": Vector2.ZERO,
+			"damage": data.get("damage", 50.0) * 0.5,  # 每秒伤害
+			"size": 120.0,  # 大范围
+			"duration": 5.0,
+			"time_alive": 0.0,
+			"color": Color(0.3, 0.8, 1.0),
+			"active": true,
+			"is_field": true,
+			"field_type": "storm",
+			"rotation": 0.0,
+			"rotation_speed": 3.0,  # 弧度/秒
+		}
+		_projectiles.append(field)
+	
+	## 大九：圣光领域
+	func _spawn_holy_domain(data: Dictionary, pos: Vector2) -> void:
+		# 创建一个治疗区域
+		var domain := {
+			"position": pos,
+			"velocity": Vector2.ZERO,
+			"damage": 0.0,  # 不造成伤害
+			"heal_per_sec": 15.0,
+			"size": 100.0,
+			"duration": 6.0,
+			"time_alive": 0.0,
+			"color": Color(1.0, 0.9, 0.5),
+			"active": true,
+			"is_field": true,
+			"field_type": "heal",
+		}
+		_projectiles.append(domain)
+	
+	## 减九：湟灭射线
+	func _spawn_annihilation_ray(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+		# 创建一条穿透所有敌人的射线
+		var ray := {
+			"position": pos,
+			"velocity": dir * 1200.0,  # 极快
+			"damage": data.get("damage", 80.0),
+			"size": 16.0,
+			"duration": 0.8,
+			"time_alive": 0.0,
+			"color": Color(0.8, 0.0, 0.8),
+			"active": true,
+			"pierce": true,
+			"max_pierce": 999,  # 无限穿透
+			"pierce_count": 0,
+			"is_ray": true,
+		}
+		_projectiles.append(ray)
+	
+	## 属十一：时空裂隙
+	func _spawn_time_rift(data: Dictionary, pos: Vector2) -> void:
+		# 创建一个减速区域
+		var rift := {
+			"position": pos,
+			"velocity": Vector2.ZERO,
+			"damage": data.get("damage", 30.0) * 0.6,  # 每秒伤害
+			"size": 150.0,
+			"duration": 4.0,
+			"time_alive": 0.0,
+			"color": Color(0.5, 0.0, 1.0),
+			"active": true,
+			"is_field": true,
+			"field_type": "slow",
+			"slow_factor": 0.3,  # 减速70%
+		}
+		_projectiles.append(rift)
+	
+	## 属十三：交响风暴
+	func _spawn_symphony_storm(data: Dictionary, pos: Vector2) -> void:
+		# 发射多波弹幕
+		var wave_count := 3
+		var projectiles_per_wave := 12
+		
+		for wave in range(wave_count):
+			for i in range(projectiles_per_wave):
+				var angle := (TAU / projectiles_per_wave) * i
+				var dir := Vector2.from_angle(angle)
+				var proj := {
+					"position": pos,
+					"velocity": dir * (400.0 + wave * 100.0),
+					"damage": data.get("damage", 40.0) * 0.6,
+					"size": 20.0,
+					"duration": 2.0,
+					"time_alive": -wave * 0.3,  # 延迟发射
+					"color": Color(1.0, 0.6, 0.0),
+					"active": true,
+				}
+				_projectiles.append(proj)
+	
+	## 减十三：终焉乐章
+	func _spawn_finale(data: Dictionary, pos: Vector2) -> void:
+		# 全屏爆发效果
+		var finale := {
+			"position": pos,
+			"velocity": Vector2.ZERO,
+			"damage": data.get("damage", 200.0),
+			"size": 999999.0,  # 全屏范围
+			"duration": 0.5,
+			"time_alive": 0.0,
+			"color": Color(1.0, 0.0, 0.0),
+			"active": true,
+			"is_aoe": true,
+			"expansion_speed": 2000.0,
+		}
+		_projectiles.append(finale)
 
 func _base_projectile(data: Dictionary, pos: Vector2, dir: Vector2) -> Dictionary:
 	return {

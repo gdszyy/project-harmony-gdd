@@ -21,30 +21,37 @@ const PLAYHEAD_COLOR := Color(1.0, 1.0, 1.0, 0.8)
 const MEASURE_LINE_COLOR := Color(0.3, 0.3, 0.4, 0.5)
 const REST_COLOR := Color(0.2, 0.2, 0.25, 0.4)
 
-# ============================================================
-# 状态
-# ============================================================
-var _playhead_position: int = 0
-var _sequencer_data: Array = []
-var _beat_flash: float = 0.0
+	# ============================================================
+	# 状态
+	# ============================================================
+	var _playhead_position: int = 0
+	var _sequencer_data: Array = []
+	var _beat_flash: float = 0.0
+	var _is_dragging: bool = false
+	var _selected_note: int = MusicData.WhiteKey.C  # 当前选中的音符
+	var _edit_mode: String = "note"  # "note", "chord", "rest"
+	var _chord_notes: Array[int] = []  # 和弦构建缓冲区
 
 # ============================================================
 # 生命周期
 # ============================================================
 
-func _ready() -> void:
-	# 连接信号
-	GameManager.beat_tick.connect(_on_beat_tick)
-	SpellcraftSystem.sequencer_updated.connect(_on_sequencer_updated)
-
-	# 初始化数据
-	_sequencer_data = SpellcraftSystem.get_sequencer_data()
-
-	# 设置最小尺寸
-	custom_minimum_size = Vector2(
-		MEASURES * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + (MEASURES - 1) * MEASURE_GAP + 20,
-		CELL_SIZE.y + 40
-	)
+	func _ready() -> void:
+		# 连接信号
+		GameManager.beat_tick.connect(_on_beat_tick)
+		SpellcraftSystem.sequencer_updated.connect(_on_sequencer_updated)
+	
+		# 初始化数据
+		_sequencer_data = SpellcraftSystem.get_sequencer_data()
+	
+		# 设置最小尺寸
+		custom_minimum_size = Vector2(
+			MEASURES * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + (MEASURES - 1) * MEASURE_GAP + 20,
+			CELL_SIZE.y + 40
+		)
+		
+		# Issue #14: 启用鼠标交互
+		mouse_filter = Control.MOUSE_FILTER_STOP
 
 func _process(delta: float) -> void:
 	_beat_flash = max(0.0, _beat_flash - delta * 4.0)
@@ -138,5 +145,92 @@ func _on_beat_tick(beat_index: int) -> void:
 	_playhead_position = beat_index
 	_beat_flash = 1.0
 
-func _on_sequencer_updated(sequence: Array) -> void:
-	_sequencer_data = sequence
+	func _on_sequencer_updated(sequence: Array) -> void:
+		_sequencer_data = sequence
+	
+	# ============================================================
+	# Issue #14: 交互编辑
+	# ============================================================
+	
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton:
+			var mouse_event := event as InputEventMouseButton
+			
+			if mouse_event.button_index == MOUSE_BUTTON_LEFT:
+				if mouse_event.pressed:
+					_is_dragging = true
+					_handle_cell_click(mouse_event.position)
+				else:
+					_is_dragging = false
+			
+			elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
+				# 右键清除格子
+				_handle_cell_clear(mouse_event.position)
+		
+		elif event is InputEventMouseMotion and _is_dragging:
+			var mouse_motion := event as InputEventMouseMotion
+			_handle_cell_click(mouse_motion.position)
+	
+	func _handle_cell_click(mouse_pos: Vector2) -> void:
+		var cell_idx := _get_cell_at_position(mouse_pos)
+		if cell_idx < 0:
+			return
+		
+		match _edit_mode:
+			"note":
+				# 放置音符
+				SpellcraftSystem.set_sequencer_note(cell_idx, _selected_note)
+			"rest":
+				# 放置休止符
+				SpellcraftSystem.set_sequencer_rest(cell_idx)
+			"chord":
+				# 和弦模式：需要在小节开头
+				var measure_idx := cell_idx / BEATS_PER_MEASURE
+				if _chord_notes.size() >= 3:
+					SpellcraftSystem.set_sequencer_chord(measure_idx, _chord_notes)
+					_chord_notes.clear()
+	
+	func _handle_cell_clear(mouse_pos: Vector2) -> void:
+		var cell_idx := _get_cell_at_position(mouse_pos)
+		if cell_idx < 0:
+			return
+		
+		# 清除为休止符
+		SpellcraftSystem.set_sequencer_rest(cell_idx)
+	
+	func _get_cell_at_position(mouse_pos: Vector2) -> int:
+		var total_width := custom_minimum_size.x
+		var start_x := (size.x - total_width) / 2.0 + 10.0
+		var start_y := 20.0
+		
+		# 检查是否在单元格区域内
+		if mouse_pos.y < start_y or mouse_pos.y > start_y + CELL_SIZE.y:
+			return -1
+		
+		for measure in range(MEASURES):
+			for beat in range(BEATS_PER_MEASURE):
+				var idx := measure * BEATS_PER_MEASURE + beat
+				var cell_x := start_x + idx * (CELL_SIZE.x + CELL_MARGIN) + measure * MEASURE_GAP
+				var cell_rect := Rect2(Vector2(cell_x, start_y), CELL_SIZE)
+				
+				if cell_rect.has_point(mouse_pos):
+					return idx
+		
+		return -1
+	
+	## 设置编辑模式
+	func set_edit_mode(mode: String) -> void:
+		_edit_mode = mode
+	
+	## 设置选中的音符
+	func set_selected_note(note: int) -> void:
+		_selected_note = note
+	
+	## 添加和弦音符
+	func add_chord_note(note: int) -> void:
+		if note not in _chord_notes:
+			_chord_notes.append(note)
+	
+	## 清除和弦缓冲区
+	func clear_chord_buffer() -> void:
+		_chord_notes.clear()

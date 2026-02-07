@@ -84,12 +84,112 @@ const UPGRADE_POOL := [
 		"icon_color": Color(0.2, 0.8, 0.2),
 	},
 	{
-		"id": "dodge", "category": "survival", "rarity": "rare",
-		"name": "闪避本能", "desc": "基础闪避率 +3%",
-		"type": "dodge", "value": 0.03,
-		"icon_color": Color(0.8, 0.8, 1.0),
-	},
-]
+			"id": "dodge", "category": "survival", "rarity": "rare",
+			"name": "闪避本能", "desc": "基础闪避率 +3%",
+			"type": "dodge", "value": 0.03,
+			"icon_color": Color(0.8, 0.8, 1.0),
+		},
+		# === 音色精通 (Issue #21) ===
+		{
+			"id": "timbre_plucked", "category": "timbre_mastery", "rarity": "rare",
+			"name": "弹拨精通", "desc": "弹拨系音色伤害 +15%",
+			"type": "timbre_boost", "timbre": 1, "value": 0.15,
+			"icon_color": Color(1.0, 0.7, 0.3),
+		},
+		{
+			"id": "timbre_bowed", "category": "timbre_mastery", "rarity": "rare",
+			"name": "拉弦精通", "desc": "拉弦系音色伤害 +15%",
+			"type": "timbre_boost", "timbre": 2, "value": 0.15,
+			"icon_color": Color(0.8, 0.4, 0.6),
+		},
+		{
+			"id": "timbre_wind", "category": "timbre_mastery", "rarity": "rare",
+			"name": "吹奏精通", "desc": "吹奏系音色伤害 +15%",
+			"type": "timbre_boost", "timbre": 3, "value": 0.15,
+			"icon_color": Color(0.5, 0.8, 1.0),
+		},
+		{
+			"id": "timbre_percussive", "category": "timbre_mastery", "rarity": "rare",
+			"name": "打击精通", "desc": "打击系音色伤害 +15%",
+			"type": "timbre_boost", "timbre": 4, "value": 0.15,
+			"icon_color": Color(0.9, 0.5, 0.9),
+		},
+		{
+			"id": "timbre_switch_free", "category": "timbre_mastery", "rarity": "epic",
+			"name": "音色自如", "desc": "音色切换不再产生疲劳",
+			"type": "timbre_switch_free",
+			"icon_color": Color(1.0, 0.9, 0.5),
+		},
+		# === 节奏型精通 (Issue #21) ===
+		{
+			"id": "rhythm_even_boost", "category": "rhythm_mastery", "rarity": "rare",
+			"name": "连射精通", "desc": "连射节奏型弹体数量 +1",
+			"type": "rhythm_boost", "rhythm": 0, "value": 1,
+			"icon_color": Color(0.6, 0.8, 1.0),
+		},
+		{
+			"id": "rhythm_rest_boost", "category": "rhythm_mastery", "rarity": "rare",
+			"name": "蓄力精通", "desc": "休止符蓄力加成 +0.3/个",
+			"type": "rhythm_boost", "rhythm": 5, "value": 0.3,
+			"icon_color": Color(0.9, 0.9, 0.3),
+		},
+		{
+			"id": "rhythm_triplet_boost", "category": "rhythm_mastery", "rarity": "rare",
+			"name": "三连精通", "desc": "三连发伤害倍率 +0.2x",
+			"type": "rhythm_boost", "rhythm": 4, "value": 0.2,
+			"icon_color": Color(1.0, 0.6, 0.8),
+		},
+		# === 黑键修饰符精通 (Issue #21) ===
+		{
+			"id": "modifier_pierce", "category": "modifier_mastery", "rarity": "rare",
+			"name": "穿透精通", "desc": "穿透效果增强，穿透数 +1",
+			"type": "modifier_boost", "modifier": 0, "value": 1,
+			"icon_color": Color(1.0, 0.3, 0.3),
+		},
+		{
+			"id": "modifier_homing", "category": "modifier_mastery", "rarity": "rare",
+			"name": "追踪精通", "desc": "追踪速度 +50%",
+			"type": "modifier_boost", "modifier": 1, "value": 0.5,
+			"icon_color": Color(0.3, 1.0, 0.3),
+		},
+		{
+			"id": "modifier_split", "category": "modifier_mastery", "rarity": "rare",
+			"name": "分裂精通", "desc": "分裂弹体数量 +1",
+			"type": "modifier_boost", "modifier": 2, "value": 1,
+			"icon_color": Color(1.0, 1.0, 0.3),
+		},
+		{
+			"id": "modifier_echo", "category": "modifier_mastery", "rarity": "rare",
+			"name": "回响精通", "desc": "回响次数 +1",
+			"type": "modifier_boost", "modifier": 3, "value": 1,
+			"icon_color": Color(0.5, 0.5, 1.0),
+		},
+		{
+			"id": "modifier_scatter", "category": "modifier_mastery", "rarity": "rare",
+			"name": "散射精通", "desc": "散射角度 +30°",
+			"type": "modifier_boost", "modifier": 4, "value": 30.0,
+			"icon_color": Color(1.0, 0.5, 1.0),
+		},
+		# === 特殊升级 (Issue #21) ===
+		{
+			"id": "perfect_beat_bonus", "category": "special", "rarity": "epic",
+			"name": "完美节奏", "desc": "节拍对齐施法伤害 +25%",
+			"type": "perfect_beat_bonus", "value": 0.25,
+			"icon_color": Color(1.0, 0.9, 0.0),
+		},
+		{
+			"id": "chord_progression_boost", "category": "special", "rarity": "epic",
+			"name": "和声进行", "desc": "和弦进行效果 +50%",
+			"type": "chord_progression_boost", "value": 0.5,
+			"icon_color": Color(0.8, 0.3, 1.0),
+		},
+		{
+			"id": "multi_modifier", "category": "special", "rarity": "legendary",
+			"name": "复合修饰", "desc": "允许同时应用2个黑键修饰符",
+			"type": "multi_modifier",
+			"icon_color": Color(1.0, 0.0, 1.0),
+		},
+	]
 
 ## 稀有度颜色
 const RARITY_COLORS := {

@@ -152,22 +152,27 @@ func reset_game() -> void:
 	
 	game_state_changed.emit(current_state)
 
-func start_game() -> void:
-	current_state = GameState.PLAYING
-	game_running = true
-	game_time = 0.0
-	player_current_hp = player_max_hp
-	player_level = 1
-	player_xp = 0
-	xp_to_next_level = 50
-	session_kills = 0
-	acquired_upgrades.clear()
-	extended_chords_unlocked = false
-	_init_note_bonuses()
-	_current_beat = 0
-	_current_half_beat = 0
-	_current_measure = 0
-	game_state_changed.emit(current_state)
+	func start_game() -> void:
+		current_state = GameState.PLAYING
+		game_running = true
+		game_time = 0.0
+		player_current_hp = player_max_hp
+		player_level = 1
+		player_xp = 0
+		xp_to_next_level = 50
+		session_kills = 0
+		acquired_upgrades.clear()
+		extended_chords_unlocked = false
+		_init_note_bonuses()
+		_current_beat = 0
+		_current_half_beat = 0
+		_current_measure = 0
+		
+		# 启动 BGM
+		if BGMManager.has_method("start_bgm"):
+			BGMManager.start_bgm(current_bpm)
+		
+		game_state_changed.emit(current_state)
 
 func pause_game() -> void:
 	if current_state == GameState.PLAYING:
