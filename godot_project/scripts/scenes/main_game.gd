@@ -35,6 +35,13 @@ func _ready() -> void:
 	_setup_scene()
 	GameManager.start_game()
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause"):
+		if GameManager.current_state == GameManager.GameState.PLAYING:
+			GameManager.pause_game()
+		elif GameManager.current_state == GameManager.GameState.PAUSED:
+			GameManager.resume_game()
+
 func _process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
@@ -211,6 +218,7 @@ func _update_ground_shader() -> void:
 		var mat: ShaderMaterial = ground_sprite.material
 		mat.set_shader_parameter("time", GameManager.game_time)
 		mat.set_shader_parameter("beat_energy", GlobalMusicManager.get_beat_energy())
+		mat.set_shader_parameter("player_position", _player.global_position)
 
 		# 根据疲劳度调整网格颜色
 		var fatigue := FatigueManager.current_afi

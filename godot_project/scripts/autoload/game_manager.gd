@@ -49,6 +49,7 @@ var player_level: int = 1
 var player_xp: int = 0
 var xp_to_next_level: int = 50
 var player_dodge_chance: float = 0.0
+var session_kills: int = 0
 
 # ============================================================
 # 节拍系统
@@ -85,6 +86,7 @@ func _ready() -> void:
 	_update_beat_interval()
 	_init_note_bonuses()
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	enemy_killed.connect(func(_pos): session_kills += 1)
 
 func _process(delta: float) -> void:
 	if current_state != GameState.PLAYING:
@@ -126,6 +128,30 @@ func _update_beat_interval() -> void:
 # 游戏状态管理
 # ============================================================
 
+func reset_game() -> void:
+	current_state = GameState.MENU
+	game_running = false
+	game_time = 0.0
+	player_max_hp = 100.0
+	player_current_hp = 100.0
+	player_level = 1
+	player_xp = 0
+	xp_to_next_level = 50
+	acquired_upgrades.clear()
+	extended_chords_unlocked = false
+	current_bpm = base_bpm
+	_update_beat_interval()
+	_init_note_bonuses()
+	_current_beat = 0
+	_current_half_beat = 0
+	_current_measure = 0
+	
+	# 重置其他管理器
+	if FatigueManager.has_method("reset"):
+		FatigueManager.reset()
+	
+	game_state_changed.emit(current_state)
+
 func start_game() -> void:
 	current_state = GameState.PLAYING
 	game_running = true
@@ -134,6 +160,7 @@ func start_game() -> void:
 	player_level = 1
 	player_xp = 0
 	xp_to_next_level = 50
+	session_kills = 0
 	acquired_upgrades.clear()
 	extended_chords_unlocked = false
 	_init_note_bonuses()

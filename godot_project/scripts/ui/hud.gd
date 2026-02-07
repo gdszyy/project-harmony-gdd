@@ -44,6 +44,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_update_info_labels()
 	_update_damage_numbers(delta)
+	
+	# 从 FatigueManager 读取最新 AFI
+	_current_fatigue = FatigueManager.current_afi
 	_update_fatigue_filter()
 
 	# 建议文字淡出

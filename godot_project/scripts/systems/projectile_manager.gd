@@ -63,9 +63,17 @@ func _setup_multi_mesh() -> void:
 	multi_mesh.instance_count = 0
 	multi_mesh.visible_instance_count = 0
 
-	# 使用简单的圆形网格
-	# 在实际项目中，这里会使用自定义的 Mesh 或 QuadMesh
-	# 配合 Shader 实现发光效果
+	# 使用 QuadMesh 配合 Shader 实现发光效果
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(32, 32)
+	multi_mesh.mesh = mesh
+
+	# 应用 Shader
+	var shader := load("res://shaders/projectile_glow.gdshader")
+	if shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		_multi_mesh_instance.material = mat
 
 	_multi_mesh_instance.multimesh = multi_mesh
 

@@ -86,8 +86,9 @@ func _display_stats() -> void:
 	var stats := [
 		["Survival Time", _format_time(GameManager.game_time)],
 		["Level Reached", str(GameManager.player_level)],
-		["Total XP", str(GameManager.player_xp)],
+		["Enemies Silenced", str(GameManager.session_kills)],
 		["Max Fatigue", "%.0f%%" % (FatigueManager.current_afi * 100)],
+		["Evaluation", _get_evaluation()],
 	]
 
 	for stat in stats:
@@ -112,6 +113,14 @@ func _format_time(seconds: float) -> String:
 	var mins := int(seconds) / 60
 	var secs := int(seconds) % 60
 	return "%02d:%02d" % [mins, secs]
+
+func _get_evaluation() -> String:
+	var score := GameManager.game_time * 0.5 + GameManager.session_kills * 10.0 + GameManager.player_level * 100.0
+	if score > 2000: return "S - HARMONIC MASTER"
+	if score > 1200: return "A - RESONANCE"
+	if score > 600: return "B - MELODY"
+	if score > 300: return "C - RHYTHM"
+	return "D - NOISE"
 
 # ============================================================
 # 按钮回调
