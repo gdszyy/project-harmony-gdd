@@ -29,24 +29,36 @@ Project Harmony 的音频设计建立在一组核心的对立概念之上，这�
 
 2.  **美学契合度：** 游戏的美术风格被定义为“科幻神学 / 故障艺术 (Glitch Art)”。Techno 音乐的**机械感、合成器音色以及重复的 Loop 结构**，与游戏中“量化网格”、“程序化生成”的世界观和“信号崩溃”的视觉语言完美契合。
 
-### 2.2. 技术实现与配置
+### 2.2. 技术实现：程序化 BGM 合成引擎
 
-BGM 系统由 `BGMManager` (`bgm_manager.gd`) 全局单例负责管理，其实现要点如下：
+为了实现与游戏状态的完美同步和动态变化，BGM 系统被设计为一个**程序化的多层 Techno 合成引擎**，完全在代码中实时生成，不依赖任何外部音频文件。该引擎由 `BGMManager` (`bgm_manager.gd`) 全局单例负责管理。
 
-| 功能 | 实现方式 | 关键代码/配置 |
-|---|---|---|
-| **BGM 播放与切换** | 使用两个 `AudioStreamPlayer` (`_player_a`, `_player_b`) 实现无缝的交叉淡入淡出（Crossfade）。 | `_start_crossfade()`, `_process_crossfade()` |
-| **BPM 同步** | `BGMManager` 独立于 `GameManager` 进行节拍计时，确保 BGM 自身的节拍与游戏逻辑节拍源一致。 | `_process_bgm_beat_sync()`, `_update_beat_interval()` |
-| **场景适配** | 监听 `GameManager.game_state_changed` 信号，自动为不同游戏场景（菜单、战斗、游戏结束）选择并播放合适的 BGM。 | `_on_game_state_changed()`, `auto_select_bgm_for_state()` |
-| **暂停效果** | 游戏暂停时，为 `Music` 音频总线动态添加低通滤波器（Low-pass Filter），制造出“闷音”效果，恢复时则移除。 | `_apply_muffle_effect()` |
+#### 音轨层级 (Layers)
+
+引擎包含多个独立的音轨层，每一层都由一个专用的 `AudioStreamPlayer` 负责播放，并可以独立控制音量和开关。
+
+| 音轨层 | 声音风格 | 技术实现 | 在节奏中的作用 |
+|---|---|---|---|
+| **Kick (底鼓)** | 经典 Techno Kick | 正弦波快速频率下扫 (200Hz → 45Hz) + 指数衰减，能量集中在 20-80Hz。 | 4/4 拍核心节拍器，为游戏提供最基础、最稳定的节拍脉冲。 |
+| **Snare/Clap (军鼓/拍手)** | 808/909 风格 | 白噪音与低频正弦波混合 (Snare)，或多个延迟噪声脉冲叠加 (Clap)。 | 在第 2、4 拍提供重音，增强节奏的驱动感。 |
+| **Hi-Hat (踩镲)** | 金属质感高频噪声 | 极短的高频噪声脉冲 (Closed) 或带“嘶嘶”尾音的较长噪声 (Open)。 | 填充八分或十六分音符，提供高频律动和速度感。 |
+| **Bass (低音合成器)** | Acid/Techno Bass | 方波与正弦波混合，带有低通滤波包络，形成脉冲式的低音线。 | 创造低频旋律，填充节奏的空隙，增加音乐的深度。 |
+| **Ghost (幽灵鼓组)** | 轻微的打击乐 | 极轻的鼓面敲击 (`ghost_tap`) 或鼓边敲击 (`ghost_rim`) 音色。 | 在主节奏的空隙中添加非常细微的填充音，增加律动的“呼吸感”和复杂性。 |
+| **Pad (环境音垫)** | 数字氛围合成器 | 多个去谐的正弦波叠加，带有缓慢的颤音效果，形成循环的背景和弦。 | 提供持续的背景氛围，奠定音乐的调性基础，填充整个声场。 |
+
+#### 动态混合与调度
+
+- **主时钟：** 引擎的核心是一个以**十六分音符**为最小粒度的调度器 (`_tick_sixteenth()`)。它严格根据 `GameManager.current_bpm` 计算出的时间间隔，在正确的时间点触发每一层的采样播放。
+- **动态强度 (`set_intensity`)：** `BGMManager` 暴露了一个 `set_intensity(value: float)` 接口 (0.0 到 1.0)，用于控制音乐的“激烈程度”。强度的变化会动态地开关不同的音轨层、调整它们的音量，甚至切换更复杂的节奏型。例如：
+    - **低强度 (0.1-0.3):** 只有 Kick、Pad 和简单的 Hi-Hat，氛围感强。
+    - **中强度 (0.4-0.7):** 加入 Bass 和 Snare，节奏感和驱动力增强。
+    - **高强度 (0.8-1.0):** 开启所有层，包括 Ghost 鼓组，并切换到更密集的 Hi-Hat 和 Bass 节奏型，音乐达到高潮。
+- **节奏型切换：** 可以通过 `set_hihat_pattern()`、`set_bass_pattern()` 等函数，动态切换不同音轨的节奏模式，以适应不同的战斗场景。
 
 #### 音频总线 (Audio Bus) 关键配置
 
-为了让音乐能够驱动游戏内的视觉效果（如地面网格的脉冲），音频总线布局 (`audio_bus_layout.tres`) 进行了如下关键配置：
-
-- **`Music` 总线：** 所有 BGM 都必须输出到此总线。
-- **`AudioEffectSpectrumAnalyzer` 效果器：** 在 `Music` 总线上必须挂载此效果器。这是 `GlobalMusicManager` 脚本获取频谱数据、从而计算出节拍能量 (`beat_energy`) 的核心依赖。
-- **频率响应配置：** `global_music_manager.gd` 中已定义了低频范围 `LOW_FREQ_MIN` (20.0) 到 `LOW_FREQ_MAX` (200.0)。因此，在选择或制作 BGM 时，必须确保其 **Kick (鼓点) 的主要能量集中在 20-200Hz 区间**。这能保证 `get_beat_energy()` 函数准确地提取出节拍信号，从而驱动地面网格的发光和脉冲效果。
+- **`Music` 总线：** 所有程序化生成的音轨层都输出到此总线。
+- **`AudioEffectSpectrumAnalyzer` 效果器：** 在 `Music` 总线上挂载此效果器。由于 Kick 音轨的能量被精确控制在 20-80Hz，`GlobalMusicManager` 可以非常可靠地从频谱分析器中提取出节拍能量，用于驱动视觉效果。
 
 ---
 
@@ -89,7 +101,7 @@ BGM 系统由 `BGMManager` (`bgm_manager.gd`) 全局单例负责管理，其实�
 
 | 类别 | 风格 / 类型 | 技术关键点 | 作用 |
 |---|---|---|---|
-| **BGM** | Minimal Techno / Glitch Techno | 4/4 拍，Kick 频率 20-200Hz，输出到 `Music` 总线，由 `BGMManager` 管理。 | 作为游戏时钟，驱动场景脉冲，营造科幻与节奏感。 |
+| **BGM** | 程序化 Techno | **实时合成多层音轨** (Kick, Bass, Snare, Hi-Hat, Pad 等)，严格同步游戏 BPM，由 `BGMManager` 的十六分音符调度器驱动。 | 作为动态的游戏时钟，其强度和节奏可根据游戏状态实时变化，完美融合玩法与音乐。 |
 | **玩家音效** | 钢琴、合成器 (和弦) | 基于乐理 (大调/小调)，由 `AudioManager` 播放程序化生成的和谐乐音。 | 构建旋律，为玩家提供积极、正向的反馈。 |
 | **敌人音效** | 白噪音、Bitcrush、电流声 | 基于信号触发，由 `AudioManager` 播放程序化生成的噪音，与 BGM 不合拍。 | 制造冲突感，提供清晰的受击、死亡等负反馈。 |
 | **音频总线** | Master, Music, SFX (Enemy, Player, UI) | `Music` 总线挂载频谱分析器，`SFX` 下有子总线分类管理音量。 | 隔离音乐与音效，便于混音与效果处理。 |
