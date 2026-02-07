@@ -20,7 +20,8 @@ project-harmony-gdd/
 │   ├── chord_spell_form_v5.png
 │   └── generalized_progression_v5.png
 ├── Docs/                   # 专项设计文档与技术文档
-│   └── AestheticFatigueSystem_Documentation.md
+│   ├── AestheticFatigueSystem_Documentation.md
+│   └── Numerical_Design_Documentation.md
 ├── Scripts/                # 原型代码与计算模型
 │   └── aesthetic_fatigue_system.py
 └── Archive/                # 历史版本存档（v1-v5 迭代方案及旧图表）
