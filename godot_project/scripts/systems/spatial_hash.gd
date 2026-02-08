@@ -74,7 +74,7 @@ func insert_aabb(object: Variant, position: Vector2, radius: float) -> void:
 			cells.append(key)
 	
 	# 记录对象所在的所有单元格（用于后续查询优化）
-	var obj_id := object.get_instance_id() if object is Object else hash(object)
+	var obj_id = object.get_instance_id() if object is Object else hash(object)
 	_object_cells[obj_id] = cells
 	_total_objects += 1
 

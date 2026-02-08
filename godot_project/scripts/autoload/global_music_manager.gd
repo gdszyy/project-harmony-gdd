@@ -236,7 +236,7 @@ func play_note_sound(note: int, duration: float = 0.3,
 
 	# 通过信号通知 AudioManager 播放法术施放SFX（解耦）
 	var player_node := get_tree().get_first_node_in_group("player")
-	var pos := player_node.global_position if player_node else Vector2.ZERO
+	var pos = player_node.global_position if player_node else Vector2.ZERO
 	request_spell_sfx.emit(pos, false)
 
 ## 播放和弦音效
@@ -277,7 +277,7 @@ func play_chord_sound(notes: Array, duration: float = 0.5,
 
 	# 通过信号通知 AudioManager 播放和弦施放SFX（解耦）
 	var player_node := get_tree().get_first_node_in_group("player")
-	var pos := player_node.global_position if player_node else Vector2.ZERO
+	var pos = player_node.global_position if player_node else Vector2.ZERO
 	request_chord_sfx.emit(pos)
 
 # ============================================================

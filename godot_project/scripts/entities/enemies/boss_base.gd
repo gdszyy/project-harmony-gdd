@@ -408,7 +408,7 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	
 	# 护盾吸收
 	if _shield_active and _shield_hp > 0.0:
-		var absorbed := min(_shield_hp, final_damage)
+		var absorbed = min(_shield_hp, final_damage)
 		_shield_hp -= absorbed
 		final_damage -= absorbed
 		_shield_regen_timer = 0.0  # 重置护盾恢复计时

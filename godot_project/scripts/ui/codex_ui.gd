@@ -463,7 +463,7 @@ func _on_entry_selected(entry_id: String, is_unlocked: bool) -> void:
 		_show_locked_detail(entry_id)
 		return
 
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	if data.is_empty():
 		return
 
@@ -482,7 +482,7 @@ func _show_locked_detail(entry_id: String) -> void:
 	_detail_content.add_child(lock_label)
 
 	var hint_label := Label.new()
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	var unlock_type: int = data.get("unlock_type", CodexData.UnlockType.DEFAULT)
 	match unlock_type:
 		CodexData.UnlockType.META_UNLOCK:

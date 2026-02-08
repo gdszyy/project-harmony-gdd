@@ -317,8 +317,8 @@ func _gen_glitch_burst(duration: float, intensity: float) -> AudioStreamWAV:
 		var envelope := (1.0 - t * t) * intensity
 		# 混合多种噪声源
 		var noise := randf_range(-1.0, 1.0)
-		var square := sign(sin(t * 1200.0 + randf() * 2.0))
-		var glitch := noise * 0.6 + square * 0.4
+		var square = sign(sin(t * 1200.0 + randf() * 2.0))
+		var glitch = noise * 0.6 + square * 0.4
 		# 随机静音段 (模拟数据丢失)
 		if randf() < t * 0.3:
 			glitch = 0.0
@@ -370,7 +370,7 @@ func _gen_implosion() -> AudioStreamWAV:
 	for i in range(samples):
 		var t := float(i) / float(samples)
 		# 频率从高到低（内爆感）
-		var freq := lerp(2000.0, 30.0, t * t)
+		var freq = lerp(2000.0, 30.0, t * t)
 		var envelope := (1.0 - t) * 0.8
 		var wave := sin(t * freq * TAU / sample_rate * float(i)) * envelope
 		wave += randf_range(-0.2, 0.2) * (1.0 - t)
@@ -408,7 +408,7 @@ func _gen_feedback_explosion() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 5.0)
 		# 高频噪声 + 下扫频率
-		var freq := lerp(4000.0, 200.0, t)
+		var freq = lerp(4000.0, 200.0, t)
 		var wave := sin(t * freq * TAU / sample_rate * float(i)) * 0.4
 		wave += randf_range(-1.0, 1.0) * 0.6
 		wave *= envelope
@@ -427,7 +427,7 @@ func _gen_pulse_tick() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 20.0)
 		# 短促方波脉冲
-		var wave := sign(sin(t * 1000.0 * TAU)) * envelope * 0.5
+		var wave = sign(sin(t * 1000.0 * TAU)) * envelope * 0.5
 		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = sample & 0xFF
 		data[i * 2 + 1] = (sample >> 8) & 0xFF
@@ -464,8 +464,8 @@ func _gen_pulse_overload() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := (1.0 - t) * (1.0 - t)
 		# 快速脉冲序列加速到过载
-		var pulse_freq := lerp(200.0, 3000.0, t * t)
-		var wave := sign(sin(t * pulse_freq * TAU)) * 0.4
+		var pulse_freq = lerp(200.0, 3000.0, t * t)
+		var wave = sign(sin(t * pulse_freq * TAU)) * 0.4
 		wave += randf_range(-0.3, 0.3) * t  # 逐渐增加噪声
 		wave *= envelope
 		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
@@ -664,7 +664,7 @@ func _gen_ui_confirm() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 8.0)
 		# 上行双音
-		var freq := lerp(800.0, 1200.0, t)
+		var freq = lerp(800.0, 1200.0, t)
 		var wave := sin(t * freq * TAU) * envelope * 0.5
 		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = sample & 0xFF
@@ -681,7 +681,7 @@ func _gen_ui_cancel() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 10.0)
 		# 下行音
-		var freq := lerp(1000.0, 400.0, t)
+		var freq = lerp(1000.0, 400.0, t)
 		var wave := sin(t * freq * TAU) * envelope * 0.4
 		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = sample & 0xFF
@@ -730,7 +730,7 @@ func _gen_note_silenced() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 6.0) * 0.5
 		# 低沉下行音 + 微小噪声
-		var freq := lerp(300.0, 100.0, t)
+		var freq = lerp(300.0, 100.0, t)
 		var wave := sin(t * freq * TAU) * 0.6
 		wave += randf_range(-0.1, 0.1) * (1.0 - t)  # 轻微噪声
 		wave *= envelope
@@ -770,7 +770,7 @@ func _gen_crit_hit() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := exp(-t * 5.0) * 0.8
 		# 上行音阶 + 泡音
-		var freq := lerp(800.0, 2000.0, t * 0.5)
+		var freq = lerp(800.0, 2000.0, t * 0.5)
 		var wave := sin(t * freq * TAU) * 0.4
 		wave += sin(t * freq * 1.5 * TAU) * 0.2  # 泡音
 		wave += sin(t * freq * 2.0 * TAU) * 0.15
@@ -790,7 +790,7 @@ func _gen_rest_cleanse() -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		var envelope := sin(t * PI) * 0.5
 		# 柔和上行纯音
-		var freq := lerp(440.0, 880.0, t)
+		var freq = lerp(440.0, 880.0, t)
 		var wave := sin(t * freq * TAU) * 0.4
 		wave += sin(t * freq * 2.0 * TAU) * 0.1  # 轻微泡音
 		wave *= envelope

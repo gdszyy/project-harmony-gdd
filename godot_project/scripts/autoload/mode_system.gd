@@ -195,8 +195,8 @@ func on_dissonance_applied(dissonance: float) -> void:
 	if def.get("passive", "") != "dissonance_crit":
 		return
 
-	var crit_per := def.get("crit_per_dissonance", 0.03)
-	var cap := def.get("crit_cap", 0.30)
+	var crit_per = def.get("crit_per_dissonance", 0.03)
+	var cap = def.get("crit_cap", 0.30)
 
 	blues_crit_chance = min(blues_crit_chance + dissonance * crit_per, cap)
 	crit_from_dissonance.emit(blues_crit_chance)

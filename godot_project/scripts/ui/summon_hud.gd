@@ -108,7 +108,7 @@ func _draw() -> void:
 		
 		# 时间条
 		var max_duration := 12.0  # 基础持续时间
-		var time_ratio := clamp(time_remaining / max_duration, 0.0, 1.0)
+		var time_ratio = clamp(time_remaining / max_duration, 0.0, 1.0)
 		var bar_rect := Rect2(
 			Vector2(start_x, slot_y + SLOT_SIZE.y - 3),
 			Vector2(SLOT_SIZE.x * time_ratio, 3)

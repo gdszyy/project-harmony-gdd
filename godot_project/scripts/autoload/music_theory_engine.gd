@@ -19,26 +19,26 @@ const MAX_CHORD_HISTORY: int = 8
 # 和弦识别
 # ============================================================
 
-	## 从一组音符中识别和弦类型
-	## notes: Array[int] - MIDI音符编号或 Note 枚举值
-	## 返回: { "type": ChordType, "root": int, "quality": String } 或 null
-	## Issue #18: 黑键双重身份 - 黑键在和弦构建窗口内参与和弦类型判定
-	func identify_chord(notes: Array) -> Variant:
-		if notes.size() < 3:
-			return null
-	
-		# 将音符归一化到一个八度内 (0-11)
-		# Issue #18: 黑键也参与和弦判定，不再过滤
-		var pitch_classes: Array[int] = []
-		for n in notes:
-			var pc: int = n % 12
-			if pc not in pitch_classes:
-				pitch_classes.append(pc)
-	
-		pitch_classes.sort()
-	
-		if pitch_classes.size() < 3:
-			return null
+## 从一组音符中识别和弦类型
+## notes: Array[int] - MIDI音符编号或 Note 枚举值
+## 返回: { "type": ChordType, "root": int, "quality": String } 或 null
+## Issue #18: 黑键双重身份 - 黑键在和弦构建窗口内参与和弦类型判定
+func identify_chord(notes: Array) -> Variant:
+	if notes.size() < 3:
+		return null
+
+	# 将音符归一化到一个八度内 (0-11)
+	# Issue #18: 黑键也参与和弦判定，不再过滤
+	var pitch_classes: Array[int] = []
+	for n in notes:
+		var pc: int = n % 12
+		if pc not in pitch_classes:
+			pitch_classes.append(pc)
+
+	pitch_classes.sort()
+
+	if pitch_classes.size() < 3:
+		return null
 
 	# 尝试每个音作为根音
 	for root_idx in range(pitch_classes.size()):

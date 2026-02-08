@@ -182,7 +182,7 @@ func _update_manual_cast_indicators() -> void:
 		
 		# 检查槽位状态
 		var slot_data := SpellcraftSystem.manual_cast_slots[i] if i < SpellcraftSystem.manual_cast_slots.size() else {}
-		var is_ready := slot_data.get("type", "empty") != "empty"
+		var is_ready = slot_data.get("type", "empty") != "empty"
 		
 		# 更新颜色
 		bg.color = COLOR_MANUAL_READY if is_ready else COLOR_MANUAL_COOLDOWN

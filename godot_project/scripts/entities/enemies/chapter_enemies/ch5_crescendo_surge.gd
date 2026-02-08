@@ -99,17 +99,17 @@ func _on_enemy_process(delta: float) -> void:
 	
 	# 体积渐大
 	if _sprite:
-		var scale_mult := lerp(0.7, 1.5, t)
+		var scale_mult = lerp(0.7, 1.5, t)
 		_sprite.scale = Vector2(scale_mult, scale_mult)
 		_sprite.modulate = current_color
 		
 		# 渐强脉冲（越强越快）
-		var pulse_speed := lerp(2.0, 8.0, t)
-		var pulse := sin(Time.get_ticks_msec() * 0.001 * pulse_speed) * lerp(0.02, 0.1, t)
+		var pulse_speed = lerp(2.0, 8.0, t)
+		var pulse = sin(Time.get_ticks_msec() * 0.001 * pulse_speed) * lerp(0.02, 0.1, t)
 		_sprite.scale += Vector2(pulse, pulse)
 	
 	# 弹幕频率渐增
-	var fire_interval := lerp(3.0, 0.5, t)
+	var fire_interval = lerp(3.0, 0.5, t)
 	_projectile_timer += delta
 	if _projectile_timer >= fire_interval:
 		_projectile_timer = 0.0
@@ -125,11 +125,11 @@ func _fire_crescendo_projectile() -> void:
 	
 	var count := int(lerp(1.0, 5.0, _crescendo_progress))
 	var base_angle := (global_position.direction_to(_target.global_position)).angle()
-	var spread := lerp(0.1, 0.6, _crescendo_progress)
+	var spread = lerp(0.1, 0.6, _crescendo_progress)
 	
 	for i in range(count):
 		var t := float(i) / float(max(1, count - 1))
-		var angle := base_angle - spread / 2.0 + spread * t
+		var angle = base_angle - spread / 2.0 + spread * t
 		if count == 1:
 			angle = base_angle
 		
@@ -154,7 +154,7 @@ func _fire_crescendo_projectile() -> void:
 		proj.global_position = global_position
 		get_parent().add_child(proj)
 		
-		var vel := Vector2.from_angle(angle) * projectile_speed * lerp(0.6, 1.5, _crescendo_progress)
+		var vel = Vector2.from_angle(angle) * projectile_speed * lerp(0.6, 1.5, _crescendo_progress)
 		var tween := proj.create_tween()
 		tween.tween_property(proj, "global_position",
 			proj.global_position + vel * 3.0, 3.0)
@@ -245,7 +245,7 @@ func _calculate_movement_direction() -> Vector2:
 
 func _on_beat(_beat_index: int) -> void:
 	if _sprite:
-		var intensity := lerp(0.05, 0.2, _crescendo_progress)
+		var intensity = lerp(0.05, 0.2, _crescendo_progress)
 		var tween := create_tween()
 		tween.tween_property(_sprite, "scale",
 			_sprite.scale + Vector2(intensity, intensity), 0.05)

@@ -263,7 +263,7 @@ func _gen_snare() -> AudioStreamWAV:
 		# 正弦体 (低频共振)
 		phase += 180.0 / SAMPLE_RATE
 		var body := sin(phase * TWO_PI) * exp(-t * 25.0) * 0.45
-		var wave := clamp(noise + body, -1.0, 1.0)
+		var wave = clamp(noise + body, -1.0, 1.0)
 		var sample := int(wave * 32767.0)
 		data[i * 2] = sample & 0xFF
 		data[i * 2 + 1] = (sample >> 8) & 0xFF
@@ -281,7 +281,7 @@ func _gen_clap() -> AudioStreamWAV:
 		# 3 个微小偏移的噪声脉冲 (模拟多人拍手)
 		for j in range(3):
 			var offset := float(j) * 0.008  # 每层偏移 8ms
-			var local_t := max(0.0, t - offset)
+			var local_t = max(0.0, t - offset)
 			if local_t < CLAP_DURATION * 0.8:
 				var env := exp(-local_t * 20.0) * 0.35
 				wave += randf_range(-1.0, 1.0) * env
@@ -305,7 +305,7 @@ func _gen_hihat_closed() -> AudioStreamWAV:
 		var noise := randf_range(-1.0, 1.0) * env
 		var metal := sin(t * 6000.0 * TWO_PI) * exp(-t * 80.0) * 0.15
 		metal += sin(t * 8500.0 * TWO_PI) * exp(-t * 90.0) * 0.1
-		var wave := clamp(noise + metal, -1.0, 1.0)
+		var wave = clamp(noise + metal, -1.0, 1.0)
 		var sample := int(wave * 32767.0)
 		data[i * 2] = sample & 0xFF
 		data[i * 2 + 1] = (sample >> 8) & 0xFF
@@ -323,7 +323,7 @@ func _gen_hihat_open() -> AudioStreamWAV:
 		var noise := randf_range(-1.0, 1.0) * env
 		var metal := sin(t * 6000.0 * TWO_PI) * exp(-t * 20.0) * 0.12
 		metal += sin(t * 9000.0 * TWO_PI) * exp(-t * 25.0) * 0.08
-		var wave := clamp(noise + metal, -1.0, 1.0)
+		var wave = clamp(noise + metal, -1.0, 1.0)
 		var sample := int(wave * 32767.0)
 		data[i * 2] = sample & 0xFF
 		data[i * 2 + 1] = (sample >> 8) & 0xFF
@@ -371,7 +371,7 @@ func _gen_ghost_rim() -> AudioStreamWAV:
 ## 方波 + 正弦波混合，带低通滤波包络，经典 Acid/Techno Bass 音色
 func _gen_bass_note(freq: float) -> AudioStreamWAV:
 	# 根据当前 BPM 计算持续时间，默认半拍
-	var duration := BASS_NOTE_BEATS * (60.0 / max(_bpm, 60.0))
+	var duration = BASS_NOTE_BEATS * (60.0 / max(_bpm, 60.0))
 	duration = clamp(duration, 0.1, 0.5)
 	var samples := int(duration * SAMPLE_RATE)
 	var data := PackedByteArray()
@@ -381,13 +381,13 @@ func _gen_bass_note(freq: float) -> AudioStreamWAV:
 		var t := float(i) / float(samples)
 		phase += freq / SAMPLE_RATE
 		# 振幅包络：快速起音，中速衰减
-		var amp := min(1.0, t * 50.0) * exp(-t * 6.0) * 0.7
+		var amp = min(1.0, t * 50.0) * exp(-t * 6.0) * 0.7
 		# 方波 (基频) + 正弦波 (子低频)
-		var square := sign(sin(phase * TWO_PI)) * 0.4
+		var square = sign(sin(phase * TWO_PI)) * 0.4
 		var sine := sin(phase * TWO_PI) * 0.5
 		# 简易低通包络：高次谐波随时间衰减
 		var sub := sin(phase * 0.5 * TWO_PI) * 0.1  # 子八度
-		var wave := (square + sine + sub) * amp
+		var wave = (square + sine + sub) * amp
 		# 轻微失真
 		wave = clamp(wave * 1.2, -1.0, 1.0)
 		var sample := int(wave * 32767.0)
@@ -416,8 +416,8 @@ func _gen_pad_chord(freqs: Array) -> AudioStreamWAV:
 		var tremolo := 0.85 + 0.15 * sin(t * 0.5 * TWO_PI)
 		wave *= tremolo
 		# 淡入淡出包络 (循环友好)
-		var fade_in := min(1.0, t_norm * 10.0)
-		var fade_out := min(1.0, (1.0 - t_norm) * 10.0)
+		var fade_in = min(1.0, t_norm * 10.0)
+		var fade_out = min(1.0, (1.0 - t_norm) * 10.0)
 		wave *= fade_in * fade_out * 0.35
 		var sample := int(clamp(wave, -1.0, 1.0) * 32767.0)
 		data[i * 2] = sample & 0xFF

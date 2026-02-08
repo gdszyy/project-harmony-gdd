@@ -163,7 +163,7 @@ func _update_attraction(delta: float) -> void:
 		# 越近越快（指数加速）
 		var speed_mult := remap(dist, 0.0, attract_radius, 3.0, 1.0)
 		speed_mult = clamp(speed_mult, 1.0, 3.0)
-		var final_speed := min(attract_speed * speed_mult, max_attract_speed)
+		var final_speed = min(attract_speed * speed_mult, max_attract_speed)
 
 		global_position += dir * final_speed * delta
 

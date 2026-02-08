@@ -202,7 +202,7 @@ func _draw() -> void:
 	for i in range(TIMBRE_SECTORS.size()):
 		var sector: Dictionary = TIMBRE_SECTORS[i]
 		var is_selected := (i == _selected_sector)
-		var is_current := (sector["timbre"] == _current_timbre)
+		var is_current = (sector["timbre"] == _current_timbre)
 		var sector_color: Color = sector["color"]
 		var angle_center: float = sector["angle_center"]
 		

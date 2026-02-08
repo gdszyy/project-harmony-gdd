@@ -489,7 +489,7 @@ func _start_transition() -> void:
 	
 	# 记录过渡色彩
 	_transition_from_color = _chapter_config.get("color_theme", Color.BLACK)
-	var next_config := ChapterData.get_chapter_config(next_chapter)
+	var next_config = ChapterData.get_chapter_config(next_chapter)
 	_transition_to_color = next_config.get("color_theme", Color.WHITE)
 	
 	# 开始下一章的 BPM 过渡
@@ -577,7 +577,7 @@ func _process_bpm_transition(delta: float) -> void:
 		bpm_changed.emit(_target_bpm)
 		return
 	
-	var step := sign(diff) * bpm_transition_speed * delta
+	var step = sign(diff) * bpm_transition_speed * delta
 	GameManager.current_bpm += step
 	GameManager._update_beat_interval()
 
@@ -625,7 +625,7 @@ func advance_chapter_wave() -> void:
 	_chapter_wave += 1
 	
 	# 获取当前波次模板
-	var template := ChapterData.get_wave_template(_current_chapter, _chapter_wave)
+	var template = ChapterData.get_wave_template(_current_chapter, _chapter_wave)
 	var wave_type: String = template.get("type", "normal")
 	
 	wave_started_in_chapter.emit(_current_chapter, _chapter_wave, wave_type)

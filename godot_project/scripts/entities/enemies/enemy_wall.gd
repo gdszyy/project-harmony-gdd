@@ -119,7 +119,7 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 
 	# 护盾吸收
 	if _is_shield_active and _current_shield > 0.0:
-		var shield_absorb := min(_current_shield, final_damage)
+		var shield_absorb = min(_current_shield, final_damage)
 		_current_shield -= shield_absorb
 		final_damage -= shield_absorb
 		_shield_regen_timer = shield_regen_delay

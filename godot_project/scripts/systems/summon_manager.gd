@@ -159,7 +159,7 @@ func create_summon(chord_data: Dictionary) -> void:
 	var base_damage: float = chord_data.get("damage", 15.0)
 	
 	# 计算持续时间（受音色和疲劳影响）
-	var duration := BASE_DURATION * config.get("duration_mult", 1.0)
+	var duration = BASE_DURATION * config.get("duration_mult", 1.0)
 	
 	var summon := {
 		"id": _next_summon_id,
@@ -197,13 +197,13 @@ func _determine_summon_type(chord_data: Dictionary) -> SummonType:
 	var timbre = chord_data.get("timbre", MusicData.TimbreType.NONE)
 	
 	match timbre:
-		MusicData.TimbreType.PLUCK:
+		MusicData.TimbreType.PLUCKED:
 			return SummonType.ACCOMPANIMENT
-		MusicData.TimbreType.BOW:
+		MusicData.TimbreType.BOWED:
 			return SummonType.RESONANCE
-		MusicData.TimbreType.BLOW:
+		MusicData.TimbreType.WIND:
 			return SummonType.INTERFERENCE
-		MusicData.TimbreType.STRIKE:
+		MusicData.TimbreType.PERCUSSIVE:
 			return SummonType.RHYTHM
 		_:
 			# 默认伴奏声部
@@ -332,7 +332,7 @@ func _update_accompaniment(summon: Dictionary, delta: float) -> void:
 	# 轨道运动
 	summon["orbit_angle"] += delta * 1.5
 	var orbit_target := player_pos + Vector2.from_angle(summon["orbit_angle"]) * follow_dist
-	var to_target := orbit_target - summon["position"]
+	var to_target = orbit_target - summon["position"]
 	if to_target.length() > 5.0:
 		summon["position"] += to_target.normalized() * follow_speed * delta
 	
@@ -357,7 +357,7 @@ func _summon_auto_attack(summon: Dictionary) -> void:
 	if nearest == Vector2.INF:
 		return
 	
-	var dir := (nearest - summon["position"]).normalized()
+	var dir = (nearest - summon["position"]).normalized()
 	
 	# 创建攻击弹体（通过 ProjectileManager 的数据格式）
 	var proj_mgr := get_node_or_null("/root/ProjectileManager")
@@ -406,8 +406,8 @@ func _update_interference(summon: Dictionary, delta: float) -> void:
 	summon["patrol_angle"] += delta * 0.8
 	var player_pos := _get_player_position()
 	summon["patrol_center"] = summon["patrol_center"].lerp(player_pos, delta * 0.5)
-	var patrol_target := summon["patrol_center"] + Vector2.from_angle(summon["patrol_angle"]) * patrol_radius
-	var to_target := patrol_target - summon["position"]
+	var patrol_target = summon["patrol_center"] + Vector2.from_angle(summon["patrol_angle"]) * patrol_radius
+	var to_target = patrol_target - summon["position"]
 	if to_target.length() > 5.0:
 		summon["position"] += to_target.normalized() * patrol_speed * delta
 	
@@ -416,7 +416,7 @@ func _update_interference(summon: Dictionary, delta: float) -> void:
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
 			continue
-		var dist := summon["position"].distance_to(enemy.global_position)
+		var dist = summon["position"].distance_to(enemy.global_position)
 		if dist < slow_radius:
 			# 减速效果
 			if enemy.has_method("apply_stun"):
@@ -444,7 +444,7 @@ func _update_rhythm(summon: Dictionary, delta: float) -> void:
 	
 	summon["orbit_angle"] += delta * 2.0
 	var orbit_target := player_pos + Vector2.from_angle(summon["orbit_angle"]) * follow_dist
-	var to_target := orbit_target - summon["position"]
+	var to_target = orbit_target - summon["position"]
 	if to_target.length() > 5.0:
 		summon["position"] += to_target.normalized() * follow_speed * delta
 
@@ -474,7 +474,7 @@ func _rhythm_pulse(summon: Dictionary) -> void:
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
 			continue
-		var dist := summon["position"].distance_to(enemy.global_position)
+		var dist = summon["position"].distance_to(enemy.global_position)
 		if dist < pulse_radius:
 			if enemy.has_method("take_damage"):
 				enemy.take_damage(pulse_damage)
@@ -565,9 +565,9 @@ func _update_summon_visual(summon: Dictionary, delta: float) -> void:
 	visual.scale = Vector2(scale_val, scale_val)
 	
 	# 淡出（接近过期时）
-	var remaining := summon["duration"] - summon["time_alive"]
+	var remaining = summon["duration"] - summon["time_alive"]
 	if remaining < 2.0:
-		var alpha := remaining / 2.0
+		var alpha = remaining / 2.0
 		visual.modulate.a = alpha
 		# 闪烁
 		if remaining < 1.0 and fmod(remaining, 0.2) < 0.1:

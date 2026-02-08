@@ -89,9 +89,9 @@ func _load_codex_data() -> void:
 ## 解锁所有默认条目
 func _unlock_default_entries() -> void:
 	for volume in CodexData.Volume.values():
-		var entries := CodexData.get_volume_entries(volume)
+		var entries = CodexData.get_volume_entries(volume)
 		for entry_id in entries:
-			var data := CodexData.find_entry(entry_id)
+			var data = CodexData.find_entry(entry_id)
 			if data.is_empty():
 				continue
 			if data.get("unlock_type", CodexData.UnlockType.DEFAULT) == CodexData.UnlockType.DEFAULT:
@@ -120,7 +120,7 @@ func unlock_entry(entry_id: String) -> bool:
 	if is_unlocked(entry_id):
 		return false
 
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	if data.is_empty():
 		push_warning("CodexManager: Unknown entry '%s'" % entry_id)
 		return false
@@ -141,8 +141,8 @@ func _unlock_entry_internal(entry_id: String, emit_signal: bool) -> void:
 
 	# 触发信号
 	if emit_signal:
-		var data := CodexData.find_entry(entry_id)
-		var volume := _get_entry_volume(entry_id)
+		var data = CodexData.find_entry(entry_id)
+		var volume = _get_entry_volume(entry_id)
 		var entry_name: String = data.get("name", entry_id)
 		entry_unlocked.emit(entry_id, entry_name, volume)
 
@@ -157,7 +157,7 @@ func is_unlocked(entry_id: String) -> bool:
 ## 批量解锁（用于调试或测试场）
 func unlock_all() -> void:
 	for volume in CodexData.Volume.values():
-		var entries := CodexData.get_volume_entries(volume)
+		var entries = CodexData.get_volume_entries(volume)
 		for entry_id in entries:
 			_unlock_entry_internal(entry_id, false)
 	_cache_dirty = true
@@ -184,7 +184,7 @@ func record_kill(enemy_key: String) -> void:
 	# 检查是否触发条目解锁（首次遭遇）
 	var codex_key := "enemy_" + enemy_key
 	if not is_unlocked(codex_key):
-		var data := CodexData.find_entry(codex_key)
+		var data = CodexData.find_entry(codex_key)
 		if not data.is_empty() and data.get("unlock_type") == CodexData.UnlockType.ENCOUNTER:
 			unlock_entry(codex_key)
 
@@ -192,7 +192,7 @@ func record_kill(enemy_key: String) -> void:
 	for prefix in ["ch1_", "ch2_", "ch3_", "ch4_", "ch5_"]:
 		if enemy_key.begins_with(prefix):
 			if not is_unlocked(enemy_key):
-				var data := CodexData.find_entry(enemy_key)
+				var data = CodexData.find_entry(enemy_key)
 				if not data.is_empty():
 					unlock_entry(enemy_key)
 
@@ -208,7 +208,7 @@ func get_kill_count(enemy_key: String) -> int:
 
 ## 检查击杀里程碑
 func _check_kill_milestones(entry_id: String, current_kills: int) -> void:
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	if data.is_empty():
 		return
 
@@ -227,7 +227,7 @@ func _check_kill_milestones(entry_id: String, current_kills: int) -> void:
 
 ## 获取敌人条目的里程碑进度
 func get_milestone_progress(entry_id: String) -> Dictionary:
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	if data.is_empty():
 		return {}
 
@@ -275,7 +275,7 @@ func get_total_completion() -> Dictionary:
 func _rebuild_completion_cache() -> void:
 	_completion_cache.clear()
 	for volume in CodexData.Volume.values():
-		var entries := CodexData.get_volume_entries(volume)
+		var entries = CodexData.get_volume_entries(volume)
 		var unlocked_count := 0
 		for entry_id in entries:
 			if is_unlocked(entry_id):
@@ -402,7 +402,7 @@ func _save_all() -> void:
 ## 获取条目所属的卷
 func _get_entry_volume(entry_id: String) -> CodexData.Volume:
 	for volume in CodexData.Volume.values():
-		var entries := CodexData.get_volume_entries(volume)
+		var entries = CodexData.get_volume_entries(volume)
 		if entry_id in entries:
 			return volume
 	return CodexData.Volume.MUSIC_THEORY  # 默认
@@ -410,12 +410,12 @@ func _get_entry_volume(entry_id: String) -> CodexData.Volume:
 ## 获取指定卷中所有已解锁条目的数据列表
 func get_unlocked_entries_for_volume(volume: CodexData.Volume) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var entries := CodexData.get_volume_entries(volume)
+	var entries = CodexData.get_volume_entries(volume)
 	for entry_id in entries:
-		var data := CodexData.find_entry(entry_id)
+		var data = CodexData.find_entry(entry_id)
 		if data.is_empty():
 			continue
-		var entry_info := data.duplicate()
+		var entry_info = data.duplicate()
 		entry_info["id"] = entry_id
 		entry_info["is_unlocked"] = is_unlocked(entry_id)
 		result.append(entry_info)

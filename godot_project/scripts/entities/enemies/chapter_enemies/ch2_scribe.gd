@@ -80,7 +80,7 @@ func _on_enemy_process(delta: float) -> void:
 func _spawn_trail_segment() -> void:
 	# 限制最大轨迹数
 	if _trail_segments.size() >= max_trail_segments:
-		var oldest := _trail_segments.pop_front()
+		var oldest = _trail_segments.pop_front()
 		if is_instance_valid(oldest.get("visual")):
 			oldest["visual"].queue_free()
 	
@@ -125,7 +125,7 @@ func _update_trails(delta: float) -> void:
 		if seg["lifetime"] <= 0.0:
 			to_remove.append(i)
 			if is_instance_valid(seg.get("visual")):
-				var tween := seg["visual"].create_tween()
+				var tween = seg["visual"].create_tween()
 				tween.tween_property(seg["visual"], "modulate:a", 0.0, 0.3)
 				tween.tween_callback(seg["visual"].queue_free)
 			continue

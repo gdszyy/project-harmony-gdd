@@ -90,7 +90,7 @@ const VOL1_NOTES: Dictionary = {
 	"note_f": {
 		"name": "F — 静谧之音",
 		"subtitle": "区域控制",
-		"description": "极端的持续时间（DUR 5）和大范围（SIZE 4），但飞行速度极低（SPD 1）。F 音符的弹体几乎停留在原地，形成一个持久的伤害区域，是"地雷"式战术的核心。",
+		"description": "极端的持续时间（DUR 5）和大范围（SIZE 4），但飞行速度极低（SPD 1）。F 音符的弹体几乎停留在原地，形成一个持久的伤害区域，是\"地雷\"式战术的核心。",
 		"stats": { "dmg": 2, "spd": 1, "dur": 5, "size": 4 },
 		"color": Color(0.6, 0.2, 0.8),
 		"rarity": Rarity.COMMON,
@@ -277,7 +277,7 @@ const VOL1_EXTENDED_CHORDS: Dictionary = {
 	"chord_diminished_13": {
 		"name": "减十三和弦",
 		"subtitle": "终焉乐章",
-		"description": "七音和弦，触发「终焉乐章」法术形态：消耗大量疲劳度，释放毁灭性的全屏攻击。伤害倍率为所有法术之最（5.0x），但疲劳代价极其沉重（0.60）。这是真正的"终极奥义"。",
+		"description": "七音和弦，触发「终焉乐章」法术形态：消耗大量疲劳度，释放毁灭性的全屏攻击。伤害倍率为所有法术之最（5.0x），但疲劳代价极其沉重（0.60）。这是真正的\"终极奥义\"。",
 		"intervals": [0, 3, 6, 9, 13, 16, 21],
 		"spell_form": "终焉乐章",
 		"dissonance": 9.5,
@@ -526,7 +526,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 	"ch1_grid_static": {
 		"name": "网格底噪",
 		"subtitle": "第一章 · 数之和谐",
-		"description": "毕达哥拉斯时代的特色敌人。与普通底噪不同，网格底噪会按照数学网格阵列排列移动，形成整齐的几何图案。它们代表了毕达哥拉斯对"数即万物"的信仰。",
+		"description": "毕达哥拉斯时代的特色敌人。与普通底噪不同，网格底噪会按照数学网格阵列排列移动，形成整齐的几何图案。它们代表了毕达哥拉斯对\"数即万物\"的信仰。",
 		"chapter": 1,
 		"rarity": Rarity.UNCOMMON,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -542,7 +542,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 	"ch2_scribe": {
 		"name": "抄谱员",
 		"subtitle": "第二章 · 圣咏之光",
-		"description": "圭多时代的特色敌人。手持羽毛笔的幽灵抄写员，会在战场上书写"纽姆谱"符号，这些符号会变成伤害区域。代表了中世纪音乐记谱法的诞生。",
+		"description": "圭多时代的特色敌人。手持羽毛笔的幽灵抄写员，会在战场上书写\"纽姆谱\"符号，这些符号会变成伤害区域。代表了中世纪音乐记谱法的诞生。",
 		"chapter": 2,
 		"rarity": Rarity.UNCOMMON,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -582,7 +582,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 	"ch5_fate_knocker": {
 		"name": "命运叩门者",
 		"subtitle": "第五章 · 狂想曲",
-		"description": "贝多芬时代的特色敌人。以贝多芬第五交响曲的"命运动机"（短短短长）为攻击节奏的敌人。每四拍为一个攻击周期：前三拍快速冲刺，第四拍释放重击。",
+		"description": "贝多芬时代的特色敌人。以贝多芬第五交响曲的\"命运动机\"（短短短长）为攻击节奏的敌人。每四拍为一个攻击周期：前三拍快速冲刺，第四拍释放重击。",
 		"chapter": 5,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -593,7 +593,7 @@ const VOL3_ELITES: Dictionary = {
 	"ch1_harmony_guardian": {
 		"name": "和谐守卫",
 		"subtitle": "第一章精英",
-		"description": "毕达哥拉斯的忠实守护者。拥有一个"和谐护盾"，只有使用特定音程（纯八度、纯五度、纯四度）的和弦攻击才能有效破盾。代表了毕达哥拉斯学派对"和谐比例"的崇拜。",
+		"description": "毕达哥拉斯的忠实守护者。拥有一个\"和谐护盾\"，只有使用特定音程（纯八度、纯五度、纯四度）的和弦攻击才能有效破盾。代表了毕达哥拉斯学派对\"和谐比例\"的崇拜。",
 		"chapter": 1,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -601,7 +601,7 @@ const VOL3_ELITES: Dictionary = {
 	"ch1_frequency_sentinel": {
 		"name": "频率哨兵",
 		"subtitle": "第一章精英",
-		"description": "守护特定频率的哨兵。会在战场上生成"共振区域"，玩家在区域内使用与其频率匹配的音符可获得增伤，使用不匹配的音符则受到惩罚。",
+		"description": "守护特定频率的哨兵。会在战场上生成\"共振区域\"，玩家在区域内使用与其频率匹配的音符可获得增伤，使用不匹配的音符则受到惩罚。",
 		"chapter": 1,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -617,7 +617,7 @@ const VOL3_ELITES: Dictionary = {
 	"ch3_fugue_weaver": {
 		"name": "赋格织者",
 		"subtitle": "第三章精英",
-		"description": "巴赫赋格艺术的具象化。会创造自身的"镜像分身"，分身的行为模式与本体形成赋格般的对位关系。只有同时击杀本体和分身才能真正消灭它。",
+		"description": "巴赫赋格艺术的具象化。会创造自身的\"镜像分身\"，分身的行为模式与本体形成赋格般的对位关系。只有同时击杀本体和分身才能真正消灭它。",
 		"chapter": 3,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -625,7 +625,7 @@ const VOL3_ELITES: Dictionary = {
 	"ch4_court_kapellmeister": {
 		"name": "宫廷乐长",
 		"subtitle": "第四章精英",
-		"description": "莫扎特时代的宫廷乐队指挥。能够"指挥"战场上的敌人按照古典奏鸣曲式（呈示部-发展部-再现部）进行攻击模式的切换，使敌人的行为更加有组织和致命。",
+		"description": "莫扎特时代的宫廷乐队指挥。能够\"指挥\"战场上的敌人按照古典奏鸣曲式（呈示部-发展部-再现部）进行攻击模式的切换，使敌人的行为更加有组织和致命。",
 		"chapter": 4,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -633,7 +633,7 @@ const VOL3_ELITES: Dictionary = {
 	"ch5_symphony_commander": {
 		"name": "交响指挥",
 		"subtitle": "第五章精英",
-		"description": "贝多芬交响乐的具象化。拥有四个"乐章"阶段，每个阶段对应不同的攻击模式和弱点。是所有精英中最复杂、最具挑战性的存在。",
+		"description": "贝多芬交响乐的具象化。拥有四个\"乐章\"阶段，每个阶段对应不同的攻击模式和弱点。是所有精英中最复杂、最具挑战性的存在。",
 		"chapter": 5,
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
@@ -644,7 +644,7 @@ const VOL3_BOSSES: Dictionary = {
 	"boss_pythagoras": {
 		"name": "律动尊者 · 毕达哥拉斯",
 		"subtitle": "The First Resonator",
-		"description": "第一章最终 Boss。宇宙初始和谐的具象化，一个位于场景中心、由多层旋转光环构成的巨大几何体。它本身不进行移动，代表着一种绝对的、静态的完美。\n\n时代特征「绝对频率」：通过震动战场生成克拉尼图形，线条为致命伤害区域，玩家必须站在"节点"安全区。\n\n三阶段：序曲 → 共鸣 → 天体乐章",
+		"description": "第一章最终 Boss。宇宙初始和谐的具象化，一个位于场景中心、由多层旋转光环构成的巨大几何体。它本身不进行移动，代表着一种绝对的、静态的完美。\n\n时代特征「绝对频率」：通过震动战场生成克拉尼图形，线条为致命伤害区域，玩家必须站在\"节点\"安全区。\n\n三阶段：序曲 → 共鸣 → 天体乐章",
 		"chapter": 1,
 		"hp": 3000,
 		"phases": ["序曲 (Prelude)", "共鸣 (Resonance)", "天体乐章 (Musica Universalis)"],
@@ -755,7 +755,7 @@ const VOL4_PROGRESSIONS: Dictionary = {
 	"prog_t_to_d": {
 		"name": "主→属 蓄力 (T→D)",
 		"subtitle": "下一法术伤害翻倍",
-		"description": "从稳定到紧张的和弦进行。当玩家从主功能和弦过渡到属功能和弦时触发。\n\n效果：下一个施放的法术伤害翻倍（2.0x 倍率）。适合在施放高伤害法术前进行"蓄力"。",
+		"description": "从稳定到紧张的和弦进行。当玩家从主功能和弦过渡到属功能和弦时触发。\n\n效果：下一个施放的法术伤害翻倍（2.0x 倍率）。适合在施放高伤害法术前进行\"蓄力\"。",
 		"from": "主功能 (T)",
 		"to": "属功能 (D)",
 		"rarity": Rarity.RARE,

@@ -84,7 +84,7 @@ func _process(delta: float) -> void:
 # ============================================================
 
 func _on_entry_unlocked(entry_id: String, entry_name: String, volume: int) -> void:
-	var data := CodexData.find_entry(entry_id)
+	var data = CodexData.find_entry(entry_id)
 	var rarity: int = data.get("rarity", CodexData.Rarity.COMMON)
 	_queue.append({
 		"name": entry_name,

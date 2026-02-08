@@ -340,8 +340,8 @@ func _update_emotion_visual(_delta: float) -> void:
 			emotion_color = Color(1.0, 0.85, 0.2)
 	
 	# 力度影响体积和颜色强度
-	var dynamic_scale := lerp(0.9, 1.3, _current_dynamic)
-	var dynamic_brightness := lerp(0.6, 1.2, _current_dynamic)
+	var dynamic_scale = lerp(0.9, 1.3, _current_dynamic)
+	var dynamic_brightness = lerp(0.6, 1.2, _current_dynamic)
 	
 	if not _is_charging:
 		_sprite.scale = _sprite.scale.lerp(Vector2(dynamic_scale, dynamic_scale), 0.1)
@@ -482,16 +482,16 @@ func _attack_crescendo_barrage(attack: Dictionary, mult: float) -> void:
 				return
 			var progress := float(w) / float(waves)
 			var count := int(lerp(4.0, 12.0, progress))
-			var speed := lerp(100.0, 250.0, progress)
-			var damage := attack.get("damage", 15.0) * mult * lerp(0.5, 1.5, progress)
+			var speed = lerp(100.0, 250.0, progress)
+			var damage = attack.get("damage", 15.0) * mult * lerp(0.5, 1.5, progress)
 			
 			if _target and is_instance_valid(_target):
 				var base_angle := global_position.direction_to(_target.global_position).angle()
-				var spread := lerp(0.3, 0.8, progress)
+				var spread = lerp(0.3, 0.8, progress)
 				
 				for i in range(count):
 					var t := float(i) / float(max(1, count - 1))
-					var angle := base_angle - spread / 2.0 + spread * t
+					var angle = base_angle - spread / 2.0 + spread * t
 					if count == 1:
 						angle = base_angle
 					_spawn_boss_projectile(global_position, angle, speed, damage)

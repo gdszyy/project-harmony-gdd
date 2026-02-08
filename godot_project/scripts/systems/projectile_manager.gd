@@ -508,10 +508,10 @@ func _update_projectiles(delta: float) -> void:
 		if proj.get("homing", false):
 			var nearest_enemy := _find_nearest_enemy(proj["position"])
 			if nearest_enemy != Vector2.INF:
-				var to_enemy := (nearest_enemy - proj["position"]).normalized()
-				var current_dir := proj["velocity"].normalized()
+				var to_enemy = (nearest_enemy - proj["position"]).normalized()
+				var current_dir = proj["velocity"].normalized()
 				var homing_strength: float = proj.get("homing_strength", 5.0)
-				var new_dir := current_dir.lerp(to_enemy, homing_strength * delta).normalized()
+				var new_dir = current_dir.lerp(to_enemy, homing_strength * delta).normalized()
 				proj["velocity"] = new_dir * proj["velocity"].length()
 
 		# 摇摆弹道 (SWING S型轨迹)
@@ -519,11 +519,11 @@ func _update_projectiles(delta: float) -> void:
 			# 正弦波横向偏移：频率随时间递减（S型收敛），振幅受弹体速度影响
 			var wave_freq: float = proj.get("wave_freq", 8.0)
 			var wave_amp: float = proj.get("wave_amp", 80.0)
-			var t := proj["time_alive"]
+			var t = proj["time_alive"]
 			# S型轨迹：频率随时间略微递减，振幅随时间衰减
 			var decay := exp(-t * 0.5)  # 缓慢衰减
 			var current_offset := sin(t * wave_freq) * wave_amp * decay * delta
-			var perp := proj["velocity"].normalized().rotated(PI / 2.0)
+			var perp = proj["velocity"].normalized().rotated(PI / 2.0)
 			proj["position"] += perp * current_offset
 			# 记录拖尾位置
 			if proj.has("trail_positions"):
@@ -539,7 +539,7 @@ func _update_projectiles(delta: float) -> void:
 				_summon_attack(proj)
 			# 召唤物跟随玩家
 			var player_pos := _get_player_position()
-			var to_player := (player_pos - proj["position"])
+			var to_player = (player_pos - proj["position"])
 			if to_player.length() > 80.0:
 				proj["position"] += to_player.normalized() * 100.0 * delta
 
@@ -598,7 +598,7 @@ func _summon_attack(summon_proj: Dictionary) -> void:
 	if nearest == Vector2.INF:
 		return
 
-	var dir := (nearest - summon_proj["position"]).normalized()
+	var dir = (nearest - summon_proj["position"]).normalized()
 	var attack := {
 		"position": summon_proj["position"],
 		"velocity": dir * 500.0,
@@ -690,7 +690,7 @@ func _apply_modifier(proj: Dictionary, spell_data: Dictionary = {}) -> void:
 			proj["size"] *= 0.6
 			# 生成额外散射弹体
 			for i in range(4):
-				var angle := proj["velocity"].angle() + randf_range(-0.5, 0.5)
+				var angle = proj["velocity"].angle() + randf_range(-0.5, 0.5)
 				var scatter_proj := proj.duplicate()
 				scatter_proj["velocity"] = Vector2.from_angle(angle) * proj["velocity"].length()
 				scatter_proj["modifier"] = -1
@@ -779,7 +779,7 @@ func _check_collisions_bruteforce(enemies: Array) -> Array[Dictionary]:
 			continue
 
 		for enemy in enemies:
-			var dist := proj["position"].distance_to(enemy["position"])
+			var dist = proj["position"].distance_to(enemy["position"])
 			if dist < proj["size"] + enemy.get("radius", 16.0):
 				var hit_data := {
 					"projectile": proj,
@@ -886,7 +886,7 @@ func _update_render() -> void:
 				trail_t = trail_t.scaled(Vector2(trail_scale, trail_scale))
 				trail_t.origin = trail[ti]
 				mm.set_instance_transform_2d(idx, trail_t)
-				var trail_color := proj["color"]
+				var trail_color = proj["color"]
 				trail_color.a = trail_alpha
 				mm.set_instance_color(idx, trail_color)
 				idx += 1

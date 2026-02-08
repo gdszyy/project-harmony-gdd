@@ -285,14 +285,14 @@ func _break_tail_segment() -> void:
 	if _segments.is_empty():
 		return
 	
-	var tail := _segments.pop_back()
+	var tail = _segments.pop_back()
 	if not is_instance_valid(tail["node"]):
 		return
 	
 	var tail_pos: Vector2 = tail["position"]
 	
 	# 断裂视觉
-	var tween := tail["node"].create_tween()
+	var tween = tail["node"].create_tween()
 	tween.tween_property(tail["node"], "modulate", Color.WHITE, 0.1)
 	tween.tween_property(tail["node"], "modulate:a", 0.0, 0.3)
 	tween.tween_callback(tail["node"].queue_free)
@@ -351,7 +351,7 @@ func _on_beat(_beat_index: int) -> void:
 	# 节拍时所有段闪烁
 	for seg in _segments:
 		if is_instance_valid(seg["node"]):
-			var tween := seg["node"].create_tween()
+			var tween = seg["node"].create_tween()
 			tween.tween_property(seg["node"], "modulate", Color.WHITE, 0.05)
 			tween.tween_property(seg["node"], "modulate", seg["color"], 0.1)
 

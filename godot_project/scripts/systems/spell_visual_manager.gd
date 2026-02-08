@@ -707,9 +707,9 @@ func _update_effects(delta: float) -> void:
 					node.rotation += effect["rotation_speed"] * delta
 		
 		# 淡出（最后1秒）
-		var remaining := effect["duration"] - effect["time_alive"]
+		var remaining = effect["duration"] - effect["time_alive"]
 		if remaining < 1.0:
-			var alpha := remaining
+			var alpha = remaining
 			for node in effect.get("nodes", []):
 				if is_instance_valid(node):
 					node.modulate.a = alpha

@@ -290,7 +290,7 @@ func is_note_silenced(note) -> bool:
 	if _silenced_notes.has(note):
 		return GameManager.game_time < _silenced_notes[note]
 	# 也检查从 int 转换的 WhiteKey
-	var white_key := _note_int_to_white_key(note) if note is int and note > 6 else note
+	var white_key = _note_int_to_white_key(note) if note is int and note > 6 else note
 	if white_key >= 0 and _silenced_notes.has(white_key):
 		return GameManager.game_time < _silenced_notes[white_key]
 	return false
@@ -332,7 +332,7 @@ func _update_density_overload() -> void:
 	# BPM 相关的动态阈值
 	var beat_rate := GameManager.current_bpm / 60.0
 	var dynamic_threshold := int(beat_rate * DENSITY_OVERLOAD_WINDOW * 1.2)
-	var effective_threshold := max(DENSITY_OVERLOAD_THRESHOLD, dynamic_threshold)
+	var effective_threshold = max(DENSITY_OVERLOAD_THRESHOLD, dynamic_threshold)
 
 	# 应用密度抗性
 	effective_threshold = int(float(effective_threshold) * (1.0 + _density_resistance))
@@ -457,7 +457,7 @@ func _calc_transition_fatigue(events: Array) -> float:
 
 	var trans_entropy := 0.0
 	for key in transitions:
-		var parts := key.split("_")
+		var parts = key.split("_")
 		var from_note := int(parts[0])
 		if from_counts.get(from_note, 0.0) > 0.0:
 			var p: float = transitions[key] / from_counts[from_note]

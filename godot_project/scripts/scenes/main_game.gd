@@ -173,10 +173,10 @@ func _check_collisions() -> void:
 		return
 
 	# 获取敌人碰撞数据
-	var enemy_data := _enemy_spawner.get_enemy_collision_data()
+	var enemy_data = _enemy_spawner.get_enemy_collision_data()
 
 	# 检测弹体-敌人碰撞
-	var hits := _projectile_manager.check_collisions(enemy_data)
+	var hits = _projectile_manager.check_collisions(enemy_data)
 
 	# 处理命中
 	for hit in hits:

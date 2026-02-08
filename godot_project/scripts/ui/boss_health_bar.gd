@@ -261,7 +261,7 @@ func _update_visuals() -> void:
 	_hp_bar_fill.size.x = BAR_WIDTH * _displayed_hp_ratio
 	
 	# 延迟伤害条（比实际 HP 慢）
-	var damage_ratio := lerp(float(_hp_bar_damage.size.x / BAR_WIDTH), _displayed_hp_ratio, 0.02)
+	var damage_ratio = lerp(float(_hp_bar_damage.size.x / BAR_WIDTH), _displayed_hp_ratio, 0.02)
 	_hp_bar_damage.size.x = BAR_WIDTH * max(damage_ratio, _displayed_hp_ratio)
 	
 	# HP 颜色（低 HP 时变红）

@@ -291,7 +291,7 @@ func _update_dps_window() -> void:
 		log.pop_front()
 
 	# 计算当前 DPS
-	var elapsed := now - _dps_tracker.get("window_start", now)
+	var elapsed = now - _dps_tracker.get("window_start", now)
 	if elapsed > 0.1:
 		_dps_tracker["current_dps"] = _dps_tracker["window_damage"] / min(elapsed, window)
 	else:
@@ -304,8 +304,8 @@ func _update_dps_window() -> void:
 ## 获取 DPS 统计
 func get_dps_stats() -> Dictionary:
 	var now := Time.get_ticks_msec() / 1000.0
-	var session_time := now - _dps_tracker["session_start"]
-	var avg_dps := _dps_tracker["total_damage"] / max(session_time, 0.1)
+	var session_time = now - _dps_tracker["session_start"]
+	var avg_dps = _dps_tracker["total_damage"] / max(session_time, 0.1)
 	return {
 		"current_dps": _dps_tracker["current_dps"],
 		"peak_dps": _dps_tracker["peak_dps"],

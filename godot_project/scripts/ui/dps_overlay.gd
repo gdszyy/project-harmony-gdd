@@ -157,7 +157,7 @@ func _record_sample() -> void:
 	if not _test_chamber:
 		_dps_history.append(0.0)
 	else:
-		var stats := _test_chamber.get_dps_stats()
+		var stats = _test_chamber.get_dps_stats()
 		_dps_history.append(stats.get("current_dps", 0.0))
 
 	if _dps_history.size() > MAX_HISTORY:
@@ -171,7 +171,7 @@ func _update_display() -> void:
 	if not _test_chamber:
 		return
 
-	var stats := _test_chamber.get_dps_stats()
+	var stats = _test_chamber.get_dps_stats()
 
 	if _dps_value_label:
 		_dps_value_label.text = "%.1f" % stats.get("current_dps", 0.0)

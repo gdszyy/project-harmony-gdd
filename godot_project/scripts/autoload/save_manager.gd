@@ -300,8 +300,8 @@ func is_chord_type_available(chord_type: MusicData.ChordType) -> bool:
 			return is_theory_unlocked("chord_diminished")
 		MusicData.ChordType.AUGMENTED:
 			return is_theory_unlocked("chord_augmented")
-		MusicData.ChordType.DOMINANT_7TH, MusicData.ChordType.MAJOR_7TH, \
-		MusicData.ChordType.MINOR_7TH, MusicData.ChordType.DIMINISHED_7TH:
+		MusicData.ChordType.DOMINANT_7, MusicData.ChordType.MAJOR_7, \
+		MusicData.ChordType.MINOR_7, MusicData.ChordType.DIMINISHED_7:
 			return is_theory_unlocked("chord_seventh")
 	# 扩展和弦需要局内解锁 + 传说乐章许可
 	return GameManager.extended_chords_unlocked

@@ -87,7 +87,6 @@ var _waveform_colors: Dictionary = {
 }
 
 ## 故障视觉状态
-var _glitch_intensity: float = 0.0
 var _glitch_timer: float = 0.0
 var _glitch_teleport_timer: float = 0.0
 
@@ -519,7 +518,7 @@ func _attack_square_grid(attack: Dictionary, damage_mult: float) -> void:
 			
 			# 延迟生成
 			var delay := (abs(x) + abs(y)) * 0.1
-			var pos_copy := spawn_pos
+			var pos_copy = spawn_pos
 			
 			get_tree().create_timer(delay).timeout.connect(func():
 				if _is_dead or not is_instance_valid(self):

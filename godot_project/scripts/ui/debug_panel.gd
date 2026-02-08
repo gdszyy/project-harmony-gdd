@@ -192,6 +192,12 @@ func _build_debug_toggles() -> void:
 	time_label.add_theme_color_override("font_color", TEXT_COLOR)
 	time_hbox.add_child(time_label)
 
+	var time_val_label := Label.new()
+	time_val_label.name = "TimeValLabel"
+	time_val_label.text = "1.0x"
+	time_val_label.add_theme_font_size_override("font_size", 12)
+	time_val_label.add_theme_color_override("font_color", WARNING_COLOR)
+
 	var time_slider := HSlider.new()
 	time_slider.min_value = 0.1
 	time_slider.max_value = 3.0
@@ -204,12 +210,6 @@ func _build_debug_toggles() -> void:
 		time_val_label.text = "%.1fx" % val
 	)
 	time_hbox.add_child(time_slider)
-
-	var time_val_label := Label.new()
-	time_val_label.name = "TimeValLabel"
-	time_val_label.text = "1.0x"
-	time_val_label.add_theme_font_size_override("font_size", 12)
-	time_val_label.add_theme_color_override("font_color", WARNING_COLOR)
 	time_hbox.add_child(time_val_label)
 
 	_content.add_child(time_hbox)
@@ -553,7 +553,7 @@ func _update_stats_display() -> void:
 	if not _test_chamber:
 		return
 
-	var stats := _test_chamber.get_stats_summary()
+	var stats = _test_chamber.get_stats_summary()
 
 	if _dps_label:
 		_dps_label.text = "当前 DPS: %.1f" % stats.get("current_dps", 0.0)

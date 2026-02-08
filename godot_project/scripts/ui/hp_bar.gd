@@ -64,13 +64,13 @@ func _draw() -> void:
 		# 正弦波 + 锯齿波混合
 		var sine_val := sin(t * frequency * TAU + _time * 3.0)
 		var saw_val := fmod(t * frequency + _time * 0.5, 1.0) * 2.0 - 1.0
-		var wave_val := lerp(saw_val, sine_val, wave_type_mix)
+		var wave_val = lerp(saw_val, sine_val, wave_type_mix)
 
 		# 低血时添加不稳定抖动
 		if _display_ratio < 0.3:
 			wave_val += sin(_time * 20.0 + t * 50.0) * 0.3
 
-		var y := start.y + wave_val * amplitude
+		var y = start.y + wave_val * amplitude
 		points.append(Vector2(x, y))
 
 	# 绘制波形线

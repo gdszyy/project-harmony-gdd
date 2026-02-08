@@ -609,7 +609,7 @@ func _instantiate_from_script(type_name: String) -> CharacterBody2D:
 
 ## 为脚本实例化的敌人创建必要子节点
 func _create_enemy_nodes(enemy: Node, type_name: String) -> void:
-	var is_elite := ChapterData.is_elite_enemy(type_name)
+	var is_elite = ChapterData.is_elite_enemy(type_name)
 	var radius := 16.0 if is_elite else 12.0
 	
 	# EnemyVisual
@@ -662,9 +662,9 @@ func _apply_difficulty_scaling(enemy: CharacterBody2D, type_name: String) -> voi
 	
 	var mults := _get_difficulty_multipliers()
 	
-	var scaled_hp := base_data.get("hp", 30.0) * mults.get("hp", 1.0)
-	var scaled_speed := base_data.get("speed", 80.0) * mults.get("speed", 1.0)
-	var scaled_damage := base_data.get("damage", 8.0) * mults.get("damage", 1.0)
+	var scaled_hp = base_data.get("hp", 30.0) * mults.get("hp", 1.0)
+	var scaled_speed = base_data.get("speed", 80.0) * mults.get("speed", 1.0)
+	var scaled_damage = base_data.get("damage", 8.0) * mults.get("damage", 1.0)
 	
 	enemy.set("max_hp", scaled_hp)
 	enemy.set("current_hp", scaled_hp)
@@ -761,7 +761,7 @@ func _start_pickup_attraction(pickup: Area2D, value: int) -> void:
 		var player = get_tree().get_first_node_in_group("player")
 		if player == null or not is_instance_valid(player):
 			return
-		var dir := (player.global_position - pickup.global_position).normalized()
+		var dir = (player.global_position - pickup.global_position).normalized()
 		var dist := pickup.global_position.distance_to(player.global_position)
 		var speed_mult := remap(dist, 0.0, 200.0, 3.0, 1.0)
 		speed_mult = clamp(speed_mult, 1.0, 3.0)

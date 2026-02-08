@@ -136,7 +136,7 @@ func spawn_chapter_boss(chapter_index: int, boss_config: Dictionary) -> void:
 # ============================================================
 
 func _on_chapter_boss_triggered(chapter_index: int, boss_key: String) -> void:
-	var config := ChapterData.get_chapter_config(chapter_index)
+	var config = ChapterData.get_chapter_config(chapter_index)
 	var boss_config: Dictionary = config.get("boss", {})
 	spawn_chapter_boss(chapter_index, boss_config)
 

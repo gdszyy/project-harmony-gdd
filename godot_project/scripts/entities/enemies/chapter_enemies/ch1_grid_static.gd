@@ -128,8 +128,8 @@ func _choose_next_grid_direction() -> void:
 		var to_player := _target.global_position - global_position
 		
 		# 选择主轴方向（曼哈顿距离优先）
-		var abs_x := abs(to_player.x)
-		var abs_y := abs(to_player.y)
+		var abs_x = abs(to_player.x)
+		var abs_y = abs(to_player.y)
 		
 		if abs_x > abs_y:
 			_grid_direction = Vector2.RIGHT if to_player.x > 0 else Vector2.LEFT

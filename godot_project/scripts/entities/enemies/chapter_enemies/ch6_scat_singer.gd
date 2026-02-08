@@ -151,7 +151,7 @@ func _execute_mimic(pattern: Dictionary) -> void:
 		"straight":
 			# 直接模仿
 			for i in range(count):
-				var offset := (float(i) / max(1, count - 1) - 0.5) * deg_to_rad(20.0)
+				var offset = (float(i) / max(1, count - 1) - 0.5) * deg_to_rad(20.0)
 				_spawn_scat_projectile(global_position, base_angle + offset,
 					mimic_projectile_speed, damage)
 		"swing":
@@ -198,7 +198,7 @@ func _perform_scat_attack() -> void:
 	var scat_rhythm := [0.0, 0.15, 0.35, 0.45, 0.7]
 	
 	for i in range(min(scat_burst_count, scat_rhythm.size())):
-		var delay := scat_rhythm[i]
+		var delay = scat_rhythm[i]
 		var angle_offset := (i % 2 * 2 - 1) * deg_to_rad(10.0 + i * 3.0)
 		
 		get_tree().create_timer(delay).timeout.connect(func():

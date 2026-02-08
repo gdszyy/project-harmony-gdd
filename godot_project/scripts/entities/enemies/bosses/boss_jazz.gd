@@ -490,8 +490,8 @@ func _attack_walking_bass_line(attack: Dictionary, damage_mult: float) -> void:
 	var base_dir := Vector2.RIGHT.rotated(randf() * TAU)
 	
 	for i in range(bass_notes.size()):
-		var note := bass_notes[i]
-		var angle_offset := note * deg_to_rad(15.0)
+		var note = bass_notes[i]
+		var angle_offset = note * deg_to_rad(15.0)
 		var dir := base_dir.rotated(angle_offset)
 		var next_pos := current_pos + dir * step_distance
 		
@@ -561,15 +561,15 @@ func _attack_blue_note_scale(attack: Dictionary, damage_mult: float) -> void:
 	var base_angle := (global_position.direction_to(_target.global_position)).angle()
 	
 	for i in range(blue_scale_intervals.size()):
-		var interval := blue_scale_intervals[i]
+		var interval = blue_scale_intervals[i]
 		var delay := i * 0.15
-		var angle_offset := interval * deg_to_rad(5.0) - deg_to_rad(15.0)
-		var speed_mult := 1.0 + (interval / 12.0) * 0.3
+		var angle_offset = interval * deg_to_rad(5.0) - deg_to_rad(15.0)
+		var speed_mult = 1.0 + (interval / 12.0) * 0.3
 		
 		get_tree().create_timer(delay).timeout.connect(func():
 			if _is_dead or not is_instance_valid(self):
 				return
-			var angle := base_angle + angle_offset
+			var angle = base_angle + angle_offset
 			# 蓝色音符弹幕（带有特殊颜色）
 			var is_blue_note := (i == 1 or i == 3 or i == 5)  # b3, b5, b7
 			_spawn_blue_note_projectile(global_position, angle,

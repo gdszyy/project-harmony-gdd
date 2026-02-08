@@ -458,7 +458,7 @@ func _create_theory_item(theory_id: String, config: Dictionary) -> PanelContaine
 	# 前置条件显示
 	var prereq: String = config.get("prerequisite", "")
 	if prereq != "" and _meta:
-		var prereq_met := _meta.is_theory_unlocked(prereq)
+		var prereq_met = _meta.is_theory_unlocked(prereq)
 		var prereq_config: Dictionary = _meta.THEORY_UNLOCKS.get(prereq, {})
 		var prereq_label := Label.new()
 		prereq_label.text = "需要: %s %s" % [
@@ -479,7 +479,7 @@ func _create_theory_item(theory_id: String, config: Dictionary) -> PanelContaine
 	else:
 		var cost: int = config.get("cost", 0)
 		buy_btn.text = "%d 碎片" % cost
-		var can_unlock := _meta.can_unlock_theory(theory_id) if _meta else false
+		var can_unlock = _meta.can_unlock_theory(theory_id) if _meta else false
 		buy_btn.disabled = not can_unlock
 	
 	var tid := theory_id
@@ -498,8 +498,8 @@ func _create_mode_card(mode_name: String, config: Dictionary) -> PanelContainer:
 	style.corner_radius_bottom_right = 8
 	style.border_width_left = 4
 	
-	var is_unlocked := _meta.is_mode_unlocked(mode_name) if _meta else false
-	var is_selected := (_meta.selected_mode == mode_name) if _meta else false
+	var is_unlocked = _meta.is_mode_unlocked(mode_name) if _meta else false
+	var is_selected = (_meta.selected_mode == mode_name) if _meta else false
 	
 	if is_selected:
 		style.border_color = GOLD_COLOR

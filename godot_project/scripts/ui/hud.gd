@@ -393,13 +393,13 @@ func _update_fatigue_filter() -> void:
 
 		# 节拍脉冲
 		var beat_progress := GameManager.get_beat_progress()
-		var beat_pulse := max(0.0, 1.0 - beat_progress * 3.0)
+		var beat_pulse = max(0.0, 1.0 - beat_progress * 3.0)
 		mat.set_shader_parameter("beat_pulse", beat_pulse * 0.3)
 
 		# 不和谐度视觉效果
 		var fatigue_data := FatigueManager.query_fatigue()
 		var dissonance_visual: float = 0.0
-		var silenced := fatigue_data.get("silenced_notes", [])
+		var silenced = fatigue_data.get("silenced_notes", [])
 		if not silenced.is_empty():
 			dissonance_visual = min(float(silenced.size()) * 0.2, 1.0)
 		mat.set_shader_parameter("dissonance_level", dissonance_visual)
@@ -475,7 +475,7 @@ func _on_rest_cleanse(rest_count: int) -> void:
 	if _fatigue_filter and _fatigue_filter.material:
 		var mat: ShaderMaterial = _fatigue_filter.material as ShaderMaterial
 		if mat:
-			var prev_fatigue := mat.get_shader_parameter("fatigue_level")
+			var prev_fatigue = mat.get_shader_parameter("fatigue_level")
 			mat.set_shader_parameter("fatigue_level", max(0.0, prev_fatigue - 0.1))
 			var tween2 := create_tween()
 			tween2.tween_interval(0.3)

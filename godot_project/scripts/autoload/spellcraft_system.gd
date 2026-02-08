@@ -508,7 +508,7 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	if spell_data["dodge_back"]:
 		var player := get_tree().get_first_node_in_group("player")
 		if player and player is CharacterBody2D:
-			var aim_dir := (player.get_global_mouse_position() - player.global_position).normalized()
+			var aim_dir = (player.get_global_mouse_position() - player.global_position).normalized()
 			player.velocity -= aim_dir * 150.0  # 向后推
 
 func _cast_single_note(note: int) -> void:
@@ -591,7 +591,7 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	if MusicTheoryEngine.is_extended_chord(chord_type) and not GameManager.extended_chords_unlocked:
 		return
 
-	var spell_info := MusicTheoryEngine.get_spell_form_info(chord_type)
+	var spell_info = MusicTheoryEngine.get_spell_form_info(chord_type)
 	if spell_info.is_empty():
 		return
 
@@ -604,9 +604,9 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
 
 	# ★ 不和谐度处理：不和谐法术直接扣血（生命腐蚀）
-	var raw_dissonance := MusicTheoryEngine.get_chord_dissonance(chord_type)
+	var raw_dissonance = MusicTheoryEngine.get_chord_dissonance(chord_type)
 	# 应用调式不和谐度倍率（五声音阶减半）
-	var dissonance := raw_dissonance * ModeSystem.get_dissonance_multiplier()
+	var dissonance = raw_dissonance * ModeSystem.get_dissonance_multiplier()
 	if dissonance > 2.0:
 		GameManager.apply_dissonance_damage(dissonance)
 		# 布鲁斯被动：不和谐度转化为暴击率
@@ -664,7 +664,7 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		FatigueManager.add_external_fatigue(extra_fatigue)
 
 	# 记录和弦进行
-	var progression := MusicTheoryEngine.record_chord(chord_type)
+	var progression = MusicTheoryEngine.record_chord(chord_type)
 	if not progression.is_empty():
 		chord_data["progression"] = progression
 		# 触发和弦进行效果

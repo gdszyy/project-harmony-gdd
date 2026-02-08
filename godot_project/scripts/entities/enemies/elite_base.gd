@@ -265,7 +265,7 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	
 	# 精英护盾吸收
 	if _elite_shield > 0.0:
-		var absorbed := min(_elite_shield, final_damage)
+		var absorbed = min(_elite_shield, final_damage)
 		_elite_shield -= absorbed
 		final_damage -= absorbed
 	

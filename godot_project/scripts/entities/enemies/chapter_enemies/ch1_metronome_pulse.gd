@@ -112,7 +112,7 @@ func _calculate_movement_direction() -> Vector2:
 		return Vector2.ZERO
 	
 	# 蓄力时减速
-	var speed_mult := max(0.3, 1.0 - _charge_progress * 0.7)
+	var speed_mult = max(0.3, 1.0 - _charge_progress * 0.7)
 	var dir := (_target.global_position - global_position).normalized()
 	velocity = dir * move_speed * speed_mult
 	move_and_slide()
