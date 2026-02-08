@@ -33,7 +33,7 @@ func _setup_ui() -> void:
 	_title_label.text = "DISSONANCE"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 40)
-	_title_label.add_theme_color_override("font_color", Color(0.8, 0.0, 0.2))
+	_title_label.add_theme_color_override("font_color", Color("#FF4D4D")) # Dissonance Red
 	_title_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_title_label.position.y = 100
 
@@ -96,14 +96,14 @@ func _display_stats() -> void:
 
 		var name_label := Label.new()
 		name_label.text = stat[0]
-		name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		name_label.add_theme_color_override("font_color", Color("#A098C8")) # Text Secondary
 		name_label.add_theme_font_size_override("font_size", 14)
 		name_label.custom_minimum_size.x = 160
 		row.add_child(name_label)
 
 		var value_label := Label.new()
 		value_label.text = stat[1]
-		value_label.add_theme_color_override("font_color", Color(0.0, 0.9, 0.7))
+		value_label.add_theme_color_override("font_color", Color("#EAE6FF")) # Text Primary
 		value_label.add_theme_font_size_override("font_size", 14)
 		row.add_child(value_label)
 

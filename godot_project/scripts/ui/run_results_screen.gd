@@ -18,13 +18,13 @@ signal main_menu_pressed()
 # ============================================================
 # 颜色
 # ============================================================
-const BG_COLOR := Color(0.05, 0.04, 0.08, 0.92)
-const PANEL_COLOR := Color(0.1, 0.08, 0.15, 0.95)
-const GOLD := Color(1.0, 0.85, 0.3)
-const TEXT := Color(0.9, 0.88, 0.95)
-const DIM := Color(0.5, 0.48, 0.55)
-const ACCENT := Color(0.6, 0.4, 1.0)
-const GREEN := Color(0.3, 0.9, 0.5)
+const BG_COLOR := Color("#0A0814F2")
+const PANEL_COLOR := Color("#141026F2")
+const GOLD := Color("#FFD700")
+const TEXT := Color("#EAE6FF")
+const DIM := Color("#A098C8")
+const ACCENT := Color("#9D6FFF")
+const GREEN := Color("#4DFF80")
 
 # ============================================================
 # 内部状态

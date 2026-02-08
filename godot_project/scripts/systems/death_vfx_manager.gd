@@ -1,7 +1,10 @@
 ## death_vfx_manager.gd
-## 死亡特效管理器 — 统一管理敌人死亡时的视觉效果
+## 死亡特效管理器 v2.0 — 统一管理敌人死亡时的视觉效果
 ## 使用对象池避免频繁实例化，支持不同敌人类型的差异化特效。
 ## 设计参考：敌人死亡 = "信号崩溃"，视觉上模拟老式电视关机效果。
+## v2.0 优化：将死亡特效与音乐性更紧密结合。
+## - 普通敌人：身体分解为构成它的"音符"粒子
+## - Boss：触发多阶段的"乐章崩坏"视觉盛宴
 extends Node2D
 
 # ============================================================
@@ -21,45 +24,61 @@ extends Node2D
 # ============================================================
 # 敌人类型特效配置
 # ============================================================
+# 音符颜色 (from UIColors / UI_Art_Style_Enhancement_Proposal.md)
+const NOTE_COLORS: Dictionary = {
+	"C": Color("#FF6B6B"),
+	"D": Color("#FF8C42"),
+	"E": Color("#FFD700"),
+	"F": Color("#4DFF80"),
+	"G": Color("#4DFFF3"),
+	"A": Color("#4D8BFF"),
+	"B": Color("#9D6FFF"),
+}
+
 const TYPE_VFX_CONFIG: Dictionary = {
 	"static": {
 		"fragments": 4,
 		"speed": 150.0,
-		"color": Color(1.0, 0.2, 0.3),
+		"color": Color("#FF4D4D"),
 		"fragment_shape": "triangle",
 		"screen_shake": 0.0,
+		"note_names": ["C", "E"],
 	},
 	"silence": {
 		"fragments": 8,
 		"speed": 80.0,
-		"color": Color(0.15, 0.05, 0.25),
+		"color": Color("#6B668A"),
 		"fragment_shape": "circle",
 		"screen_shake": 0.3,
-		"implode": true,  # 内爆效果
+		"implode": true,
+		"note_names": ["B"],
 	},
 	"screech": {
 		"fragments": 10,
 		"speed": 300.0,
-		"color": Color(1.0, 0.9, 0.2),
+		"color": Color("#FFD700"),
 		"fragment_shape": "spike",
 		"screen_shake": 0.2,
-		"burst_ring": true,  # 爆发环
+		"burst_ring": true,
+		"note_names": ["E", "G"],
 	},
 	"pulse": {
 		"fragments": 6,
 		"speed": 200.0,
-		"color": Color(0.2, 0.6, 1.0),
+		"color": Color("#4D8BFF"),
 		"fragment_shape": "square",
 		"screen_shake": 0.15,
-		"ripple": true,  # 涟漪效果
+		"ripple": true,
+		"note_names": ["A", "C"],
 	},
 	"wall": {
 		"fragments": 12,
 		"speed": 120.0,
-		"color": Color(0.4, 0.35, 0.5),
+		"color": Color("#A098C8"),
 		"fragment_shape": "rectangle",
 		"screen_shake": 0.5,
-		"quake_ring": true,  # 地震环
+		"quake_ring": true,
+		"note_names": ["D", "F"],
 	},
 }
 
@@ -100,10 +119,14 @@ func play_death_effect(pos: Vector2, enemy_type: String) -> void:
 	# 1. 碎片爆散
 	_spawn_fragments(pos, config)
 
-	# 2. 闪光
+	# 2. 音符粒子 (v2.0 新增)
+	var note_names: Array = config.get("note_names", ["C"])
+	_spawn_note_particles(pos, note_names)
+
+	# 3. 闪光
 	_spawn_flash(pos, config)
 
-	# 3. 特殊效果
+	# 4. 特殊效果
 	if config.get("burst_ring", false):
 		_spawn_burst_ring(pos, config)
 	if config.get("implode", false):
@@ -113,10 +136,52 @@ func play_death_effect(pos: Vector2, enemy_type: String) -> void:
 	if config.get("quake_ring", false):
 		_spawn_quake_ring(pos, config)
 
-	# 4. 屏幕震动
+	# 5. 屏幕震动
 	var shake_strength: float = config.get("screen_shake", 0.0)
 	if shake_strength > 0.0:
 		_trigger_screen_shake(shake_strength)
+
+## 播放Boss死亡特效 ("乐章崩坏") (v2.0 新增)
+func play_boss_death_effect(boss: Node2D, phase_count: int = 3) -> void:
+	var pos := boss.global_position
+
+	# 阶段1：Boss身体开始闪烁和抖动
+	var tween := create_tween()
+	for i in range(6):
+		tween.tween_property(boss, "modulate", Color(2.0, 2.0, 2.0), 0.05)
+		tween.tween_property(boss, "modulate", Color.WHITE, 0.1)
+		tween.tween_property(boss, "position", pos + Vector2(randf_range(-5, 5), randf_range(-5, 5)), 0.05)
+	tween.tween_property(boss, "position", pos, 0.05)
+
+	# 阶段2：逐步释放大量音符粒子
+	tween.tween_callback(func():
+		for wave in range(phase_count):
+			var delay := wave * 0.3
+			get_tree().create_timer(delay).timeout.connect(func():
+				var note_keys = NOTE_COLORS.keys()
+				for j in range(8):
+					var color = NOTE_COLORS[note_keys[j % note_keys.size()]]
+					_spawn_single_note_particle(pos, color)
+				# 每波都有一个小闪光
+				var wave_color = NOTE_COLORS[note_keys[wave % note_keys.size()]]
+				_spawn_flash(pos, {"color": wave_color})
+			)
+	)
+
+	# 阶段3：最终爆发 + 全屏闪光
+	tween.tween_interval(0.8)
+	tween.tween_callback(func():
+		_spawn_final_burst(pos)
+		var vfx = get_node_or_null("/root/VFXManager")
+		if vfx and vfx.has_method("play_screen_flash"):
+			vfx.play_screen_flash(Color("#FFD700"), 0.5)
+	)
+
+	# 阶段4：Boss淡出
+	tween.tween_property(boss, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(func():
+		boss.queue_free()
+	)
 
 func _on_enemy_killed_global(_pos: Vector2) -> void:
 	# 全局信号不携带类型信息，使用默认特效
@@ -299,6 +364,72 @@ func _create_ring(pos: Vector2, color: Color, radius: float) -> Polygon2D:
 	ring.global_position = pos
 	add_child(ring)
 	return ring
+
+# ============================================================
+# 屏幕震动
+# ============================================================
+
+# ============================================================
+# 音符粒子系统 (v2.0 新增)
+# ============================================================
+
+func _spawn_note_particles(pos: Vector2, note_names: Array) -> void:
+	for i in range(note_names.size() * 2):
+		var note_name: String = note_names[i % note_names.size()]
+		var color: Color = NOTE_COLORS.get(note_name, Color.WHITE)
+		_spawn_single_note_particle(pos, color)
+
+func _spawn_single_note_particle(pos: Vector2, color: Color) -> void:
+	var particle := Polygon2D.new()
+	# 音符形状 (简化的八分音符)
+	particle.polygon = PackedVector2Array([
+		Vector2(-2, 3), Vector2(-2, -3), Vector2(0, -4),
+		Vector2(3, -3), Vector2(3, -1), Vector2(0, -2),
+		Vector2(0, 3), Vector2(-2, 3)
+	])
+	particle.color = color
+	particle.global_position = pos
+	particle.rotation = randf() * TAU
+	add_child(particle)
+
+	var angle := randf() * TAU
+	var speed := randf_range(60, 180)
+	var end_pos := pos + Vector2(cos(angle), sin(angle)) * speed
+
+	var tween := particle.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(particle, "global_position", end_pos, 0.8).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(particle, "modulate:a", 0.0, 0.8).set_ease(Tween.EASE_IN)
+	tween.tween_property(particle, "rotation", particle.rotation + randf_range(-PI, PI), 0.8)
+	tween.tween_property(particle, "scale", Vector2(0.2, 0.2), 0.8)
+	tween.chain()
+	tween.tween_callback(particle.queue_free)
+
+func _spawn_final_burst(pos: Vector2) -> void:
+	var note_keys = NOTE_COLORS.keys()
+	for i in range(24):
+		var color = NOTE_COLORS[note_keys[i % note_keys.size()]]
+		var particle := Polygon2D.new()
+		particle.polygon = PackedVector2Array([
+			Vector2(-3, 4), Vector2(-3, -4), Vector2(0, -5),
+			Vector2(4, -4), Vector2(4, -1), Vector2(0, -3),
+			Vector2(0, 4), Vector2(-3, 4)
+		])
+		particle.color = color
+		particle.global_position = pos
+		add_child(particle)
+
+		var angle := (float(i) / 24.0) * TAU
+		var speed := randf_range(200, 500)
+		var end_pos := pos + Vector2(cos(angle), sin(angle)) * speed
+
+		var tween := particle.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(particle, "global_position", end_pos, 1.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
+		tween.tween_property(particle, "modulate:a", 0.0, 1.2).set_ease(Tween.EASE_IN)
+		tween.tween_property(particle, "scale", Vector2(0.1, 0.1), 1.2)
+		tween.chain()
+		tween.tween_callback(particle.queue_free)
 
 # ============================================================
 # 屏幕震动
