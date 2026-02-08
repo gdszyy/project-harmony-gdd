@@ -29,19 +29,31 @@ uniform float shake_offset_x : hint_range(-0.02, 0.02) = 0.0;
 uniform float shake_offset_y : hint_range(-0.02, 0.02) = 0.0;
 
 void fragment() {
+    // 如果没有任何效果激活，直接输出原始画面，避免不必要的 screen_texture 采样
+    if (hit_intensity < 0.001 && low_hp_intensity < 0.001 && flash_intensity < 0.001
+        && abs(shake_offset_x) < 0.0001 && abs(shake_offset_y) < 0.0001) {
+        COLOR = vec4(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
+
     // === 1. 屏幕抖动 (UV 偏移) ===
     vec2 uv = SCREEN_UV;
     uv += vec2(shake_offset_x, shake_offset_y);
 
-    // === 2. 色差偏移 (受击方向性) ===
-    float aberration = hit_intensity * 0.01;
-    vec2 hit_dir = normalize(vec2(hit_direction_x, hit_direction_y) + vec2(0.001));
+    // === 2. 色差偏移 (受击方向性) — 仅在受击时激活 ===
+    vec3 final_color;
+    if (hit_intensity > 0.01) {
+        float aberration = hit_intensity * 0.008;
+        vec2 hit_dir = normalize(vec2(hit_direction_x, hit_direction_y) + vec2(0.001));
 
-    vec4 r_col = texture(screen_texture, uv + hit_dir * aberration);
-    vec4 g_col = texture(screen_texture, uv);
-    vec4 b_col = texture(screen_texture, uv - hit_dir * aberration);
+        vec4 r_col = texture(screen_texture, uv + hit_dir * aberration);
+        vec4 g_col = texture(screen_texture, uv);
+        vec4 b_col = texture(screen_texture, uv - hit_dir * aberration);
 
-    vec3 final_color = vec3(r_col.r, g_col.g, b_col.b);
+        final_color = vec3(r_col.r, g_col.g, b_col.b);
+    } else {
+        final_color = texture(screen_texture, uv).rgb;
+    }
 
     // === 3. 受击红色暗角 ===
     if (hit_intensity > 0.01) {

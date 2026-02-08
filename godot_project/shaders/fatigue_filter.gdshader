@@ -14,13 +14,28 @@ uniform float beat_pulse : hint_range(0.0, 1.0) = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
 
-    // === 1. 色差 (Chromatic Aberration) — 随疲劳增加 ===
-    float aberration_amount = fatigue_level * 0.015 + dissonance_level * 0.008;
-    vec4 r_col = texture(screen_texture, uv - vec2(aberration_amount, 0.0));
-    vec4 g_col = texture(screen_texture, uv);
-    vec4 b_col = texture(screen_texture, uv + vec2(aberration_amount, 0.0));
+    // === 1. 色差 (Chromatic Aberration) — 仅在中高疲劳时出现 ===
+    // 修复：添加阈值保护，疲劳度 > 0.3 时才开始出现色差
+    // 修复：降低色差系数，避免画面严重失真
+    float fatigue_aberration = 0.0;
+    if (fatigue_level > 0.3) {
+        fatigue_aberration = (fatigue_level - 0.3) * 0.007;
+    }
+    float dissonance_aberration = 0.0;
+    if (dissonance_level > 0.2) {
+        dissonance_aberration = (dissonance_level - 0.2) * 0.004;
+    }
+    float aberration_amount = fatigue_aberration + dissonance_aberration;
 
-    vec4 final_color = vec4(r_col.r, g_col.g, b_col.b, 1.0);
+    vec4 final_color;
+    if (aberration_amount > 0.0001) {
+        vec4 r_col = texture(screen_texture, uv - vec2(aberration_amount, 0.0));
+        vec4 g_col = texture(screen_texture, uv);
+        vec4 b_col = texture(screen_texture, uv + vec2(aberration_amount, 0.0));
+        final_color = vec4(r_col.r, g_col.g, b_col.b, 1.0);
+    } else {
+        final_color = texture(screen_texture, uv);
+    }
 
     // === 2. 胶片噪点 (Film Grain) — 中等疲劳时出现 ===
     if (fatigue_level > 0.3) {
