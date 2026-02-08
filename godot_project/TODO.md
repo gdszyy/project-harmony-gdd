@@ -1,7 +1,7 @@
 # Project Harmony — 开发待办清单 (TODO)
 
 > **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
-> 最后更新时间：2026-02-08 v4.0
+> 最后更新时间：2026-02-08 v4.1 (Bug 修复)
 
 ---
 
@@ -417,6 +417,22 @@
 ---
 
 ## 文件变更日志
+
+### 2026-02-08 v4.1 Bug 修复与核心模块审查
+
+**修复概述：** 修复 20 个关键问题，涵盖 UI 页面、游戏功能完整性、信号连接、经验值系统等。详细报告见 [BUG_FIX_REPORT_2026_02_08.md](../BUG_FIX_REPORT_2026_02_08.md)。
+
+**关键问题修复：**
+- 暂停功能失效 (player.gd 与 main_game.gd 重复处理)
+- 无敌帧永不解除 (InvincibilityTimer 信号未连接)
+- 经验值无法拾取 (PickupArea 信号类型错误)
+- 经验值双倍计算 (enemy_spawner 重复 add_xp)
+- HUD 节点找不到 ManualSlots
+- GameManager 缺少 is_test_mode 属性
+
+**修复文件：** game_manager.gd, fatigue_manager.gd, player.gd, enemy_base.gd, xp_pickup.gd, enemy_spawner.gd, test_chamber.gd, main_game.gd, hud.gd, main_game.tscn, test_chamber.tscn, pause_menu.tscn
+
+---
 
 ### 2026-02-08 v4.0 UI与美术风格优化
 

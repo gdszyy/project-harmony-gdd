@@ -1,7 +1,8 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.4 (Live Document)
+**版本：** 2.4.1 (Live Document)
 **最后更新：** 2026年2月8日
+**最新修复：** [Bug 修复报告 2026-02-08](BUG_FIX_REPORT_2026_02_08.md) — 修复 20 个关键问题，涵盖 UI、游戏功能、信号连接、经验值系统
 
 ---
 
@@ -25,6 +26,7 @@
 project-harmony-gdd/
 ├── GDD.md                  # [核心] 实时主设计文档，包含最新最完整的游戏设计方案
 ├── README.md               # 本文件，仓库导航与开发规范
+├── BUG_FIX_REPORT_2026_02_08.md  # [最新] Bug 修复报告 (2026-02-08)
 ├── Feature_Completeness_Report.md  # 功能完整性检查报告
 ├── Assets/                 # 当前 GDD 引用的可视化图表
 │   ├── black_key_dual_role_v5.png
@@ -55,6 +57,8 @@ project-harmony-gdd/
 └── Archive/                # 历史版本存档
     ├── Boss_DissonantConductor/  # [归档] 失谐指挥家Boss（已由音乐史Boss体系替代）
     ├── Max_Issues_Implementation_Report.md  # [归档] 旧版Issue实现报告
+    ├── fix_report.md  # [归档] 第一轮修复报告 (2026-02-08)
+    ├── review_report_round2.md  # [归档] 第二轮审查报告 (2026-02-08)
     ├── Project_Harmony_Proposal_v1~v5.md
     ├── Numerical_Design_Documentation_v1.md
     ├── Assessment_Report_Density_Fatigue.md
