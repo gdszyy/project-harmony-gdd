@@ -385,8 +385,8 @@ func _update_density_from_manager() -> void:
 			recent_count += 1
 
 	var beat_rate := GameManager.current_bpm / 60.0
-	var dynamic_threshold := max(FatigueManager.DENSITY_OVERLOAD_THRESHOLD,
-		int(beat_rate * FatigueManager.DENSITY_OVERLOAD_WINDOW * 1.2))
+	var dynamic_threshold: int = int(max(float(FatigueManager.DENSITY_OVERLOAD_THRESHOLD),
+		beat_rate * FatigueManager.DENSITY_OVERLOAD_WINDOW * 1.2))
 	_density_ratio = clampf(float(recent_count) / float(dynamic_threshold), 0.0, 1.0)
 
 func _update_shield() -> void:
