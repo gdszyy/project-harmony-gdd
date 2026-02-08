@@ -35,6 +35,8 @@ const GRID_SIZE := 100.0
 const GRID_COLOR := Color(0.08, 0.06, 0.14, 0.5)
 const GRID_ACCENT := Color(0.15, 0.10, 0.25, 0.6)
 const BORDER_COLOR := Color(0.6, 0.3, 1.0, 0.8)
+## 碰撞检测频率
+const COLLISION_CHECK_INTERVAL: float = 0.033  # ~30Hz
 
 # 敌人场景路径
 const ENEMY_SCENES: Dictionary = {
@@ -62,6 +64,7 @@ var freeze_enemies: bool = false     ## 冻结敌人
 var show_hitboxes: bool = false      ## 显示碰撞箱
 var auto_fire: bool = false          ## 自动施法
 var time_scale: float = 1.0         ## 时间缩放
+var _collision_timer: float = 0.0    ## 碰撞检测计时器
 
 # DPS 统计
 var _dps_tracker: Dictionary = {
@@ -116,6 +119,12 @@ func _process(delta: float) -> void:
 	# 无限疲劳：通过 FatigueManager 重置疲劳度
 	if infinite_fatigue:
 		FatigueManager.current_afi = 0.0
+
+	# 碰撞检测
+	_collision_timer += delta
+	if _collision_timer >= COLLISION_CHECK_INTERVAL:
+		_collision_timer = 0.0
+		_check_collisions()
 
 	# 更新 DPS 窗口
 	_update_dps_window()
@@ -268,6 +277,47 @@ func _clear_all_enemies() -> void:
 ## 获取当前敌人数量
 func get_enemy_count() -> int:
 	return _enemy_container.get_child_count()
+
+# ============================================================
+# 碰撞检测
+# ============================================================
+
+func _check_collisions() -> void:
+	if _projectile_manager == null:
+		return
+
+	# 获取敌人碰撞数据
+	var enemy_data = _get_enemy_collision_data()
+	if enemy_data.is_empty():
+		return
+
+	# 检测弹体-敌人碰撞
+	var hits = _projectile_manager.check_collisions(enemy_data)
+
+	# 处理命中
+	for hit in hits:
+		var enemy_node = hit["enemy"].get("node")
+		if enemy_node and is_instance_valid(enemy_node) and enemy_node.has_method("take_damage"):
+			var knockback_dir := Vector2.ZERO
+			var proj = hit["projectile"]
+			if proj.get("velocity", Vector2.ZERO) != Vector2.ZERO:
+				knockback_dir = proj["velocity"].normalized()
+
+			enemy_node.take_damage(hit["damage"], knockback_dir)
+
+			# 记录伤害到 DPS 统计
+			record_damage(hit["damage"], "spell")
+
+			# 显示伤害数字
+			if _hud and _hud.has_method("show_damage_number"):
+				_hud.show_damage_number(hit["position"], hit["damage"])
+
+func _get_enemy_collision_data() -> Array:
+	var data: Array = []
+	for enemy in _enemy_container.get_children():
+		if is_instance_valid(enemy) and enemy.has_method("get_collision_data"):
+			data.append(enemy.get_collision_data())
+	return data
 
 # ============================================================
 # DPS 统计
