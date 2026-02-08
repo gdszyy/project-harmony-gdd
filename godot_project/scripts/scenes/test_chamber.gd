@@ -165,6 +165,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				if CodexManager:
 					CodexManager.unlock_all()
 					_log("已解锁全部图鉴条目")
+			KEY_ESCAPE:
+				_return_to_menu()
 
 # ============================================================
 # 敌人生成
@@ -453,3 +455,17 @@ func get_stats_summary() -> Dictionary:
 		"god_mode": god_mode,
 		"time_scale": time_scale,
 	}
+
+# ============================================================
+# 返回主菜单
+# ============================================================
+
+func _return_to_menu() -> void:
+	# 恢复时间缩放
+	Engine.time_scale = 1.0
+	time_scale = 1.0
+	# 重置测试模式标记
+	if GameManager:
+		GameManager.is_test_mode = false
+	_log("返回主菜单")
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

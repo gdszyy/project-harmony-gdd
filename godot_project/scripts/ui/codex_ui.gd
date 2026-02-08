@@ -191,7 +191,7 @@ func _build_header() -> Control:
 
 	_back_btn = Button.new()
 	_back_btn.text = "← 返回"
-	_back_btn.pressed.connect(func(): back_pressed.emit())
+	_back_btn.pressed.connect(_on_back_pressed)
 	hbox.add_child(_back_btn)
 
 	_title_label = Label.new()
@@ -647,6 +647,14 @@ func _on_entry_selected(entry_id: String, is_unlocked: bool) -> void:
 func _on_search_changed(new_text: String) -> void:
 	_search_filter = new_text.strip_edges()
 	_rebuild_entry_list()
+
+func _on_back_pressed() -> void:
+	back_pressed.emit()
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_on_back_pressed()
 
 # ============================================================
 # 公共接口

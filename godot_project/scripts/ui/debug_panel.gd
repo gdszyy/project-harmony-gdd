@@ -149,11 +149,19 @@ func _build_header() -> void:
 	vbox.add_child(subtitle)
 
 	var hotkeys := Label.new()
-	hotkeys.text = "F1:无敌 F2:疲劳 F3:冻结 F4:碰撞箱 F5:清敌\nF6:重置DPS F7:慢放 F8:波次 F9:全图鉴"
+	hotkeys.text = "F1:无敌 F2:疲劳 F3:冻结 F4:碰撞箱 F5:清敌\nF6:重置DPS F7:慢放 F8:波次 F9:全图鉴  Esc:返回"
 	hotkeys.add_theme_font_size_override("font_size", 9)
 	hotkeys.add_theme_color_override("font_color", DIM_COLOR)
 	hotkeys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(hotkeys)
+
+	# 返回主菜单按钮
+	var back_btn := Button.new()
+	back_btn.text = "← 返回主菜单"
+	back_btn.custom_minimum_size.y = 32
+	_style_action_button(back_btn, WARNING_COLOR)
+	back_btn.pressed.connect(_on_back_to_menu)
+	vbox.add_child(back_btn)
 
 	_content.add_child(header)
 
@@ -677,3 +685,15 @@ func _style_toggle_button() -> void:
 
 	_toggle_button.add_theme_color_override("font_color", ACCENT)
 	_toggle_button.add_theme_font_size_override("font_size", 14)
+
+# ============================================================
+# 返回主菜单
+# ============================================================
+
+func _on_back_to_menu() -> void:
+	# 恢复时间缩放
+	Engine.time_scale = 1.0
+	# 重置测试模式标记
+	if GameManager:
+		GameManager.is_test_mode = false
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
