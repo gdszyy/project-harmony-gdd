@@ -76,19 +76,40 @@ func _setup_ui() -> void:
 	_style_button(_start_button, Color(0.0, 0.8, 0.6))
 	_start_button.pressed.connect(_on_start_pressed)
 
-	# 设置按钮
+	# 图鉴按钮
+	var codex_button := Button.new()
+	codex_button.name = "CodexButton"
+	add_child(codex_button)
+	codex_button.text = "CODEX RESONARE"
+	codex_button.set_anchors_preset(Control.PRESET_CENTER)
+	codex_button.position = Vector2(-100, 120)
+	codex_button.custom_minimum_size = Vector2(200, 50)
+	_style_button(codex_button, Color(0.6, 0.4, 1.0))
+	codex_button.pressed.connect(_on_codex_pressed)
+
+	# 测试场按钮
+	var test_button := Button.new()
+	test_button.name = "TestChamberButton"
+	add_child(test_button)
+	test_button.text = "ECHOING CHAMBER"
+	test_button.set_anchors_preset(Control.PRESET_CENTER)
+	test_button.position = Vector2(-100, 190)
+	test_button.custom_minimum_size = Vector2(200, 50)
+	_style_button(test_button, Color(0.9, 0.6, 0.2))
+	test_button.pressed.connect(_on_test_chamber_pressed)
+
+	# 设置按钮 — 下移
 	if _settings_button == null:
 		_settings_button = Button.new()
 		_settings_button.name = "SettingsButton"
 		add_child(_settings_button)
-
 	_settings_button.text = "SETTINGS"
 	_settings_button.set_anchors_preset(Control.PRESET_CENTER)
-	_settings_button.position = Vector2(-100, 120)
+	_settings_button.position = Vector2(-100, 260)
 	_settings_button.custom_minimum_size = Vector2(200, 50)
 	_style_button(_settings_button, Color(0.4, 0.4, 0.5))
 
-	# 退出按钮
+	# 退出按钮 — 下移
 	if _quit_button == null:
 		_quit_button = Button.new()
 		_quit_button.name = "QuitButton"
@@ -96,7 +117,7 @@ func _setup_ui() -> void:
 
 	_quit_button.text = "EXIT"
 	_quit_button.set_anchors_preset(Control.PRESET_CENTER)
-	_quit_button.position = Vector2(-100, 190)
+	_quit_button.position = Vector2(-100, 330)
 	_quit_button.custom_minimum_size = Vector2(200, 50)
 	_style_button(_quit_button, Color(0.3, 0.3, 0.4))
 	_quit_button.pressed.connect(_on_quit_pressed)
@@ -180,6 +201,12 @@ func _update_title_animation() -> void:
 
 func _on_start_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
+
+func _on_codex_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/codex.tscn")
+
+func _on_test_chamber_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/test_chamber.tscn")
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()

@@ -23,6 +23,9 @@ FatigueManager="*res://scripts/autoload/fatigue_manager.gd"
 SpellcraftSystem="*res://scripts/autoload/spellcraft_system.gd"
 InputSetup="*res://scripts/autoload/input_setup.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
+ModeSystem="*res://scripts/autoload/mode_system.gd"
+MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
+CodexManager="*res://scripts/autoload/codex_manager.gd"
 
 [display]
 
