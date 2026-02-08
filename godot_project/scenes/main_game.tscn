@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://main_game"]
+[gd_scene load_steps=13 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="6_sequencer"]
 [ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="7_upgrade"]
 [ext_resource type="PackedScene" uid="uid://pause_menu_001" path="res://scenes/pause_menu.tscn" id="8_pause"]
+[ext_resource type="Script" path="res://scripts/ui/game_mechanics_panel.gd" id="9_mechanics"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -72,6 +73,16 @@ offset_top = 20.0
 offset_right = -10.0
 offset_bottom = 150.0
 
+[node name="GameMechanicsPanel" type="Control" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 155.0
+offset_right = -10.0
+offset_bottom = 380.0
+script = ExtResource("9_mechanics")
+
 [node name="InfoPanel" type="VBoxContainer" parent="HUD"]
 anchors_preset = 5
 anchor_left = 0.5
@@ -104,9 +115,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -200.0
-offset_top = -100.0
+offset_top = -250.0
 offset_right = 200.0
-offset_bottom = -60.0
+offset_bottom = -210.0
 
 [node name="SuggestionLabel" type="Label" parent="HUD/SuggestionPanel"]
 text = ""
@@ -119,7 +130,7 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
-offset_top = -60.0
+offset_top = -160.0
 offset_right = 300.0
 offset_bottom = 0.0
 script = ExtResource("6_sequencer")
@@ -138,9 +149,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -100.0
-offset_top = -160.0
+offset_top = -230.0
 offset_right = 100.0
-offset_bottom = -110.0
+offset_bottom = -170.0
 theme_override_constants/separation = 8
 
 [node name="FatigueFilter" type="ColorRect" parent="HUD"]

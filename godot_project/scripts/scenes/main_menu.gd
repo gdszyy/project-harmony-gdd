@@ -1,7 +1,7 @@
 ## main_menu.gd
-## 主菜单场景 - v2.0 Themed
+## 主菜单场景 - v2.1 Layout Fix
 ## 极简主义设计：深色背景 + 神圣几何动态图案 + 呼吸感交互
-## 优化：统一调色板、按钮交互增强、入场动画
+## 修复：使用正确的锚点居中布局，适配不同分辨率
 extends Control
 
 # ============================================================
@@ -37,6 +37,8 @@ const BUTTON_CONFIGS: Array = [
 # ============================================================
 var _time: float = 0.0
 var _buttons: Array[Button] = []
+var _subtitle_label: Label = null
+var _button_container: VBoxContainer = null
 
 # ============================================================
 # 生命周期
@@ -57,11 +59,11 @@ func _process(delta: float) -> void:
 	_update_title_animation()
 
 # ============================================================
-# UI 设置
+# UI 设置 (v2.1 - 使用 VBoxContainer 居中布局)
 # ============================================================
 
 func _setup_ui() -> void:
-	# 标题
+	# ---- 标题 ----
 	if _title_label == null:
 		_title_label = Label.new()
 		_title_label.name = "TitleLabel"
@@ -74,42 +76,69 @@ func _setup_ui() -> void:
 	_title_label.add_theme_color_override("font_shadow_color", Color("#9D6FFF40"))
 	_title_label.add_theme_constant_override("shadow_offset_x", 0)
 	_title_label.add_theme_constant_override("shadow_offset_y", 3)
-	_title_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_title_label.position.y = 200
+	# 使用全宽居中锚点
+	_title_label.anchor_left = 0.0
+	_title_label.anchor_right = 1.0
+	_title_label.anchor_top = 0.0
+	_title_label.anchor_bottom = 0.0
+	_title_label.offset_left = 0
+	_title_label.offset_right = 0
+	_title_label.offset_top = 0
+	_title_label.offset_bottom = 60
+	# 使用 size_flags 和 margin 来定位
+	# 标题位于屏幕上方约 25% 处
+	_title_label.anchor_top = 0.2
+	_title_label.anchor_bottom = 0.2
+	_title_label.offset_top = -30
+	_title_label.offset_bottom = 30
 
-	# 副标题
-	var subtitle := Label.new()
-	subtitle.text = "Where Music Becomes Magic"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 16)
-	subtitle.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	subtitle.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	subtitle.position.y = 260
-	add_child(subtitle)
+	# ---- 副标题 ----
+	_subtitle_label = Label.new()
+	_subtitle_label.name = "SubtitleLabel"
+	_subtitle_label.text = "Where Music Becomes Magic"
+	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_subtitle_label.add_theme_font_size_override("font_size", 16)
+	_subtitle_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
+	_subtitle_label.anchor_left = 0.0
+	_subtitle_label.anchor_right = 1.0
+	_subtitle_label.anchor_top = 0.2
+	_subtitle_label.anchor_bottom = 0.2
+	_subtitle_label.offset_left = 0
+	_subtitle_label.offset_right = 0
+	_subtitle_label.offset_top = 35
+	_subtitle_label.offset_bottom = 55
+	add_child(_subtitle_label)
 
-	# 按钮容器
-	var button_container := VBoxContainer.new()
-	button_container.set_anchors_preset(Control.PRESET_CENTER)
-	button_container.position = Vector2(-110, 30)
-	button_container.custom_minimum_size = Vector2(220, 0)
-	button_container.add_theme_constant_override("separation", 12)
-	add_child(button_container)
+	# ---- 按钮容器（垂直居中）----
+	_button_container = VBoxContainer.new()
+	_button_container.name = "ButtonContainer"
+	# 锚点居中
+	_button_container.anchor_left = 0.5
+	_button_container.anchor_right = 0.5
+	_button_container.anchor_top = 0.42
+	_button_container.anchor_bottom = 0.42
+	_button_container.offset_left = -120
+	_button_container.offset_right = 120
+	_button_container.offset_top = 0
+	_button_container.offset_bottom = 350
+	_button_container.add_theme_constant_override("separation", 12)
+	add_child(_button_container)
 
-	# 创建所有按钮
+	# ---- 创建所有按钮 ----
 	_buttons.clear()
 	for config in BUTTON_CONFIGS:
 		var button: Button
 		var existing = get_node_or_null(config.name)
 		if existing:
 			button = existing
-			existing.reparent(button_container)
+			existing.reparent(_button_container)
 		else:
 			button = Button.new()
 			button.name = config.name
-			button_container.add_child(button)
+			_button_container.add_child(button)
 		
 		button.text = config.text
-		button.custom_minimum_size = Vector2(220, 50)
+		button.custom_minimum_size = Vector2(240, 50)
 		_style_button(button, config.accent)
 		_buttons.append(button)
 	
@@ -120,7 +149,7 @@ func _setup_ui() -> void:
 	# _buttons[3] settings - can be connected later
 	_buttons[4].pressed.connect(_on_quit_pressed)
 
-	# 版本号
+	# ---- 版本号（右下角）----
 	if _version_label == null:
 		_version_label = Label.new()
 		_version_label.name = "VersionLabel"
@@ -129,8 +158,14 @@ func _setup_ui() -> void:
 	_version_label.text = "v0.2.0 Alpha"
 	_version_label.add_theme_font_size_override("font_size", 10)
 	_version_label.add_theme_color_override("font_color", VERSION_COLOR)
-	_version_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_version_label.position = Vector2(-100, -30)
+	_version_label.anchor_left = 1.0
+	_version_label.anchor_right = 1.0
+	_version_label.anchor_top = 1.0
+	_version_label.anchor_bottom = 1.0
+	_version_label.offset_left = -120
+	_version_label.offset_right = -10
+	_version_label.offset_top = -30
+	_version_label.offset_bottom = -10
 
 func _style_button(button: Button, accent_color: Color) -> void:
 	var style := StyleBoxFlat.new()
@@ -169,25 +204,25 @@ func _style_button(button: Button, accent_color: Color) -> void:
 func _play_entrance_animation() -> void:
 	# 标题从上方滑入 + 淡入
 	if _title_label:
-		var original_y = _title_label.position.y
-		_title_label.position.y = original_y - 40
 		_title_label.modulate.a = 0.0
 		var tween := create_tween()
 		tween.set_parallel(true)
-		tween.tween_property(_title_label, "position:y", original_y, 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-		tween.tween_property(_title_label, "modulate:a", 1.0, 0.5)
+		tween.tween_property(_title_label, "modulate:a", 1.0, 0.6).set_ease(Tween.EASE_OUT)
 	
-	# 按钮依次从下方滑入
+	# 副标题淡入
+	if _subtitle_label:
+		_subtitle_label.modulate.a = 0.0
+		var tween := create_tween()
+		tween.tween_interval(0.2)
+		tween.tween_property(_subtitle_label, "modulate:a", 1.0, 0.5)
+	
+	# 按钮依次淡入
 	for i in range(_buttons.size()):
 		var button = _buttons[i]
-		var original_pos = button.position
-		button.position.y += 30
 		button.modulate.a = 0.0
 		var delay = 0.3 + i * 0.08
 		var tween := create_tween()
 		tween.tween_interval(delay)
-		tween.set_parallel(true)
-		tween.tween_property(button, "position:y", original_pos.y, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		tween.tween_property(button, "modulate:a", 1.0, 0.3)
 
 # ============================================================
