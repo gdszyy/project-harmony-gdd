@@ -29,74 +29,73 @@ uniform float shake_offset_x : hint_range(-0.02, 0.02) = 0.0;
 uniform float shake_offset_y : hint_range(-0.02, 0.02) = 0.0;
 
 void fragment() {
-    // 如果没有任何效果激活，直接输出原始画面，避免不必要的 screen_texture 采样
+    // 如果没有任何效果激活，直接输出透明，避免不必要的采样逻辑
     if (hit_intensity < 0.001 && low_hp_intensity < 0.001 && flash_intensity < 0.001
         && abs(shake_offset_x) < 0.0001 && abs(shake_offset_y) < 0.0001) {
         COLOR = vec4(0.0, 0.0, 0.0, 0.0);
-        return;
-    }
-
-    // === 1. 屏幕抖动 (UV 偏移) ===
-    vec2 uv = SCREEN_UV;
-    uv += vec2(shake_offset_x, shake_offset_y);
-
-    // === 2. 色差偏移 (受击方向性) — 仅在受击时激活 ===
-    vec3 final_color;
-    if (hit_intensity > 0.01) {
-        float aberration = hit_intensity * 0.008;
-        vec2 hit_dir = normalize(vec2(hit_direction_x, hit_direction_y) + vec2(0.001));
-
-        vec4 r_col = texture(screen_texture, uv + hit_dir * aberration);
-        vec4 g_col = texture(screen_texture, uv);
-        vec4 b_col = texture(screen_texture, uv - hit_dir * aberration);
-
-        final_color = vec3(r_col.r, g_col.g, b_col.b);
     } else {
-        final_color = texture(screen_texture, uv).rgb;
+        // === 1. 屏幕抖动 (UV 偏移) ===
+        vec2 uv = SCREEN_UV;
+        uv += vec2(shake_offset_x, shake_offset_y);
+
+        // === 2. 色差偏移 (受击方向性) — 仅在受击时激活 ===
+        vec3 final_color;
+        if (hit_intensity > 0.01) {
+            float aberration = hit_intensity * 0.008;
+            vec2 hit_dir = normalize(vec2(hit_direction_x, hit_direction_y) + vec2(0.001));
+
+            vec4 r_col = texture(screen_texture, uv + hit_dir * aberration);
+            vec4 g_col = texture(screen_texture, uv);
+            vec4 b_col = texture(screen_texture, uv - hit_dir * aberration);
+
+            final_color = vec3(r_col.r, g_col.g, b_col.b);
+        } else {
+            final_color = texture(screen_texture, uv).rgb;
+        }
+
+        // === 3. 受击红色暗角 ===
+        if (hit_intensity > 0.01) {
+            float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+
+            // 暗角范围随受击强度增大
+            float vignette_range = mix(0.15, 0.4, hit_intensity);
+            float vignette = smoothstep(0.0, vignette_range, edge_dist);
+
+            // 方向性暗角（受击方向更强）
+            vec2 dir_offset = vec2(hit_direction_x, hit_direction_y) * 0.1;
+            vec2 shifted_uv = uv - 0.5 + dir_offset;
+            float dir_dist = length(shifted_uv);
+            float dir_vignette = smoothstep(0.3, 0.8, dir_dist);
+
+            float combined_vignette = max(1.0 - vignette, dir_vignette * 0.5);
+            combined_vignette *= hit_intensity;
+
+            final_color = mix(final_color, hit_vignette_color.rgb, combined_vignette * hit_vignette_color.a);
+        }
+
+        // === 4. 低血量持续红色脉冲边缘 ===
+        if (low_hp_intensity > 0.01) {
+            float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+
+            // 脉冲呼吸
+            float pulse = sin(TIME * 3.0) * 0.5 + 0.5;
+            float pulse_strength = mix(0.3, 0.7, pulse);
+
+            float vignette_range = mix(0.1, 0.25, low_hp_intensity);
+            float vignette = smoothstep(0.0, vignette_range, edge_dist);
+
+            float low_hp_vignette = (1.0 - vignette) * low_hp_intensity * pulse_strength;
+
+            final_color = mix(final_color, low_hp_vignette_color.rgb, low_hp_vignette * low_hp_vignette_color.a);
+
+            // 心跳效果 — 周期性的微弱全屏红色闪烁
+            float heartbeat = pow(max(0.0, sin(TIME * 2.5)), 8.0);
+            final_color += low_hp_vignette_color.rgb * heartbeat * low_hp_intensity * 0.1;
+        }
+
+        // === 5. 受击白色闪光 ===
+        final_color = mix(final_color, vec3(1.0), flash_intensity * 0.4);
+
+        COLOR = vec4(final_color, 1.0);
     }
-
-    // === 3. 受击红色暗角 ===
-    if (hit_intensity > 0.01) {
-        float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
-        // 暗角范围随受击强度增大
-        float vignette_range = mix(0.15, 0.4, hit_intensity);
-        float vignette = smoothstep(0.0, vignette_range, edge_dist);
-
-        // 方向性暗角（受击方向更强）
-        vec2 dir_offset = vec2(hit_direction_x, hit_direction_y) * 0.1;
-        vec2 shifted_uv = uv - 0.5 + dir_offset;
-        float dir_dist = length(shifted_uv);
-        float dir_vignette = smoothstep(0.3, 0.8, dir_dist);
-
-        float combined_vignette = max(1.0 - vignette, dir_vignette * 0.5);
-        combined_vignette *= hit_intensity;
-
-        final_color = mix(final_color, hit_vignette_color.rgb, combined_vignette * hit_vignette_color.a);
-    }
-
-    // === 4. 低血量持续红色脉冲边缘 ===
-    if (low_hp_intensity > 0.01) {
-        float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-
-        // 脉冲呼吸
-        float pulse = sin(TIME * 3.0) * 0.5 + 0.5;
-        float pulse_strength = mix(0.3, 0.7, pulse);
-
-        float vignette_range = mix(0.1, 0.25, low_hp_intensity);
-        float vignette = smoothstep(0.0, vignette_range, edge_dist);
-
-        float low_hp_vignette = (1.0 - vignette) * low_hp_intensity * pulse_strength;
-
-        final_color = mix(final_color, low_hp_vignette_color.rgb, low_hp_vignette * low_hp_vignette_color.a);
-
-        // 心跳效果 — 周期性的微弱全屏红色闪烁
-        float heartbeat = pow(max(0.0, sin(TIME * 2.5)), 8.0);
-        final_color += low_hp_vignette_color.rgb * heartbeat * low_hp_intensity * 0.1;
-    }
-
-    // === 5. 受击白色闪光 ===
-    final_color = mix(final_color, vec3(1.0), flash_intensity * 0.4);
-
-    COLOR = vec4(final_color, 1.0);
 }
