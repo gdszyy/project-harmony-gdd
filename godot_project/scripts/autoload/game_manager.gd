@@ -156,11 +156,17 @@ func reset_game() -> void:
 	player_max_hp = 100.0
 	player_current_hp = 100.0
 	current_bpm = base_bpm
+	session_kills = 0
+	player_dodge_chance = 0.0
 	_update_beat_interval()
 
-	# 重置其他管理器
+	# 重置所有子系统
 	if FatigueManager.has_method("reset"):
 		FatigueManager.reset()
+	if SpellcraftSystem.has_method("reset"):
+		SpellcraftSystem.reset()
+	if MusicTheoryEngine.has_method("clear_history"):
+		MusicTheoryEngine.clear_history()
 
 	game_state_changed.emit(current_state)
 

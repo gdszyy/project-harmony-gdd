@@ -130,6 +130,14 @@ func _update_fatigue_filter() -> void:
 		var beat_pulse := max(0.0, 1.0 - beat_progress * 3.0)
 		mat.set_shader_parameter("beat_pulse", beat_pulse * 0.3)
 
+		# 不和谐度视觉效果
+		var fatigue_data := FatigueManager.query_fatigue()
+		var dissonance_visual: float = 0.0
+		var silenced := fatigue_data.get("silenced_notes", [])
+		if not silenced.is_empty():
+			dissonance_visual = min(float(silenced.size()) * 0.2, 1.0)
+		mat.set_shader_parameter("dissonance_level", dissonance_visual)
+
 # ============================================================
 # 节拍响应
 # ============================================================

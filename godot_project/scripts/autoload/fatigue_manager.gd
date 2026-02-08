@@ -2,6 +2,12 @@
 ## 听感疲劳管理器 (Autoload)
 ## GDScript 版本的 AestheticFatigueEngine
 ## 基于信息论、递归量化分析和翁特曲线理论
+##
+## v2.0 更新：
+##   - 实现"单音寂静"惩罚：重复使用同一音符会导致该音符暂时禁用
+##   - 实现"密度过载"惩罚：音符堆太满时降低精准度（弹体散射偏移）
+##   - 实现"不和谐值"连接：不和谐法术直接扣血（生命腐蚀），由 GameManager 处理
+##   - 三维惩罚模型完整落地
 extends Node
 
 # ============================================================
@@ -10,6 +16,11 @@ extends Node
 signal fatigue_updated(result: Dictionary)
 signal fatigue_level_changed(level: MusicData.FatigueLevel)
 signal recovery_suggestion(message: String)
+## 新增：单音寂静信号 — 当某个音符被禁用/解禁时发出
+signal note_silenced(note: MusicData.WhiteKey, duration: float)
+signal note_unsilenced(note: MusicData.WhiteKey)
+## 新增：密度过载信号 — 当密度过载状态变化时发出
+signal density_overload_changed(is_overloaded: bool, accuracy_penalty: float)
 
 # ============================================================
 # 配置
@@ -54,6 +65,32 @@ var weaken_multipliers := {
 }
 
 # ============================================================
+# 单音寂静系统配置
+# ============================================================
+
+## 单音寂静触发阈值：在窗口内同一音符使用次数超过此值则触发寂静
+const SILENCE_TRIGGER_COUNT: int = 4
+## 单音寂静基础持续时间（秒）
+const SILENCE_BASE_DURATION: float = 3.0
+## 单音寂静叠加系数：每多使用一次，额外增加的寂静时间
+const SILENCE_STACK_DURATION: float = 1.0
+## 单音寂静短窗口（秒）：在此窗口内计算重复使用次数
+const SILENCE_WINDOW: float = 8.0
+
+# ============================================================
+# 密度过载系统配置
+# ============================================================
+
+## 密度过载触发阈值：最近3秒内施法次数超过此值则触发
+const DENSITY_OVERLOAD_THRESHOLD: int = 8
+## 密度过载精准度惩罚：弹体散射偏移角度（弧度）
+const DENSITY_OVERLOAD_ACCURACY_PENALTY: float = 0.3
+## 密度过载严重精准度惩罚
+const DENSITY_OVERLOAD_SEVERE_PENALTY: float = 0.6
+## 密度过载检测窗口（秒）
+const DENSITY_OVERLOAD_WINDOW: float = 3.0
+
+# ============================================================
 # 状态
 # ============================================================
 
@@ -84,12 +121,38 @@ var _dissonance_decay_bonus: float = 0.0
 var _density_resistance: float = 0.0
 
 # ============================================================
+# 单音寂静状态
+# ============================================================
+
+## 被寂静的音符及其解禁时间 { WhiteKey: expiry_time }
+var _silenced_notes: Dictionary = {}
+
+## 每个音符在短窗口内的使用计数（带时间衰减）
+var _note_use_counts: Dictionary = {}
+
+# ============================================================
+# 密度过载状态
+# ============================================================
+
+## 当前是否处于密度过载状态
+var is_density_overloaded: bool = false
+
+## 当前精准度惩罚值 (0.0 = 无惩罚, 越高散射越大)
+var current_accuracy_penalty: float = 0.0
+
+# ============================================================
 # 衰减常数
 # ============================================================
 var _decay_lambda: float = 0.0
 
 func _ready() -> void:
 	_decay_lambda = log(2.0) / decay_half_life
+
+func _process(delta: float) -> void:
+	# 更新单音寂静计时器
+	_update_silenced_notes()
+	# 更新密度过载状态
+	_update_density_overload()
 
 # ============================================================
 # 核心接口
@@ -111,6 +174,11 @@ func record_spell(event: Dictionary) -> Dictionary:
 		_continuous_cast_start = current_time
 	_last_cast_time = current_time
 
+	# 更新单音使用计数（用于单音寂静判定）
+	var note = event.get("note", -1)
+	if note >= 0 and not event.get("is_chord", false):
+		_record_note_use(note, current_time)
+
 	# 计算 AFI
 	var result := _calculate_afi(current_time)
 	current_afi = result["afi"]
@@ -125,6 +193,9 @@ func record_spell(event: Dictionary) -> Dictionary:
 	result["level"] = current_level
 	result["penalty"] = _calculate_penalty()
 	result["suggestions"] = _generate_suggestions()
+	result["silenced_notes"] = get_silenced_notes()
+	result["density_overloaded"] = is_density_overloaded
+	result["accuracy_penalty"] = current_accuracy_penalty
 
 	fatigue_updated.emit(result)
 
@@ -141,27 +212,148 @@ func query_fatigue() -> Dictionary:
 	var result := _calculate_afi(current_time)
 	result["level"] = current_level
 	result["penalty"] = _calculate_penalty()
+	result["silenced_notes"] = get_silenced_notes()
+	result["density_overloaded"] = is_density_overloaded
+	result["accuracy_penalty"] = current_accuracy_penalty
 	return result
 
 ## 获取每个音符的独立疲劳度
 func get_note_fatigue_map() -> Dictionary:
 	var current_time := GameManager.game_time
-	var note_counts: Dictionary = {}
+	var note_weights: Dictionary = {}
 	var total_weight: float = 0.0
 
 	for event in _event_history:
 		var weight := _time_weight(current_time, event["time"])
 		var note = event.get("note", -1)
 		if note >= 0:
-			note_counts[note] = note_counts.get(note, 0.0) + weight
+			note_weights[note] = note_weights.get(note, 0.0) + weight
 			total_weight += weight
 
 	var fatigue_map: Dictionary = {}
 	if total_weight > 0.0:
-		for note in note_counts:
-			fatigue_map[note] = clampf(note_counts[note] / total_weight * 2.0, 0.0, 1.0)
+		for note in note_weights:
+			fatigue_map[note] = clampf(note_weights[note] / total_weight * 2.0, 0.0, 1.0)
 
 	return fatigue_map
+
+# ============================================================
+# 单音寂静系统
+# ============================================================
+
+## 记录音符使用（用于单音寂静判定）
+func _record_note_use(note: int, current_time: float) -> void:
+	if not _note_use_counts.has(note):
+		_note_use_counts[note] = []
+
+	# 记录使用时间戳
+	_note_use_counts[note].append(current_time)
+
+	# 清理过期记录
+	var timestamps: Array = _note_use_counts[note]
+	while not timestamps.is_empty() and current_time - timestamps[0] > SILENCE_WINDOW:
+		timestamps.pop_front()
+
+	# 检查是否触发单音寂静
+	var use_count: int = timestamps.size()
+	if use_count >= SILENCE_TRIGGER_COUNT and not is_note_silenced(note):
+		var white_key := _note_int_to_white_key(note)
+		if white_key >= 0:
+			var extra_stacks: int = use_count - SILENCE_TRIGGER_COUNT
+			var silence_duration: float = SILENCE_BASE_DURATION + extra_stacks * SILENCE_STACK_DURATION
+			# 应用单调抗性
+			silence_duration *= (1.0 - _monotony_resistance)
+			_silence_note(white_key, silence_duration)
+
+## 使某个音符进入寂静状态
+func _silence_note(white_key: int, duration: float) -> void:
+	var expiry_time: float = GameManager.game_time + duration
+	_silenced_notes[white_key] = expiry_time
+	note_silenced.emit(white_key, duration)
+
+## 更新寂静音符计时器
+func _update_silenced_notes() -> void:
+	var current_time := GameManager.game_time
+	var to_remove: Array = []
+
+	for note_key in _silenced_notes:
+		if current_time >= _silenced_notes[note_key]:
+			to_remove.append(note_key)
+
+	for note_key in to_remove:
+		_silenced_notes.erase(note_key)
+		note_unsilenced.emit(note_key)
+
+## 检查某个音符是否被寂静
+func is_note_silenced(note) -> bool:
+	# 支持 WhiteKey 枚举或 int
+	if _silenced_notes.has(note):
+		return GameManager.game_time < _silenced_notes[note]
+	# 也检查从 int 转换的 WhiteKey
+	var white_key := _note_int_to_white_key(note) if note is int and note > 6 else note
+	if white_key >= 0 and _silenced_notes.has(white_key):
+		return GameManager.game_time < _silenced_notes[white_key]
+	return false
+
+## 获取所有被寂静的音符列表
+func get_silenced_notes() -> Array:
+	var result: Array = []
+	var current_time := GameManager.game_time
+	for note_key in _silenced_notes:
+		if current_time < _silenced_notes[note_key]:
+			result.append({
+				"note": note_key,
+				"remaining": _silenced_notes[note_key] - current_time,
+			})
+	return result
+
+## 使用不和谐法术可以缓解单调值（关键交互：不和谐是双刃剑）
+func reduce_monotony_from_dissonance(dissonance: float) -> void:
+	# 不和谐法术引入了变化，可以降低单调值
+	# 每点不和谐度可以减少 0.5 秒的寂静时间
+	var reduction: float = dissonance * 0.5
+	var current_time := GameManager.game_time
+	for note_key in _silenced_notes:
+		_silenced_notes[note_key] = max(current_time, _silenced_notes[note_key] - reduction)
+
+# ============================================================
+# 密度过载系统
+# ============================================================
+
+## 更新密度过载状态
+func _update_density_overload() -> void:
+	var current_time := GameManager.game_time
+	var recent_count := 0
+
+	for event in _event_history:
+		if current_time - event["time"] < DENSITY_OVERLOAD_WINDOW:
+			recent_count += 1
+
+	# BPM 相关的动态阈值
+	var beat_rate := GameManager.current_bpm / 60.0
+	var dynamic_threshold := int(beat_rate * DENSITY_OVERLOAD_WINDOW * 1.2)
+	var effective_threshold := max(DENSITY_OVERLOAD_THRESHOLD, dynamic_threshold)
+
+	# 应用密度抗性
+	effective_threshold = int(float(effective_threshold) * (1.0 + _density_resistance))
+
+	var was_overloaded := is_density_overloaded
+
+	if recent_count > effective_threshold:
+		is_density_overloaded = true
+		# 根据超出程度计算精准度惩罚
+		var excess_ratio := float(recent_count - effective_threshold) / float(effective_threshold)
+		if excess_ratio > 0.5:
+			current_accuracy_penalty = DENSITY_OVERLOAD_SEVERE_PENALTY
+		else:
+			current_accuracy_penalty = DENSITY_OVERLOAD_ACCURACY_PENALTY
+	else:
+		is_density_overloaded = false
+		current_accuracy_penalty = 0.0
+
+	# 状态变化时发出信号
+	if was_overloaded != is_density_overloaded:
+		density_overload_changed.emit(is_density_overloaded, current_accuracy_penalty)
 
 # ============================================================
 # AFI 计算
@@ -359,8 +551,7 @@ func _calc_ngram_fatigue(events: Array) -> float:
 			gram_counts[gram] = gram_counts.get(gram, 0) + 1
 
 		for gram in gram_counts:
-			if gram_counts[gram] > 1:
-				total_recurrence += gram_counts[gram] - 1
+			total_recurrence += gram_counts[gram] - 1
 			total_possible += 1
 
 	if total_possible <= 0.0:
@@ -387,7 +578,7 @@ func _calc_density_fatigue(events: Array, current_time: float) -> float:
 	return clampf((float(recent_count) - expected_max) / expected_max, 0.0, 1.0)
 
 ## 留白缺失疲劳
-func _calc_rest_deficit(events: Array, current_time: float) -> float:
+func _calc_rest_deficit(events: Array, _current_time: float) -> float:
 	if events.size() < 3:
 		return 0.0
 
@@ -425,7 +616,7 @@ func _calc_sustained_pressure(current_time: float) -> float:
 	return clampf((duration - 10.0) / 20.0, 0.0, 1.0)
 
 # ============================================================
-# 惩罚计算
+# 惩罚计算（增强版：包含三维惩罚）
 # ============================================================
 
 func _calculate_penalty() -> Dictionary:
@@ -433,6 +624,10 @@ func _calculate_penalty() -> Dictionary:
 		"damage_multiplier": 1.0,
 		"is_locked": false,
 		"global_debuff": 0.0,
+		# 新增三维惩罚信息
+		"silenced_notes": get_silenced_notes(),
+		"density_overloaded": is_density_overloaded,
+		"accuracy_penalty": current_accuracy_penalty,
 	}
 
 	match penalty_mode:
@@ -460,7 +655,7 @@ func _determine_level(afi: float) -> MusicData.FatigueLevel:
 		return MusicData.FatigueLevel.NONE
 
 # ============================================================
-# 恢复建议
+# 恢复建议（增强版：包含三维惩罚建议）
 # ============================================================
 
 func _generate_suggestions() -> Array[String]:
@@ -468,6 +663,22 @@ func _generate_suggestions() -> Array[String]:
 
 	if _fatigue_components.is_empty():
 		return suggestions
+
+	# 单音寂静建议
+	var silenced := get_silenced_notes()
+	if not silenced.is_empty():
+		var note_names: Array[String] = []
+		for s in silenced:
+			var wk: int = s["note"]
+			if wk >= 0 and wk < MusicData.WHITE_KEY_STATS.size():
+				var stats = MusicData.WHITE_KEY_STATS.values()[wk]
+				note_names.append(stats.get("name", "?"))
+		if not note_names.is_empty():
+			suggestions.append("音符 %s 已进入寂静！使用其他音符来恢复多样性" % ", ".join(note_names))
+
+	# 密度过载建议
+	if is_density_overloaded:
+		suggestions.append("密度过载！施法太密集了，弹体精准度大幅下降。编入休止符留出空拍！")
 
 	# 按严重程度排序建议
 	if _fatigue_components.get("sustained", 0.0) > 0.5:
@@ -528,6 +739,23 @@ func _sum_values(dict: Dictionary) -> float:
 		total += dict[key]
 	return total
 
+## 将 int 音符值转为 WhiteKey 枚举
+func _note_int_to_white_key(note: int) -> int:
+	var pc := note % 12 if note > 6 else note
+	match pc:
+		0: return MusicData.WhiteKey.C
+		2: return MusicData.WhiteKey.D
+		4: return MusicData.WhiteKey.E
+		5: return MusicData.WhiteKey.F
+		7: return MusicData.WhiteKey.G
+		9: return MusicData.WhiteKey.A
+		11: return MusicData.WhiteKey.B
+		_:
+			# 如果 note 本身就是 WhiteKey 枚举值 (0-6)
+			if note >= 0 and note <= 6:
+				return note
+			return -1
+
 ## 外部疲劳注入（供 Silence 敌人等调用）
 func add_external_fatigue(amount: float) -> void:
 	current_afi = clampf(current_afi + amount, 0.0, 1.0)
@@ -575,3 +803,9 @@ func reset() -> void:
 	_monotony_resistance = 0.0
 	_dissonance_decay_bonus = 0.0
 	_density_resistance = 0.0
+	# 重置单音寂静
+	_silenced_notes.clear()
+	_note_use_counts.clear()
+	# 重置密度过载
+	is_density_overloaded = false
+	current_accuracy_penalty = 0.0

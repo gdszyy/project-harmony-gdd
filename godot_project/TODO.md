@@ -1,453 +1,412 @@
-# Project Harmony — Godot 4.6 开发 TODO 清单
+# Project Harmony — 开发待办清单 (TODO)
 
-**创建日期：** 2026年2月7日
-**状态标记：** ⬜ 待开发 | 🔲 部分完成 | ✅ 已完成
-
----
-
-## 一、音频系统 (Audio System)
-### 1.1 音符音效生成 ✅ `P0-Critical` — 已完成 (2026-02-07)
-**文件：** `scripts/autoload/audio_manager.gd` + `scripts/autoload/global_music_manager.gd` + `scripts/systems/note_synthesizer.gd` + `scripts/data/music_data.gd`
-**完成内容：**
-- 创建了全局 `AudioManager` 单例，使用 `AudioStreamWAV` 程序化生成所有音效
-- 玩家音效：施法音 (`cast_chime`)、和弦音 (`chord_resolve`)、完美卡拍音 (`perfect_beat_ring`)、和弦进行音 (`progression_fanfare`)
-- UI 音效：点击 (`ui_click`)、悬停 (`ui_hover`)、确认 (`ui_confirm`)、取消 (`ui_cancel`)、升级 (`level_up`)
-- `global_music_manager.gd` 的 `play_note_sound()`、`play_chord_sound()`、`play_ui_sound()` 已接入 AudioManager
-- 对象池系统：32个 2D 播放器 + 8个全局播放器，避免频繁创建销毁
-- 音效冷却系统防止过度叠加
-- **音色系统集成 (Issue #1)**：
-  - 新建 `NoteSynthesizer` 类（`scripts/systems/note_synthesizer.gd`），实现基于 ADSR 包络 + 波形合成 + 泛音结构的程序化音符合成
-  - 支持五种音色系别：默认合成器 / 弹拨系(古筝、琵琶) / 拉弦系(二胡、大提琴) / 吹奏系(笛子、长笛) / 打击系(钢琴、马林巴)
-  - 每种音色具有独立的 ADSR 参数、波形类型、泛音结构和音效时长
-  - 支持外部采样加载（优先检查 `res://audio/samples/{timbre}/` 目录）
-  - 音符音效缓存机制：首次生成后缓存，后续直接复用
-  - `SpellcraftSystem` 已集成音色信息：施法时自动播放对应音色的音符/和弦音效
-  - `MusicData` 新增 `TimbreType` 枚举、`TIMBRE_ADSR` 数据表、`NOTE_FREQUENCIES` 频率表、`WHITE_KEY_TO_NOTE` 映射表
-  - 采样目录结构已创建（`audio/samples/`），附带详细的采样规范和推荐来源文档
-
-### 1.2 背景音乐 (BGM) ✅ `P0-Critical` — 已完成 (2026-02-07)
-**文件：** `scripts/autoload/bgm_manager.gd` + `audio_bus_layout.tres`
-**完成内容：**
-- 创建了 `BGMManager` 全局单例，实现 BGM 的加载、播放、循环、BPM 同步和场景切换
-- BGM 风格确定为 **Minimal Techno / Glitch Techno**，与游戏的故障艺术美学完美契合
-- 实现了双播放器交叉淡入淡出 (Crossfade) 切换
-- 支持根据游戏状态自动选择 BGM（菜单/战斗 120-140 BPM/游戏结束）
-- 暂停时自动添加低通滤波器闷音效果
-- 创建了 `audio_bus_layout.tres` 音频总线布局文件，配置了 Music/SFX/EnemySFX/PlayerSFX/UI 总线
-- **待完善：** 需要实际的 BGM 音频文件 (.ogg)，当前为框架代码
-
-### 1.3 频谱分析实际接入 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `audio_bus_layout.tres` + `scripts/autoload/global_music_manager.gd`
-**完成内容：**
-- 创建了 `audio_bus_layout.tres`，在 Music 总线上配置了 `AudioEffectSpectrumAnalyzer` 效果器
-- Kick 频率范围配置为 20-200Hz，与 `global_music_manager.gd` 中的 `LOW_FREQ_MIN/MAX` 匹配
-- 音频总线布局已在 `project.godot` 中注册
-- **待完善：** 需实际 BGM 音频文件才能验证频谱数据传递给 Shader 的效果
+> **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
+> 最后更新时间：2026-02-08
 
 ---
 
-## 二、碰撞与物理 (Collision & Physics)
+## 目录
 
-### 2.1 CollisionShape 资源缺失 ⬜ `P0-Critical`
-**文件：** `scenes/main_game.tscn`
-**现状：** Player 和 PickupArea 的 `CollisionShape2D` 节点已创建，但未设置具体的 `Shape` 资源。
-**需求：**
-- 为 Player 设置 `CircleShape2D`（半径约 12px）
-- 为 PickupArea 设置 `CircleShape2D`（半径约 80px，用于经验值吸收）
-- 为敌人模板设置碰撞形状
-
-### 2.2 弹体碰撞系统优化 🔲 `P1-High`
-**文件：** `scripts/systems/projectile_manager.gd` (第407行)
-**现状：** 使用简化的距离检测（`_check_collisions()`），逐个遍历弹体与敌人进行距离比较。
-**需求：**
-- 引入空间分区（如四叉树或 Godot 内置的 `PhysicsServer2D` 查询）优化碰撞检测性能
-- 当同屏弹体超过 500 个时，当前 O(n×m) 复杂度将成为瓶颈
-- 考虑使用 `PhysicsServer2D.space_get_direct_state()` 进行批量射线/形状查询
-
-### 2.3 敌人碰撞层配置 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `scenes/enemies/enemy_*.tscn`
-**完成内容：**
-- 5 种敌人 PackedScene 模板已创建，每个包含 `CharacterBody2D` + `CollisionShape2D` + `Area2D`
-- 碰撞层配置：Layer 2 (enemies)，Mask 1 (player) + 4 (player_projectiles)
-- 每种敌人有独立的碰撞半径（Static: 12px, Silence: 18px, Screech: 8px, Pulse: 14px, Wall: 28px）
+1. [核心系统状态总览](#核心系统状态总览)
+2. [法术构建系统 (SpellcraftSystem)](#法术构建系统-spellcraftsystem)
+3. [听感疲劳系统 (FatigueManager)](#听感疲劳系统-fatiguemanager)
+4. [音乐理论引擎 (MusicTheoryEngine)](#音乐理论引擎-musictheoryengine)
+5. [弹体系统 (ProjectileManager)](#弹体系统-projectilemanager)
+6. [敌人系统 (EnemySpawner)](#敌人系统-enemyspawner)
+7. [Boss 系统](#boss-系统)
+8. [视觉与 Shader](#视觉与-shader)
+9. [UI 系统](#ui-系统)
+10. [音频系统](#音频系统)
+11. [局外成长 (SaveManager)](#局外成长-savemanager)
+12. [游戏流程](#游戏流程)
+13. [性能优化](#性能优化)
+14. [待设计/待讨论](#待设计待讨论)
 
 ---
 
-## 三、敌人系统 (Enemy System)
+## 核心系统状态总览
 
-### 3.1 敌人场景模板 ✅ `P0-Critical` — 已完成 (2026-02-07)
-**文件：** `scenes/enemies/enemy_*.tscn` (5个场景)
-**完成内容：**
-- 为 5 种敌人类型（Static, Silence, Screech, Pulse, Wall）分别创建了 `.tscn` 场景文件
-- 每个场景包含：`CharacterBody2D` + `Polygon2D`（类型特化造型）+ `CollisionShape2D` + `Area2D`
-- `EnemySpawner` 已使用 `PackedScene.instantiate()` 替代动态节点创建
-- 每个场景应用了 `enemy_glitch.gdshader`，Silence 额外应用 `silence_aura.gdshader`
-
-### 3.2 敌人 AI 行为扩展 ✅ `P2-Medium` — 已完成 (2026-02-07)
-**文件：** `scripts/entities/enemies/enemy_*.gd` (5个子类)
-**完成内容：**
-- **Static (底噪)**：群体加速机制（附近同类越多速度越快，最高 1.6x）
-- **Silence (寂静)**：静音光环（120px，增加疲劳度 + 法术削减 40%）
-- **Screech (尖啸)**：冲刺行为（3x 速度，200px 触发距离）+ 死亡不和谐爆发
-- **Pulse (脉冲)**：蓄力-释放周期（4拍蓄力 → 冲刺/8发环形弹幕交替）
-- **Wall (音墙)**：护盾机制（50HP 额外层）+ 地震冲击波 + 推力
-
-### 3.3 敌人死亡特效与掉落 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `scripts/systems/death_vfx_manager.gd` + `scripts/entities/xp_pickup.gd` + `scripts/autoload/audio_manager.gd`
-**完成内容：**
-- 实现了 GDD 美术方向中的死亡效果：膨胀→压缩成线→淡出（老式电视关机效果）
-- `death_vfx_manager.gd`：对象池碎片系统 + 5种类型差异化特效 + 屏幕震动
-- `xp_pickup.gd`：经验值拾取物（4级颜色分级 + 磁吸机制 + 节拍脉冲 + 合并机制）
-- 每种敌人类型有独特的死亡特效（爆发环、内爆、涟漪、地震环等）
-- ✅ 死亡音效已实现：通过 AudioManager 的信号驱动机制，每种敌人有独特的死亡音效
-### 3.4 Boss 敌人 ⬜ `P3-Low`
-**现状：** 完全未实现。
-**需求：**
-- 设计并实现至少 1 种 Boss 敌人
-- Boss 应具有多阶段行为和独特的攻击模式
-- Boss 战应与音乐系统深度结合
+| 系统 | 状态 | 完成度 | 说明 |
+|------|------|--------|------|
+| 法术构建系统 | ✅ 核心完成 | 85% | 序列器、手动施法、和弦构建、节奏型修饰、和弦进行效果均已实现 |
+| 听感疲劳系统 | ✅ 核心完成 | 90% | 八维AFI、三维惩罚（单音寂静/密度过载/不和谐腐蚀）均已实现 |
+| 音乐理论引擎 | ✅ 完成 | 95% | 和弦识别、功能判定、进行分析、不和谐度计算均已实现 |
+| 弹体系统 | ✅ 核心完成 | 80% | MultiMesh渲染、修饰符、和弦弹体、密度过载散射均已实现 |
+| 敌人系统 | ✅ 核心完成 | 75% | 5种基础敌人已实现，需要更多敌人变体 |
+| Boss 系统 | ⚠️ 待重做 | 10% | 原Boss已归档，需按GDD重新设计音乐史七大Boss |
+| 视觉/Shader | ✅ 核心完成 | 85% | 疲劳滤镜、弹体发光、脉冲网格、事件视界均已实现 |
+| UI 系统 | ✅ 核心完成 | 80% | HUD、伤害数字、疲劳仪表、升级面板均已实现 |
+| 音频系统 | ✅ 核心完成 | 75% | 音符合成、ADSR包络、音色系统已实现 |
+| 局外成长 | ✅ 核心完成 | 85% | 乐器调优、乐理研习、声学降噪、调式选择均已实现 |
+| 游戏流程 | ✅ 核心完成 | 80% | 开始/暂停/结束/重置/结算均已实现 |
 
 ---
 
-## 四、法术系统 (Spellcraft System)
+## 法术构建系统 (SpellcraftSystem)
 
-### 4.1 小节完成时的处理逻辑 ⬜ `P1-High`
-**文件：** `scripts/autoload/spellcraft_system.gd` (第232-234行)
-**现状：** `_on_measure_complete()` 为空函数。
-**需求：**
-- 实现小节完成时的节奏型判定与应用
-- 计算小节内的休止符数量，应用"精准蓄力"加成
-- 触发小节级别的疲劳度更新
+### 已完成 ✅
 
-### 4.2 八分音符精度的手动施法 ⬜ `P1-High`
-**文件：** `scripts/autoload/spellcraft_system.gd` (第228-230行)
-**现状：** `_on_half_beat_tick()` 为空函数。
-**需求：**
-- GDD §2.3 要求手动施法对齐到八分音符精度（每小节8个施法时机）
-- 实现手动施法的节拍对齐判定（允许一定的时间窗口容差）
-- 手动施法应消耗手动施法槽
+- [x] 16拍序列器 (4小节 × 4拍)
+- [x] 7个白键音符，每个有独立四维属性 (DMG/SPD/DUR/SIZE)
+- [x] 5个黑键修饰符 (穿透/追踪/分裂/回响/散射)
+- [x] **黑键双重身份**：和弦缓冲窗口内参与和弦构建，否则作为修饰符 (Issue #18) — *v2.0 新增*
+- [x] 和弦构建缓冲区 (0.3秒窗口)
+- [x] 9种基础和弦 → 9种法术形态映射
+- [x] 6种扩展和弦 → 6种传说法术形态映射
+- [x] **6种节奏型识别与行为修饰** (连射/重击/闪避射击/摇摆弹道/三连发/精准蓄力) — *v2.0 完善*
+- [x] **手动施法槽** (3槽，带冷却，八分音符精度对齐，时机奖励+15%) — *v2.0 完善*
+- [x] **和弦进行效果完整实现** — *v2.0 新增*
+  - D→T: 爆发治疗（低血量）或全屏伤害（高血量），受完整度加成
+  - T→D: 增伤Buff（下一法术伤害翻倍），受完整度加成
+  - PD→D: 全体手动施法槽冷却缩减50%，受完整度加成
+- [x] 音色系统接口 (切换音色、疲劳代价)
+- [x] **单音寂静检查集成** (被寂静音符无法施放，发出 spell_blocked_by_silence 信号) — *v2.0 新增*
+- [x] **密度过载精准度惩罚集成** (弹体方向随机偏移) — *v2.0 新增*
+- [x] **不和谐法术缓解单调值的交互** (reduce_monotony_from_dissonance) — *v2.0 新增*
+- [x] **系统重置接口** (供 GameManager.reset_game 调用) — *v2.0 新增*
+- [x] **小节完成时的处理逻辑** (_on_measure_complete) — *v2.0 新增*
+- [x] **八分音符精度的手动施法** (_on_half_beat_tick) — *v2.0 新增*
+- [x] **闪避射击行为** (SYNCOPATED 发射时玩家向后微位移) — *v2.0 新增*
+- [x] **连射行为** (EVEN_EIGHTH 多弹体发射) — *v2.0 新增*
+- [x] **三连发行为** (TRIPLET 扇形弹体) — *v2.0 新增*
+- [x] **精准蓄力加成** (REST 休止符数量加成同小节弹体伤害和大小) — *v2.0 新增*
 
-### 4.3 和弦进行效果触发 🔲 `P1-High`
-**文件：** `scripts/autoload/spellcraft_system.gd`
-**现状：** `_check_chord_progression()` 已实现功能转换检测，但实际效果（爆发治疗、伤害翻倍、冷却缩减）的执行逻辑不完整。
-**需求：**
-- **D→T（紧张到解决）**：实现全屏伤害或爆发治疗效果
-- **T→D（稳定到紧张）**：实现"下一个法术伤害翻倍"的 buff 系统
-- **PD→D（准备到紧张）**：实现全体冷却缩减效果
-- 添加和弦进行触发时的视觉/音效反馈
+### 待完成 🔲
 
-### 4.4 扩展和弦法术形态 ⬜ `P2-Medium`
-**文件：** `scripts/systems/projectile_manager.gd`
-**现状：** 数据定义已完成（`music_data.gd`），但 6 种扩展和弦法术形态的实际弹体行为未实现。
-**需求：**
-- **风暴区域**（属九）：区域内敌人减速 30%
-- **圣光领域**（大九）：领域内持续回血 2/秒
-- **湮灭射线**（减九）：直线贯穿，无视防御
-- **时空裂隙**（属十一）：区域内时间减速 50%
-- **交响风暴**（属十三）：全屏持续 AOE + 随机元素效果
-- **终焉乐章**（减十三）：延迟后全屏毁灭打击 + 施法者自损 20% HP
-
-### 4.5 节奏型行为修饰实际应用 🔲 `P1-High`
-**文件：** `scripts/autoload/spellcraft_system.gd`
-**现状：** `_determine_rhythm_pattern()` 已实现简化的节奏型判定，但部分行为修饰未完全应用到弹体。
-**需求：**
-- **摇摆弹道**：实现 S 型/波浪形轨迹（需在 `projectile_manager.gd` 中添加正弦偏移）
-- **闪避射击**：实现发射时玩家向后微小位移
-- **三连发**：实现扇形散射的弹体生成
-- **精准蓄力**：实现休止符对同小节其他弹体的加成累积
-
-### 4.6 黑键作为和弦构成音 🔲 `P2-Medium`
-**文件：** `scripts/autoload/spellcraft_system.gd`
-**现状：** 黑键目前仅作为修饰符使用，其"作为和弦构成音改变和弦性质"的第二身份未完全实现。
-**需求：**
-- GDD §3.2 描述黑键拥有双重身份
-- 在和弦构建窗口内，黑键输入应参与和弦类型判定
-- 例如：C + E + G# 应识别为增三和弦（而非 C 大三 + G# 修饰符）
+- [ ] 摇摆弹道 (SWING) 的 S 型/波浪形轨迹实现 (ProjectileManager 中)
+- [ ] 和弦法术的完整视觉效果 (法阵、天降打击、护盾、召唤等)
+- [ ] 扩展和弦法术的完整视觉效果 (风暴区域、圣光领域、湮灭射线等)
+- [ ] 序列器 UI 的拖拽编辑交互
+- [ ] 手动施法槽的 UI 冷却显示
+- [ ] 音色切换的 UI 和快捷键绑定
 
 ---
 
-## 五、视觉效果 (Visual Effects)
+## 听感疲劳系统 (FatigueManager)
 
-### 5.1 玩家视觉完善 🔲 `P1-High`
-**文件：** `scripts/entities/player.gd`
-**现状：** 使用简单的 `Polygon2D` 六边形作为占位视觉。
-**需求：**
-- GDD 美术方向：正十二面体能量核心 + 三道旋转金环
-- 实现节拍脉冲视觉效果（已有 `_pulse_visual()` 框架，需完善）
-- 添加神圣几何 Shader 材质
-- 实现受伤时的故障（Glitch）效果
+### 已完成 ✅
 
-### 5.2 敌人视觉完善 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `shaders/enemy_glitch.gdshader` + `shaders/silence_aura.gdshader`
-**完成内容：**
-- 创建了专用 `enemy_glitch.gdshader`（色差、扫描线、水平撕裂、像素化、噪点）
-- 创建了 Silence 专用 `silence_aura.gdshader`（吸收光环、螺旋纹理、粒子效果）
-- 量化步进动画已在基类中实现（不同类型不同帧率：4~20 FPS）
-- 5 种敌人类型各有独特的颜色和形态：
-  - Static: 红色锯齿碎片 | Silence: 深紫色八角旋涡
-  - Screech: 黄色尖锐三角 | Pulse: 蓝色菱形
-  - Wall: 灰紫色巨大多边形
+- [x] 八维 AFI 计算 (音高熵/转移熵/节奏熵/和弦多样性/模式递归/密度/留白缺失/持续压力)
+- [x] 滑动窗口 + 指数时间衰减
+- [x] 五级疲劳等级 (NONE/MILD/MODERATE/SEVERE/CRITICAL)
+- [x] 三种惩罚模式 (WEAKEN/LOCKOUT/GLOBAL_DEBUFF)
+- [x] **单音寂静惩罚** — *v2.0 新增*
+  - 短窗口(8秒)内同一音符使用 ≥4次 → 该音符暂时禁用
+  - 基础寂静时间3秒 + 每多用1次额外+1秒
+  - 受单调抗性升级减免
+  - 信号：note_silenced / note_unsilenced
+- [x] **密度过载惩罚** — *v2.0 新增*
+  - 3秒内施法次数超过动态阈值 → 弹体精准度下降
+  - 轻度过载：0.3弧度散射偏移
+  - 严重过载：0.6弧度散射偏移
+  - 阈值随BPM动态调整，受密度抗性升级加成
+  - 信号：density_overload_changed
+- [x] **不和谐值连接** — *v2.0 新增*
+  - 不和谐法术直接扣血 (生命腐蚀)，由 GameManager.apply_dissonance_damage 处理
+  - 不和谐度 > 2.0 时触发
+  - 受局外成长"绝对音感"升级减免
+- [x] **不和谐法术缓解单调值** (reduce_monotony_from_dissonance) — *v2.0 新增*
+  - 每点不和谐度减少0.5秒寂静时间（不和谐是双刃剑的关键交互）
+- [x] 每个音符的独立疲劳度查询 (get_note_fatigue_map)
+- [x] 恢复建议系统 (recovery_suggestion 信号) — *v2.0 增强：包含单音寂静和密度过载建议*
+- [x] 外部疲劳注入接口 (add_external_fatigue)
+- [x] 疲劳减少接口 (reduce_fatigue)
+- [x] 升级抗性接口 (单调抗性/密度抗性/不和谐衰减)
+- [x] **系统重置接口** (包含寂静和过载状态重置) — *v2.0 完善*
 
-### 5.3 伤害数字显示 ⬜ `P2-Medium`
-**现状：** 完全未实现。
-**需求：**
-- GDD §2.2 伤害数字规范：
-  - **暴击/完美节拍**：金色波纹扩散 + 故障艺术效果
-  - **普通伤害**：白色像素字体，快速上浮消散
-  - **不和谐伤害（自伤）**：紫色，向下流淌效果
-- 创建 `DamageNumber` 场景和脚本
+### 待完成 🔲
 
-### 5.4 经验值拾取物 ✅ `P1-High` — 已完成 (2026-02-07)
-**文件：** `scripts/entities/xp_pickup.gd`
-**完成内容：**
-- 4 级颜色分级（青色/蓝色/紫色/金色）对应不同 XP 价值
-- 4 种形状（三角/正方/菱形/六角星）对应不同价值等级
-- 磁吸机制：100px 半径内自动飞向玩家，越近越快（最高 3x）
-- 收集视觉：闪光 + 缩小消失
-- 节拍脉冲：强拍时微微发光
-- 合并机制：附近小经验球可合并为大经验球
-- 15 秒自动消失（最后 3 秒闪烁警告）
-
-### 5.5 障碍物系统 ⬜ `P2-Medium`
-**现状：** 完全未实现。
-**需求：**
-- GDD §1.2 障碍物："固化静默"— 高耸黑色玄武岩状柱体
-- 表面带有均衡器频谱起伏的动态视觉效果
-- 受击时短暂亮起并发出低沉共振声
-- 创建 `Obstacle` 场景和 Shader
-
-### 5.6 事件视界边界视觉接入 🔲 `P1-High`
-**文件：** `shaders/event_horizon.gdshader`
-**现状：** Shader 已编写，但未在主游戏场景中实际创建边界节点并应用。
-**需求：**
-- 在 `main_game.tscn` 中创建环形边界节点
-- 应用 `event_horizon.gdshader`
-- 实现玩家靠近时的画面干扰效果
-- 实现碰撞阻挡（防止玩家走出边界）
-
-### 5.7 脉冲网格地面接入 🔲 `P1-High`
-**文件：** `shaders/pulsing_grid.gdshader`
-**现状：** Shader 已编写，但未在主游戏场景中创建地面节点并应用。
-**需求：**
-- 在 `main_game.tscn` 中创建全屏地面 `ColorRect` 或 `Sprite2D`
-- 应用 `pulsing_grid.gdshader`
-- 将 `GlobalMusicManager.get_beat_energy()` 传递给 Shader 的 `beat_energy` 参数
-- 实现玩家移动时的水波纹顶点位移效果
-
-### 5.8 弹体 Shader 接入 🔲 `P1-High`
-**文件：** `shaders/projectile_glow.gdshader`
-**现状：** Shader 已编写，但 `ProjectileManager` 的 `MultiMeshInstance2D` 未应用该 Shader。
-**需求：**
-- 为 `MultiMeshInstance2D` 创建 `ShaderMaterial` 并应用 `projectile_glow.gdshader`
-- 通过 `instance_custom_data` 传递每个弹体的颜色和能量参数
-- 确保不同音符的弹体显示对应的颜色（参照 `MusicData.NOTE_COLORS`）
+- [ ] 调优：单音寂静触发阈值的平衡性测试
+- [ ] 调优：密度过载阈值与 BPM 的动态关系微调
+- [ ] 留白奖励机制：休止符主动清除负面状态的实现
+- [ ] 疲劳等级变化时的视觉/音效反馈增强
 
 ---
 
-## 六、UI 系统 (User Interface)
+## 音乐理论引擎 (MusicTheoryEngine)
 
-### 6.1 序列器 UI 交互完善 🔲 `P1-High`
-**文件：** `scripts/ui/sequencer_ui.gd`
-**现状：** 序列器网格的绘制和播放头动画已实现，但缺少编辑交互。
-**需求：**
-- 实现点击/拖拽在序列器格子中放置音符
-- 实现右键清除格子
-- 实现和弦放置（选择多个音符后放置到整小节）
-- 实现休止符放置
-- 显示当前格子的音符/和弦信息 tooltip
-- 实现序列器的展开/折叠动画
+### 已完成 ✅
 
-### 6.2 升级面板完善 🔲 `P2-Medium`
-**文件：** `scripts/ui/upgrade_panel.gd`
-**现状：** 基础的三选一升级面板已实现，但升级池不完整。
-**需求：**
-- 补充 GDD 数值文档中的全部升级项（当前仅有 12 种，GDD 描述 25+ 种）
-- 实现升级稀有度的视觉区分（普通/稀有/史诗/传说）
-- 实现升级描述的详细信息面板
-- 添加升级选择时的音效和动画反馈
-- 实现"扩展和弦解锁"传说级升级的特殊展示效果
+- [x] 和弦识别 (支持所有15种和弦类型)
+- [x] 和弦功能判定 (T/PD/D 三功能)
+- [x] 和弦进行分析 (D→T/T→D/PD→D)
+- [x] 完整度计算 (2-4和弦连续有效转换)
+- [x] 不和谐度计算 (和弦级别 + 音程级别)
+- [x] 扩展和弦检测
+- [x] 历史清除接口
 
-### 6.3 暂停菜单 ⬜ `P2-Medium`
-**现状：** `GameManager.pause_game()` 已实现暂停逻辑，但无暂停菜单 UI。
-**需求：**
-- 创建暂停菜单场景（继续、设置、退出到主菜单）
-- 实现设置面板（音量调节、按键重映射）
-- 暂停时显示当前游戏统计
+### 待完成 🔲
 
-### 6.4 弹药/冷却环形 HUD ⬜ `P2-Medium`
-**现状：** 完全未实现。
-**需求：**
-- GDD §2.1 HUD 设计：围绕玩家核心旋转的环形刻度
-- 自动施法点：亮起的光点随节拍扫过圆环
-- 手动施法就绪：对应快捷键图标高亮 + 电流特效
-
-### 6.5 设置/选项菜单 ⬜ `P3-Low`
-**现状：** 主菜单的 Settings 按钮无功能。
-**需求：**
-- 音量控制（Master、Music、SFX）
-- 分辨率和窗口模式切换
-- 按键重映射
-- 游戏难度选择
-- 设置持久化（保存到文件）
+- [ ] 调性感知：根据当前调式动态调整和弦功能判定
+- [ ] 更精确的和弦转位识别
 
 ---
 
-## 七、听感疲劳系统 (Fatigue System)
+## 弹体系统 (ProjectileManager)
 
-### 7.1 疲劳滤镜 Shader 接入 🔲 `P1-High`
-**文件：** `scripts/ui/hud.gd` + `shaders/fatigue_filter.gdshader`
-**现状：** HUD 中有 `FatigueFilter` 的 `ColorRect` 节点，Shader 已编写，但未实际连接 `FatigueManager` 的 AFI 值。
-**需求：**
-- 在 HUD 的 `_process()` 中读取 `FatigueManager.current_afi` 并传递给 Shader
-- 实现 GDD 美术方向中的三级视觉效果：
-  - AFI < 0.3：清澈（Bloom）
-  - AFI 0.3-0.6：浑浊（Film Grain + 光晕抖动）
-  - AFI > 0.8：过载（色差 + 扫描线 + 去饱和）
+### 已完成 ✅
 
-### 7.2 疲劳恢复建议 UI 🔲 `P2-Medium`
-**文件：** `scripts/ui/hud.gd`
-**现状：** HUD 中有 `SuggestionPanel`，`FatigueManager` 已实现 `get_recovery_suggestions()`，但两者未连接。
-**需求：**
-- 实时显示疲劳恢复建议文字
-- 建议文字应有淡入淡出动画
-- 高疲劳时建议应更加醒目（颜色变化、闪烁）
+- [x] MultiMesh 批量渲染 (最大500弹体)
+- [x] 对象池管理
+- [x] 5种修饰符效果 (穿透/追踪/分裂/回响/散射)
+- [x] 和弦弹体 (强化弹体/DOT弹体/爆炸弹体/冲击波/蓄力弹体)
+- [x] 连射 (EVEN_EIGHTH) 多弹体发射
+- [x] 三连发 (TRIPLET) 扇形弹体
+- [x] **密度过载精准度惩罚** (弹体方向随机偏移) — *v2.0 新增*
+- [x] 弹体发光 Shader (projectile_glow.gdshader)
+- [x] 空间哈希碰撞优化 (SpatialHash)
 
-### 7.3 单音寂静机制 ⬜ `P1-High`
-**现状：** GDD §2.2 的"单调值"惩罚（重复同一音符导致该音符进入"寂静"暂时禁用）未实现。
-**需求：**
-- 在 `FatigueManager` 中追踪每个音符的独立使用频率
-- 当某音符的单调值超过阈值时，触发"寂静"状态
-- 寂静状态下该音符无法施放，UI 上对应按键变灰
-- 使用不同音符或适度不和谐可缓解单调值
+### 待完成 🔲
 
-### 7.4 密度值/噪音过载 ⬜ `P1-High`
-**现状：** GDD §2.2 的"密度值"惩罚（音符堆太满导致"噪音过载"Debuff）未作为独立机制实现。
-**需求：**
-- 密度疲劳维度已在 AFI 中计算，但需要将其转化为具体的游戏效果
-- 噪音过载 Debuff：降低精准度（弹体散射角度增大）
-- 编入休止符可降低密度值
-
-### 7.5 不和谐值生命腐蚀 🔲 `P1-High`
-**文件：** `scripts/autoload/game_manager.gd`
-**现状：** `apply_dissonance_damage()` 已实现基础逻辑，但未与实际的和弦施放流程连接。
-**需求：**
-- 在 `SpellcraftSystem` 施放和弦时，自动计算不和谐度并调用 `apply_dissonance_damage()`
-- 施放和谐法术或"解决和弦"（D→T 进行）应降低不和谐值
-- 添加不和谐伤害的视觉反馈（紫色数字 + 向下流淌效果）
+- [ ] 摇摆弹道 (SWING) S 型轨迹
+- [ ] 法阵/区域 (FIELD) 弹体形态
+- [ ] 天降打击 (DIVINE_STRIKE) 弹体形态
+- [ ] 护盾/治疗 (SHIELD_HEAL) 弹体形态
+- [ ] 召唤/构造 (SUMMON) 弹体形态
+- [ ] 扩展和弦法术的6种弹体形态
+- [ ] 弹体拖尾效果 (Trail)
 
 ---
 
-## 八、游戏流程 (Game Flow)
+## 敌人系统 (EnemySpawner)
 
-### 8.1 游戏重置逻辑 🔲 `P1-High`
-**文件：** `scripts/autoload/game_manager.gd`
-**现状：** `reset_game()` 方法未定义（`game_over.gd` 中调用了它）。
-**需求：**
-- 在 `GameManager` 中实现 `reset_game()` 方法
-- 重置所有游戏状态：HP、等级、XP、升级、疲劳度
-- 重置 `FatigueManager`、`SpellcraftSystem` 的内部状态
-- 重置序列器内容
+### 已完成 ✅
 
-### 8.2 难度曲线调优 ✅ `P2-Medium` — 已完成 (2026-02-07)
-**文件：** `scripts/systems/enemy_spawner.gd`
-**完成内容：**
-- 指数难度递增：HP ×1.15^level, 速度 ×1.03^level, 伤害 ×1.10^level
-- 波次系统：每波 20 秒 + 3 秒休息，5 种波次类型（Normal/Swarm/Elite/SilenceTide/PulseStorm）
-- 精英敌人：HP +50%, 伤害 +30%, 体型 +20%, 金色视觉标记
-- BPM 节奏生成：敌人在弱拍时刻生成
-- 权重选择：基于难度等级解锁不同敌人类型
+- [x] 基础敌人框架 (enemy_base.gd)
+- [x] Static (静态噪音) — 直线追踪 + 群体加速
+- [x] Pulse (脉冲干扰) — 节拍同步冲刺 + 蓄力释放
+- [x] Screech (尖啸反馈) — 远程攻击 + 冲刺 + 死亡不和谐爆发
+- [x] Silence (寂静吞噬) — 注入疲劳 + 静音光环
+- [x] Wall (音墙) — 高血量屏障 + 护盾 + 地震冲击波
+- [x] 波次生成系统 (5种波次类型)
+- [x] 精英敌人 (HP+50%, 伤害+30%, 金色标记)
+- [x] 经验值掉落 (xp_pickup) — 4级分级 + 磁吸 + 合并
+- [x] 死亡特效 (death_vfx_manager) — 对象池碎片 + 5种类型差异化
+- [x] 敌人场景模板 (5个 .tscn 文件)
+- [x] 敌人 Shader (enemy_glitch + silence_aura)
+- [x] 难度曲线 (指数递增 + BPM节奏生成)
 
-### 8.3 游戏结束统计完善 🔲 `P2-Medium`
-**文件：** `scripts/scenes/game_over.gd`
-**现状：** 显示基础统计（存活时间、等级、XP、最大疲劳度），但缺少更多维度。
-**需求：**
-- 增加统计维度：击杀数、使用最多的音符、最长和弦进行、最高单次伤害
-- 实现评价系统（基于音乐多样性评分）
-- 保存历史最佳记录（本地持久化）
+### 待完成 🔲
+
+- [ ] 更多敌人变体 (如 Echo 回声敌人、Feedback 反馈敌人)
+- [ ] 敌人属性随时间/BPM 动态缩放
+- [ ] 敌人与疲劳系统的更深交互
 
 ---
 
-## 九、扩展性与长线设计 (Extensibility)
+## Boss 系统
 
-### 9.1 角色/职业系统 ⬜ `P3-Low`
-**现状：** 完全未实现。
-**需求：**
-- GDD §4.1：不同"调性"或"音阶"作为不同角色/职业
-- 例如：C 大调英雄（和谐型）、布鲁斯音阶英雄（不和谐高潜力型）
-- 每个角色应有独特的初始序列器配置和被动能力
+### 已完成 ✅
 
-### 9.2 存档系统 ⬜ `P3-Low`
-**现状：** 完全未实现。
-**需求：**
-- Meta 进度存档（解锁的角色、永久升级）
-- 设置存档（音量、按键映射）
-- 使用 Godot 的 `ConfigFile` 或 `JSON` 进行本地持久化
+- [x] Boss 基类框架 (boss_base.gd)
+- [x] Boss 生成器 (boss_spawner.gd)
+- [x] Boss 血条 UI (boss_health_bar.gd)
 
-### 9.3 成就系统 ⬜ `P3-Low`
-**现状：** 完全未实现。
-**需求：**
-- 基于音乐创作的成就（如"连续 4 小节无重复音符"、"完成一次完美 D→T 解决"）
-- 成就解锁通知 UI
+### 已归档 📦
 
----
+- 失谐指挥家 (Dissonance Conductor) — 已移至 `Archive/Boss_Dissonance_Conductor/`
+- Max_Issues_Implementation_Report.md — 已移至 `Archive/`
 
-## 十、性能优化 (Performance)
+### 待完成 🔲 (按 GDD 音乐史七大 Boss 设计)
 
-### 10.1 对象池系统 ⬜ `P2-Medium`
-**现状：** 敌人使用 `instantiate()` + `queue_free()` 模式，无对象池。
-**需求：**
-- 实现敌人对象池，避免频繁的节点创建和销毁
-- 实现经验值拾取物对象池
-- 实现伤害数字对象池
-
-### 10.2 MultiMesh 性能验证 ⬜ `P2-Medium`
-**文件：** `scripts/systems/projectile_manager.gd`
-**现状：** MultiMesh 弹体系统已实现，但未在实际高负载下测试。
-**需求：**
-- 在 2000+ 弹体同屏时进行性能测试
-- 验证 `instance_count` 动态调整是否导致卡顿
-- 考虑预分配最大实例数并使用 `visible_instance_count` 控制显示
-
-### 10.3 敌人生成性能 ⬜ `P2-Medium`
-**文件：** `scripts/systems/enemy_spawner.gd`
-**现状：** 敌人视觉使用代码动态生成 `Polygon2D`，每次生成都会创建新节点。
-**需求：**
-- 使用预制场景替代动态节点创建
-- 实现敌人对象池
-- 考虑使用 `MultiMeshInstance2D` 渲染大量 Swarm 类型敌人
+- [ ] Boss 1: 古典时期 Boss (对位法大师)
+- [ ] Boss 2: 巴洛克时期 Boss (装饰音暴君)
+- [ ] Boss 3: 浪漫时期 Boss (情感风暴)
+- [ ] Boss 4: 印象派 Boss (和声迷雾)
+- [ ] Boss 5: 爵士时期 Boss (即兴之王)
+- [ ] Boss 6: 电子时期 Boss (合成器霸主)
+- [ ] Boss 7: 终章 Boss (不和谐之王)
+- [ ] Boss 战斗阶段系统 (多阶段切换)
+- [ ] Boss 专属机制 (与乐理深度交互)
+- [ ] Boss 战前/战后叙事
 
 ---
 
-## 优先级总览
+## 视觉与 Shader
 
-| 优先级 | 数量 | 说明 |
-|:---|:---:|:---|
-| **P0-Critical** | 0 (原4，已全部完成) | 游戏无法正常运行的阻塞项 |
-| **P1-High** | 9 (原15，已完成6) | 核心游戏体验所必需的功能 |
-| **P2-Medium** | 9 (原11，已完成2) | 提升游戏品质和完整度的功能 |
-| **P3-Low** | 4 | 长线扩展和锦上添花的功能 |
-| **已完成** | **11** | 敌人系统 + 音频系统全面完成 |
-| **剩余** | **22** | |
+### 已完成 ✅
+
+- [x] 疲劳滤镜 Shader (fatigue_filter.gdshader) — 色差/噪点/扫描线/去饱和/不和谐紫边/节拍闪烁
+- [x] 弹体发光 Shader (projectile_glow.gdshader) — 核心亮点/外层辉光/脉冲动画
+- [x] 脉冲网格 Shader (pulsing_grid.gdshader) — 地面节拍响应
+- [x] 事件视界 Shader (event_horizon.gdshader) — 竞技场边界
+- [x] 敌人故障 Shader (enemy_glitch.gdshader) — 色差/扫描线/水平撕裂
+- [x] 寂静光环 Shader (silence_aura.gdshader) — 吸收光环/螺旋纹理
+- [x] **疲劳滤镜接入 HUD** (fatigue_level + beat_pulse + dissonance_level) — *v2.0 完善*
+- [x] 玩家视觉增强 (player_visual_enhanced.gd)
+- [x] 地面网格接入 main_game (pulsing_grid + 疲劳色调变化)
+- [x] 事件视界接入 main_game (环形边界 + Shader 参数更新)
+
+### 待完成 🔲
+
+- [ ] 和弦法术的专属视觉效果 (法阵光环、天降光柱等)
+- [ ] 单音寂静的视觉反馈 (被禁用音符的 UI 灰化 + 屏幕闪烁)
+- [ ] 密度过载的视觉反馈 (屏幕边缘抖动)
+- [ ] 和弦进行解决的视觉反馈 (全屏波纹)
+- [ ] 敌人死亡粒子效果增强
+- [ ] 障碍物 "固化静默" 视觉 (均衡器频谱起伏)
 
 ---
 
-## 文件级标注索引
+## UI 系统
 
-| 文件 | 待完善项数 | 关键问题 |
-|:---|:---:|:---|
-| `global_music_manager.gd` | 0 | ✅ 音效已接入 AudioManager、BGM 系统已实现、频谱总线已配置、音色合成器已集成 |
-| `audio_manager.gd` | 0 | ✅ 全局音效管理器，程序化音效生成 + 对象池 + 信号驱动 + 音符/和弦播放接口 |
-| `note_synthesizer.gd` | 0 | ✅ 新建：音符合成器，ADSR + 波形合成 + 泛音结构 + 采样加载 + 缓存 |
-| `bgm_manager.gd` | 0 | ✅ 新建：BGM 管理器，交叉淡入淡出 + BPM 同步 + 场景适配 |
-| `spellcraft_system.gd` | 4 | 小节完成处理、手动施法、和弦进行效果、黑键双重身份 |
-| `projectile_manager.gd` | 3 | 碰撞优化、扩展和弦形态、Shader 接入 |
-| `enemy_spawner.gd` | 2 | PackedScene 模板、性能优化 |
-| `enemy_base.gd` | 1 | 视觉完善 (✅ 音效信号注册 + 量化步进音效已完成) |
-| `player.gd` | 1 | 视觉完善 |
-| `game_manager.gd` | 2 | reset_game()、不和谐伤害连接 |
-| `fatigue_manager.gd` | 3 | 单音寂静、密度过载、滤镜接入 |
-| `hud.gd` | 2 | 疲劳滤镜接入、建议 UI 连接 |
-| `sequencer_ui.gd` | 1 | 编辑交互 |
-| `upgrade_panel.gd` | 1 | 升级池完善 |
-| `main_game.tscn` | 3 | CollisionShape、地面网格、事件视界 |
-| 新文件 | 7 | 伤害数字、拾取物、障碍物、暂停菜单、Boss、角色系统、存档 |
+### 已完成 ✅
+
+- [x] HUD 主界面 (hud.gd) — 血条/疲劳度/BPM/时间/等级
+- [x] 疲劳仪表 (fatigue_meter.gd)
+- [x] 伤害数字系统 (damage_number.gd + damage_number_manager.gd) — 对象池化，4种类型 (普通/暴击/完美/不和谐)
+- [x] 弹药环 HUD (ammo_ring_hud.gd)
+- [x] 序列器 UI (sequencer_ui.gd)
+- [x] 升级面板 (upgrade_panel.gd)
+- [x] 暂停菜单 (pause_menu.gd)
+- [x] 设置菜单 (settings_menu.gd)
+- [x] 局结算界面 (run_results_screen.gd + game_over.gd)
+- [x] 和谐殿堂 UI (hall_of_harmony.gd)
+- [x] 性能监控 (performance_monitor.gd)
+- [x] 恢复建议文字显示 (带淡出动画)
+
+### 待完成 🔲
+
+- [ ] 序列器 UI 的拖拽编辑交互
+- [ ] 手动施法槽 UI (冷却进度环)
+- [ ] 单音寂静状态的音符 UI 灰化
+- [ ] 密度过载状态的 UI 警告指示器
+- [ ] 和弦进行效果的 UI 提示 (如 "D→T 解决！爆发治疗！")
+- [ ] 音色切换 UI
+- [ ] 升级面板稀有度视觉区分 (普通/稀有/史诗/传说)
+
+---
+
+## 音频系统
+
+### 已完成 ✅
+
+- [x] 音符合成器 (note_synthesizer.gd) — 12半音实时合成
+- [x] ADSR 包络 (attack/decay/sustain/release)
+- [x] 5种音色系别 (合成器/弹拨/拉弦/吹奏/打击)
+- [x] 泛音结构 + 波形类型
+- [x] 全局音乐管理器 (global_music_manager.gd)
+- [x] BGM 管理器 (bgm_manager.gd) — 交叉淡入淡出 + BPM 同步
+- [x] 音效管理器 (audio_manager.gd) — 程序化音效 + 对象池 + 信号驱动
+- [x] 频谱分析接入 (AudioEffectSpectrumAnalyzer)
+- [x] 音频总线布局 (Music/SFX/EnemySFX/PlayerSFX/UI)
+
+### 待完成 🔲
+
+- [ ] 和弦音效 (多音符同时播放)
+- [ ] 和弦进行解决音效
+- [ ] 单音寂静触发音效 (音符消失的"嗡"声)
+- [ ] 密度过载音效 (失真/过载效果)
+- [ ] BGM 与疲劳等级的动态混音
+- [ ] 实际 BGM 音频文件 (.ogg)
+
+---
+
+## 局外成长 (SaveManager)
+
+### 已完成 ✅
+
+- [x] 共鸣碎片货币系统
+- [x] 乐器调优 (5种升级：舞台定力/基础声压/节拍敏锐度/拾音范围/起拍速度)
+- [x] 乐理研习 (7种解锁：3个修饰符 + 3个和弦 + 传说乐章)
+- [x] 声学降噪 (4种升级：听觉耐受/混响消除/绝对音感/休止符美学)
+- [x] 调式/职业选择 (4种：伊奥尼亚/多利亚/五声音阶/布鲁斯)
+- [x] 局结算共鸣碎片奖励计算 (时间+击杀+等级)
+- [x] 存档持久化 (ConfigFile)
+- [x] 局外加成应用接口 (apply_meta_bonuses)
+- [x] 修饰符/和弦解锁检查 (is_modifier_available / is_chord_type_available)
+
+### 待完成 🔲
+
+- [ ] 和谐殿堂 UI 的完整交互流程
+- [ ] 调式选择对游戏玩法的实际影响 (限制可用音符等)
+- [ ] 更多调式/职业解锁
+- [ ] 成就系统
+
+---
+
+## 游戏流程
+
+### 已完成 ✅
+
+- [x] 主菜单 → 游戏 → 结算 完整流程
+- [x] 游戏开始 (start_game) — 重置状态 + 应用局外加成
+- [x] 游戏暂停/恢复
+- [x] 游戏结束 (game_over) — 保存进度 + 计算奖励
+- [x] **游戏重置 (reset_game)** — 重置所有子系统 (GameManager/FatigueManager/SpellcraftSystem/MusicTheoryEngine) — *v2.0 完善*
+- [x] 重试/返回菜单 (game_over.gd)
+- [x] 竞技场边界限制
+- [x] 碰撞检测 (~30Hz)
+- [x] 玩家无敌帧
+- [x] 闪避机制
+- [x] **不和谐伤害连接** (SpellcraftSystem → GameManager.apply_dissonance_damage) — *v2.0 新增*
+
+### 待完成 🔲
+
+- [ ] 新手引导/教程关卡
+- [ ] 难度选择
+- [ ] 每局随机事件/变异器
+- [ ] 计时里程碑 (5分钟/10分钟/15分钟 Boss 出现)
+- [ ] CollisionShape 资源配置 (Player: CircleShape2D 12px, PickupArea: 80px)
+
+---
+
+## 性能优化
+
+### 已完成 ✅
+
+- [x] MultiMesh 弹体批量渲染
+- [x] 对象池 (弹体、伤害数字、死亡特效碎片)
+- [x] 空间哈希碰撞优化 (SpatialHash)
+- [x] 碰撞检测频率控制 (~30Hz)
+- [x] 音效对象池 (32个2D播放器 + 8个全局播放器)
+- [x] 音效冷却系统
+
+### 待完成 🔲
+
+- [ ] 大量敌人时的性能测试与优化
+- [ ] 敌人对象池 (替代 instantiate/queue_free)
+- [ ] MultiMesh 高负载验证 (2000+弹体)
+- [ ] 移动端适配 (如果需要)
+
+---
+
+## 待设计/待讨论
+
+- [ ] 多人合奏模式 (是否实现？)
+- [ ] 排行榜系统
+- [ ] Steam 成就集成
+- [ ] 自定义序列器预设保存/分享
+- [ ] 回放系统 (记录每局的"乐谱")
+- [ ] 障碍物系统 ("固化静默" 黑色玄武岩柱体)
+
+---
+
+## 文件变更日志
+
+### 2026-02-08 v2.0 核心玩法完善
+
+**修改文件：**
+
+| 文件 | 变更类型 | 说明 |
+|------|----------|------|
+| `scripts/autoload/fatigue_manager.gd` | 重写 | 新增单音寂静、密度过载、不和谐值连接三维惩罚 |
+| `scripts/autoload/spellcraft_system.gd` | 重写 | 完善黑键双重身份、手动施法、和弦进行效果、节奏型修饰 |
+| `scripts/systems/projectile_manager.gd` | 编辑 | 新增密度过载精准度偏移（弹体+和弦弹体） |
+| `scripts/autoload/game_manager.gd` | 编辑 | 完善 reset_game() 重置所有子系统 |
+| `scripts/ui/hud.gd` | 编辑 | 疲劳滤镜接入不和谐度视觉参数 |
+
+**归档文件：**
+
+| 文件 | 移至 |
+|------|------|
+| `scripts/entities/enemies/boss_dissonance_conductor.gd` | `Archive/Boss_Dissonance_Conductor/` |
+| `Max_Issues_Implementation_Report.md` | `Archive/` |
+
+### 2026-02-07 v1.0 初始实现
+
+- 音频系统全面完成 (AudioManager + BGMManager + NoteSynthesizer + 音色系统)
+- 敌人系统全面完成 (5种敌人 + 场景模板 + AI行为 + 死亡特效)
+- 视觉系统基础完成 (4种Shader + 玩家视觉增强)
+- UI系统基础完成 (HUD + 序列器 + 升级面板)
+- 局外成长系统完成 (SaveManager + 和谐殿堂)

@@ -108,6 +108,12 @@ func _create_projectile(spell_data: Dictionary) -> void:
 	if angle_offset != 0.0:
 		aim_dir = aim_dir.rotated(angle_offset)
 
+	# ★ 密度过载精准度惩罚：弹体方向随机偏移
+	var accuracy_offset: float = spell_data.get("accuracy_offset", 0.0)
+	if accuracy_offset > 0.0:
+		var random_offset := randf_range(-accuracy_offset, accuracy_offset)
+		aim_dir = aim_dir.rotated(random_offset)
+
 	var projectile := {
 		"position": player_pos,
 		"velocity": aim_dir * spell_data.get("speed", 600.0),
@@ -137,6 +143,12 @@ func _create_chord_projectile(chord_data: Dictionary) -> void:
 	var spell_form = chord_data.get("spell_form", -1)
 	var player_pos := _get_player_position()
 	var aim_dir := _get_aim_direction()
+
+	# ★ 密度过载精准度惩罚：和弦弹体方向也受影响
+	var accuracy_offset: float = chord_data.get("accuracy_offset", 0.0)
+	if accuracy_offset > 0.0:
+		var random_offset := randf_range(-accuracy_offset, accuracy_offset)
+		aim_dir = aim_dir.rotated(random_offset)
 
 	match spell_form:
 		MusicData.SpellForm.ENHANCED_PROJECTILE:

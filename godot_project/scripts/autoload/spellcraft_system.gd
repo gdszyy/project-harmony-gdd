@@ -1,6 +1,14 @@
 ## spellcraft_system.gd
 ## 法术构建系统 (Autoload)
 ## 管理序列器、手动施法、和弦构建、弹体生成
+##
+## v2.0 更新：
+##   - 集成单音寂静检查：被寂静的音符无法施放
+##   - 集成密度过载精准度惩罚：过载时弹体方向随机偏移
+##   - 完善黑键双重身份：黑键在和弦缓冲窗口内参与和弦构建，否则作为修饰符
+##   - 完善手动施法：支持快捷键触发，对齐八分音符精度
+##   - 完善和弦进行效果：D→T/T→D/PD→D 三种转换效果完整实现
+##   - 不和谐法术缓解单调值的交互
 extends Node
 
 # ============================================================
@@ -13,6 +21,10 @@ signal sequencer_updated(sequence: Array)
 signal rhythm_pattern_changed(pattern: MusicData.RhythmPattern)
 signal timbre_changed(timbre: MusicData.TimbreType)
 signal progression_resolved(progression: Dictionary)
+## 新增：音符被寂静阻止时的信号
+signal spell_blocked_by_silence(note: MusicData.WhiteKey)
+## 新增：密度过载散射时的信号
+signal accuracy_penalized(penalty: float)
 
 # ============================================================
 # 序列器配置
@@ -76,6 +88,14 @@ var _empower_buff_multiplier: float = 1.0
 ## 手动施法槽冷却时间 (秒)
 var _manual_slot_cooldowns: Array[float] = []
 const MANUAL_SLOT_BASE_COOLDOWN: float = 5.0
+
+# ============================================================
+# 手动施法八分音符对齐
+# ============================================================
+## 是否在当前八分音符窗口内
+var _in_half_beat_window: bool = false
+## 八分音符窗口容差（秒）
+const HALF_BEAT_TOLERANCE: float = 0.05
 
 # ============================================================
 # 生命周期
@@ -171,7 +191,7 @@ func clear_sequencer() -> void:
 	sequencer_updated.emit(sequencer)
 
 # ============================================================
-# 手动施法槽
+# 手动施法槽（完善版：支持快捷键触发和八分音符对齐）
 # ============================================================
 
 ## 设置手动施法槽
@@ -180,7 +200,7 @@ func set_manual_slot(slot_index: int, spell_data: Dictionary) -> void:
 		return
 	manual_cast_slots[slot_index] = spell_data
 
-## 触发手动施法
+## 触发手动施法（完善版：对齐到八分音符精度）
 func trigger_manual_cast(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
 		return
@@ -193,8 +213,30 @@ func trigger_manual_cast(slot_index: int) -> void:
 	if slot.get("type", "empty") == "empty":
 		return
 
-	_execute_spell(slot)
-	# 设置冷却
+	# 八分音符精度对齐：检查当前是否接近八分音符时机
+	# 允许在八分音符前后 HALF_BEAT_TOLERANCE 秒内触发
+	var beat_progress := GameManager.get_beat_progress()
+	var half_beat_progress := fmod(beat_progress * 2.0, 1.0)
+	var is_near_half_beat := half_beat_progress < HALF_BEAT_TOLERANCE * 2.0 * (GameManager.current_bpm / 60.0) or \
+		half_beat_progress > 1.0 - HALF_BEAT_TOLERANCE * 2.0 * (GameManager.current_bpm / 60.0)
+
+	# 即使不在精确时机也允许施法，但在精确时机有额外奖励
+	var timing_bonus: float = 1.0
+	if is_near_half_beat:
+		timing_bonus = 1.15  # 精准时机 +15% 伤害
+
+	# 检查音符是否被寂静
+	var note = slot.get("note", -1)
+	if note >= 0 and FatigueManager.is_note_silenced(note):
+		spell_blocked_by_silence.emit(note)
+		return
+
+	var enhanced_slot := slot.duplicate()
+	enhanced_slot["timing_bonus"] = timing_bonus
+	enhanced_slot["is_manual"] = true
+
+	_execute_spell(enhanced_slot)
+	# 设置冷却（PD→D 效果可能已缩减冷却）
 	_manual_slot_cooldowns[slot_index] = MANUAL_SLOT_BASE_COOLDOWN
 
 ## 更新手动施法槽冷却
@@ -210,8 +252,21 @@ func get_manual_slot_cooldown_progress(slot_index: int) -> float:
 	return _manual_slot_cooldowns[slot_index] / MANUAL_SLOT_BASE_COOLDOWN
 
 # ============================================================
-# 黑键修饰符
+# 黑键双重身份（完善版：根据上下文自动判定）
 # ============================================================
+
+## 处理黑键输入：根据上下文决定作为修饰符还是和弦构成音
+## Issue #18: 黑键双重身份
+func handle_black_key_input(black_key: MusicData.BlackKey) -> void:
+	var midi_note := _black_key_to_midi(black_key)
+
+	# 如果和弦缓冲区已有音符（正在构建和弦），黑键参与和弦构建
+	if not _chord_buffer.is_empty():
+		add_to_chord_buffer(midi_note)
+		return
+
+	# 否则，作为修饰符使用
+	apply_black_key_modifier(black_key)
 
 ## 使用黑键作为修饰符
 func apply_black_key_modifier(black_key: MusicData.BlackKey) -> void:
@@ -236,6 +291,16 @@ func _consume_modifier() -> MusicData.ModifierEffect:
 		_pending_modifier = -1
 		return mod
 	return -1
+
+## 黑键枚举转 MIDI 音符
+func _black_key_to_midi(black_key: MusicData.BlackKey) -> int:
+	match black_key:
+		MusicData.BlackKey.CS: return 1
+		MusicData.BlackKey.DS: return 3
+		MusicData.BlackKey.FS: return 6
+		MusicData.BlackKey.GS: return 8
+		MusicData.BlackKey.AS: return 10
+		_: return -1
 
 # ============================================================
 # 和弦构建
@@ -271,7 +336,7 @@ func _flush_chord_buffer() -> void:
 	_chord_buffer.clear()
 
 # ============================================================
-# 节拍回调（修复：从嵌套函数移出为顶层函数）
+# 节拍回调
 # ============================================================
 
 func _on_beat_tick(beat_index: int) -> void:
@@ -284,10 +349,11 @@ func _on_beat_tick(beat_index: int) -> void:
 	_execute_sequencer_position(pos)
 
 func _on_half_beat_tick(_half_beat_index: int) -> void:
-	# 八分音符精度的手动施法时机
+	# 八分音符精度的手动施法时机标记
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
-	# 目前手动施法由玩家输入触发，这里仅作为时机标记
+	_in_half_beat_window = true
+	# 窗口会在下一帧的 _process 中自动关闭（通过时间检测）
 
 func _on_measure_complete(measure_index: int) -> void:
 	# 小节完成时的处理
@@ -298,7 +364,7 @@ func _on_measure_complete(measure_index: int) -> void:
 	var measure_idx := measure_index % MEASURES
 	var rhythm := _measure_rhythm_patterns[measure_idx]
 
-	# 计算小节内的休止符数量
+	# 计算小节内的休止符数量（用于精准蓄力加成的视觉/音效反馈）
 	var start_pos := measure_idx * BEATS_PER_MEASURE
 	var rest_count := 0
 	for i in range(BEATS_PER_MEASURE):
@@ -306,9 +372,10 @@ func _on_measure_complete(measure_index: int) -> void:
 		if pos < SEQUENCER_LENGTH and sequencer[pos].get("type", "") == "rest":
 			rest_count += 1
 
-	# 如果小节内有休止符，应用精准蓄力加成
-	# 加成已经在 _apply_rhythm_modifier 中处理
-	# 这里可以触发视觉/音效反馈
+	# 小节完成反馈（可由 HUD 监听）
+	if rest_count > 0 and rhythm == MusicData.RhythmPattern.REST:
+		# 精准蓄力小节完成 — 视觉反馈
+		pass
 
 # ============================================================
 # 法术执行
@@ -332,6 +399,12 @@ func _execute_sequencer_position(pos: int) -> void:
 
 func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	var white_key: MusicData.WhiteKey = slot["note"]
+
+	# ★ 单音寂静检查：被寂静的音符无法施放
+	if FatigueManager.is_note_silenced(white_key):
+		spell_blocked_by_silence.emit(white_key)
+		return
+
 	var stats := GameManager.get_note_effective_stats(white_key)
 
 	# 应用节奏型修饰
@@ -364,6 +437,12 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		_empower_buff_active = false
 		_empower_buff_multiplier = 1.0
 
+	# ★ 密度过载精准度惩罚：弹体方向随机偏移
+	var accuracy_offset: float = 0.0
+	if FatigueManager.is_density_overloaded:
+		accuracy_offset = FatigueManager.current_accuracy_penalty
+		accuracy_penalized.emit(accuracy_offset)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
@@ -383,6 +462,8 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"rapid_fire_count": rhythm_data.get("count", 1),
 		"has_knockback": rhythm_data.get("knockback", false),
 		"dodge_back": rhythm_data.get("dodge_back", false),
+		# ★ 密度过载精准度偏移
+		"accuracy_offset": accuracy_offset,
 	}
 
 	# 记录疲劳事件
@@ -419,6 +500,15 @@ func _cast_single_note(note: int) -> void:
 	# 将 MIDI 音符转为白键
 	var white_key := _note_to_white_key(note)
 	if white_key < 0:
+		# 黑键：如果不在和弦缓冲区中，作为修饰符处理
+		var black_key := _midi_to_black_key(note)
+		if black_key >= 0:
+			apply_black_key_modifier(black_key)
+		return
+
+	# ★ 单音寂静检查
+	if FatigueManager.is_note_silenced(white_key):
+		spell_blocked_by_silence.emit(white_key)
 		return
 
 	var stats := GameManager.get_note_effective_stats(white_key)
@@ -440,6 +530,12 @@ func _cast_single_note(note: int) -> void:
 		_empower_buff_active = false
 		_empower_buff_multiplier = 1.0
 
+	# ★ 密度过载精准度惩罚
+	var accuracy_offset: float = 0.0
+	if FatigueManager.is_density_overloaded:
+		accuracy_offset = FatigueManager.current_accuracy_penalty
+		accuracy_penalized.emit(accuracy_offset)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
@@ -452,6 +548,7 @@ func _cast_single_note(note: int) -> void:
 		"modifier": _consume_modifier(),
 		"timbre": timbre,
 		"timbre_name": timbre_data.get("name", "合成器"),
+		"accuracy_offset": accuracy_offset,
 	}
 
 	FatigueManager.record_spell({
@@ -491,10 +588,12 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
 	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
 
-	# 不和谐度处理
+	# ★ 不和谐度处理：不和谐法术直接扣血（生命腐蚀）
 	var dissonance := MusicTheoryEngine.get_chord_dissonance(chord_type)
 	if dissonance > 2.0:
 		GameManager.apply_dissonance_damage(dissonance)
+		# ★ 关键交互：不和谐法术缓解单调值（因为引入了变化）
+		FatigueManager.reduce_monotony_from_dissonance(dissonance)
 
 	# 扩展和弦额外疲劳
 	var extra_fatigue: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)
@@ -514,6 +613,11 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		_empower_buff_active = false
 		_empower_buff_multiplier = 1.0
 
+	# ★ 密度过载精准度惩罚
+	var accuracy_offset: float = 0.0
+	if FatigueManager.is_density_overloaded:
+		accuracy_offset = FatigueManager.current_accuracy_penalty
+
 	var chord_data := {
 		"type": "chord",
 		"chord_type": chord_type,
@@ -525,6 +629,7 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		"modifier": _consume_modifier(),
 		"timbre": timbre,
 		"timbre_name": timbre_data.get("name", "合成器"),
+		"accuracy_offset": accuracy_offset,
 	}
 
 	# 记录疲劳事件
@@ -534,6 +639,10 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		"is_chord": true,
 		"chord_type": chord_type,
 	})
+
+	# 扩展和弦额外疲劳注入
+	if extra_fatigue > 0.0:
+		FatigueManager.add_external_fatigue(extra_fatigue)
 
 	# 记录和弦进行
 	var progression := MusicTheoryEngine.record_chord(chord_type)
@@ -659,7 +768,7 @@ func _apply_rhythm_modifier(stats: Dictionary, rhythm: MusicData.RhythmPattern, 
 	return modified
 
 # ============================================================
-# 和弦进行效果（修复：从嵌套函数移出，实现完整逻辑）
+# 和弦进行效果（完整实现）
 # ============================================================
 
 ## 触发和弦进行效果
@@ -707,12 +816,12 @@ func _apply_burst_effect(bonus_mult: float) -> void:
 		}
 		spell_cast.emit(event_data)
 
-## T→D: 下一个法术伤害翻倍（已实现 Buff 系统）
+## T→D: 下一个法术伤害翻倍
 func _apply_empower_buff(bonus_mult: float) -> void:
 	_empower_buff_active = true
 	_empower_buff_multiplier = EMPOWER_BUFF_MULTIPLIER * bonus_mult
 
-## PD→D: 全体冷却缩减（已实现冷却系统）
+## PD→D: 全体冷却缩减
 func _apply_cooldown_reduction(bonus_mult: float) -> void:
 	# 立即缩减所有手动施法槽的冷却时间
 	var reduction_ratio := COOLDOWN_REDUCTION_RATIO * bonus_mult
@@ -735,7 +844,22 @@ func _note_to_white_key(note: int) -> int:
 		11: return MusicData.WhiteKey.B
 		_: return -1  # 黑键
 
+func _midi_to_black_key(note: int) -> int:
+	var pc := note % 12
+	match pc:
+		1: return MusicData.BlackKey.CS
+		3: return MusicData.BlackKey.DS
+		6: return MusicData.BlackKey.FS
+		8: return MusicData.BlackKey.GS
+		10: return MusicData.BlackKey.AS
+		_: return -1
+
 func _execute_spell(spell_data: Dictionary) -> void:
+	# 应用手动施法的时机奖励
+	var timing_bonus: float = spell_data.get("timing_bonus", 1.0)
+	if timing_bonus != 1.0:
+		spell_data["damage"] = spell_data.get("damage", 0.0) * timing_bonus
+
 	spell_cast.emit(spell_data)
 
 ## 获取序列器当前位置
@@ -755,6 +879,7 @@ func reset() -> void:
 	_pending_modifier = -1
 	_has_pending_modifier = false
 	_chord_buffer.clear()
+	_in_half_beat_window = false
 
 # ============================================================
 # 音色系统接口
