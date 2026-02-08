@@ -455,7 +455,7 @@ func _draw_note_palette(start_x: float, start_y: float, font: Font) -> void:
 	for j in range(modes.size()):
 		var btn_rect := Rect2(Vector2(btn_x + j * 36, start_y), Vector2(32, PALETTE_CELL_SIZE.y))
 		var btn_color: Color = modes[j]["color"]
-			var is_active: bool = _edit_mode == modes[j]["mode"]
+		var is_active: bool = _edit_mode == modes[j]["mode"]
 		var is_hover := j == _hover_mode_btn
 
 		btn_color.a = 0.8 if is_active else (0.4 if is_hover else 0.2)
@@ -509,7 +509,7 @@ func _draw_note_info_panel(start_x: float, start_y: float, font: Font) -> void:
 	for i in range(4):
 		var stat_val: float = stats.get(stat_keys[i], 0)
 		var max_val := 5.0
-			var fill_ratio: float = clamp(stat_val / max_val, 0.0, 1.0)
+		var fill_ratio: float = clamp(stat_val / max_val, 0.0, 1.0)
 
 		var label_x := bar_start_x + i * (STAT_BAR_WIDTH + 50)
 		var bar_x := label_x + 30
