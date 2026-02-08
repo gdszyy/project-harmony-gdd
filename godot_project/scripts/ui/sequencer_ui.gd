@@ -1,8 +1,16 @@
 ## sequencer_ui.gd
-## 序列器 UI
+## 序列器 UI（增强版 v2.0）
 ## 4小节×4拍的乐谱序列器界面
-## 显示当前编排、播放进度、音符颜色
+## 支持拖拽编辑、音符调色板、和弦构建、右键清除、
+## 悬停预览、节奏型指示器、小节标记
 extends Control
+
+# ============================================================
+# 信号
+# ============================================================
+signal note_placed(cell_idx: int, note: int)
+signal cell_cleared(cell_idx: int)
+signal edit_mode_changed(mode: String)
 
 # ============================================================
 # 配置
@@ -12,46 +20,78 @@ const CELL_MARGIN := 4.0
 const MEASURE_GAP := 12.0
 const BEATS_PER_MEASURE := 4
 const MEASURES := 4
+const TOTAL_CELLS := BEATS_PER_MEASURE * MEASURES
+
+## 音符调色板配置
+const PALETTE_CELL_SIZE := Vector2(32, 32)
+const PALETTE_MARGIN := 3.0
+const PALETTE_Y_OFFSET := 70.0  # 调色板在序列器下方
 
 ## 颜色定义
-const BG_COLOR := Color(0.05, 0.05, 0.1, 0.8)
-const CELL_EMPTY_COLOR := Color(0.1, 0.1, 0.15, 0.6)
-const CELL_ACTIVE_COLOR := Color(0.0, 0.8, 0.6, 0.3)
+const BG_COLOR := Color(0.03, 0.03, 0.08, 0.85)
+const CELL_EMPTY_COLOR := Color(0.08, 0.08, 0.12, 0.6)
+const CELL_HOVER_COLOR := Color(0.2, 0.2, 0.3, 0.4)
 const PLAYHEAD_COLOR := Color(1.0, 1.0, 1.0, 0.8)
 const MEASURE_LINE_COLOR := Color(0.3, 0.3, 0.4, 0.5)
-const REST_COLOR := Color(0.2, 0.2, 0.25, 0.4)
+const REST_COLOR := Color(0.15, 0.15, 0.2, 0.4)
+const DRAG_GHOST_ALPHA := 0.4
+const PALETTE_BG_COLOR := Color(0.05, 0.05, 0.1, 0.7)
+const PALETTE_SELECTED_BORDER := Color(1.0, 1.0, 1.0, 0.9)
+const CHORD_INDICATOR_COLOR := Color(1.0, 0.8, 0.0, 0.7)
+const RHYTHM_LABEL_COLOR := Color(0.5, 0.5, 0.6, 0.7)
 
-	# ============================================================
-	# 状态
-	# ============================================================
-	var _playhead_position: int = 0
-	var _sequencer_data: Array = []
-	var _beat_flash: float = 0.0
-	var _is_dragging: bool = false
-	var _selected_note: int = MusicData.WhiteKey.C  # 当前选中的音符
-	var _edit_mode: String = "note"  # "note", "chord", "rest"
-	var _chord_notes: Array[int] = []  # 和弦构建缓冲区
+# ============================================================
+# 状态
+# ============================================================
+var _playhead_position: int = 0
+var _sequencer_data: Array = []
+var _beat_flash: float = 0.0
+
+## 编辑状态
+var _edit_mode: String = "note"  # "note", "chord", "rest"
+var _selected_note: int = MusicData.WhiteKey.C
+var _chord_notes: Array[int] = []
+
+## 拖拽状态
+var _is_dragging: bool = false
+var _drag_source_idx: int = -1
+var _drag_note: int = -1
+var _drag_from_palette: bool = false
+var _drag_position: Vector2 = Vector2.ZERO
+
+## 悬停状态
+var _hover_cell_idx: int = -1
+var _hover_palette_idx: int = -1
+
+## 工具提示
+var _tooltip_text: String = ""
+var _tooltip_position: Vector2 = Vector2.ZERO
+var _tooltip_visible: bool = false
+
+## 节奏型缓存
+var _measure_rhythms: Array[String] = ["", "", "", ""]
 
 # ============================================================
 # 生命周期
 # ============================================================
 
-	func _ready() -> void:
-		# 连接信号
-		GameManager.beat_tick.connect(_on_beat_tick)
-		SpellcraftSystem.sequencer_updated.connect(_on_sequencer_updated)
-	
-		# 初始化数据
-		_sequencer_data = SpellcraftSystem.get_sequencer_data()
-	
-		# 设置最小尺寸
-		custom_minimum_size = Vector2(
-			MEASURES * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + (MEASURES - 1) * MEASURE_GAP + 20,
-			CELL_SIZE.y + 40
-		)
-		
-		# Issue #14: 启用鼠标交互
-		mouse_filter = Control.MOUSE_FILTER_STOP
+func _ready() -> void:
+	# 连接信号
+	GameManager.beat_tick.connect(_on_beat_tick)
+	SpellcraftSystem.sequencer_updated.connect(_on_sequencer_updated)
+	if SpellcraftSystem.has_signal("rhythm_pattern_changed"):
+		SpellcraftSystem.rhythm_pattern_changed.connect(_on_rhythm_changed)
+
+	# 初始化数据
+	_sequencer_data = SpellcraftSystem.get_sequencer_data()
+
+	# 设置最小尺寸（包含调色板区域）
+	custom_minimum_size = Vector2(
+		MEASURES * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + (MEASURES - 1) * MEASURE_GAP + 20,
+		CELL_SIZE.y + PALETTE_Y_OFFSET + PALETTE_CELL_SIZE.y + 30
+	)
+
+	mouse_filter = Control.MOUSE_FILTER_STOP
 
 func _process(delta: float) -> void:
 	_beat_flash = max(0.0, _beat_flash - delta * 4.0)
@@ -73,8 +113,20 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(start_x, 15), "SEQUENCER", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.5, 0.6))
 
-	# 绘制每个单元格
+	# 编辑模式指示
+	var mode_text := ""
+	match _edit_mode:
+		"note": mode_text = "[NOTE]"
+		"chord": mode_text = "[CHORD %d/3]" % _chord_notes.size()
+		"rest": mode_text = "[REST]"
+	draw_string(font, Vector2(start_x + 80, 15), mode_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.0, 0.8, 0.6))
+
+	# ========== 绘制序列器单元格 ==========
 	for measure in range(MEASURES):
+		# 小节号
+		var measure_x := start_x + measure * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + measure * MEASURE_GAP
+		draw_string(font, Vector2(measure_x, start_y - 3), "%d" % (measure + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.4, 0.5))
+
 		for beat in range(BEATS_PER_MEASURE):
 			var idx := measure * BEATS_PER_MEASURE + beat
 			var cell_x := start_x + idx * (CELL_SIZE.x + CELL_MARGIN) + measure * MEASURE_GAP
@@ -96,22 +148,41 @@ func _draw() -> void:
 					"rest":
 						cell_color = REST_COLOR
 
+			# 悬停高亮
+			if idx == _hover_cell_idx and not _is_dragging:
+				cell_color = cell_color.lightened(0.2)
+				cell_color.a = max(cell_color.a, 0.5)
+
 			draw_rect(cell_rect, cell_color)
 
-			# 单元格边框
-			draw_rect(cell_rect, Color(0.3, 0.3, 0.4, 0.3), false, 1.0)
+			# 拖拽目标高亮
+			if _is_dragging and idx == _hover_cell_idx:
+				draw_rect(cell_rect, Color(1.0, 1.0, 1.0, 0.15))
 
-			# 音符名称
+			# 单元格边框
+			var border_color := Color(0.3, 0.3, 0.4, 0.3)
+			if idx == _hover_cell_idx:
+				border_color = Color(0.5, 0.5, 0.6, 0.6)
+			draw_rect(cell_rect, border_color, false, 1.0)
+
+			# 音符名称 / 和弦标记
 			if idx < _sequencer_data.size():
 				var slot: Dictionary = _sequencer_data[idx]
 				if slot.get("type", "") == "note":
 					var note_key = slot.get("note", 0)
 					var note_name: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
 					var text_pos := Vector2(cell_x + CELL_SIZE.x / 2.0 - 4, start_y + CELL_SIZE.y / 2.0 + 4)
-					draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+					draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.WHITE)
 				elif slot.get("type", "") == "chord":
-					var text_pos := Vector2(cell_x + CELL_SIZE.x / 2.0 - 4, start_y + CELL_SIZE.y / 2.0 + 4)
-					draw_string(font, text_pos, "♪", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.WHITE)
+					var text_pos := Vector2(cell_x + CELL_SIZE.x / 2.0 - 6, start_y + CELL_SIZE.y / 2.0 + 4)
+					draw_string(font, text_pos, "CHORD", HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color.WHITE)
+				elif slot.get("type", "") == "chord_sustain":
+					var text_pos := Vector2(cell_x + CELL_SIZE.x / 2.0 - 2, start_y + CELL_SIZE.y / 2.0 + 4)
+					draw_string(font, text_pos, "~", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1.0, 0.8, 0.0, 0.5))
+
+			# 拍号标记（强拍加粗）
+			if beat == 0:
+				draw_rect(Rect2(Vector2(cell_x, start_y + CELL_SIZE.y), Vector2(CELL_SIZE.x, 2)), Color(0.4, 0.4, 0.5, 0.4))
 
 		# 小节分隔线
 		if measure < MEASURES - 1:
@@ -122,8 +193,13 @@ func _draw() -> void:
 				MEASURE_LINE_COLOR, 1.0
 			)
 
-	# 播放头
-	var playhead_idx := _playhead_position % (MEASURES * BEATS_PER_MEASURE)
+		# 节奏型标签
+		if measure < _measure_rhythms.size() and not _measure_rhythms[measure].is_empty():
+			var rhythm_x := measure_x + BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) / 2.0
+			draw_string(font, Vector2(rhythm_x - 20, start_y + CELL_SIZE.y + 14), _measure_rhythms[measure], HORIZONTAL_ALIGNMENT_CENTER, -1, 8, RHYTHM_LABEL_COLOR)
+
+	# ========== 播放头 ==========
+	var playhead_idx := _playhead_position % TOTAL_CELLS
 	var playhead_measure := playhead_idx / BEATS_PER_MEASURE
 	var playhead_x := start_x + playhead_idx * (CELL_SIZE.x + CELL_MARGIN) + playhead_measure * MEASURE_GAP
 	var playhead_rect := Rect2(Vector2(playhead_x - 1, start_y - 3), Vector2(CELL_SIZE.x + 2, CELL_SIZE.y + 6))
@@ -132,10 +208,314 @@ func _draw() -> void:
 	ph_color.a = 0.5 + _beat_flash * 0.5
 	draw_rect(playhead_rect, ph_color, false, 2.0)
 
-	# 节拍指示器
+	# 播放头顶部三角
+	var tri_center := Vector2(playhead_x + CELL_SIZE.x / 2.0, start_y - 6)
+	var tri_points := PackedVector2Array([
+		tri_center + Vector2(-4, -6),
+		tri_center + Vector2(4, -6),
+		tri_center + Vector2(0, 0),
+	])
+	draw_colored_polygon(tri_points, ph_color)
+
+	# ========== 音符调色板 ==========
+	_draw_note_palette(start_x, start_y + PALETTE_Y_OFFSET, font)
+
+	# ========== 拖拽幽灵 ==========
+	if _is_dragging and _drag_note >= 0:
+		var drag_color: Color = MusicData.NOTE_COLORS.get(_drag_note, Color(0.0, 1.0, 0.8))
+		drag_color.a = DRAG_GHOST_ALPHA
+		var ghost_rect := Rect2(_drag_position - CELL_SIZE / 2.0, CELL_SIZE)
+		draw_rect(ghost_rect, drag_color)
+		var note_name: String = MusicData.WHITE_KEY_STATS.get(_drag_note, {}).get("name", "?")
+		draw_string(font, _drag_position + Vector2(-4, 5), note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1.0, 1.0, 1.0, 0.6))
+
+	# ========== 工具提示 ==========
+	if _tooltip_visible and not _tooltip_text.is_empty():
+		var tt_size := Vector2(font.get_string_size(_tooltip_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x + 12, 18)
+		var tt_pos := _tooltip_position + Vector2(10, -20)
+		draw_rect(Rect2(tt_pos, tt_size), Color(0.0, 0.0, 0.0, 0.8))
+		draw_rect(Rect2(tt_pos, tt_size), Color(0.3, 0.3, 0.4, 0.5), false, 1.0)
+		draw_string(font, tt_pos + Vector2(6, 13), _tooltip_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.8, 0.8, 0.9))
+
+	# ========== 节拍信息 ==========
 	var beat_in_measure := GameManager.get_beat_in_measure()
 	var beat_text := "Beat: %d/%d" % [beat_in_measure + 1, BEATS_PER_MEASURE]
-	draw_string(font, Vector2(start_x, start_y + CELL_SIZE.y + 18), beat_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.4, 0.4, 0.5))
+	draw_string(font, Vector2(start_x, start_y + CELL_SIZE.y + 26), beat_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.4, 0.4, 0.5))
+
+# ============================================================
+# 音符调色板绘制
+# ============================================================
+
+func _draw_note_palette(start_x: float, start_y: float, font: Font) -> void:
+	# 调色板背景
+	var palette_width := 7 * (PALETTE_CELL_SIZE.x + PALETTE_MARGIN) + 60
+	draw_rect(Rect2(Vector2(start_x, start_y - 2), Vector2(palette_width, PALETTE_CELL_SIZE.y + 4)), PALETTE_BG_COLOR)
+
+	# 标签
+	draw_string(font, Vector2(start_x + 2, start_y + PALETTE_CELL_SIZE.y / 2.0 + 4), "NOTE:", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.4, 0.5))
+
+	# 7个白键音符
+	var palette_start_x := start_x + 38
+	for i in range(7):
+		var note_key: int = i  # WhiteKey enum 0-6
+		var cell_x := palette_start_x + i * (PALETTE_CELL_SIZE.x + PALETTE_MARGIN)
+		var cell_rect := Rect2(Vector2(cell_x, start_y), PALETTE_CELL_SIZE)
+
+		# 音符颜色
+		var color: Color = MusicData.NOTE_COLORS.get(note_key, Color(0.5, 0.5, 0.5))
+		color.a = 0.7
+
+		# 选中高亮
+		if note_key == _selected_note:
+			color.a = 1.0
+			draw_rect(cell_rect.grow(2), PALETTE_SELECTED_BORDER, false, 2.0)
+
+		# 悬停高亮
+		if i == _hover_palette_idx:
+			color = color.lightened(0.2)
+
+		draw_rect(cell_rect, color)
+
+		# 音符名称
+		var note_name: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
+		var text_pos := Vector2(cell_x + PALETTE_CELL_SIZE.x / 2.0 - 4, start_y + PALETTE_CELL_SIZE.y / 2.0 + 4)
+		draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+
+	# 模式切换按钮
+	var btn_x := palette_start_x + 7 * (PALETTE_CELL_SIZE.x + PALETTE_MARGIN) + 8
+	var modes := [
+		{"label": "N", "mode": "note", "color": Color(0.0, 0.8, 0.6)},
+		{"label": "C", "mode": "chord", "color": Color(1.0, 0.8, 0.0)},
+		{"label": "R", "mode": "rest", "color": Color(0.5, 0.5, 0.5)},
+	]
+	for j in range(modes.size()):
+		var btn_rect := Rect2(Vector2(btn_x + j * 28, start_y + 2), Vector2(24, PALETTE_CELL_SIZE.y - 4))
+		var btn_color: Color = modes[j]["color"]
+		btn_color.a = 0.8 if _edit_mode == modes[j]["mode"] else 0.3
+		draw_rect(btn_rect, btn_color)
+		if _edit_mode == modes[j]["mode"]:
+			draw_rect(btn_rect, Color.WHITE, false, 1.5)
+		draw_string(font, btn_rect.position + Vector2(8, 18), modes[j]["label"], HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+
+# ============================================================
+# 输入处理
+# ============================================================
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		_handle_mouse_button(event as InputEventMouseButton)
+	elif event is InputEventMouseMotion:
+		_handle_mouse_motion(event as InputEventMouseMotion)
+
+func _handle_mouse_button(event: InputEventMouseButton) -> void:
+	var pos := event.position
+
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			# 检查是否点击了调色板
+			var palette_idx := _get_palette_at_position(pos)
+			if palette_idx >= 0:
+				_selected_note = palette_idx
+				# 开始从调色板拖拽
+				_is_dragging = true
+				_drag_from_palette = true
+				_drag_note = palette_idx
+				_drag_source_idx = -1
+				_drag_position = pos
+				return
+
+			# 检查是否点击了模式按钮
+			if _handle_mode_button_click(pos):
+				return
+
+			# 检查是否点击了序列器单元格
+			var cell_idx := _get_cell_at_position(pos)
+			if cell_idx >= 0:
+				if cell_idx < _sequencer_data.size():
+					var slot: Dictionary = _sequencer_data[cell_idx]
+					if slot.get("type", "rest") == "note":
+						# 拖拽已有音符
+						_is_dragging = true
+						_drag_from_palette = false
+						_drag_note = slot.get("note", 0)
+						_drag_source_idx = cell_idx
+						_drag_position = pos
+					else:
+						# 在空格子上放置音符
+						_place_at_cell(cell_idx)
+				else:
+					_place_at_cell(cell_idx)
+		else:
+			# 释放拖拽
+			if _is_dragging:
+				_finish_drag(pos)
+			_is_dragging = false
+			_drag_source_idx = -1
+			_drag_note = -1
+
+	elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		# 右键清除
+		var cell_idx := _get_cell_at_position(pos)
+		if cell_idx >= 0:
+			SpellcraftSystem.set_sequencer_rest(cell_idx)
+			cell_cleared.emit(cell_idx)
+
+	elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+		# 滚轮切换选中音符
+		_selected_note = (_selected_note + 1) % 7
+
+	elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+		_selected_note = (_selected_note + 6) % 7  # -1 mod 7
+
+func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
+	var pos := event.position
+
+	if _is_dragging:
+		_drag_position = pos
+		_hover_cell_idx = _get_cell_at_position(pos)
+	else:
+		# 更新悬停状态
+		_hover_cell_idx = _get_cell_at_position(pos)
+		_hover_palette_idx = _get_palette_at_position(pos)
+
+		# 工具提示
+		_update_tooltip(pos)
+
+func _finish_drag(pos: Vector2) -> void:
+	var target_idx := _get_cell_at_position(pos)
+	if target_idx < 0:
+		return
+
+	if _drag_from_palette:
+		# 从调色板拖到序列器
+		SpellcraftSystem.set_sequencer_note(target_idx, _drag_note)
+		note_placed.emit(target_idx, _drag_note)
+	else:
+		# 序列器内拖拽（移动音符）
+		if _drag_source_idx >= 0 and _drag_source_idx != target_idx:
+			# 清除源位置
+			SpellcraftSystem.set_sequencer_rest(_drag_source_idx)
+			# 放置到目标位置
+			SpellcraftSystem.set_sequencer_note(target_idx, _drag_note)
+			note_placed.emit(target_idx, _drag_note)
+
+func _place_at_cell(cell_idx: int) -> void:
+	match _edit_mode:
+		"note":
+			SpellcraftSystem.set_sequencer_note(cell_idx, _selected_note)
+			note_placed.emit(cell_idx, _selected_note)
+		"rest":
+			SpellcraftSystem.set_sequencer_rest(cell_idx)
+			cell_cleared.emit(cell_idx)
+		"chord":
+			_chord_notes.append(_selected_note)
+			if _chord_notes.size() >= 3:
+				var measure_idx := cell_idx / BEATS_PER_MEASURE
+				SpellcraftSystem.set_sequencer_chord(measure_idx, _chord_notes)
+				_chord_notes.clear()
+
+func _handle_mode_button_click(pos: Vector2) -> bool:
+	var start_x := (size.x - custom_minimum_size.x) / 2.0 + 10.0
+	var palette_start_x := start_x + 38
+	var btn_x := palette_start_x + 7 * (PALETTE_CELL_SIZE.x + PALETTE_MARGIN) + 8
+	var btn_y := 20.0 + PALETTE_Y_OFFSET + 2
+
+	var modes := ["note", "chord", "rest"]
+	for j in range(modes.size()):
+		var btn_rect := Rect2(Vector2(btn_x + j * 28, btn_y), Vector2(24, PALETTE_CELL_SIZE.y - 4))
+		if btn_rect.has_point(pos):
+			_edit_mode = modes[j]
+			if _edit_mode != "chord":
+				_chord_notes.clear()
+			edit_mode_changed.emit(_edit_mode)
+			return true
+	return false
+
+# ============================================================
+# 工具提示
+# ============================================================
+
+func _update_tooltip(pos: Vector2) -> void:
+	_tooltip_visible = false
+
+	# 序列器单元格提示
+	var cell_idx := _get_cell_at_position(pos)
+	if cell_idx >= 0 and cell_idx < _sequencer_data.size():
+		var slot: Dictionary = _sequencer_data[cell_idx]
+		var slot_type: String = slot.get("type", "rest")
+		match slot_type:
+			"note":
+				var note_key = slot.get("note", 0)
+				var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(note_key, {})
+				_tooltip_text = "%s — %s (DMG:%d SPD:%d)" % [
+					stats.get("name", "?"),
+					stats.get("desc", ""),
+					stats.get("dmg", 0),
+					stats.get("spd", 0),
+				]
+				_tooltip_visible = true
+			"chord":
+				_tooltip_text = "和弦 — 小节开始时触发和弦法术"
+				_tooltip_visible = true
+			"rest":
+				_tooltip_text = "休止符 — 蓄力加成"
+				_tooltip_visible = true
+		_tooltip_position = pos
+		return
+
+	# 调色板提示
+	var palette_idx := _get_palette_at_position(pos)
+	if palette_idx >= 0:
+		var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(palette_idx, {})
+		_tooltip_text = "%s: %s (DMG:%d SPD:%d DUR:%d SIZE:%d)" % [
+			stats.get("name", "?"),
+			stats.get("desc", ""),
+			stats.get("dmg", 0),
+			stats.get("spd", 0),
+			stats.get("dur", 0),
+			stats.get("size", 0),
+		]
+		_tooltip_visible = true
+		_tooltip_position = pos
+
+# ============================================================
+# 位置计算
+# ============================================================
+
+func _get_cell_at_position(mouse_pos: Vector2) -> int:
+	var total_width := custom_minimum_size.x
+	var start_x := (size.x - total_width) / 2.0 + 10.0
+	var start_y := 20.0
+
+	if mouse_pos.y < start_y or mouse_pos.y > start_y + CELL_SIZE.y:
+		return -1
+
+	for measure in range(MEASURES):
+		for beat in range(BEATS_PER_MEASURE):
+			var idx := measure * BEATS_PER_MEASURE + beat
+			var cell_x := start_x + idx * (CELL_SIZE.x + CELL_MARGIN) + measure * MEASURE_GAP
+			var cell_rect := Rect2(Vector2(cell_x, start_y), CELL_SIZE)
+			if cell_rect.has_point(mouse_pos):
+				return idx
+
+	return -1
+
+func _get_palette_at_position(mouse_pos: Vector2) -> int:
+	var total_width := custom_minimum_size.x
+	var start_x := (size.x - total_width) / 2.0 + 10.0
+	var palette_start_x := start_x + 38
+	var palette_y := 20.0 + PALETTE_Y_OFFSET
+
+	if mouse_pos.y < palette_y or mouse_pos.y > palette_y + PALETTE_CELL_SIZE.y:
+		return -1
+
+	for i in range(7):
+		var cell_x := palette_start_x + i * (PALETTE_CELL_SIZE.x + PALETTE_MARGIN)
+		var cell_rect := Rect2(Vector2(cell_x, palette_y), PALETTE_CELL_SIZE)
+		if cell_rect.has_point(mouse_pos):
+			return i
+
+	return -1
 
 # ============================================================
 # 信号回调
@@ -145,92 +525,51 @@ func _on_beat_tick(beat_index: int) -> void:
 	_playhead_position = beat_index
 	_beat_flash = 1.0
 
-	func _on_sequencer_updated(sequence: Array) -> void:
-		_sequencer_data = sequence
-	
-	# ============================================================
-	# Issue #14: 交互编辑
-	# ============================================================
-	
-	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseButton:
-			var mouse_event := event as InputEventMouseButton
-			
-			if mouse_event.button_index == MOUSE_BUTTON_LEFT:
-				if mouse_event.pressed:
-					_is_dragging = true
-					_handle_cell_click(mouse_event.position)
-				else:
-					_is_dragging = false
-			
-			elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-				# 右键清除格子
-				_handle_cell_clear(mouse_event.position)
-		
-		elif event is InputEventMouseMotion and _is_dragging:
-			var mouse_motion := event as InputEventMouseMotion
-			_handle_cell_click(mouse_motion.position)
-	
-	func _handle_cell_click(mouse_pos: Vector2) -> void:
-		var cell_idx := _get_cell_at_position(mouse_pos)
-		if cell_idx < 0:
-			return
-		
-		match _edit_mode:
-			"note":
-				# 放置音符
-				SpellcraftSystem.set_sequencer_note(cell_idx, _selected_note)
-			"rest":
-				# 放置休止符
-				SpellcraftSystem.set_sequencer_rest(cell_idx)
-			"chord":
-				# 和弦模式：需要在小节开头
-				var measure_idx := cell_idx / BEATS_PER_MEASURE
-				if _chord_notes.size() >= 3:
-					SpellcraftSystem.set_sequencer_chord(measure_idx, _chord_notes)
-					_chord_notes.clear()
-	
-	func _handle_cell_clear(mouse_pos: Vector2) -> void:
-		var cell_idx := _get_cell_at_position(mouse_pos)
-		if cell_idx < 0:
-			return
-		
-		# 清除为休止符
-		SpellcraftSystem.set_sequencer_rest(cell_idx)
-	
-	func _get_cell_at_position(mouse_pos: Vector2) -> int:
-		var total_width := custom_minimum_size.x
-		var start_x := (size.x - total_width) / 2.0 + 10.0
-		var start_y := 20.0
-		
-		# 检查是否在单元格区域内
-		if mouse_pos.y < start_y or mouse_pos.y > start_y + CELL_SIZE.y:
-			return -1
-		
-		for measure in range(MEASURES):
-			for beat in range(BEATS_PER_MEASURE):
-				var idx := measure * BEATS_PER_MEASURE + beat
-				var cell_x := start_x + idx * (CELL_SIZE.x + CELL_MARGIN) + measure * MEASURE_GAP
-				var cell_rect := Rect2(Vector2(cell_x, start_y), CELL_SIZE)
-				
-				if cell_rect.has_point(mouse_pos):
-					return idx
-		
-		return -1
-	
-	## 设置编辑模式
-	func set_edit_mode(mode: String) -> void:
-		_edit_mode = mode
-	
-	## 设置选中的音符
-	func set_selected_note(note: int) -> void:
-		_selected_note = note
-	
-	## 添加和弦音符
-	func add_chord_note(note: int) -> void:
-		if note not in _chord_notes:
-			_chord_notes.append(note)
-	
-	## 清除和弦缓冲区
-	func clear_chord_buffer() -> void:
+func _on_sequencer_updated(sequence: Array) -> void:
+	_sequencer_data = sequence
+
+func _on_rhythm_changed(pattern) -> void:
+	# 更新节奏型显示
+	var pattern_names := {
+		MusicData.RhythmPattern.EVEN_EIGHTH: "连射",
+		MusicData.RhythmPattern.DOTTED: "重击",
+		MusicData.RhythmPattern.SYNCOPATED: "闪避",
+		MusicData.RhythmPattern.SWING: "摇摆",
+		MusicData.RhythmPattern.TRIPLET: "三连",
+		MusicData.RhythmPattern.REST: "蓄力",
+	}
+	# 更新当前小节的节奏型
+	var current_measure := (_playhead_position / BEATS_PER_MEASURE) % MEASURES
+	_measure_rhythms[current_measure] = pattern_names.get(pattern, "")
+
+# ============================================================
+# 公共接口
+# ============================================================
+
+## 设置编辑模式
+func set_edit_mode(mode: String) -> void:
+	_edit_mode = mode
+	if mode != "chord":
 		_chord_notes.clear()
+	edit_mode_changed.emit(mode)
+
+## 设置选中的音符
+func set_selected_note(note: int) -> void:
+	_selected_note = note
+
+## 添加和弦音符
+func add_chord_note(note: int) -> void:
+	if note not in _chord_notes:
+		_chord_notes.append(note)
+
+## 清除和弦缓冲区
+func clear_chord_buffer() -> void:
+	_chord_notes.clear()
+
+## 获取当前编辑模式
+func get_edit_mode() -> String:
+	return _edit_mode
+
+## 获取选中音符
+func get_selected_note() -> int:
+	return _selected_note

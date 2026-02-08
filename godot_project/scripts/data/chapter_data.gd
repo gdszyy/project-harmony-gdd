@@ -22,6 +22,8 @@ enum Chapter {
 	CH3_BACH,         ## 巴洛克 · 大构建师
 	CH4_MOZART,       ## 古典主义 · 古典完形
 	CH5_BEETHOVEN,    ## 浪漫主义 · 狂想者
+	CH6_JAZZ,         ## 爵士 · 切分行者
+	CH7_NOISE,        ## 现代 · 合成主脑
 }
 
 # ============================================================
@@ -63,9 +65,7 @@ const CHAPTERS: Dictionary = {
 		},
 		
 		# ---- 波次模板 ----
-		# 定义每个阶段的波次类型和敌人组成
 		"wave_templates": [
-			# 阶段1：入门（波次1-3）
 			{
 				"waves": [1, 3],
 				"type": "normal",
@@ -73,7 +73,6 @@ const CHAPTERS: Dictionary = {
 				"enemy_types": ["static"],
 				"spawn_interval": 2.0,
 			},
-			# 阶段2：引入特色敌人（波次4-5）
 			{
 				"waves": [4, 5],
 				"type": "chapter_intro",
@@ -81,7 +80,6 @@ const CHAPTERS: Dictionary = {
 				"enemy_types": ["static", "ch1_grid_static", "screech"],
 				"spawn_interval": 1.8,
 			},
-			# 阶段3：首次精英（波次6）
 			{
 				"waves": [6, 6],
 				"type": "elite",
@@ -90,7 +88,6 @@ const CHAPTERS: Dictionary = {
 				"elite_type": "ch1_harmony_guardian",
 				"spawn_interval": 1.5,
 			},
-			# 阶段4：升级（波次7-8）
 			{
 				"waves": [7, 8],
 				"type": "swarm",
@@ -98,7 +95,6 @@ const CHAPTERS: Dictionary = {
 				"enemy_types": ["static", "ch1_grid_static", "ch1_metronome_pulse", "screech"],
 				"spawn_interval": 1.2,
 			},
-			# 阶段5：第二精英（波次9）
 			{
 				"waves": [9, 9],
 				"type": "elite",
@@ -107,7 +103,6 @@ const CHAPTERS: Dictionary = {
 				"elite_type": "ch1_frequency_sentinel",
 				"spawn_interval": 1.5,
 			},
-			# 阶段6：Boss前冲刺（波次10）
 			{
 				"waves": [10, 10],
 				"type": "pre_boss",
@@ -117,7 +112,6 @@ const CHAPTERS: Dictionary = {
 			},
 		],
 		
-		# ---- 章节过渡奖励 ----
 		"completion_rewards": {
 			"resonance_fragments": 30,
 			"xp_bonus": 100,
@@ -464,6 +458,227 @@ const CHAPTERS: Dictionary = {
 			"unlock": "ch6_access",
 		},
 	},
+	
+	# ================================================================
+	# 第六章：切分行者 · 爵士 (The Syncopated Shadow)
+	# ================================================================
+	Chapter.CH6_JAZZ: {
+		"name": "第六章：切分行者",
+		"subtitle": "The Syncopated Shadow",
+		"era": "爵士",
+		"bpm": 140,
+		"beats_per_measure": 4,
+		"color_theme": Color(0.6, 0.3, 0.7),
+		"description": "爵士乐的摇摆节奏与即兴色彩，打破了功能和声的稳定预期。",
+		
+		"duration": 280.0,
+		"min_waves_before_boss": 12,
+		
+		## 特殊机制：摇摆力场 — 所有敌人攻击偏向反拍
+		"special_mechanics": {
+			"swing_grid": true,           ## 启用摇摆力场
+			"offbeat_attack_ratio": 0.7,  ## 70%的攻击落在反拍上
+			"spotlight_safe_zones": true,  ## 聚光灯安全区
+		},
+		
+		"enemy_pool": {
+			"ch5_crescendo_surge":       { "weight": 1.0, "min_wave": 1 },
+			"ch5_fate_knocker":          { "weight": 1.0, "min_wave": 1 },
+			"ch6_walking_bass":          { "weight": 3.0, "min_wave": 2 },
+			"ch6_scat_singer":           { "weight": 2.5, "min_wave": 3 },
+			"pulse":                     { "weight": 1.5, "min_wave": 1 },
+			"screech":                   { "weight": 1.0, "min_wave": 2 },
+			"wall":                      { "weight": 1.0, "min_wave": 5 },
+		},
+		
+		"elite_pool": {
+			"ch6_bebop_virtuoso":       { "weight": 3.0, "min_wave": 5 },
+			"ch5_symphony_commander":   { "weight": 1.5, "min_wave": 8 },
+		},
+		
+		"boss": {
+			"key": "boss_jazz",
+			"script_path": "res://scripts/entities/enemies/bosses/boss_jazz.gd",
+		},
+		
+		"wave_templates": [
+			# 阶段1：入门 — 引入摇摆节奏感
+			{
+				"waves": [1, 3],
+				"type": "normal",
+				"enemy_count_base": 12,
+				"enemy_types": ["ch5_crescendo_surge", "ch5_fate_knocker", "pulse"],
+				"spawn_interval": 1.5,
+			},
+			# 阶段2：引入爵士特色敌人
+			{
+				"waves": [4, 5],
+				"type": "chapter_intro",
+				"enemy_count_base": 14,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "pulse"],
+				"spawn_interval": 1.3,
+			},
+			# 阶段3：首次精英
+			{
+				"waves": [6, 6],
+				"type": "elite",
+				"enemy_count_base": 6,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer"],
+				"elite_type": "ch6_bebop_virtuoso",
+				"spawn_interval": 1.1,
+			},
+			# 阶段4：蜂群
+			{
+				"waves": [7, 9],
+				"type": "swarm",
+				"enemy_count_base": 28,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "ch5_crescendo_surge", "screech"],
+				"spawn_interval": 0.8,
+			},
+			# 阶段5：第二精英
+			{
+				"waves": [10, 10],
+				"type": "elite",
+				"enemy_count_base": 10,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "wall"],
+				"elite_type": "ch6_bebop_virtuoso",
+				"spawn_interval": 0.9,
+			},
+			# 阶段6：脉冲风暴
+			{
+				"waves": [11, 12],
+				"type": "pulse_storm",
+				"enemy_count_base": 15,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "pulse"],
+				"spawn_interval": 0.7,
+			},
+			# 阶段7：Boss前冲刺
+			{
+				"waves": [13, 14],
+				"type": "pre_boss",
+				"enemy_count_base": 22,
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "ch5_fate_knocker", "wall"],
+				"spawn_interval": 0.6,
+			},
+		],
+		
+		"completion_rewards": {
+			"resonance_fragments": 100,
+			"xp_bonus": 450,
+			"unlock": "ch7_access",
+		},
+	},
+	
+	# ================================================================
+	# 第七章：合成主脑 · 噪音 (The Digital Void)
+	# ================================================================
+	Chapter.CH7_NOISE: {
+		"name": "第七章：数字虚空",
+		"subtitle": "The Digital Void",
+		"era": "现代/电子",
+		"bpm": 150,
+		"beats_per_measure": 4,
+		"color_theme": Color(0.1, 0.9, 0.6),
+		"description": "音乐被彻底解构为频率与波形，一切皆可为音乐，包括噪音本身。",
+		
+		"duration": 300.0,
+		"min_waves_before_boss": 13,
+		
+		## 特殊机制：波形战争 — 敌人具有故障着色器效果
+		"special_mechanics": {
+			"waveform_warfare": true,     ## 启用波形战争
+			"glitch_shader": true,        ## 敌人故障着色器
+			"bitcrush_zones": true,       ## 降采样区域
+			"frequency_shift": true,      ## 频率偏移（改变弹体属性）
+		},
+		
+		"enemy_pool": {
+			"ch6_walking_bass":          { "weight": 1.0, "min_wave": 1 },
+			"ch6_scat_singer":           { "weight": 1.0, "min_wave": 1 },
+			"ch7_bitcrusher_worm":       { "weight": 3.0, "min_wave": 2 },
+			"ch7_glitch_phantom":        { "weight": 2.5, "min_wave": 3 },
+			"static":                    { "weight": 2.0, "min_wave": 1 },
+			"silence":                   { "weight": 2.0, "min_wave": 3 },
+			"wall":                      { "weight": 1.5, "min_wave": 5 },
+		},
+		
+		"elite_pool": {
+			"ch7_frequency_overlord":   { "weight": 3.0, "min_wave": 5 },
+			"ch6_bebop_virtuoso":       { "weight": 1.5, "min_wave": 8 },
+		},
+		
+		"boss": {
+			"key": "boss_noise",
+			"script_path": "res://scripts/entities/enemies/bosses/boss_noise.gd",
+		},
+		
+		"wave_templates": [
+			# 阶段1：入门 — 数字虚空初探
+			{
+				"waves": [1, 3],
+				"type": "normal",
+				"enemy_count_base": 14,
+				"enemy_types": ["static", "ch6_walking_bass", "ch6_scat_singer"],
+				"spawn_interval": 1.4,
+			},
+			# 阶段2：引入终章特色敌人
+			{
+				"waves": [4, 5],
+				"type": "chapter_intro",
+				"enemy_count_base": 16,
+				"enemy_types": ["ch7_bitcrusher_worm", "ch7_glitch_phantom", "static"],
+				"spawn_interval": 1.2,
+			},
+			# 阶段3：首次精英
+			{
+				"waves": [6, 6],
+				"type": "elite",
+				"enemy_count_base": 8,
+				"enemy_types": ["ch7_bitcrusher_worm", "ch7_glitch_phantom"],
+				"elite_type": "ch7_frequency_overlord",
+				"spawn_interval": 1.0,
+			},
+			# 阶段4：寂静潮
+			{
+				"waves": [7, 8],
+				"type": "silence_tide",
+				"enemy_count_base": 20,
+				"enemy_types": ["ch7_bitcrusher_worm", "silence", "static"],
+				"spawn_interval": 0.9,
+			},
+			# 阶段5：蜂群
+			{
+				"waves": [9, 11],
+				"type": "swarm",
+				"enemy_count_base": 30,
+				"enemy_types": ["ch7_bitcrusher_worm", "ch7_glitch_phantom", "static", "silence"],
+				"spawn_interval": 0.7,
+			},
+			# 阶段6：第二精英
+			{
+				"waves": [12, 12],
+				"type": "elite",
+				"enemy_count_base": 12,
+				"enemy_types": ["ch7_bitcrusher_worm", "ch7_glitch_phantom", "wall"],
+				"elite_type": "ch7_frequency_overlord",
+				"spawn_interval": 0.8,
+			},
+			# 阶段7：Boss前冲刺
+			{
+				"waves": [13, 15],
+				"type": "pre_boss",
+				"enemy_count_base": 25,
+				"enemy_types": ["ch7_bitcrusher_worm", "ch7_glitch_phantom", "silence", "wall"],
+				"spawn_interval": 0.5,
+			},
+		],
+		
+		"completion_rewards": {
+			"resonance_fragments": 150,
+			"xp_bonus": 600,
+			"unlock": "game_complete",
+		},
+	},
 }
 
 # ============================================================
@@ -494,6 +709,14 @@ const ENEMY_SCRIPT_PATHS: Dictionary = {
 	# 第五章特色
 	"ch5_fate_knocker":      "res://scripts/entities/enemies/chapter_enemies/ch5_fate_knocker.gd",
 	"ch5_crescendo_surge":   "res://scripts/entities/enemies/chapter_enemies/ch5_crescendo_surge.gd",
+	
+	# 第六章特色
+	"ch6_walking_bass":      "res://scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd",
+	"ch6_scat_singer":       "res://scripts/entities/enemies/chapter_enemies/ch6_scat_singer.gd",
+	
+	# 第七章特色
+	"ch7_bitcrusher_worm":   "res://scripts/entities/enemies/chapter_enemies/ch7_bitcrusher_worm.gd",
+	"ch7_glitch_phantom":    "res://scripts/entities/enemies/chapter_enemies/ch7_glitch_phantom.gd",
 }
 
 const ELITE_SCRIPT_PATHS: Dictionary = {
@@ -512,6 +735,12 @@ const ELITE_SCRIPT_PATHS: Dictionary = {
 	
 	# 第五章精英
 	"ch5_symphony_commander": "res://scripts/entities/enemies/elites/ch5_symphony_commander.gd",
+	
+	# 第六章精英
+	"ch6_bebop_virtuoso":     "res://scripts/entities/enemies/elites/ch6_bebop_virtuoso.gd",
+	
+	# 第七章精英
+	"ch7_frequency_overlord": "res://scripts/entities/enemies/elites/ch7_frequency_overlord.gd",
 }
 
 # ============================================================
@@ -542,6 +771,20 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 	"ch5_crescendo_surge": {
 		"hp": 50.0, "speed": 60.0, "damage": 8.0, "xp": 8,
 	},
+	# 第六章
+	"ch6_walking_bass": {
+		"hp": 80.0, "speed": 35.0, "damage": 12.0, "xp": 11,
+	},
+	"ch6_scat_singer": {
+		"hp": 40.0, "speed": 100.0, "damage": 9.0, "xp": 9,
+	},
+	# 第七章
+	"ch7_bitcrusher_worm": {
+		"hp": 100.0, "speed": 50.0, "damage": 14.0, "xp": 13,
+	},
+	"ch7_glitch_phantom": {
+		"hp": 60.0, "speed": 110.0, "damage": 11.0, "xp": 12,
+	},
 }
 
 # ============================================================
@@ -549,11 +792,11 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 # ============================================================
 
 ## 获取章节配置
-static func get_chapter_config(chapter: Chapter) -> Dictionary:
+static func get_chapter_config(chapter: int) -> Dictionary:
 	return CHAPTERS.get(chapter, {})
 
 ## 获取章节的波次模板
-static func get_wave_template(chapter: Chapter, wave_number: int) -> Dictionary:
+static func get_wave_template(chapter: int, wave_number: int) -> Dictionary:
 	var config := get_chapter_config(chapter)
 	var templates: Array = config.get("wave_templates", [])
 	
@@ -569,7 +812,7 @@ static func get_wave_template(chapter: Chapter, wave_number: int) -> Dictionary:
 	return {}
 
 ## 获取章节可用的敌人类型（基于当前波次）
-static func get_available_enemies(chapter: Chapter, wave_number: int) -> Array[String]:
+static func get_available_enemies(chapter: int, wave_number: int) -> Array[String]:
 	var config := get_chapter_config(chapter)
 	var pool: Dictionary = config.get("enemy_pool", {})
 	var available: Array[String] = []
@@ -582,7 +825,7 @@ static func get_available_enemies(chapter: Chapter, wave_number: int) -> Array[S
 	return available
 
 ## 加权随机选择敌人类型
-static func weighted_select_enemy(chapter: Chapter, wave_number: int) -> String:
+static func weighted_select_enemy(chapter: int, wave_number: int) -> String:
 	var config := get_chapter_config(chapter)
 	var pool: Dictionary = config.get("enemy_pool", {})
 	
@@ -608,7 +851,7 @@ static func weighted_select_enemy(chapter: Chapter, wave_number: int) -> String:
 	return available[-1]["name"]
 
 ## 选择精英类型
-static func select_elite(chapter: Chapter, wave_number: int) -> String:
+static func select_elite(chapter: int, wave_number: int) -> String:
 	var config := get_chapter_config(chapter)
 	var pool: Dictionary = config.get("elite_pool", {})
 	
@@ -652,8 +895,13 @@ static func get_chapter_count() -> int:
 	return CHAPTERS.size()
 
 ## 获取下一章
-static func get_next_chapter(current: Chapter) -> Chapter:
+static func get_next_chapter(current: int) -> int:
 	var idx := current as int
 	if idx + 1 < Chapter.size():
-		return (idx + 1) as Chapter
+		return idx + 1
 	return current  # 已是最后一章
+
+## 获取章节特殊机制
+static func get_special_mechanics(chapter: int) -> Dictionary:
+	var config := get_chapter_config(chapter)
+	return config.get("special_mechanics", {})
