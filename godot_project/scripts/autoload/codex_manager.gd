@@ -150,6 +150,10 @@ func _unlock_entry_internal(entry_id: String, emit_signal: bool) -> void:
 		var comp := get_volume_completion(volume)
 		completion_updated.emit(volume, comp["unlocked"], comp["total"])
 
+## 获取所有已解锁条目的字典 { entry_id: bool }
+func get_unlocked_entries() -> Dictionary:
+	return _unlocked_entries.duplicate()
+
 ## 检查条目是否已解锁
 func is_unlocked(entry_id: String) -> bool:
 	return _unlocked_entries.get(entry_id, false)

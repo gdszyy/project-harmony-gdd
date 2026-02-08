@@ -729,6 +729,47 @@ func on_run_completed(run_data: Dictionary) -> Dictionary:
 	return result
 
 # ============================================================
+# 供 UI 适配接口（hall_of_harmony.gd 使用）
+# ============================================================
+
+## 获取所有升级项的当前等级 { upgrade_id: level }
+func get_upgrade_levels() -> Dictionary:
+	var levels := instrument_levels.duplicate()
+	for key in acoustic_levels:
+		levels[key] = acoustic_levels[key]
+	return levels
+
+## 获取所有已解锁的技能/乐理项 { theory_id: bool }
+func get_unlocked_skills() -> Dictionary:
+	return unlocked_theories.duplicate()
+
+## 获取当前选择的调式名称
+func get_selected_mode() -> String:
+	return selected_mode
+
+## 设置当前调式（别名，委托给 select_mode）
+func set_selected_mode(mode_name: String) -> bool:
+	return select_mode(mode_name)
+
+## 购买升级（通用接口，自动判断模块）
+func purchase_upgrade(upgrade_id: String, _cost: int = 0) -> bool:
+	if INSTRUMENT_UPGRADES.has(upgrade_id):
+		return purchase_instrument_upgrade(upgrade_id)
+	elif ACOUSTIC_UPGRADES.has(upgrade_id):
+		return purchase_acoustic_upgrade(upgrade_id)
+	elif THEORY_UNLOCKS.has(upgrade_id):
+		return purchase_theory_unlock(upgrade_id)
+	return false
+
+## 解锁技能（通用接口，委托给对应模块）
+func unlock_skill(skill_id: String, _cost: int = 0) -> bool:
+	if THEORY_UNLOCKS.has(skill_id):
+		return purchase_theory_unlock(skill_id)
+	elif MODE_CONFIGS.has(skill_id):
+		return purchase_mode_unlock(skill_id)
+	return false
+
+# ============================================================
 # 获取所有模块的完整状态（供 UI 使用）
 # ============================================================
 

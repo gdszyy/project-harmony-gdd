@@ -1,8 +1,9 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.4.1 (Live Document)
+**版本：** 2.5.1 (Live Document)
 **最后更新：** 2026年2月8日
-**最新修复：** [Bug 修复报告 2026-02-08](BUG_FIX_REPORT_2026_02_08.md) — 修复 20 个关键问题，涵盖 UI、游戏功能、信号连接、经验值系统
+**最新修复：** [v5.0 代码审查与修复报告](BUG_FIX_REPORT_v5.0_2026_02_08.md) — 修复 8 个问题，涵盖护盾系统、受击反馈、和谐殿堂、图鉴解锁
+**前次修复：** [Bug 修复报告 2026-02-08](BUG_FIX_REPORT_2026_02_08.md) — 修复 20 个关键问题，涵盖 UI、游戏功能、信号连接、经验值系统
 
 ---
 
@@ -26,7 +27,8 @@
 project-harmony-gdd/
 ├── GDD.md                  # [核心] 实时主设计文档，包含最新最完整的游戏设计方案
 ├── README.md               # 本文件，仓库导航与开发规范
-├── BUG_FIX_REPORT_2026_02_08.md  # [最新] Bug 修复报告 (2026-02-08)
+├── BUG_FIX_REPORT_v5.0_2026_02_08.md  # [最新] v5.0 代码审查与修复报告
+├── BUG_FIX_REPORT_2026_02_08.md  # Bug 修复报告 (2026-02-08)
 ├── Feature_Completeness_Report.md  # 功能完整性检查报告
 ├── Assets/                 # 当前 GDD 引用的可视化图表
 │   ├── black_key_dual_role_v5.png
@@ -83,5 +85,6 @@ project-harmony-gdd/
 12. **关卡与Boss体系 (v2.3)**：基于音乐史演进的七章节结构，每章配有独特场景、敌人和Boss战，通过“风格排斥”系统驱动玩法进化。
 13. **UI与美术风格优化 (v2.4)**：统一视觉语言（全局调色板、色彩规范）、UI动态“多汁感”提升、关键UI主题化重绘（Boss血条、和谐殿堂、谐振法典）、核心玩法视觉反馈强化（5个新Shader + VFX管理器）。
 14. **Boss 核心系统补全 (v2.4)**：音乐史七大 Boss (Pythagoras, Guido, Bach, Mozart, Beethoven, Jazz, Noise) 的核心战斗逻辑、阶段系统及专属机制已全部补全。
+15. **v5.0 音频与弹体系统强化**：新增 BGM 程序化音乐生成、受击反馈管理器、护盾伤害吸收、召唤物自动攻击、结晶障碍物、Boss 血条 UI 等。
 
 详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)**、**[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)** 和 **[关卡与Boss设计](Docs/Level_And_Boss_Design.md)**。

@@ -1,7 +1,7 @@
 # Project Harmony — 开发待办清单 (TODO)
 
 > **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
-> 最后更新时间：2026-02-08 v4.1 (Bug 修复)
+> 最后更新时间：2026-02-08 v5.1 (v5.0 代码审查与修复)
 
 ---
 
@@ -417,6 +417,22 @@
 ---
 
 ## 文件变更日志
+
+### 2026-02-08 v5.1 v5.0 代码审查与修复
+
+**审查范围：** v5.0 提交的 15 个文件（3860 行新增代码），涵盖音频系统、弹体系统、UI 系统、Shader 等四大模块。详细报告见 [BUG_FIX_REPORT_v5.0_2026_02_08.md](../BUG_FIX_REPORT_v5.0_2026_02_08.md)。
+
+**关键问题修复：**
+- 受击反馈完全失效 (GameManager 缺少 player_damaged 信号)
+- 和谐殿堂功能失效 (MetaProgressionManager 缺少 6 个 UI 适配方法)
+- 护盾无法吸收伤害 (shield_hp 未与 GameManager.damage_player 集成)
+- HitFeedbackManager 未注册为 autoload
+- 图鉴解锁状态无法加载 (CodexManager 缺少 get_unlocked_entries)
+- PAD_CHORDS 类型声明不兼容 Godot 4.x
+
+**修复文件：** project.godot, game_manager.gd, meta_progression_manager.gd, codex_manager.gd, bgm_manager.gd, player.gd, enemy_base.gd, projectile_manager.gd
+
+---
 
 ### 2026-02-08 v4.1 Bug 修复与核心模块审查
 

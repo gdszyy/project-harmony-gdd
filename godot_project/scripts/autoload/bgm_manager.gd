@@ -102,7 +102,7 @@ const BASS_NOTES: Array[float] = [
 ]
 
 ## Pad 和弦频率组 (Am 和弦的不同转位)
-const PAD_CHORDS: Array[Array] = [
+const PAD_CHORDS: Array = [
 	[110.0, 130.81, 164.81],  ## Am: A2, C3, E3
 	[98.0,  123.47, 146.83],  ## G:  G2, B2, D3
 	[87.31, 110.0,  130.81],  ## F:  F2, A2, C3

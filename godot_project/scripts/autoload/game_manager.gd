@@ -11,6 +11,7 @@ signal half_beat_tick(half_beat_index: int) ## 每个八分音符触发
 signal measure_complete(measure_index: int) ## 每小节完成
 signal game_state_changed(new_state: GameState)
 signal player_hp_changed(current_hp: float, max_hp: float)
+signal player_damaged(damage: float, source_position: Vector2)
 signal player_died()
 signal enemy_killed(enemy_position: Vector2)
 signal xp_gained(amount: int)
@@ -62,6 +63,9 @@ var session_kills: int = 0
 var damage_multiplier: float = 1.0
 ## 是否处于测试模式
 var is_test_mode: bool = false
+## 护盾值（由 ProjectileManager 的护盾法阵提供）
+var shield_hp: float = 0.0
+var max_shield_hp: float = 0.0
 
 # ============================================================
 # 节拍系统
@@ -164,6 +168,8 @@ func reset_game() -> void:
 	player_dodge_chance = 0.0
 	damage_multiplier = 1.0
 	is_test_mode = false
+	shield_hp = 0.0
+	max_shield_hp = 0.0
 	_update_beat_interval()
 
 	# 重置所有子系统
@@ -231,13 +237,24 @@ func enter_upgrade_select() -> void:
 # 玩家生命值
 # ============================================================
 
-func damage_player(amount: float) -> void:
+func damage_player(amount: float, source_position: Vector2 = Vector2.ZERO) -> void:
 	# 闪避检测
 	if randf() < player_dodge_chance:
 		return  # 闪避成功
 
-	player_current_hp = max(0.0, player_current_hp - amount)
+	# 护盾吸收伤害
+	var remaining_damage := amount
+	if shield_hp > 0.0:
+		var absorbed := min(shield_hp, remaining_damage)
+		shield_hp -= absorbed
+		remaining_damage -= absorbed
+		if remaining_damage <= 0.0:
+			player_damaged.emit(amount, source_position)
+			return
+
+	player_current_hp = max(0.0, player_current_hp - remaining_damage)
 	player_hp_changed.emit(player_current_hp, player_max_hp)
+	player_damaged.emit(amount, source_position)
 
 	if player_current_hp <= 0.0:
 		player_died.emit()

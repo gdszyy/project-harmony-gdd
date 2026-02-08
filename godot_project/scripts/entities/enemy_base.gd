@@ -469,7 +469,7 @@ func _update_contact_damage(delta: float) -> void:
 	var dist := global_position.distance_to(_target.global_position)
 	if dist < (collision_radius + 14.0):  # 接触距离 = 自身半径 + 玩家半径
 		if _target.has_method("take_damage"):
-			_target.take_damage(contact_damage)
+			_target.take_damage(contact_damage, global_position)
 			_contact_cooldown = CONTACT_COOLDOWN_TIME
 			_on_contact_with_player()
 

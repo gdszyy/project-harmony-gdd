@@ -108,11 +108,11 @@ func _apply_movement(delta: float) -> void:
 # 伤害处理
 # ============================================================
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, source_position: Vector2 = Vector2.ZERO) -> void:
 	if _is_invincible:
 		return
 
-	GameManager.damage_player(amount)
+	GameManager.damage_player(amount, source_position)
 	_start_invincibility()
 
 	# 通知视觉组件播放受伤效果

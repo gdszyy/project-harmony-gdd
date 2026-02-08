@@ -307,6 +307,10 @@ func _spawn_shield(data: Dictionary, pos: Vector2) -> void:
 	var burst_heal: float = 25.0
 	GameManager.heal_player(burst_heal)
 
+	# 同步护盾值到 GameManager
+	GameManager.shield_hp = 40.0
+	GameManager.max_shield_hp = 40.0
+
 	# 护盾泡泡（跟随玩家）
 	var proj := {
 		"position": pos,
@@ -624,6 +628,10 @@ func _update_projectiles(delta: float) -> void:
 			# 爆炸弹体在消失时触发爆炸
 			if proj.get("is_explosive", false):
 				_trigger_explosion(proj)
+			# 护盾消失时清除 GameManager 中的护盾值
+			if proj.get("is_shield", false):
+				GameManager.shield_hp = 0.0
+				GameManager.max_shield_hp = 0.0
 			continue
 
 		# 蓄力弹体特殊处理
