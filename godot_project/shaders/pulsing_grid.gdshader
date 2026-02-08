@@ -9,7 +9,7 @@ uniform float sub_line_thickness : hint_range(0.0, 0.5) = 0.02;
 
 // === 音频驱动 ===
 uniform float beat_energy : hint_range(0.0, 2.0) = 0.0;
-uniform float time : float = 0.0;
+uniform float time = 0.0;
 
 // === 玩家位置 (用于波纹效果) ===
 uniform vec2 player_position = vec2(0.0, 0.0);
