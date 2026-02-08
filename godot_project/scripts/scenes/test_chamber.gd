@@ -90,9 +90,10 @@ func _ready() -> void:
 	if _player:
 		_player.position = ARENA_CENTER
 
-	# 设置 GameManager 为测试模式
+	# 设置 GameManager 为测试模式并启动游戏
 	if GameManager:
 		GameManager.is_test_mode = true
+		GameManager.current_state = GameManager.GameState.PLAYING
 
 	_log("回响试炼场已启动。使用左侧调试面板控制测试环境。")
 
@@ -100,9 +101,10 @@ func _process(delta: float) -> void:
 	# 应用时间缩放
 	Engine.time_scale = time_scale
 
-	# God mode
-	if god_mode and _player and _player.has_method("set_hp"):
-		_player.set_hp(_player.max_hp)
+	# God mode: 通过 GameManager 恢复满血
+	if god_mode:
+		GameManager.player_current_hp = GameManager.player_max_hp
+		GameManager.player_hp_changed.emit(GameManager.player_current_hp, GameManager.player_max_hp)
 
 	# 冻结敌人
 	if freeze_enemies:
@@ -111,8 +113,9 @@ func _process(delta: float) -> void:
 				enemy.set_frozen(true)
 
 	# 无限疲劳
-	if infinite_fatigue and GameManager:
-		GameManager.fatigue = 0.0
+	# 无限疲劳：通过 FatigueManager 重置疲劳度
+	if infinite_fatigue:
+		FatigueManager.current_afi = 0.0
 
 	# 更新 DPS 窗口
 	_update_dps_window()
@@ -340,10 +343,9 @@ func set_player_stat(stat: String, value: float) -> void:
 
 	match stat:
 		"max_hp":
-			if _player.has_method("set_max_hp"):
-				_player.set_max_hp(value)
-			elif "max_hp" in _player:
-				_player.max_hp = value
+			GameManager.player_max_hp = value
+			GameManager.player_current_hp = min(GameManager.player_current_hp, value)
+			GameManager.player_hp_changed.emit(GameManager.player_current_hp, GameManager.player_max_hp)
 			_log("玩家最大 HP: %.0f" % value)
 		"move_speed":
 			if "move_speed" in _player:
@@ -351,7 +353,7 @@ func set_player_stat(stat: String, value: float) -> void:
 			_log("玩家移速: %.0f" % value)
 		"damage_multiplier":
 			if GameManager and "damage_multiplier" in GameManager:
-				GameManager.damage_multiplier = value
+				GameManager.damage_multiplier = value  # 已在 GameManager 中声明
 			_log("伤害倍率: %.2fx" % value)
 		"pickup_range":
 			if "pickup_range" in _player:
@@ -361,13 +363,13 @@ func set_player_stat(stat: String, value: float) -> void:
 ## 设置 BPM
 func set_bpm(bpm: float) -> void:
 	if GameManager:
-		GameManager.bpm = bpm
+		GameManager.current_bpm = bpm
 		_log("BPM: %.0f" % bpm)
 
 ## 设置调式
 func set_mode(mode_id: String) -> void:
-	if ModeSystem and ModeSystem.has_method("select_mode"):
-		ModeSystem.select_mode(mode_id)
+	if ModeSystem and ModeSystem.has_method("apply_mode"):
+		ModeSystem.apply_mode(mode_id)
 		_log("调式: %s" % mode_id)
 
 ## 设置玩家等级

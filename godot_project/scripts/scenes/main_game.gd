@@ -36,7 +36,7 @@ func _ready() -> void:
 	GameManager.start_game()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause"):
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause_game"):
 		if GameManager.current_state == GameManager.GameState.PLAYING:
 			GameManager.pause_game()
 		elif GameManager.current_state == GameManager.GameState.PAUSED:

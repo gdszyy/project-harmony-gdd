@@ -263,9 +263,15 @@ func _update_silence_indicators() -> void:
 	var fatigue_data := FatigueManager.query_fatigue()
 	var silenced: Array = fatigue_data.get("silenced_notes", [])
 
+	# 提取被寂静的音符 key 列表（silenced 是 [{"note": key, "remaining": float}] 结构）
+	var silenced_keys: Array[int] = []
+	for entry in silenced:
+		if entry is Dictionary:
+			silenced_keys.append(int(entry.get("note", -1)))
+
 	for i in range(min(_silence_indicators.size(), 7)):
 		var white_key: int = i  # WhiteKey 枚举 0-6 对应 C-B
-		if white_key in silenced:
+		if white_key in silenced_keys:
 			_silence_indicators[i].visible = true
 			# 闪烁效果
 			var alpha := 0.3 + sin(GameManager.game_time * 4.0) * 0.2
@@ -399,9 +405,9 @@ func _update_fatigue_filter() -> void:
 		# 不和谐度视觉效果
 		var fatigue_data := FatigueManager.query_fatigue()
 		var dissonance_visual: float = 0.0
-		var silenced = fatigue_data.get("silenced_notes", [])
-		if not silenced.is_empty():
-			dissonance_visual = min(float(silenced.size()) * 0.2, 1.0)
+		var silenced_list: Array = fatigue_data.get("silenced_notes", [])
+		if not silenced_list.is_empty():
+			dissonance_visual = min(float(silenced_list.size()) * 0.2, 1.0)
 		mat.set_shader_parameter("dissonance_level", dissonance_visual)
 
 # ============================================================

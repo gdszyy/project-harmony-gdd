@@ -58,6 +58,10 @@ var player_xp: int = 0
 var xp_to_next_level: int = 50
 var player_dodge_chance: float = 0.0
 var session_kills: int = 0
+## 伤害倍率（可被调试面板修改）
+var damage_multiplier: float = 1.0
+## 是否处于测试模式
+var is_test_mode: bool = false
 
 # ============================================================
 # 节拍系统
@@ -158,6 +162,8 @@ func reset_game() -> void:
 	current_bpm = base_bpm
 	session_kills = 0
 	player_dodge_chance = 0.0
+	damage_multiplier = 1.0
+	is_test_mode = false
 	_update_beat_interval()
 
 	# 重置所有子系统
@@ -282,6 +288,12 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 			_apply_chord_mastery_upgrade(upgrade)
 		"survival":
 			_apply_survival_upgrade(upgrade)
+		"timbre_mastery":
+			_apply_timbre_mastery_upgrade(upgrade)
+		"modifier_mastery":
+			_apply_modifier_mastery_upgrade(upgrade)
+		"special":
+			_apply_special_upgrade(upgrade)
 
 	upgrade_selected.emit(upgrade)
 
@@ -317,6 +329,26 @@ func _apply_survival_upgrade(upgrade: Dictionary) -> void:
 			player_hp_changed.emit(player_current_hp, player_max_hp)
 		"dodge":
 			player_dodge_chance += upgrade.get("value", 0.03)
+
+## 音色精通升级
+func _apply_timbre_mastery_upgrade(upgrade: Dictionary) -> void:
+	# 音色精通升级由 SpellcraftSystem 读取 acquired_upgrades 处理
+	pass
+
+## 修饰符精通升级
+func _apply_modifier_mastery_upgrade(upgrade: Dictionary) -> void:
+	# 修饰符精通升级由 SpellcraftSystem 读取 acquired_upgrades 处理
+	pass
+
+## 特殊升级
+func _apply_special_upgrade(upgrade: Dictionary) -> void:
+	match upgrade.get("type", ""):
+		"perfect_beat_bonus":
+			pass  # SpellcraftSystem 会读取 acquired_upgrades
+		"chord_progression_boost":
+			pass  # SpellcraftSystem 会读取 acquired_upgrades
+		"multi_modifier":
+			pass  # SpellcraftSystem 会读取 acquired_upgrades
 
 func _init_note_bonuses() -> void:
 	note_bonuses.clear()
