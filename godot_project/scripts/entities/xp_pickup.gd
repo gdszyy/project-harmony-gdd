@@ -176,6 +176,8 @@ func _collect() -> void:
 		return
 	_is_collected = true
 
+	# 将经验值添加到 GameManager
+	GameManager.add_xp(xp_value)
 	collected.emit(xp_value)
 
 	# 收集视觉：闪光 + 缩小消失

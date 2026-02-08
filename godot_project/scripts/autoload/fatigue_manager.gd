@@ -844,6 +844,10 @@ func _apply_rest_cleanse() -> void:
 	}
 	fatigue_updated.emit(result)
 
+## 获取当前疲劳度值（便捷接口）
+func get_current_fatigue() -> float:
+	return current_afi
+
 ## 减少疲劳度（击杀 Silence 敌人的奖励）
 func reduce_fatigue(amount: float) -> void:
 	current_afi = clampf(current_afi - amount, 0.0, 1.0)

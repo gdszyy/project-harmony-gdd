@@ -44,6 +44,14 @@ func _ready() -> void:
 	# 连接信号
 	GameManager.player_died.connect(_on_player_died)
 
+	# 连接 InvincibilityTimer 的 timeout 信号（场景中已有该节点时需要手动连接）
+	if _invincibility_timer and not _invincibility_timer.timeout.is_connected(_on_invincibility_timeout):
+		_invincibility_timer.timeout.connect(_on_invincibility_timeout)
+
+	# 连接 PickupArea 的 area_entered 信号（xp_pickup 是 Area2D，不是 PhysicsBody2D）
+	if _pickup_area and not _pickup_area.area_entered.is_connected(_on_pickup_area_entered):
+		_pickup_area.area_entered.connect(_on_pickup_area_entered)
+
 func _physics_process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
@@ -69,12 +77,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("manual_cast_3"):
 		SpellcraftSystem.trigger_manual_cast(2)
 
-	# 暂停
-	if event.is_action_pressed("pause_game"):
-		if GameManager.current_state == GameManager.GameState.PLAYING:
-			GameManager.pause_game()
-		elif GameManager.current_state == GameManager.GameState.PAUSED:
-			GameManager.resume_game()
 
 # ============================================================
 # 移动处理
@@ -136,11 +138,16 @@ func _on_player_died() -> void:
 # 拾取
 # ============================================================
 
-func _on_pickup_area_body_entered(body: Node2D) -> void:
-	if body.is_in_group("xp_pickup"):
-		var xp_value: int = body.get("xp_value") if body.has_method("get") else 5
-		GameManager.add_xp(xp_value)
-		body.queue_free()
+func _on_pickup_area_entered(area: Area2D) -> void:
+	if area.is_in_group("xp_pickup"):
+		# 兼容 xp_pickup.gd 的属性和 enemy_spawner 的 set_meta 两种方式
+		var xp_val: int = 5
+		if "xp_value" in area:
+			xp_val = area.xp_value
+		elif area.has_meta("xp_value"):
+			xp_val = area.get_meta("xp_value")
+		GameManager.add_xp(xp_val)
+		area.queue_free()
 
 # ============================================================
 # 设置

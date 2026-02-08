@@ -387,6 +387,15 @@ func _trigger_perfect_beat_glitch() -> void:
 	tween.tween_property(_sprite, "scale", Vector2(1.5, 0.5), 0.03)
 	tween.tween_property(_sprite, "scale", Vector2(1.0, 1.0), 0.06)
 
+## 冻结敌人（停止移动和行为）
+func set_frozen(frozen: bool) -> void:
+	_is_stunned = frozen
+	if frozen:
+		_stun_timer = 999999.0  # 无限期冻结
+		velocity = Vector2.ZERO
+	else:
+		_stun_timer = 0.0
+
 ## 施加眩晕
 func apply_stun(duration: float) -> void:
 	_is_stunned = true

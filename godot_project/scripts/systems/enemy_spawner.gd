@@ -691,7 +691,7 @@ func _apply_elite_bonus(enemy: CharacterBody2D, _type_name: String) -> void:
 # ============================================================
 
 func _on_enemy_died(pos: Vector2, xp: int, enemy_type: String) -> void:
-	GameManager.add_xp(xp)
+	# 经验值由 xp_pickup 拾取时添加，不在此处重复添加
 	_spawn_xp_pickup(pos, xp, enemy_type)
 
 func _cleanup_dead_enemies() -> void:
@@ -705,6 +705,8 @@ func _spawn_xp_pickup(pos: Vector2, value: int, _enemy_type: String) -> void:
 	var pickup := Area2D.new()
 	pickup.add_to_group("xp_pickup")
 	pickup.set_meta("xp_value", value)
+	# 设置 xp_value 作为属性，便于 player 的 area_entered 中读取
+	pickup.set("xp_value", value)
 	pickup.collision_layer = 4
 	pickup.collision_mask = 1
 	
@@ -767,8 +769,8 @@ func _start_pickup_attraction(pickup: Area2D, value: int) -> void:
 		speed_mult = clamp(speed_mult, 1.0, 3.0)
 		pickup.global_position += dir * attract_speed * speed_mult * get_process_delta_time()
 		if dist < collect_distance:
-			GameManager.add_xp(value)
-			pickup.queue_free()
+				# 经验值由 player 的 area_entered 处理
+				pickup.queue_free()
 	
 	get_tree().process_frame.connect(callable)
 	pickup.tree_exiting.connect(func():
