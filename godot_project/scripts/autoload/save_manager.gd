@@ -25,6 +25,11 @@ func save_game() -> void:
 	var err = _save_data.save(SAVE_PATH)
 	if err != OK:
 		push_error("Failed to save game data!")
+	
+	# 同时保存局外成长数据 (Issue #31)
+	var meta_mgr := get_node_or_null("/root/MetaProgressionManager")
+	if meta_mgr and meta_mgr.has_method("save_meta_data"):
+		meta_mgr.save_meta_data()
 
 func load_game() -> void:
 	var err = _save_data.load(SAVE_PATH)
