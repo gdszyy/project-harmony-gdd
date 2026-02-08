@@ -1122,7 +1122,11 @@ func _update_render() -> void:
 # ============================================================
 
 func _cleanup_expired() -> void:
-	_projectiles = _projectiles.filter(func(p): return p["active"])
+	var active_projs: Array[Dictionary] = []
+	for p in _projectiles:
+		if p["active"]:
+			active_projs.append(p)
+	_projectiles = active_projs
 
 ## 清除所有弹体
 func clear_all() -> void:
