@@ -2,6 +2,7 @@
 ## 弹体管理器
 ## 使用 MultiMeshInstance2D 实现高性能弹幕渲染
 ## 逻辑层与渲染层分离：纯数据驱动的弹体物理 + GPU批量渲染
+## Issue #6: 集成 CollisionOptimizer 空间哈希网格，替代 O(n×m) 暴力碰撞检测
 extends Node2D
 
 # ============================================================
@@ -27,12 +28,16 @@ var _projectiles: Array[Dictionary] = []
 ## 清理计时器
 var _cleanup_timer: float = 0.0
 
+## 碰撞优化器 (Issue #6)
+var _collision_optimizer: CollisionOptimizer = null
+
 # ============================================================
 # 生命周期
 # ============================================================
 
 func _ready() -> void:
 	_setup_multi_mesh()
+	_setup_collision_optimizer()
 	SpellcraftSystem.spell_cast.connect(_on_spell_cast)
 	SpellcraftSystem.chord_cast.connect(_on_chord_cast)
 
@@ -548,12 +553,38 @@ func _apply_rhythm_to_projectile(proj: Dictionary, rhythm: MusicData.RhythmPatte
 			proj["knockback"] = true
 
 # ============================================================
-# 碰撞检测 (简化的距离检测)
+# 碰撞优化器设置 (Issue #6)
+# ============================================================
+
+func _setup_collision_optimizer() -> void:
+	# 单元格大小设为 128px，约为最大弹体尺寸的 2-4 倍
+	# 这个值在大多数情况下能提供良好的性能
+	_collision_optimizer = CollisionOptimizer.new(128.0)
+
+# ============================================================
+# 碰撞检测 (Issue #6: 空间哈希优化版)
 # ============================================================
 
 ## 检测弹体与敌人的碰撞
+## 使用 CollisionOptimizer 空间哈希网格替代暴力 O(n×m) 检测
 ## enemies: Array[Dictionary] - [{ "position": Vector2, "radius": float }]
 func check_collisions(enemies: Array) -> Array[Dictionary]:
+	if _collision_optimizer == null:
+		return _check_collisions_bruteforce(enemies)
+	
+	# 使用空间哈希优化的碰撞检测
+	var hits := _collision_optimizer.check_collisions(_projectiles, enemies)
+	
+	# 处理分裂弹体
+	for hit in hits:
+		var proj = hit["projectile"]
+		if proj.get("split_on_hit", false):
+			_split_projectile(proj)
+	
+	return hits
+
+## 暴力碰撞检测（回退方案）
+func _check_collisions_bruteforce(enemies: Array) -> Array[Dictionary]:
 	var hits: Array[Dictionary] = []
 
 	for proj in _projectiles:
@@ -570,7 +601,6 @@ func check_collisions(enemies: Array) -> Array[Dictionary]:
 					"position": enemy["position"],
 				})
 
-				# 穿透检测
 				if proj.get("pierce", false):
 					proj["pierce_count"] = proj.get("pierce_count", 0) + 1
 					if proj["pierce_count"] >= proj.get("max_pierce", 3):
@@ -578,13 +608,18 @@ func check_collisions(enemies: Array) -> Array[Dictionary]:
 				else:
 					proj["active"] = false
 
-				# 分裂
 				if proj.get("split_on_hit", false):
 					_split_projectile(proj)
 
-				break  # 每帧每个弹体只命中一个敌人
+				break
 
 	return hits
+
+## 获取碰撞检测性能统计 (Issue #6)
+func get_collision_stats() -> Dictionary:
+	if _collision_optimizer:
+		return _collision_optimizer.get_performance_stats()
+	return {}
 
 func _split_projectile(proj: Dictionary) -> void:
 	var count: int = proj.get("split_count", 3)

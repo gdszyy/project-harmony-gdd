@@ -152,27 +152,32 @@ func reset_game() -> void:
 	
 	game_state_changed.emit(current_state)
 
-	func start_game() -> void:
-		current_state = GameState.PLAYING
-		game_running = true
-		game_time = 0.0
-		player_current_hp = player_max_hp
-		player_level = 1
-		player_xp = 0
-		xp_to_next_level = 50
-		session_kills = 0
-		acquired_upgrades.clear()
-		extended_chords_unlocked = false
-		_init_note_bonuses()
-		_current_beat = 0
-		_current_half_beat = 0
-		_current_measure = 0
-		
-		# 启动 BGM
-		if BGMManager.has_method("start_bgm"):
-			BGMManager.start_bgm(current_bpm)
-		
-		game_state_changed.emit(current_state)
+func start_game() -> void:
+	current_state = GameState.PLAYING
+	game_running = true
+	game_time = 0.0
+	player_current_hp = player_max_hp
+	player_level = 1
+	player_xp = 0
+	xp_to_next_level = 50
+	session_kills = 0
+	acquired_upgrades.clear()
+	extended_chords_unlocked = false
+	_init_note_bonuses()
+	_current_beat = 0
+	_current_half_beat = 0
+	_current_measure = 0
+	
+	# 应用局外成长加成 (Issue #31)
+	var meta_mgr := get_node_or_null("/root/MetaProgressionManager")
+	if meta_mgr and meta_mgr.has_method("apply_meta_bonuses"):
+		meta_mgr.apply_meta_bonuses()
+	
+	# 启动 BGM
+	if BGMManager.has_method("start_bgm"):
+		BGMManager.start_bgm(current_bpm)
+	
+	game_state_changed.emit(current_state)
 
 func pause_game() -> void:
 	if current_state == GameState.PLAYING:
@@ -189,6 +194,20 @@ func resume_game() -> void:
 func game_over() -> void:
 	current_state = GameState.GAME_OVER
 	game_running = false
+	
+	# 局结算：计算并发放共鸣碎片 (Issue #31)
+	var meta_mgr := get_node_or_null("/root/MetaProgressionManager")
+	if meta_mgr and meta_mgr.has_method("on_run_completed"):
+		var run_data := {
+			"survival_time": game_time,
+			"total_kills": session_kills,
+			"bosses_defeated": get_meta("bosses_defeated", 0),
+			"max_level": player_level,
+			"harmony_score": get_meta("harmony_score", 0.0),
+		}
+		var results := meta_mgr.on_run_completed(run_data)
+		set_meta("last_run_results", results)
+	
 	game_state_changed.emit(current_state)
 
 func enter_upgrade_select() -> void:
