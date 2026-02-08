@@ -387,18 +387,24 @@ func _execute_sequencer_position(pos: int) -> void:
 
 	match slot_type:
 		"note":
+			FatigueManager.reset_rest_counter()  # 施法时重置休止符计数
 			_cast_single_note_from_sequencer(slot, pos)
 		"chord":
+			FatigueManager.reset_rest_counter()  # 施法时重置休止符计数
 			_cast_chord_from_sequencer(slot, pos)
 		"rest":
-			# 休止符 - 不施法，但记录用于蓄力计算
-			pass
+			# 休止符 - 不施法，记录用于蓄力计算和留白奖励
+			FatigueManager.record_rest()
 		"chord_sustain":
 			# 和弦持续 - 不做额外操作
 			pass
 
 func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	var white_key: MusicData.WhiteKey = slot["note"]
+
+	# ★ 调式检查：当前调式下不可用的音符无法施放
+	if not ModeSystem.is_white_key_available(white_key):
+		return  # 静默跳过，不触发任何反馈
 
 	# ★ 单音寂静检查：被寂静的音符无法施放
 	if FatigueManager.is_note_silenced(white_key):
@@ -426,10 +432,11 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	# 获取节奏型修饰数据
 	var rhythm_data: Dictionary = MusicData.RHYTHM_MODIFIERS.get(rhythm, {})
 
-	# 计算基础伤害（包含局外成长加成）
+	# 计算基础伤害（包含局外成长加成 + 调式加成）
 	var meta_dmg_mult := SaveManager.get_damage_multiplier()
 	var meta_spd_mult := SaveManager.get_speed_multiplier()
-	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult * meta_dmg_mult
+	var mode_dmg_mult := ModeSystem.get_damage_multiplier()
+	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult * meta_dmg_mult * mode_dmg_mult
 
 	# 应用增伤 Buff（T→D 和弦进行效果）
 	if _empower_buff_active:
@@ -465,6 +472,14 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		# ★ 密度过载精准度偏移
 		"accuracy_offset": accuracy_offset,
 	}
+
+	# 调式被动效果：多利亚自动回响 / 布鲁斯暴击
+	var mode_modifier := ModeSystem.on_spell_cast()
+	if mode_modifier >= 0 and spell_data["modifier"] == -1:
+		spell_data["modifier"] = mode_modifier
+	if ModeSystem.check_crit():
+		spell_data["damage"] *= 2.0
+		spell_data["is_crit"] = true
 
 	# 记录疲劳事件
 	FatigueManager.record_spell({
@@ -589,9 +604,13 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
 
 	# ★ 不和谐度处理：不和谐法术直接扣血（生命腐蚀）
-	var dissonance := MusicTheoryEngine.get_chord_dissonance(chord_type)
+	var raw_dissonance := MusicTheoryEngine.get_chord_dissonance(chord_type)
+	# 应用调式不和谐度倍率（五声音阶减半）
+	var dissonance := raw_dissonance * ModeSystem.get_dissonance_multiplier()
 	if dissonance > 2.0:
 		GameManager.apply_dissonance_damage(dissonance)
+		# 布鲁斯被动：不和谐度转化为暴击率
+		ModeSystem.on_dissonance_applied(dissonance)
 		# ★ 关键交互：不和谐法术缓解单调值（因为引入了变化）
 		FatigueManager.reduce_monotony_from_dissonance(dissonance)
 

@@ -167,6 +167,8 @@ func reset_game() -> void:
 		SpellcraftSystem.reset()
 	if MusicTheoryEngine.has_method("clear_history"):
 		MusicTheoryEngine.clear_history()
+	if ModeSystem.has_method("reset"):
+		ModeSystem.reset()
 
 	game_state_changed.emit(current_state)
 
@@ -178,6 +180,10 @@ func start_game() -> void:
 	# 应用局外成长加成（必须在设置 HP 之前）
 	SaveManager.apply_meta_bonuses()
 	player_current_hp = player_max_hp
+
+	# 应用调式系统
+	if ModeSystem.has_method("apply_mode"):
+		ModeSystem.apply_mode(SaveManager.get_selected_mode())
 
 	# 启动 BGM
 	if BGMManager.has_method("start_bgm"):

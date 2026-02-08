@@ -128,6 +128,9 @@ func _create_projectile(spell_data: Dictionary) -> void:
 		# 节奏型特殊属性
 		"wave_trajectory": false,
 		"knockback": spell_data.get("has_knockback", false),
+		# 拖尾数据
+		"trail_positions": [] as Array[Vector2],
+		"trail_max": 8,
 	}
 
 	# 应用修饰符
@@ -511,11 +514,22 @@ func _update_projectiles(delta: float) -> void:
 				var new_dir := current_dir.lerp(to_enemy, homing_strength * delta).normalized()
 				proj["velocity"] = new_dir * proj["velocity"].length()
 
-		# 摇摆弹道
+		# 摇摆弹道 (SWING S型轨迹)
 		if proj.get("wave_trajectory", false):
-			var wave_offset := sin(proj["time_alive"] * 10.0) * 100.0 * delta
+			# 正弦波横向偏移：频率随时间递减（S型收敛），振幅受弹体速度影响
+			var wave_freq: float = proj.get("wave_freq", 8.0)
+			var wave_amp: float = proj.get("wave_amp", 80.0)
+			var t := proj["time_alive"]
+			# S型轨迹：频率随时间略微递减，振幅随时间衰减
+			var decay := exp(-t * 0.5)  # 缓慢衰减
+			var current_offset := sin(t * wave_freq) * wave_amp * decay * delta
 			var perp := proj["velocity"].normalized().rotated(PI / 2.0)
-			proj["position"] += perp * wave_offset
+			proj["position"] += perp * current_offset
+			# 记录拖尾位置
+			if proj.has("trail_positions"):
+				proj["trail_positions"].append(proj["position"])
+				if proj["trail_positions"].size() > proj.get("trail_max", 8):
+					proj["trail_positions"].pop_front()
 
 		# 召唤物自动攻击
 		if proj.get("is_summon", false):
@@ -531,6 +545,14 @@ func _update_projectiles(delta: float) -> void:
 
 		# 位置更新
 		proj["position"] += proj["velocity"] * delta
+
+		# 通用拖尾记录（非摇摆弹体也有短拖尾）
+		if proj.has("trail_positions") and not proj.get("wave_trajectory", false):
+			# 每隔几帧记录一次位置（降低开销）
+			if Engine.get_process_frames() % 3 == 0:
+				proj["trail_positions"].append(proj["position"])
+				if proj["trail_positions"].size() > proj.get("trail_max", 8):
+					proj["trail_positions"].pop_front()
 
 		# 法阵 tick
 		if proj.get("is_field", false):
@@ -685,6 +707,10 @@ func _apply_rhythm_to_projectile(proj: Dictionary, rhythm, _spell_data: Dictiona
 			proj["size"] *= 0.7
 		MusicData.RhythmPattern.SWING:
 			proj["wave_trajectory"] = true
+			proj["wave_freq"] = 8.0
+			proj["wave_amp"] = 80.0
+			proj["trail_positions"] = [] as Array[Vector2]
+			proj["trail_max"] = 12  # 摇摆弹道拖尾更长
 		MusicData.RhythmPattern.DOTTED:
 			# 重击：增加单发伤害和击退
 			proj["knockback"] = true
@@ -813,24 +839,30 @@ func _update_render() -> void:
 	if _multi_mesh_instance == null or _multi_mesh_instance.multimesh == null:
 		return
 
+	# 计算活跃弹体 + 拖尾粒子总数
 	var active_count := 0
+	var trail_count := 0
 	for proj in _projectiles:
 		if proj["active"] and proj["time_alive"] >= 0.0:
 			active_count += 1
+			if proj.has("trail_positions"):
+				trail_count += proj["trail_positions"].size()
 
+	var total_instances := active_count + trail_count
 	var mm := _multi_mesh_instance.multimesh
 
-	if mm.instance_count != active_count:
-		mm.instance_count = active_count
-		mm.visible_instance_count = active_count
+	if mm.instance_count != total_instances:
+		mm.instance_count = total_instances
+		mm.visible_instance_count = total_instances
 
 	var idx := 0
 	for proj in _projectiles:
 		if not proj["active"] or proj["time_alive"] < 0.0:
 			continue
-		if idx >= active_count:
+		if idx >= total_instances:
 			break
 
+		# 渲染弹体本体
 		var t := Transform2D()
 		var scale_factor: float = proj["size"] / 16.0  # 基准大小16px
 		t = t.scaled(Vector2(scale_factor, scale_factor))
@@ -839,6 +871,25 @@ func _update_render() -> void:
 		mm.set_instance_transform_2d(idx, t)
 		mm.set_instance_color(idx, proj["color"])
 		idx += 1
+
+		# 渲染拖尾粒子（透明度和大小递减）
+		if proj.has("trail_positions") and not proj["trail_positions"].is_empty():
+			var trail: Array = proj["trail_positions"]
+			var trail_size := trail.size()
+			for ti in range(trail_size):
+				if idx >= total_instances:
+					break
+				var progress := float(ti) / float(trail_size)  # 0.0 = 最旧, 1.0 = 最新
+				var trail_alpha := progress * 0.6  # 透明度从0到0.6
+				var trail_scale := scale_factor * (0.3 + progress * 0.5)  # 大小从30%到80%
+				var trail_t := Transform2D()
+				trail_t = trail_t.scaled(Vector2(trail_scale, trail_scale))
+				trail_t.origin = trail[ti]
+				mm.set_instance_transform_2d(idx, trail_t)
+				var trail_color := proj["color"]
+				trail_color.a = trail_alpha
+				mm.set_instance_color(idx, trail_color)
+				idx += 1
 
 # ============================================================
 # 清理

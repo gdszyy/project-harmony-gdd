@@ -257,6 +257,12 @@ func _generate_procedural_sounds() -> void:
 	_generated_sounds["perfect_beat_ring"] = _gen_perfect_beat_ring()
 	_generated_sounds["progression_fanfare"] = _gen_progression_fanfare()
 
+	# --- 状态音效：寂静/过载/暴击 ---
+	_generated_sounds["note_silenced"] = _gen_note_silenced()
+	_generated_sounds["density_overload"] = _gen_density_overload()
+	_generated_sounds["crit_hit"] = _gen_crit_hit()
+	_generated_sounds["rest_cleanse"] = _gen_rest_cleanse()
+
 	# --- UI 音效 ---
 	_generated_sounds["ui_click"] = _gen_ui_click()
 	_generated_sounds["ui_hover"] = _gen_ui_hover()
@@ -711,6 +717,89 @@ func _gen_level_up() -> AudioStreamWAV:
 	return _create_wav(data, sample_rate)
 
 # ============================================================
+# 程序化音效生成器 — 状态反馈类
+# ============================================================
+
+## 单音寂静音效（低沉的“喔”声 + 消音）
+func _gen_note_silenced() -> AudioStreamWAV:
+	var sample_rate := 44100
+	var samples := int(0.25 * sample_rate)
+	var data := PackedByteArray()
+	data.resize(samples * 2)
+	for i in range(samples):
+		var t := float(i) / float(samples)
+		var envelope := exp(-t * 6.0) * 0.5
+		# 低沉下行音 + 微小噪声
+		var freq := lerp(300.0, 100.0, t)
+		var wave := sin(t * freq * TAU) * 0.6
+		wave += randf_range(-0.1, 0.1) * (1.0 - t)  # 轻微噪声
+		wave *= envelope
+		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = sample & 0xFF
+		data[i * 2 + 1] = (sample >> 8) & 0xFF
+	return _create_wav(data, sample_rate)
+
+## 密度过载音效（电流干扰 + 警告嵼嵼声）
+func _gen_density_overload() -> AudioStreamWAV:
+	var sample_rate := 44100
+	var samples := int(0.3 * sample_rate)
+	var data := PackedByteArray()
+	data.resize(samples * 2)
+	for i in range(samples):
+		var t := float(i) / float(samples)
+		var envelope := sin(t * PI) * 0.6
+		# 快速振荡的警告音
+		var wave := sin(t * 600.0 * TAU) * 0.3
+		wave += sin(t * 900.0 * TAU) * 0.2
+		# 电流干扰效果
+		if fmod(t * 20.0, 1.0) < 0.5:
+			wave += randf_range(-0.3, 0.3)
+		wave *= envelope
+		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = sample & 0xFF
+		data[i * 2 + 1] = (sample >> 8) & 0xFF
+	return _create_wav(data, sample_rate)
+
+## 暴击音效（布鲁斯调式专用：明亮的金属撞击 + 上行音阶）
+func _gen_crit_hit() -> AudioStreamWAV:
+	var sample_rate := 44100
+	var samples := int(0.2 * sample_rate)
+	var data := PackedByteArray()
+	data.resize(samples * 2)
+	for i in range(samples):
+		var t := float(i) / float(samples)
+		var envelope := exp(-t * 5.0) * 0.8
+		# 上行音阶 + 泡音
+		var freq := lerp(800.0, 2000.0, t * 0.5)
+		var wave := sin(t * freq * TAU) * 0.4
+		wave += sin(t * freq * 1.5 * TAU) * 0.2  # 泡音
+		wave += sin(t * freq * 2.0 * TAU) * 0.15
+		wave *= envelope
+		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = sample & 0xFF
+		data[i * 2 + 1] = (sample >> 8) & 0xFF
+	return _create_wav(data, sample_rate)
+
+## 休止符清洗音效（柔和的“叮”声 + 上行纯音）
+func _gen_rest_cleanse() -> AudioStreamWAV:
+	var sample_rate := 44100
+	var samples := int(0.35 * sample_rate)
+	var data := PackedByteArray()
+	data.resize(samples * 2)
+	for i in range(samples):
+		var t := float(i) / float(samples)
+		var envelope := sin(t * PI) * 0.5
+		# 柔和上行纯音
+		var freq := lerp(440.0, 880.0, t)
+		var wave := sin(t * freq * TAU) * 0.4
+		wave += sin(t * freq * 2.0 * TAU) * 0.1  # 轻微泡音
+		wave *= envelope
+		var sample := int(clamp(wave * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = sample & 0xFF
+		data[i * 2 + 1] = (sample >> 8) & 0xFF
+	return _create_wav(data, sample_rate)
+
+# ============================================================
 # WAV 创建工具
 # ============================================================
 
@@ -738,6 +827,11 @@ func _connect_global_signals() -> void:
 		SpellcraftSystem.spell_cast.connect(_on_spell_cast)
 	if SpellcraftSystem and SpellcraftSystem.has_signal("chord_cast"):
 		SpellcraftSystem.chord_cast.connect(_on_chord_cast)
+	# 连接状态反馈信号
+	if SpellcraftSystem and SpellcraftSystem.has_signal("spell_blocked_by_silence"):
+		SpellcraftSystem.spell_blocked_by_silence.connect(_on_spell_blocked_by_silence)
+	if SpellcraftSystem and SpellcraftSystem.has_signal("accuracy_penalized"):
+		SpellcraftSystem.accuracy_penalized.connect(_on_accuracy_penalized)
 
 # ============================================================
 # 公共接口 — 敌人音效
@@ -842,6 +936,32 @@ func play_level_up_sfx() -> void:
 	_play_global_sound("level_up", -4.0, 1.0, UI_BUS_NAME)
 
 # ============================================================
+# 公共接口 — 状态反馈音效
+# ============================================================
+
+## 播放单音寂静音效
+func play_note_silenced_sfx() -> void:
+	if not _check_cooldown("note_silenced", 0.3):
+		return
+	_play_global_sound("note_silenced", -8.0, randf_range(0.8, 1.2), PLAYER_BUS_NAME)
+
+## 播放密度过载音效
+func play_density_overload_sfx() -> void:
+	if not _check_cooldown("density_overload", 1.0):
+		return
+	_play_global_sound("density_overload", -6.0, 1.0, PLAYER_BUS_NAME)
+
+## 播放暴击音效（布鲁斯调式）
+func play_crit_sfx(position: Vector2) -> void:
+	_play_2d_sound("crit_hit", position, -4.0, randf_range(0.9, 1.1), PLAYER_BUS_NAME)
+
+## 播放休止符清洗音效
+func play_rest_cleanse_sfx() -> void:
+	if not _check_cooldown("rest_cleanse", 0.5):
+		return
+	_play_global_sound("rest_cleanse", -6.0, 1.0, PLAYER_BUS_NAME)
+
+# ============================================================
 # 公共接口 — 注册敌人信号
 # ============================================================
 
@@ -905,10 +1025,19 @@ func _on_spell_cast(spell_data: Dictionary) -> void:
 	var is_perfect: bool = spell_data.get("is_perfect_beat", false)
 	var pos: Vector2 = spell_data.get("position", Vector2.ZERO)
 	play_spell_cast_sfx(pos, is_perfect)
+	# 布鲁斯暴击音效
+	if spell_data.get("is_crit", false):
+		play_crit_sfx(pos)
 
 func _on_chord_cast(chord_data: Dictionary) -> void:
 	var pos: Vector2 = chord_data.get("position", Vector2.ZERO)
 	play_chord_cast_sfx(pos)
+
+func _on_spell_blocked_by_silence(_note: int) -> void:
+	play_note_silenced_sfx()
+
+func _on_accuracy_penalized(_penalty: float) -> void:
+	play_density_overload_sfx()
 
 # ============================================================
 # 内部播放函数

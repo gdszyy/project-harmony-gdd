@@ -775,6 +775,75 @@ func add_external_fatigue(amount: float) -> void:
 	}
 	fatigue_updated.emit(result)
 
+# ============================================================
+# 留白奖励机制（休止符主动清除负面状态）
+# ============================================================
+
+## 休止符奖励配置
+const REST_CLEANSE_THRESHOLD: int = 2  ## 连续休止符数量达到此值时触发清洗
+const REST_SILENCE_REDUCTION: float = 1.5  ## 每次清洗减少的寂静时间（秒）
+const REST_FATIGUE_REDUCTION: float = 0.03  ## 每次清洗减少的疲劳度
+const REST_DENSITY_COOLDOWN: float = 1.0  ## 清洗后密度过载的额外冷却时间
+
+## 连续休止符计数器
+var _consecutive_rest_count: int = 0
+
+## 留白奖励信号
+signal rest_cleanse_triggered(rest_count: int)
+
+## 记录休止符（由 SpellcraftSystem 在序列器播放休止符时调用）
+func record_rest() -> void:
+	_consecutive_rest_count += 1
+
+	if _consecutive_rest_count >= REST_CLEANSE_THRESHOLD:
+		_apply_rest_cleanse()
+
+## 重置休止符计数（当施法时重置）
+func reset_rest_counter() -> void:
+	_consecutive_rest_count = 0
+
+## 应用休止符清洗效果
+func _apply_rest_cleanse() -> void:
+	var current_time := GameManager.game_time
+
+	# 1. 减少所有被寂静音符的剩余时间
+	var cleansed_notes: Array = []
+	for note_key in _silenced_notes:
+		_silenced_notes[note_key] -= REST_SILENCE_REDUCTION
+		if _silenced_notes[note_key] <= current_time:
+			cleansed_notes.append(note_key)
+
+	for note_key in cleansed_notes:
+		_silenced_notes.erase(note_key)
+		note_unsilenced.emit(note_key)
+
+	# 2. 减少总体疲劳度
+	current_afi = clampf(current_afi - REST_FATIGUE_REDUCTION, 0.0, 1.0)
+
+	# 3. 缓解密度过载（减少近期施法记录的影响）
+	if is_density_overloaded:
+		current_accuracy_penalty = max(0.0, current_accuracy_penalty - 0.15)
+		if current_accuracy_penalty <= 0.0:
+			is_density_overloaded = false
+			density_overload_changed.emit(false, 0.0)
+
+	# 4. 重新判定疲劳等级
+	var new_level := _determine_level(current_afi)
+	if new_level != current_level:
+		current_level = new_level
+		fatigue_level_changed.emit(current_level)
+
+	rest_cleanse_triggered.emit(_consecutive_rest_count)
+
+	# 发出更新信号
+	var result := {
+		"afi": current_afi,
+		"components": _fatigue_components,
+		"level": current_level,
+		"penalty": _calculate_penalty(),
+	}
+	fatigue_updated.emit(result)
+
 ## 减少疲劳度（击杀 Silence 敌人的奖励）
 func reduce_fatigue(amount: float) -> void:
 	current_afi = clampf(current_afi - amount, 0.0, 1.0)
@@ -809,3 +878,5 @@ func reset() -> void:
 	# 重置密度过载
 	is_density_overloaded = false
 	current_accuracy_penalty = 0.0
+	# 重置留白计数器
+	_consecutive_rest_count = 0
