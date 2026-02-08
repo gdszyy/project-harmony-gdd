@@ -2,8 +2,8 @@
 
 > **审查日期：** 2026-02-08  
 > **审查范围：** v5.0 提交的 15 个文件（3860 行新增代码），涵盖音频系统、弹体系统、UI 系统、Shader 等四大模块  
-> **修复文件数：** 8 个  
-> **修复问题数：** 8 个（严重 4 个，中等 4 个）
+> **修复文件数：** 9 个  
+> **修复问题数：** 9 个（严重 5 个，中等 4 个）
 
 ---
 
@@ -15,9 +15,8 @@
 |------|------|----------|----------|
 | S1 | `game_manager.gd` | 缺少 `player_damaged` 信号 — `hit_feedback_manager.gd` 连接该信号以触发屏幕抖动、红色暗角等受击反馈，信号不存在导致所有受击反馈完全失效 | 添加 `signal player_damaged(damage, source_position)` 并在 `damage_player()` 中发射 |
 | S2 | `meta_progression_manager.gd` | 缺少 6 个 UI 适配方法 — `hall_of_harmony.gd` 调用 `get_upgrade_levels()`, `get_unlocked_skills()`, `get_selected_mode()`, `set_selected_mode()`, `purchase_upgrade()`, `unlock_skill()` 均不存在，导致和谐殿堂升级/技能/模式选择功能完全失效 | 添加 6 个适配方法，委托给已有的具体模块方法 |
-| S3 | `game_manager.gd` + `projectile_manager.gd` | 护盾 `shield_hp` 没有实际吸收伤害的逻辑 — `_spawn_shield` 设置了 `shield_hp: 40.0` 但只在弹体字典中，`damage_player()` 不知道护盾的存在 | 在 GameManager 添加 `shield_hp`/`max_shield_hp` 属性，`damage_player()` 优先扣除护盾值，`_spawn_shield` 同步到 GameManager，护盾消失时清零 |
-| S4 | `project.godot` | `HitFeedbackManager` 未注册为 autoload — 文件注释标注为 Autoload 但未在 project.godot 中注册，导致受击反馈系统不会被加载 | 在 `[autoload]` 段添加 `HitFeedbackManager` |
-
+| S3 | `game_manager.gd` + `projectile_manager.gd` | 护盾 `shield_hp` 没有实际吸收伤害的逻辑 — `_spawn_shield` 设置了 `shield_hp: 40.0` 但只在弹体字典中，`damage_player()` 不知道护盾的存在 | 在 GameManager 添加 `shield_hp`/`max_shield_hp` 属性，`damage_player()` 优先扣除护盾值，`_spawn_shield` 同步到 GameManager，护盾消失时清零 | S4 | `project.godot` | `HitFeedbackManager` 未注册为 autoload — 文件注释标注为 Autoload 但未在 project.godot 中注册，导致受击反馈系统不会被加载 | 在 `[autoload]` 段添加 `HitFeedbackManager` |
+| S5 | `game_mechanics_panel.gd` | GDScript 类型推断解析错误 — 变量 `dynamic_threshold` 使用 `:=` 从 Variant 返回值（`max()` 与 `int` 混合）推断类型，由于项目配置将警告视为错误，导致脚本加载失败 | 显式指定变量类型为 `int`：`var dynamic_threshold: int = ...` |
 ### 中等问题
 
 | 编号 | 文件 | 问题描述 | 修复方案 |
@@ -58,4 +57,5 @@ godot_project/scripts/autoload/bgm_manager.gd          (+1 -1)
 godot_project/scripts/entities/player.gd               (+2 -2)
 godot_project/scripts/entities/enemy_base.gd           (+1 -1)
 godot_project/scripts/systems/projectile_manager.gd    (+8)
+godot_project/scripts/ui/game_mechanics_panel.gd       (+2 -2)
 ```
