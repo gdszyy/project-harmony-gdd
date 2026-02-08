@@ -1,13 +1,12 @@
 ## sequencer_ui.gd
-## 序列器 UI（v3.1 — 布局与交互修复）
+## 序列器 UI（v3.2 — 布局修正，确保面板完全在屏幕内）
 ## 4小节×4拍的乐谱序列器界面
 ##
-## v3.1 修复：
-##   - 修复布局：整个面板从底部向上展开，确保所有内容在屏幕内
-##   - 修复交互：左键点击单元格直接放置当前选中音符（而非拖拽）
-##   - 修复交互：右键清除单元格，长按右键显示小节菜单
-##   - 优化：调色板和信息面板位于序列器上方，从下往上排列
-##   - 优化：工具提示始终显示在面板内部，不会超出屏幕
+## v3.2 修复：
+##   - 修复布局：从顶部向下排列（标题→调色板→序列器），确保所有内容在面板内
+##   - 修复位置：面板底边距屏幕底部留出安全边距，不再出界
+##   - 保留交互：左键点击放置，右键清除，拖拽移动，滚轮切换
+##   - 保留功能：预设模板、模式切换、快捷键、工具提示等
 extends Control
 
 # ============================================================
@@ -27,16 +26,20 @@ const BEATS_PER_MEASURE := 4
 const MEASURES := 4
 const TOTAL_CELLS := BEATS_PER_MEASURE * MEASURES
 
-## 布局配置（从底部向上排列）
+## 布局配置（从顶部向下排列）
 ## 整个面板高度分配：
+##   顶部: 标题/模式标签行 (18px)
+##   中间: 调色板行 (40px)
+##   间距: 6px
 ##   底部: 序列器单元格行 (48px)
-##   上方: 调色板行 (36px)
-##   再上方: 信息面板 (可选，悬停时显示)
-const BOTTOM_PADDING := 8.0
-const SEQUENCER_ROW_HEIGHT := 48.0
+##   底部留白: 20px（含节奏标签空间）
+const TOP_PADDING := 6.0
+const TITLE_ROW_HEIGHT := 18.0
 const PALETTE_ROW_HEIGHT := 40.0
+const PALETTE_SEQ_GAP := 6.0
+const SEQUENCER_ROW_HEIGHT := 48.0
+const BOTTOM_PADDING := 22.0
 const MODE_LABEL_HEIGHT := 16.0
-const TOP_PADDING := 4.0
 
 ## 音符调色板配置
 const PALETTE_CELL_SIZE := Vector2(36, 36)
@@ -196,8 +199,8 @@ func _ready() -> void:
 	_total_content_width = MEASURES * BEATS_PER_MEASURE * (CELL_SIZE.x + CELL_MARGIN) + (MEASURES - 1) * MEASURE_GAP + 20
 
 	# 设置最小尺寸
-	# 高度 = 顶部标签 + 调色板行 + 间距 + 序列器行 + 底部间距
-	var total_height := TOP_PADDING + MODE_LABEL_HEIGHT + PALETTE_ROW_HEIGHT + 8.0 + SEQUENCER_ROW_HEIGHT + BOTTOM_PADDING + 30.0
+	# 高度 = 顶部留白 + 标题行 + 调色板行 + 间距 + 序列器行 + 底部留白
+	var total_height := TOP_PADDING + TITLE_ROW_HEIGHT + PALETTE_ROW_HEIGHT + PALETTE_SEQ_GAP + SEQUENCER_ROW_HEIGHT + BOTTOM_PADDING
 	custom_minimum_size = Vector2(_total_content_width, total_height)
 
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -208,17 +211,17 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 # ============================================================
-# 布局计算（从底部向上排列）
+# 布局计算（从顶部向下排列）
 # ============================================================
 
 func _calculate_layout() -> void:
 	_content_start_x = (size.x - _total_content_width) / 2.0 + 10.0
 
-	# 从底部向上排列
-	# 序列器单元格行在底部
-	_seq_row_y = size.y - BOTTOM_PADDING - SEQUENCER_ROW_HEIGHT
-	# 调色板行在序列器上方
-	_palette_row_y = _seq_row_y - 8.0 - PALETTE_ROW_HEIGHT
+	# 从顶部向下排列
+	# 调色板行在标题下方
+	_palette_row_y = TOP_PADDING + TITLE_ROW_HEIGHT
+	# 序列器单元格行在调色板下方
+	_seq_row_y = _palette_row_y + PALETTE_ROW_HEIGHT + PALETTE_SEQ_GAP
 
 # ============================================================
 # 绘制
@@ -234,7 +237,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BG_COLOR)
 
 	# ========== 顶部标题栏 ==========
-	var title_y := _palette_row_y - MODE_LABEL_HEIGHT - 2
+	var title_y := TOP_PADDING
 	draw_string(font, Vector2(start_x, title_y + 12), "SEQUENCER", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.6, 0.55, 0.75))
 
 	# 编辑模式指示
@@ -262,8 +265,8 @@ func _draw() -> void:
 	draw_string(font, Vector2(start_x + _total_content_width - 80, title_y + 12), beat_text, HORIZONTAL_ALIGNMENT_RIGHT, -1, 9, Color(0.4, 0.35, 0.5))
 
 	# 操作提示
-	var help_text := "左键:放置  右键:清除  滚轮:切换音符  1-7:选音符  Q/W/E:切模式  H:快捷键"
-	draw_string(font, Vector2(start_x + 250, title_y + 12), help_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.35, 0.3, 0.45, 0.6))
+	var help_text := "左键:放置  右键:清除  滚轮:切换  1-7:选音符  Q/W/E:模式  H:快捷键"
+	draw_string(font, Vector2(start_x + 240, title_y + 12), help_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.35, 0.3, 0.45, 0.6))
 
 	# ========== 音符调色板（在序列器上方）==========
 	_draw_note_palette(start_x, _palette_row_y, font)
@@ -495,9 +498,6 @@ func _draw_note_palette(start_x: float, start_y: float, font: Font) -> void:
 		draw_string(font, btn_rect.position + Vector2(10, 16), modes[j]["label"], HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Color.WHITE)
 		# 快捷键提示
 		draw_string(font, btn_rect.position + Vector2(10, 28), modes[j]["key"], HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(1.0, 1.0, 1.0, 0.35))
-		# 模式名称（选中时显示）
-		if is_active:
-			draw_string(font, btn_rect.position + Vector2(1, PALETTE_CELL_SIZE.y + 10), modes[j]["full"], HORIZONTAL_ALIGNMENT_CENTER, -1, 7, btn_color)
 
 	# 预设模板按钮（在模式按钮右侧）
 	var template_x := btn_x + 3 * 36 + 15
@@ -591,17 +591,17 @@ func _draw_shortcuts_overlay(font: Font) -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.7))
 
 	var center_x := size.x / 2.0
-	var y := 10.0
+	var y := 6.0
 
-	draw_string(font, Vector2(center_x - 60, y), "KEYBOARD SHORTCUTS", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(0.3, 0.8, 0.6))
-	y += 20
+	draw_string(font, Vector2(center_x - 60, y), "KEYBOARD SHORTCUTS", HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color(0.3, 0.8, 0.6))
+	y += 16
 
 	var shortcuts := [
 		["1-7", "选择音符 C-B"],
-		["Q / W / E", "切换: 音符/和弦/休止"],
-		["左键", "放置音符（拖拽可移动）"],
+		["Q / W / E", "音符/和弦/休止"],
+		["左键", "放置(拖拽移动)"],
 		["右键", "清除单元格"],
-		["滚轮", "切换选中音符"],
+		["滚轮", "切换音符"],
 		["Shift+点击", "范围选择"],
 		["Ctrl+C/V", "复制/粘贴"],
 		["Ctrl+Z/Y", "撤销/重做"],
@@ -609,9 +609,9 @@ func _draw_shortcuts_overlay(font: Font) -> void:
 	]
 
 	for shortcut in shortcuts:
-		draw_string(font, Vector2(center_x - 100, y), shortcut[0], HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, Color(1.0, 0.84, 0.0, 0.9))
-		draw_string(font, Vector2(center_x - 85, y), shortcut[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.7, 0.65, 0.8, 0.8))
-		y += 14
+		draw_string(font, Vector2(center_x - 100, y), shortcut[0], HORIZONTAL_ALIGNMENT_RIGHT, -1, 9, Color(1.0, 0.84, 0.0, 0.9))
+		draw_string(font, Vector2(center_x - 85, y), shortcut[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.7, 0.65, 0.8, 0.8))
+		y += 13
 
 # ============================================================
 # 输入处理

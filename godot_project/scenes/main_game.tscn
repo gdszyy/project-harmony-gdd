@@ -115,9 +115,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -200.0
-offset_top = -250.0
+offset_top = -230.0
 offset_right = 200.0
-offset_bottom = -210.0
+offset_bottom = -190.0
 
 [node name="SuggestionLabel" type="Label" parent="HUD/SuggestionPanel"]
 text = ""
@@ -130,9 +130,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
-offset_top = -160.0
+offset_top = -150.0
 offset_right = 300.0
-offset_bottom = 0.0
+offset_bottom = -10.0
 script = ExtResource("6_sequencer")
 
 [node name="UpgradePanel" type="Control" parent="HUD"]
@@ -149,9 +149,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -100.0
-offset_top = -230.0
+offset_top = -220.0
 offset_right = 100.0
-offset_bottom = -170.0
+offset_bottom = -160.0
 theme_override_constants/separation = 8
 
 [node name="FatigueFilter" type="ColorRect" parent="HUD"]
