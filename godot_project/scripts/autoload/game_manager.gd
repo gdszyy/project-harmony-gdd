@@ -245,7 +245,7 @@ func damage_player(amount: float, source_position: Vector2 = Vector2.ZERO) -> vo
 	# 护盾吸收伤害
 	var remaining_damage := amount
 	if shield_hp > 0.0:
-		var absorbed := min(shield_hp, remaining_damage)
+		var absorbed: float = min(shield_hp, remaining_damage)
 		shield_hp -= absorbed
 		remaining_damage -= absorbed
 		if remaining_damage <= 0.0:

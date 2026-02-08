@@ -106,7 +106,7 @@ func _create_ui() -> void:
 	_frame_rect = TextureRect.new()
 	_frame_rect.name = "BossBarFrame"
 	_frame_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_frame_rect.mouse_filter = MOUSE_FILTER_IGNORE
+	_frame_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_frame_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_container.add_child(_frame_rect, true)
 	_container.move_child(_frame_rect, 0)

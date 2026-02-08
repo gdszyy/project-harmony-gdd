@@ -517,7 +517,7 @@ func _attack_square_grid(attack: Dictionary, damage_mult: float) -> void:
 			var spawn_pos := global_position + offset
 			
 			# 延迟生成
-			var delay := (abs(x) + abs(y)) * 0.1
+			var delay: float = (abs(x) + abs(y)) * 0.1
 			var pos_copy = spawn_pos
 			
 			get_tree().create_timer(delay).timeout.connect(func():
@@ -687,7 +687,7 @@ func _attack_frequency_sweep(attack: Dictionary, damage_mult: float) -> void:
 	for i in range(sweep_count):
 		var delay := i * 0.15
 		var speed_ratio := float(i) / sweep_count  # 0.0 → 1.0
-		var speed := lerp(80.0, 350.0, speed_ratio)
+		var speed: float = lerpf(80.0, 350.0, speed_ratio)
 		
 		get_tree().create_timer(delay).timeout.connect(func():
 			if _is_dead or not is_instance_valid(self):

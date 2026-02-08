@@ -632,7 +632,7 @@ func _build_mode_card(mode: Dictionary) -> Control:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
 
-	var is_selected := (_selected_mode == mode["id"])
+	var is_selected: bool = (_selected_mode == mode["id"])
 
 	# 调式图标和名称
 	var header := HBoxContainer.new()

@@ -730,7 +730,7 @@ func _copy_selected() -> void:
 	var base_idx: int = sorted_cells[0]
 	for idx in sorted_cells:
 		if idx < _sequencer_data.size():
-			var slot_copy := _sequencer_data[idx].duplicate()
+			var slot_copy: Dictionary = _sequencer_data[idx].duplicate()
 			slot_copy["_offset"] = idx - base_idx
 			_clipboard.append(slot_copy)
 
