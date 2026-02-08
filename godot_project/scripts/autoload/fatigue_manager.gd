@@ -9,7 +9,6 @@ extends Node
 # ============================================================
 signal fatigue_updated(result: Dictionary)
 signal fatigue_level_changed(level: MusicData.FatigueLevel)
-signal note_locked(note: MusicData.WhiteKey)
 signal recovery_suggestion(message: String)
 
 # ============================================================
@@ -528,6 +527,42 @@ func _sum_values(dict: Dictionary) -> float:
 	for key in dict:
 		total += dict[key]
 	return total
+
+## 外部疲劳注入（供 Silence 敌人等调用）
+func add_external_fatigue(amount: float) -> void:
+	current_afi = clampf(current_afi + amount, 0.0, 1.0)
+
+	# 重新判定疲劳等级
+	var new_level := _determine_level(current_afi)
+	if new_level != current_level:
+		current_level = new_level
+		fatigue_level_changed.emit(current_level)
+
+	# 发出更新信号
+	var result := {
+		"afi": current_afi,
+		"components": _fatigue_components,
+		"level": current_level,
+		"penalty": _calculate_penalty(),
+	}
+	fatigue_updated.emit(result)
+
+## 减少疲劳度（击杀 Silence 敌人的奖励）
+func reduce_fatigue(amount: float) -> void:
+	current_afi = clampf(current_afi - amount, 0.0, 1.0)
+
+	var new_level := _determine_level(current_afi)
+	if new_level != current_level:
+		current_level = new_level
+		fatigue_level_changed.emit(current_level)
+
+	var result := {
+		"afi": current_afi,
+		"components": _fatigue_components,
+		"level": current_level,
+		"penalty": _calculate_penalty(),
+	}
+	fatigue_updated.emit(result)
 
 ## 重置疲劳系统
 func reset() -> void:

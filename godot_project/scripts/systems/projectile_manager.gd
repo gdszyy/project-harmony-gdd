@@ -31,6 +31,9 @@ var _cleanup_timer: float = 0.0
 ## 碰撞优化器 (Issue #6)
 var _collision_optimizer: CollisionOptimizer = null
 
+## 回响延迟队列：[{ "spell_data": Dictionary, "delay_remaining": float }]
+var _echo_queue: Array[Dictionary] = []
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -46,6 +49,7 @@ func _process(delta: float) -> void:
 		return
 
 	_update_projectiles(delta)
+	_update_echo_queue(delta)
 	_update_render()
 
 	_cleanup_timer += delta
@@ -99,6 +103,11 @@ func _create_projectile(spell_data: Dictionary) -> void:
 	var player_pos: Vector2 = _get_player_position()
 	var aim_dir: Vector2 = _get_aim_direction()
 
+	# 支持连射角度偏移
+	var angle_offset: float = spell_data.get("rapid_fire_angle_offset", 0.0)
+	if angle_offset != 0.0:
+		aim_dir = aim_dir.rotated(angle_offset)
+
 	var projectile := {
 		"position": player_pos,
 		"velocity": aim_dir * spell_data.get("speed", 600.0),
@@ -112,11 +121,11 @@ func _create_projectile(spell_data: Dictionary) -> void:
 		"active": true,
 		# 节奏型特殊属性
 		"wave_trajectory": false,
-		"knockback": false,
+		"knockback": spell_data.get("has_knockback", false),
 	}
 
 	# 应用修饰符
-	_apply_modifier(projectile)
+	_apply_modifier(projectile, spell_data)
 
 	# 应用节奏型
 	var rhythm = spell_data.get("rhythm_pattern", -1)
@@ -282,150 +291,155 @@ func _spawn_charged(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	proj["color"] = Color(1.0, 1.0, 0.0)
 	_projectiles.append(proj)
 
-	func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
-		# Issue #17: 扩展和弦法术形态
-		var spell_form = data.get("spell_form", -1)
-		
-		match spell_form:
-			MusicData.SpellForm.STORM_FIELD:
-				# 属九：风暴区域 - 持续伤害的旋转风暴
-				_spawn_storm_field(data, pos)
-			MusicData.SpellForm.HOLY_DOMAIN:
-				# 大九：圣光领域 - 治疗区域 + 持续恢复
-				_spawn_holy_domain(data, pos)
-			MusicData.SpellForm.ANNIHILATION_RAY:
-				# 减九：湟灭射线 - 穿透所有敌人的射线
-				_spawn_annihilation_ray(data, pos, dir)
-			MusicData.SpellForm.TIME_RIFT:
-				# 属十一：时空裂隙 - 减速区域
-				_spawn_time_rift(data, pos)
-			MusicData.SpellForm.SYMPHONY_STORM:
-				# 属十三：交响风暴 - 多波弹幕
-				_spawn_symphony_storm(data, pos)
-			MusicData.SpellForm.FINALE:
-				# 减十三：终焉乐章 - 全屏爆发
-				_spawn_finale(data, pos)
-			_:
-				# 默认处理
-				var proj := _base_projectile(data, pos, dir)
-				proj["damage"] *= data.get("damage", 50.0) / 30.0
-				proj["size"] *= 2.0
-				proj["duration"] *= 1.5
-				proj["color"] = Color(1.0, 0.0, 0.5)
-				_projectiles.append(proj)
-	
-	## 属九：风暴区域
-	func _spawn_storm_field(data: Dictionary, pos: Vector2) -> void:
-		# 创建一个旋转的风暴区域，持续伤害
-		var field := {
-			"position": pos,
-			"velocity": Vector2.ZERO,
-			"damage": data.get("damage", 50.0) * 0.5,  # 每秒伤害
-			"size": 120.0,  # 大范围
-			"duration": 5.0,
-			"time_alive": 0.0,
-			"color": Color(0.3, 0.8, 1.0),
-			"active": true,
-			"is_field": true,
-			"field_type": "storm",
-			"rotation": 0.0,
-			"rotation_speed": 3.0,  # 弧度/秒
-		}
-		_projectiles.append(field)
-	
-	## 大九：圣光领域
-	func _spawn_holy_domain(data: Dictionary, pos: Vector2) -> void:
-		# 创建一个治疗区域
-		var domain := {
-			"position": pos,
-			"velocity": Vector2.ZERO,
-			"damage": 0.0,  # 不造成伤害
-			"heal_per_sec": 15.0,
-			"size": 100.0,
-			"duration": 6.0,
-			"time_alive": 0.0,
-			"color": Color(1.0, 0.9, 0.5),
-			"active": true,
-			"is_field": true,
-			"field_type": "heal",
-		}
-		_projectiles.append(domain)
-	
-	## 减九：湟灭射线
-	func _spawn_annihilation_ray(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
-		# 创建一条穿透所有敌人的射线
-		var ray := {
-			"position": pos,
-			"velocity": dir * 1200.0,  # 极快
-			"damage": data.get("damage", 80.0),
-			"size": 16.0,
-			"duration": 0.8,
-			"time_alive": 0.0,
-			"color": Color(0.8, 0.0, 0.8),
-			"active": true,
-			"pierce": true,
-			"max_pierce": 999,  # 无限穿透
-			"pierce_count": 0,
-			"is_ray": true,
-		}
-		_projectiles.append(ray)
-	
-	## 属十一：时空裂隙
-	func _spawn_time_rift(data: Dictionary, pos: Vector2) -> void:
-		# 创建一个减速区域
-		var rift := {
-			"position": pos,
-			"velocity": Vector2.ZERO,
-			"damage": data.get("damage", 30.0) * 0.6,  # 每秒伤害
-			"size": 150.0,
-			"duration": 4.0,
-			"time_alive": 0.0,
-			"color": Color(0.5, 0.0, 1.0),
-			"active": true,
-			"is_field": true,
-			"field_type": "slow",
-			"slow_factor": 0.3,  # 减速70%
-		}
-		_projectiles.append(rift)
-	
-	## 属十三：交响风暴
-	func _spawn_symphony_storm(data: Dictionary, pos: Vector2) -> void:
-		# 发射多波弹幕
-		var wave_count := 3
-		var projectiles_per_wave := 12
-		
-		for wave in range(wave_count):
-			for i in range(projectiles_per_wave):
-				var angle := (TAU / projectiles_per_wave) * i
-				var dir := Vector2.from_angle(angle)
-				var proj := {
-					"position": pos,
-					"velocity": dir * (400.0 + wave * 100.0),
-					"damage": data.get("damage", 40.0) * 0.6,
-					"size": 20.0,
-					"duration": 2.0,
-					"time_alive": -wave * 0.3,  # 延迟发射
-					"color": Color(1.0, 0.6, 0.0),
-					"active": true,
-				}
-				_projectiles.append(proj)
-	
-	## 减十三：终焉乐章
-	func _spawn_finale(data: Dictionary, pos: Vector2) -> void:
-		# 全屏爆发效果
-		var finale := {
-			"position": pos,
-			"velocity": Vector2.ZERO,
-			"damage": data.get("damage", 200.0),
-			"size": 999999.0,  # 全屏范围
-			"duration": 0.5,
-			"time_alive": 0.0,
-			"color": Color(1.0, 0.0, 0.0),
-			"active": true,
-			"is_aoe": true,
-			"expansion_speed": 2000.0,
-		}
-		_projectiles.append(finale)
+# ============================================================
+# 扩展和弦法术形态（修复：从嵌套函数移出为顶层函数）
+# ============================================================
+
+func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+	# Issue #17: 扩展和弦法术形态
+	var spell_form = data.get("spell_form", -1)
+
+	match spell_form:
+		MusicData.SpellForm.STORM_FIELD:
+			_spawn_storm_field(data, pos)
+		MusicData.SpellForm.HOLY_DOMAIN:
+			_spawn_holy_domain(data, pos)
+		MusicData.SpellForm.ANNIHILATION_RAY:
+			_spawn_annihilation_ray(data, pos, dir)
+		MusicData.SpellForm.TIME_RIFT:
+			_spawn_time_rift(data, pos)
+		MusicData.SpellForm.SYMPHONY_STORM:
+			_spawn_symphony_storm(data, pos)
+		MusicData.SpellForm.FINALE:
+			_spawn_finale(data, pos)
+		_:
+			# 默认处理
+			var proj := _base_projectile(data, pos, dir)
+			proj["damage"] *= data.get("damage", 50.0) / 30.0
+			proj["size"] *= 2.0
+			proj["duration"] *= 1.5
+			proj["color"] = Color(1.0, 0.0, 0.5)
+			_projectiles.append(proj)
+
+## 属九：风暴区域
+func _spawn_storm_field(data: Dictionary, pos: Vector2) -> void:
+	var field := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": data.get("damage", 50.0) * 0.5,
+		"size": 120.0,
+		"duration": 5.0,
+		"time_alive": 0.0,
+		"color": Color(0.3, 0.8, 1.0),
+		"active": true,
+		"is_field": true,
+		"field_type": "storm",
+		"field_tick_interval": 0.5,
+		"field_tick_timer": 0.0,
+		"rotation": 0.0,
+		"rotation_speed": 3.0,
+		"modifier": -1,
+	}
+	_projectiles.append(field)
+
+## 大九：圣光领域
+func _spawn_holy_domain(data: Dictionary, pos: Vector2) -> void:
+	var domain := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": 0.0,
+		"heal_per_sec": 15.0,
+		"size": 100.0,
+		"duration": 6.0,
+		"time_alive": 0.0,
+		"color": Color(1.0, 0.95, 0.6),
+		"active": true,
+		"is_field": true,
+		"is_shield": true,
+		"field_type": "heal",
+		"heal_per_second": 15.0,
+		"heal_timer": 0.0,
+		"modifier": -1,
+	}
+	_projectiles.append(domain)
+
+## 减九：湮灭射线
+func _spawn_annihilation_ray(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+	var ray := {
+		"position": pos,
+		"velocity": dir * 1200.0,
+		"damage": data.get("damage", 80.0),
+		"size": 16.0,
+		"duration": 0.8,
+		"time_alive": 0.0,
+		"color": Color(0.8, 0.0, 0.8),
+		"active": true,
+		"pierce": true,
+		"max_pierce": 999,
+		"pierce_count": 0,
+		"is_ray": true,
+		"modifier": -1,
+	}
+	_projectiles.append(ray)
+
+## 属十一：时空裂隙
+func _spawn_time_rift(data: Dictionary, pos: Vector2) -> void:
+	var rift := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": data.get("damage", 30.0) * 0.6,
+		"size": 150.0,
+		"duration": 4.0,
+		"time_alive": 0.0,
+		"color": Color(0.5, 0.0, 1.0),
+		"active": true,
+		"is_field": true,
+		"field_type": "slow",
+		"field_tick_interval": 0.5,
+		"field_tick_timer": 0.0,
+		"slow_factor": 0.3,
+		"modifier": -1,
+	}
+	_projectiles.append(rift)
+
+## 属十三：交响风暴
+func _spawn_symphony_storm(data: Dictionary, pos: Vector2) -> void:
+	var wave_count := 3
+	var projectiles_per_wave := 12
+
+	for wave in range(wave_count):
+		for i in range(projectiles_per_wave):
+			var angle := (TAU / projectiles_per_wave) * i
+			var dir := Vector2.from_angle(angle)
+			var proj := {
+				"position": pos,
+				"velocity": dir * (400.0 + wave * 100.0),
+				"damage": data.get("damage", 40.0) * 0.6,
+				"size": 20.0,
+				"duration": 2.0,
+				"time_alive": -wave * 0.3,  # 延迟发射
+				"color": Color(1.0, 0.6, 0.0),
+				"active": true,
+				"modifier": -1,
+			}
+			_projectiles.append(proj)
+
+## 减十三：终焉乐章
+func _spawn_finale(data: Dictionary, pos: Vector2) -> void:
+	var finale := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": data.get("damage", 200.0),
+		"size": 999999.0,
+		"duration": 0.5,
+		"time_alive": 0.0,
+		"color": Color(1.0, 0.0, 0.0),
+		"active": true,
+		"is_aoe": true,
+		"expansion_speed": 2000.0,
+		"modifier": -1,
+	}
+	_projectiles.append(finale)
 
 func _base_projectile(data: Dictionary, pos: Vector2, dir: Vector2) -> Dictionary:
 	return {
@@ -451,6 +465,10 @@ func _update_projectiles(delta: float) -> void:
 
 		proj["time_alive"] += delta
 
+		# 延迟发射的弹体（time_alive < 0 时不更新）
+		if proj["time_alive"] < 0.0:
+			continue
+
 		# 超时销毁
 		if proj["time_alive"] >= proj["duration"]:
 			proj["active"] = false
@@ -471,17 +489,41 @@ func _update_projectiles(delta: float) -> void:
 			proj["size"] = min(proj["size"] + proj.get("expand_speed", 200.0) * delta, proj.get("max_size", 150.0))
 			continue
 
+		# 追踪逻辑（HOMING 修饰符 — 已实现）
+		if proj.get("homing", false):
+			var nearest_enemy := _find_nearest_enemy(proj["position"])
+			if nearest_enemy != Vector2.INF:
+				var to_enemy := (nearest_enemy - proj["position"]).normalized()
+				var current_dir := proj["velocity"].normalized()
+				var homing_strength: float = proj.get("homing_strength", 5.0)
+				var new_dir := current_dir.lerp(to_enemy, homing_strength * delta).normalized()
+				proj["velocity"] = new_dir * proj["velocity"].length()
+
 		# 摇摆弹道
 		if proj.get("wave_trajectory", false):
 			var wave_offset := sin(proj["time_alive"] * 10.0) * 100.0 * delta
 			var perp := proj["velocity"].normalized().rotated(PI / 2.0)
 			proj["position"] += perp * wave_offset
 
+		# 召唤物自动攻击
+		if proj.get("is_summon", false):
+			proj["attack_timer"] += delta
+			if proj["attack_timer"] >= proj.get("attack_interval", 1.0):
+				proj["attack_timer"] = 0.0
+				_summon_attack(proj)
+			# 召唤物跟随玩家
+			var player_pos := _get_player_position()
+			var to_player := (player_pos - proj["position"])
+			if to_player.length() > 80.0:
+				proj["position"] += to_player.normalized() * 100.0 * delta
+
 		# 位置更新
 		proj["position"] += proj["velocity"] * delta
 
 		# 法阵 tick
 		if proj.get("is_field", false):
+			if not proj.has("field_tick_timer"):
+				proj["field_tick_timer"] = 0.0
 			proj["field_tick_timer"] += delta
 			if proj["field_tick_timer"] >= proj.get("field_tick_interval", 0.5):
 				proj["field_tick_timer"] = 0.0
@@ -489,10 +531,16 @@ func _update_projectiles(delta: float) -> void:
 
 		# 护盾治疗 tick
 		if proj.get("is_shield", false):
+			if not proj.has("heal_timer"):
+				proj["heal_timer"] = 0.0
 			proj["heal_timer"] += delta
 			if proj["heal_timer"] >= 1.0:
 				proj["heal_timer"] = 0.0
 				GameManager.heal_player(proj.get("heal_per_second", 5.0))
+
+		# 风暴旋转
+		if proj.get("field_type", "") == "storm":
+			proj["rotation"] = proj.get("rotation", 0.0) + proj.get("rotation_speed", 3.0) * delta
 
 func _trigger_explosion(proj: Dictionary) -> void:
 	# 在爆炸位置创建一个短暂的大范围伤害区域
@@ -510,11 +558,68 @@ func _trigger_explosion(proj: Dictionary) -> void:
 	}
 	_projectiles.append(explosion)
 
+## 召唤物自动攻击：向最近敌人发射小弹体
+func _summon_attack(summon_proj: Dictionary) -> void:
+	var nearest := _find_nearest_enemy(summon_proj["position"])
+	if nearest == Vector2.INF:
+		return
+
+	var dir := (nearest - summon_proj["position"]).normalized()
+	var attack := {
+		"position": summon_proj["position"],
+		"velocity": dir * 500.0,
+		"damage": summon_proj["damage"],
+		"size": 12.0,
+		"duration": 0.8,
+		"time_alive": 0.0,
+		"color": summon_proj["color"].lightened(0.3),
+		"active": true,
+		"modifier": -1,
+	}
+	_projectiles.append(attack)
+
 # ============================================================
-# 修饰符应用
+# 回响（Echo）延迟队列
 # ============================================================
 
-func _apply_modifier(proj: Dictionary) -> void:
+func _update_echo_queue(delta: float) -> void:
+	var i := 0
+	while i < _echo_queue.size():
+		_echo_queue[i]["delay_remaining"] -= delta
+		if _echo_queue[i]["delay_remaining"] <= 0.0:
+			# 触发回响弹体
+			var echo_data: Dictionary = _echo_queue[i]["spell_data"]
+			_create_echo_projectile(echo_data)
+			_echo_queue.remove_at(i)
+		else:
+			i += 1
+
+func _create_echo_projectile(spell_data: Dictionary) -> void:
+	if _projectiles.size() >= MAX_PROJECTILES:
+		return
+
+	var player_pos := _get_player_position()
+	var aim_dir := _get_aim_direction()
+
+	var proj := {
+		"position": player_pos,
+		"velocity": aim_dir * spell_data.get("speed", 600.0) * 0.8,  # 回响弹体稍慢
+		"damage": spell_data.get("damage", 30.0) * 0.6,  # 回响伤害衰减
+		"size": spell_data.get("size", 24.0) * 0.8,
+		"duration": spell_data.get("duration", 1.5) * 0.7,
+		"time_alive": 0.0,
+		"color": spell_data.get("color", Color(0.0, 1.0, 0.8)).darkened(0.2),
+		"active": true,
+		"modifier": -1,  # 回响弹体不再触发修饰符
+		"is_echo": true,
+	}
+	_projectiles.append(proj)
+
+# ============================================================
+# 修饰符应用（已实现追踪和回响）
+# ============================================================
+
+func _apply_modifier(proj: Dictionary, spell_data: Dictionary = {}) -> void:
 	var mod = proj.get("modifier", -1)
 	if mod < 0:
 		return
@@ -525,14 +630,26 @@ func _apply_modifier(proj: Dictionary) -> void:
 			proj["max_pierce"] = 3
 			proj["pierce_count"] = 0
 		MusicData.ModifierEffect.HOMING:
+			# 追踪修饰符：弹体会转向最近的敌人
 			proj["homing"] = true
 			proj["homing_strength"] = 5.0
+			proj["duration"] *= 1.3  # 追踪弹体持续时间稍长
 		MusicData.ModifierEffect.SPLIT:
 			proj["split_on_hit"] = true
 			proj["split_count"] = 3
 		MusicData.ModifierEffect.ECHO:
+			# 回响修饰符：延迟后在玩家位置再发射一个衰减弹体
 			proj["echo"] = true
-			proj["echo_delay"] = 0.3
+			_echo_queue.append({
+				"spell_data": spell_data.duplicate() if not spell_data.is_empty() else {
+					"speed": proj["velocity"].length(),
+					"damage": proj["damage"],
+					"size": proj["size"],
+					"duration": proj["duration"],
+					"color": proj["color"],
+				},
+				"delay_remaining": 0.3,
+			})
 		MusicData.ModifierEffect.SCATTER:
 			# 散射：替换为多个小弹体
 			proj["damage"] *= 0.4
@@ -545,12 +662,41 @@ func _apply_modifier(proj: Dictionary) -> void:
 				scatter_proj["modifier"] = -1
 				_projectiles.append(scatter_proj)
 
-func _apply_rhythm_to_projectile(proj: Dictionary, rhythm: MusicData.RhythmPattern, _spell_data: Dictionary) -> void:
+func _apply_rhythm_to_projectile(proj: Dictionary, rhythm, _spell_data: Dictionary) -> void:
+	if rhythm is int and rhythm < 0:
+		return
 	match rhythm:
+		MusicData.RhythmPattern.EVEN_EIGHTH:
+			# 连射：弹体更小、更快、伤害降低（但总 DPS 更高）
+			proj["damage"] *= 0.6
+			proj["velocity"] *= 1.2
+			proj["size"] *= 0.7
 		MusicData.RhythmPattern.SWING:
 			proj["wave_trajectory"] = true
 		MusicData.RhythmPattern.DOTTED:
+			# 重击：增加单发伤害和击退
 			proj["knockback"] = true
+			proj["damage"] *= 1.4
+			proj["size"] *= 1.2
+		MusicData.RhythmPattern.SYNCOPATED:
+			# 闪避射击：增加弹速，弹体可穿透1个敌人
+			proj["velocity"] *= 1.3
+			proj["pierce"] = true
+			proj["max_pierce"] = 1
+			proj["pierce_count"] = 0
+		MusicData.RhythmPattern.TRIPLET:
+			# 三连发：弹体更小但更密集
+			proj["size"] *= 0.8
+			proj["duration"] *= 0.8
+		MusicData.RhythmPattern.REST:
+			# 精准蓄力：延迟发射但大幅增强
+			proj["is_charged"] = true
+			proj["charge_time"] = 0.5
+			proj["charged"] = false
+			proj["final_velocity"] = proj["velocity"] * 1.5
+			proj["velocity"] = Vector2.ZERO
+			proj["damage"] *= 1.8
+			proj["size"] *= 1.3
 
 # ============================================================
 # 碰撞优化器设置 (Issue #6)
@@ -590,28 +736,37 @@ func _check_collisions_bruteforce(enemies: Array) -> Array[Dictionary]:
 	for proj in _projectiles:
 		if not proj["active"]:
 			continue
+		# 跳过延迟发射的弹体
+		if proj["time_alive"] < 0.0:
+			continue
 
 		for enemy in enemies:
 			var dist := proj["position"].distance_to(enemy["position"])
 			if dist < proj["size"] + enemy.get("radius", 16.0):
-				hits.append({
+				var hit_data := {
 					"projectile": proj,
 					"enemy": enemy,
 					"damage": proj["damage"],
 					"position": enemy["position"],
-				})
+					"knockback": proj.get("knockback", false),
+					"slow_factor": proj.get("slow_factor", 0.0),
+				}
+				hits.append(hit_data)
+
+				projectile_hit_enemy.emit(proj, enemy["position"])
 
 				if proj.get("pierce", false):
 					proj["pierce_count"] = proj.get("pierce_count", 0) + 1
 					if proj["pierce_count"] >= proj.get("max_pierce", 3):
 						proj["active"] = false
-				else:
+				elif not proj.get("is_field", false) and not proj.get("is_shockwave", false) and not proj.get("is_aoe", false):
 					proj["active"] = false
 
 				if proj.get("split_on_hit", false):
 					_split_projectile(proj)
 
-				break
+				if not proj.get("is_field", false) and not proj.get("is_shockwave", false):
+					break  # 每帧每个非区域弹体只命中一个敌人
 
 	return hits
 
@@ -648,7 +803,7 @@ func _update_render() -> void:
 
 	var active_count := 0
 	for proj in _projectiles:
-		if proj["active"]:
+		if proj["active"] and proj["time_alive"] >= 0.0:
 			active_count += 1
 
 	var mm := _multi_mesh_instance.multimesh
@@ -659,7 +814,7 @@ func _update_render() -> void:
 
 	var idx := 0
 	for proj in _projectiles:
-		if not proj["active"]:
+		if not proj["active"] or proj["time_alive"] < 0.0:
 			continue
 		if idx >= active_count:
 			break
@@ -683,6 +838,7 @@ func _cleanup_expired() -> void:
 ## 清除所有弹体
 func clear_all() -> void:
 	_projectiles.clear()
+	_echo_queue.clear()
 	if _multi_mesh_instance and _multi_mesh_instance.multimesh:
 		_multi_mesh_instance.multimesh.visible_instance_count = 0
 
@@ -701,6 +857,22 @@ func _get_aim_direction() -> Vector2:
 	if player:
 		return (get_global_mouse_position() - player.global_position).normalized()
 	return Vector2.RIGHT
+
+## 查找最近的敌人位置（用于追踪和召唤物攻击）
+func _find_nearest_enemy(from_pos: Vector2) -> Vector2:
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	var nearest_pos := Vector2.INF
+	var nearest_dist := INF
+
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		var dist := from_pos.distance_to(enemy.global_position)
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest_pos = enemy.global_position
+
+	return nearest_pos
 
 func get_active_count() -> int:
 	var count := 0

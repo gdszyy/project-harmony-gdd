@@ -25,7 +25,7 @@ func take_damage(_amount: float, _knockback: Vector2 = Vector2.ZERO) -> void:
 	# 受击反馈：闪烁
 	_flash()
 	# 播放音效
-	GlobalMusicManager.play_ui_sound("click")
+	AudioManager.play_ui_click()
 
 func _flash() -> void:
 	if _sprite:

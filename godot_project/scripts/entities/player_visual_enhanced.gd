@@ -1,6 +1,7 @@
 ## player_visual_enhanced.gd
 ## 玩家视觉完善 (Issue #12)
 ## 正十二面体能量核心 + 三道旋转金环 + 节拍脉冲 + 神圣几何 Shader
+## 统一管理所有玩家视觉效果（旋转、脉冲、无敌闪烁等）
 extends Node2D
 
 # ============================================================
@@ -14,6 +15,10 @@ extends Node2D
 @export var ring_speeds: Array[float] = [30.0, -45.0, 60.0]
 ## 节拍脉冲强度
 @export var beat_pulse_strength: float = 0.15
+## 核心旋转速度（弧度/秒）
+@export var core_rotation_speed: float = 0.5
+## 移动倾斜系数
+@export var tilt_factor: float = 0.0003
 
 # ============================================================
 # 节点引用
@@ -27,6 +32,7 @@ var _glow_particles: CPUParticles2D = null
 # ============================================================
 var _time: float = 0.0
 var _beat_pulse: float = 0.0
+var _is_invincible: bool = false
 
 # ============================================================
 # 生命周期
@@ -36,7 +42,7 @@ func _ready() -> void:
 	_setup_core()
 	_setup_rings()
 	_setup_particles()
-	
+
 	# 连接信号
 	if GameManager.has_signal("beat_tick"):
 		GameManager.beat_tick.connect(_on_beat_tick)
@@ -46,6 +52,7 @@ func _process(delta: float) -> void:
 	_update_core(delta)
 	_update_rings(delta)
 	_update_beat_pulse(delta)
+	_update_invincibility_visual()
 
 # ============================================================
 # 核心设置
@@ -55,7 +62,7 @@ func _setup_core() -> void:
 	_core = Node2D.new()
 	_core.name = "Core"
 	add_child(_core)
-	
+
 	# 创建正十二面体的2D投影（简化为正十二边形）
 	var dodecagon := Polygon2D.new()
 	var points: PackedVector2Array = []
@@ -64,19 +71,19 @@ func _setup_core() -> void:
 		var angle := (TAU / sides) * i
 		var point := Vector2.from_angle(angle) * core_size
 		points.append(point)
-	
+
 	dodecagon.polygon = points
 	dodecagon.color = Color(0.0, 0.9, 0.7, 0.9)
-	
+
 	# 应用神圣几何 Shader
 	var shader := load("res://shaders/sacred_geometry.gdshader")
 	if shader:
 		var mat := ShaderMaterial.new()
 		mat.shader = shader
 		dodecagon.material = mat
-	
+
 	_core.add_child(dodecagon)
-	
+
 	# 添加边框
 	var outline := Line2D.new()
 	outline.points = points
@@ -98,26 +105,26 @@ func _setup_rings() -> void:
 
 func _create_ring(radius: float, _speed: float) -> Node2D:
 	var ring := Node2D.new()
-	
+
 	# 创建环形（使用多个小段）
 	var segments := 64
 	var line := Line2D.new()
 	var points: PackedVector2Array = []
-	
+
 	for i in range(segments + 1):
 		var angle := (TAU / segments) * i
 		var point := Vector2.from_angle(angle) * radius
 		points.append(point)
-	
+
 	line.points = points
 	line.width = 3.0
 	line.default_color = Color(1.0, 0.8, 0.0, 0.6)  # 金色
-	
+
 	# 添加发光效果
 	line.antialiased = true
-	
+
 	ring.add_child(line)
-	
+
 	return ring
 
 # ============================================================
@@ -140,7 +147,7 @@ func _setup_particles() -> void:
 	_glow_particles.scale_amount_min = 2.0
 	_glow_particles.scale_amount_max = 4.0
 	_glow_particles.color = Color(0.0, 0.9, 0.7, 0.5)
-	
+
 	add_child(_glow_particles)
 
 # ============================================================
@@ -150,14 +157,21 @@ func _setup_particles() -> void:
 func _update_core(delta: float) -> void:
 	if _core == null:
 		return
-	
+
 	# 缓慢旋转
-	_core.rotation += delta * 0.5
-	
+	_core.rotation += delta * core_rotation_speed
+
+	# 移动时的倾斜效果（从父节点获取速度）
+	var parent := get_parent()
+	if parent and parent is CharacterBody2D:
+		var vel: Vector2 = parent.velocity
+		if vel.length() > 10.0:
+			_core.rotation += vel.x * tilt_factor
+
 	# 节拍脉冲缩放
 	var pulse_scale := 1.0 + _beat_pulse * beat_pulse_strength
 	_core.scale = Vector2(pulse_scale, pulse_scale)
-	
+
 	# 更新 Shader 参数
 	var dodecagon := _core.get_child(0)
 	if dodecagon and dodecagon.material is ShaderMaterial:
@@ -169,15 +183,15 @@ func _update_rings(delta: float) -> void:
 	for i in range(_rings.size()):
 		if i >= ring_speeds.size():
 			continue
-		
+
 		var ring := _rings[i]
 		var speed := ring_speeds[i]
 		ring.rotation += deg_to_rad(speed) * delta
-		
+
 		# 节拍脉冲效果
 		var pulse_scale := 1.0 + _beat_pulse * beat_pulse_strength * 0.5
 		ring.scale = Vector2(pulse_scale, pulse_scale)
-		
+
 		# 透明度随节拍变化
 		var line := ring.get_child(0) as Line2D
 		if line:
@@ -188,17 +202,29 @@ func _update_beat_pulse(delta: float) -> void:
 	# 节拍脉冲衰减
 	_beat_pulse = max(0.0, _beat_pulse - delta * 3.0)
 
+func _update_invincibility_visual() -> void:
+	# 无敌帧闪烁效果
+	if _is_invincible:
+		modulate.a = 0.5 + sin(Time.get_ticks_msec() * 0.02) * 0.5
+	else:
+		modulate.a = 1.0
+
 # ============================================================
-# 受伤效果
+# 公共接口 — 供 player.gd 调用
 # ============================================================
 
+## 设置无敌状态（控制闪烁效果）
+func set_invincible(invincible: bool) -> void:
+	_is_invincible = invincible
+
+## 受伤效果
 func apply_damage_effect() -> void:
 	# 故障效果：快速闪烁和颜色变化
 	var tween := create_tween()
 	tween.set_loops(3)
 	tween.tween_property(self, "modulate", Color(1.0, 0.3, 0.3), 0.05)
 	tween.tween_property(self, "modulate", Color.WHITE, 0.05)
-	
+
 	# 抖动效果
 	var original_pos := position
 	for i in range(5):
@@ -213,7 +239,7 @@ func apply_damage_effect() -> void:
 func _on_beat_tick(_beat_index: int) -> void:
 	# 触发节拍脉冲
 	_beat_pulse = 1.0
-	
+
 	# 粒子爆发
 	if _glow_particles:
 		_glow_particles.emitting = true

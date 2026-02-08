@@ -1,6 +1,7 @@
 ## player.gd
 ## 玩家角色控制器
 ## 正十二面体能量核心，悬浮移动，带有缓入缓出插值
+## 注意：所有视觉效果（旋转、脉冲、闪烁等）统一由 player_visual_enhanced.gd 负责
 extends CharacterBody2D
 
 # ============================================================
@@ -21,7 +22,7 @@ signal player_moved(position: Vector2)
 # ============================================================
 # 节点引用
 # ============================================================
-@onready var _sprite: Node2D = $PlayerVisual
+@onready var _visual: Node2D = $PlayerVisual
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _invincibility_timer: Timer = $InvincibilityTimer
 @onready var _pickup_area: Area2D = $PickupArea
@@ -31,7 +32,6 @@ signal player_moved(position: Vector2)
 # ============================================================
 var _is_invincible: bool = false
 var _input_direction: Vector2 = Vector2.ZERO
-var _visual_rotation: float = 0.0
 
 # ============================================================
 # 生命周期
@@ -43,7 +43,6 @@ func _ready() -> void:
 
 	# 连接信号
 	GameManager.player_died.connect(_on_player_died)
-	GameManager.beat_tick.connect(_on_beat_tick)
 
 func _physics_process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
@@ -51,9 +50,12 @@ func _physics_process(delta: float) -> void:
 
 	_handle_input()
 	_apply_movement(delta)
-	_update_visual(delta)
 	move_and_slide()
 	player_moved.emit(global_position)
+
+	# 将无敌状态传递给视觉组件
+	if _visual and _visual.has_method("set_invincible"):
+		_visual.set_invincible(_is_invincible)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
@@ -101,34 +103,6 @@ func _apply_movement(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 
 # ============================================================
-# 视觉更新
-# ============================================================
-
-func _update_visual(delta: float) -> void:
-	if _sprite == null:
-		return
-
-	# 持续旋转（能量核心效果）
-	_visual_rotation += delta * 1.5
-	_sprite.rotation = _visual_rotation
-
-	# 节拍脉冲缩放
-	var beat_progress := GameManager.get_beat_progress()
-	var pulse := 1.0 + sin(beat_progress * PI * 2.0) * 0.05
-	_sprite.scale = Vector2(pulse, pulse)
-
-	# 移动时的倾斜效果
-	if velocity.length() > 10.0:
-		var tilt := velocity.x * 0.0003
-		_sprite.rotation += tilt
-
-	# 无敌帧闪烁
-	if _is_invincible:
-		_sprite.modulate.a = 0.5 + sin(Time.get_ticks_msec() * 0.02) * 0.5
-	else:
-		_sprite.modulate.a = 1.0
-
-# ============================================================
 # 伤害处理
 # ============================================================
 
@@ -138,6 +112,10 @@ func take_damage(amount: float) -> void:
 
 	GameManager.damage_player(amount)
 	_start_invincibility()
+
+	# 通知视觉组件播放受伤效果
+	if _visual and _visual.has_method("apply_damage_effect"):
+		_visual.apply_damage_effect()
 
 func _start_invincibility() -> void:
 	_is_invincible = true
@@ -149,21 +127,10 @@ func _on_invincibility_timeout() -> void:
 func _on_player_died() -> void:
 	# 死亡动画/效果
 	set_physics_process(false)
-	if _sprite:
+	if _visual:
 		var tween := create_tween()
-		tween.tween_property(_sprite, "scale", Vector2.ZERO, 0.5).set_ease(Tween.EASE_IN)
-		tween.tween_property(_sprite, "modulate:a", 0.0, 0.3)
-
-# ============================================================
-# 节拍响应
-# ============================================================
-
-func _on_beat_tick(_beat_index: int) -> void:
-	# 节拍时的视觉脉冲
-	if _sprite:
-		var tween := create_tween()
-		tween.tween_property(_sprite, "scale", Vector2(1.15, 1.15), 0.05)
-		tween.tween_property(_sprite, "scale", Vector2(1.0, 1.0), 0.15)
+		tween.tween_property(_visual, "scale", Vector2.ZERO, 0.5).set_ease(Tween.EASE_IN)
+		tween.tween_property(_visual, "modulate:a", 0.0, 0.3)
 
 # ============================================================
 # 拾取

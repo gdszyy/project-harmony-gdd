@@ -41,6 +41,14 @@ var beats_per_measure: int = 4
 var current_state: GameState = GameState.MENU
 
 # ============================================================
+# 常量
+# ============================================================
+## 不和谐度伤害转换系数：每点不和谐度造成的伤害
+const DISSONANCE_DAMAGE_PER_POINT: float = 2.0
+## 升级经验倍率
+const XP_SCALE_FACTOR: float = 1.2
+
+# ============================================================
 # 玩家状态
 # ============================================================
 var player_max_hp: float = 100.0
@@ -66,7 +74,6 @@ var _half_beat_interval: float = 0.25
 # 游戏时间
 # ============================================================
 var game_time: float = 0.0
-var game_running: bool = false
 
 # ============================================================
 # 升级系统
@@ -128,55 +135,52 @@ func _update_beat_interval() -> void:
 # 游戏状态管理
 # ============================================================
 
-func reset_game() -> void:
-	current_state = GameState.MENU
-	game_running = false
+## 内部公共重置逻辑（DRY 原则）
+func _reset_common_state() -> void:
 	game_time = 0.0
-	player_max_hp = 100.0
-	player_current_hp = 100.0
 	player_level = 1
 	player_xp = 0
 	xp_to_next_level = 50
 	acquired_upgrades.clear()
 	extended_chords_unlocked = false
-	current_bpm = base_bpm
-	_update_beat_interval()
 	_init_note_bonuses()
 	_current_beat = 0
 	_current_half_beat = 0
 	_current_measure = 0
-	
+	_beat_timer = 0.0
+	_half_beat_timer = 0.0
+
+func reset_game() -> void:
+	_reset_common_state()
+	current_state = GameState.MENU
+	player_max_hp = 100.0
+	player_current_hp = 100.0
+	current_bpm = base_bpm
+	_update_beat_interval()
+
 	# 重置其他管理器
 	if FatigueManager.has_method("reset"):
 		FatigueManager.reset()
-	
+
 	game_state_changed.emit(current_state)
 
 func start_game() -> void:
+	_reset_common_state()
 	current_state = GameState.PLAYING
-	game_running = true
-	game_time = 0.0
-	player_current_hp = player_max_hp
-	player_level = 1
-	player_xp = 0
-	xp_to_next_level = 50
 	session_kills = 0
-	acquired_upgrades.clear()
-	extended_chords_unlocked = false
-	_init_note_bonuses()
-	_current_beat = 0
-	_current_half_beat = 0
-	_current_measure = 0
-	
-	# 应用局外成长加成 (Issue #31)
-	var meta_mgr := get_node_or_null("/root/MetaProgressionManager")
-	if meta_mgr and meta_mgr.has_method("apply_meta_bonuses"):
-		meta_mgr.apply_meta_bonuses()
-	
+
+	# 应用局外成长加成（必须在设置 HP 之前）
+	SaveManager.apply_meta_bonuses()
+	player_current_hp = player_max_hp
+
 	# 启动 BGM
 	if BGMManager.has_method("start_bgm"):
 		BGMManager.start_bgm(current_bpm)
-	
+
+	# 重置疲劳系统
+	if FatigueManager.has_method("reset"):
+		FatigueManager.reset()
+
 	game_state_changed.emit(current_state)
 
 func pause_game() -> void:
@@ -193,21 +197,11 @@ func resume_game() -> void:
 
 func game_over() -> void:
 	current_state = GameState.GAME_OVER
-	game_running = false
-	
-	# 局结算：计算并发放共鸣碎片 (Issue #31)
-	var meta_mgr := get_node_or_null("/root/MetaProgressionManager")
-	if meta_mgr and meta_mgr.has_method("on_run_completed"):
-		var run_data := {
-			"survival_time": game_time,
-			"total_kills": session_kills,
-			"bosses_defeated": get_meta("bosses_defeated", 0),
-			"max_level": player_level,
-			"harmony_score": get_meta("harmony_score", 0.0),
-		}
-		var results := meta_mgr.on_run_completed(run_data)
-		set_meta("last_run_results", results)
-	
+
+	# 局结算：保存进度并计算共鸣碎片奖励
+	SaveManager.save_game()
+	_award_resonance_fragments()
+
 	game_state_changed.emit(current_state)
 
 func enter_upgrade_select() -> void:
@@ -237,7 +231,10 @@ func heal_player(amount: float) -> void:
 
 ## 不和谐值导致的生命腐蚀
 func apply_dissonance_damage(dissonance: float) -> void:
-	var damage := dissonance * 2.0  # 每点不和谐度 = 2点伤害
+	var damage := dissonance * DISSONANCE_DAMAGE_PER_POINT
+	# 应用局外成长的不和谐伤害减免
+	var resist := SaveManager.get_dissonance_resist_multiplier()
+	damage *= resist
 	damage_player(damage)
 
 # ============================================================
@@ -251,7 +248,7 @@ func add_xp(amount: int) -> void:
 	while player_xp >= xp_to_next_level:
 		player_xp -= xp_to_next_level
 		player_level += 1
-		xp_to_next_level = int(xp_to_next_level * 1.2)
+		xp_to_next_level = int(xp_to_next_level * XP_SCALE_FACTOR)
 		level_up.emit(player_level)
 		enter_upgrade_select()
 
@@ -296,7 +293,7 @@ func _apply_rhythm_mastery_upgrade(upgrade: Dictionary) -> void:
 func _apply_chord_mastery_upgrade(upgrade: Dictionary) -> void:
 	match upgrade.get("type", ""):
 		"chord_power":
-			pass  # SpellcraftSystem 会读取
+			pass  # SpellcraftSystem 会读取 acquired_upgrades
 		"extended_unlock":
 			extended_chords_unlocked = true
 
@@ -341,3 +338,21 @@ func get_beat_in_measure() -> int:
 ## 获取当前BPM
 func get_bpm() -> float:
 	return current_bpm
+
+# ============================================================
+# 局结算：共鸣碎片奖励
+# ============================================================
+
+func _award_resonance_fragments() -> void:
+	# 基础奖励：存活时间
+	var time_bonus: int = int(game_time / 30.0) * 5  # 每30秒5碎片
+
+	# 击杀奖励
+	var kill_bonus: int = session_kills * 1  # 每次击杀1碎片
+
+	# 等级奖励
+	var level_bonus: int = (player_level - 1) * 3  # 每级3碎片
+
+	var total: int = time_bonus + kill_bonus + level_bonus
+	if total > 0:
+		SaveManager.add_resonance_fragments(total)

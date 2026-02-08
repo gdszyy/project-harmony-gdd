@@ -1,6 +1,7 @@
 ## global_music_manager.gd
 ## 全局音乐管理器 (Autoload)
-## 负责背景音乐播放、频谱分析、节拍能量提取、音符/和弦音效播放
+## 职责：音乐合成（音符/和弦）、频谱分析、节拍能量提取
+## 注意：所有非音乐类音效（SFX、UI）统一由 AudioManager 负责
 extends Node
 
 # ============================================================
@@ -10,13 +11,16 @@ signal beat_energy_updated(energy: float)
 signal spectrum_updated(low: float, mid: float, high: float)
 signal note_played(note: int, timbre: int)       ## 音符播放时发出
 signal chord_played(notes: Array, timbre: int)    ## 和弦播放时发出
+## 请求 AudioManager 播放法术施放SFX（解耦信号）
+signal request_spell_sfx(position: Vector2, is_perfect_beat: bool)
+## 请求 AudioManager 播放和弦施放SFX（解耦信号）
+signal request_chord_sfx(position: Vector2)
 
 # ============================================================
 # 配置
 # ============================================================
 ## 音频总线名称
 const MUSIC_BUS_NAME := "Music"
-const SFX_BUS_NAME := "SFX"
 const NOTE_BUS_NAME := "Player"  # 音符音效使用 Player 总线
 
 ## 频谱分析频率范围
@@ -50,9 +54,6 @@ var _high_energy: float = 0.0
 # 音符音频系统
 # ============================================================
 
-## 音符频率映射 — 引用 MusicData.NOTE_FREQUENCIES
-## 见 scripts/data/music_data.gd 中的完整定义
-
 ## 音符合成器实例
 var _synthesizer: NoteSynthesizer = null
 
@@ -74,9 +75,26 @@ func _ready() -> void:
 	_setup_audio_buses()
 	_init_synthesizer()
 	_init_note_pool()
+	_connect_sfx_signals()
 
 func _process(_delta: float) -> void:
 	_update_spectrum_analysis()
+
+# ============================================================
+# 信号连接：将 SFX 请求桥接到 AudioManager
+# ============================================================
+
+func _connect_sfx_signals() -> void:
+	# 延迟一帧连接，确保 AudioManager 已就绪
+	call_deferred("_deferred_connect_sfx")
+
+func _deferred_connect_sfx() -> void:
+	var audio_mgr := get_node_or_null("/root/AudioManager")
+	if audio_mgr:
+		if audio_mgr.has_method("play_spell_cast_sfx"):
+			request_spell_sfx.connect(audio_mgr.play_spell_cast_sfx)
+		if audio_mgr.has_method("play_chord_cast_sfx"):
+			request_chord_sfx.connect(audio_mgr.play_chord_cast_sfx)
 
 # ============================================================
 # 音频总线设置
@@ -106,13 +124,6 @@ func _setup_audio_buses() -> void:
 		spectrum_analyzer = AudioServer.get_bus_effect_instance(
 			music_bus_idx, AudioServer.get_bus_effect_count(music_bus_idx) - 1
 		)
-
-	# 确保 SFX 总线存在
-	var sfx_bus_idx := AudioServer.get_bus_index(SFX_BUS_NAME)
-	if sfx_bus_idx == -1:
-		AudioServer.add_bus()
-		sfx_bus_idx = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(sfx_bus_idx, SFX_BUS_NAME)
 
 # ============================================================
 # 合成器初始化
@@ -223,12 +234,10 @@ func play_note_sound(note: int, duration: float = 0.3,
 
 	note_played.emit(note, timbre)
 
-	# 同时通知 AudioManager 播放法术施放音效（视觉反馈用）
-	var audio_mgr := get_node_or_null("/root/AudioManager")
-	if audio_mgr and audio_mgr.has_method("play_spell_cast_sfx"):
-		var player_node := get_tree().get_first_node_in_group("player")
-		var pos := player_node.global_position if player_node else Vector2.ZERO
-		audio_mgr.play_spell_cast_sfx(pos, false)
+	# 通过信号通知 AudioManager 播放法术施放SFX（解耦）
+	var player_node := get_tree().get_first_node_in_group("player")
+	var pos := player_node.global_position if player_node else Vector2.ZERO
+	request_spell_sfx.emit(pos, false)
 
 ## 播放和弦音效
 ## notes: MusicData.Note 枚举值数组
@@ -266,29 +275,10 @@ func play_chord_sound(notes: Array, duration: float = 0.5,
 
 	chord_played.emit(notes, timbre)
 
-	# 通知 AudioManager
-	var audio_mgr := get_node_or_null("/root/AudioManager")
-	if audio_mgr and audio_mgr.has_method("play_chord_cast_sfx"):
-		var player_node := get_tree().get_first_node_in_group("player")
-		var pos := player_node.global_position if player_node else Vector2.ZERO
-		audio_mgr.play_chord_cast_sfx(pos)
-
-## 播放UI音效
-func play_ui_sound(sound_name: String) -> void:
-	var audio_mgr := get_node_or_null("/root/AudioManager")
-	if audio_mgr == null:
-		return
-	match sound_name:
-		"click":
-			audio_mgr.play_ui_click()
-		"hover":
-			audio_mgr.play_ui_hover()
-		"confirm":
-			audio_mgr.play_ui_confirm()
-		"cancel":
-			audio_mgr.play_ui_cancel()
-		"level_up":
-			audio_mgr.play_level_up_sfx()
+	# 通过信号通知 AudioManager 播放和弦施放SFX（解耦）
+	var player_node := get_tree().get_first_node_in_group("player")
+	var pos := player_node.global_position if player_node else Vector2.ZERO
+	request_chord_sfx.emit(pos)
 
 # ============================================================
 # 内部工具
