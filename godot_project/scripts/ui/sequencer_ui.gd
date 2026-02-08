@@ -59,6 +59,19 @@ var _drag_note: int = -1
 var _drag_from_palette: bool = false
 var _drag_position: Vector2 = Vector2.ZERO
 
+## 多选状态
+var _selected_cells: Array[int] = []
+var _is_multi_selecting: bool = false
+var _multi_select_start: int = -1
+
+## 复制粘贴缓冲区
+var _clipboard: Array[Dictionary] = []
+
+## 撤销/重做历史
+var _undo_stack: Array[Array] = []
+var _redo_stack: Array[Array] = []
+const MAX_UNDO_STEPS: int = 32
+
 ## 悬停状态
 var _hover_cell_idx: int = -1
 var _hover_palette_idx: int = -1
@@ -153,7 +166,16 @@ func _draw() -> void:
 				cell_color = cell_color.lightened(0.2)
 				cell_color.a = max(cell_color.a, 0.5)
 
+			# 多选高亮
+			if idx in _selected_cells:
+				cell_color = cell_color.lightened(0.15)
+				cell_color.a = max(cell_color.a, 0.7)
+
 			draw_rect(cell_rect, cell_color)
+
+			# 多选边框
+			if idx in _selected_cells:
+				draw_rect(cell_rect, Color(0.0, 0.8, 1.0, 0.6), false, 2.0)
 
 			# 拖拽目标高亮
 			if _is_dragging and idx == _hover_cell_idx:
@@ -306,6 +328,41 @@ func _gui_input(event: InputEvent) -> void:
 		_handle_mouse_button(event as InputEventMouseButton)
 	elif event is InputEventMouseMotion:
 		_handle_mouse_motion(event as InputEventMouseMotion)
+	elif event is InputEventKey and event.pressed:
+		_handle_key_input(event as InputEventKey)
+
+func _handle_key_input(event: InputEventKey) -> void:
+	# Ctrl+C: 复制选中的单元格
+	if event.ctrl_pressed and event.keycode == KEY_C:
+		_copy_selected()
+		get_viewport().set_input_as_handled()
+	# Ctrl+V: 粘贴
+	elif event.ctrl_pressed and event.keycode == KEY_V:
+		_paste_at_cursor()
+		get_viewport().set_input_as_handled()
+	# Ctrl+Z: 撤销
+	elif event.ctrl_pressed and event.keycode == KEY_Z:
+		if event.shift_pressed:
+			_redo()
+		else:
+			_undo()
+		get_viewport().set_input_as_handled()
+	# Ctrl+A: 全选
+	elif event.ctrl_pressed and event.keycode == KEY_A:
+		_select_all()
+		get_viewport().set_input_as_handled()
+	# Delete/Backspace: 删除选中
+	elif event.keycode == KEY_DELETE or event.keycode == KEY_BACKSPACE:
+		_delete_selected()
+		get_viewport().set_input_as_handled()
+	# Escape: 取消选择
+	elif event.keycode == KEY_ESCAPE:
+		_selected_cells.clear()
+		get_viewport().set_input_as_handled()
+	# 1-7: 快捷选择音符
+	elif event.keycode >= KEY_1 and event.keycode <= KEY_7:
+		_selected_note = event.keycode - KEY_1
+		get_viewport().set_input_as_handled()
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	var pos := event.position
@@ -331,6 +388,33 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 			# 检查是否点击了序列器单元格
 			var cell_idx := _get_cell_at_position(pos)
 			if cell_idx >= 0:
+				# Shift+点击：多选/范围选择
+				if event.shift_pressed:
+					if _selected_cells.is_empty():
+						_selected_cells.append(cell_idx)
+					else:
+						# 范围选择：从最后一个选中到当前
+						var last := _selected_cells[-1]
+						var from_idx := mini(last, cell_idx)
+						var to_idx := maxi(last, cell_idx)
+						for i in range(from_idx, to_idx + 1):
+							if i not in _selected_cells:
+								_selected_cells.append(i)
+					return
+				# Ctrl+点击：切换单个选择
+				elif event.ctrl_pressed:
+					if cell_idx in _selected_cells:
+						_selected_cells.erase(cell_idx)
+					else:
+						_selected_cells.append(cell_idx)
+					return
+				else:
+					# 普通点击：清除多选
+					_selected_cells.clear()
+
+				# 保存撤销快照
+				_push_undo_snapshot()
+
 				if cell_idx < _sequencer_data.size():
 					var slot: Dictionary = _sequencer_data[cell_idx]
 					if slot.get("type", "rest") == "note":
@@ -573,3 +657,112 @@ func get_edit_mode() -> String:
 ## 获取选中音符
 func get_selected_note() -> int:
 	return _selected_note
+
+## 获取多选的单元格
+func get_selected_cells() -> Array[int]:
+	return _selected_cells
+
+# ============================================================
+# 复制/粘贴/撤销/重做
+# ============================================================
+
+## 保存撤销快照
+func _push_undo_snapshot() -> void:
+	var snapshot: Array = []
+	for slot in _sequencer_data:
+		snapshot.append(slot.duplicate())
+	_undo_stack.append(snapshot)
+	if _undo_stack.size() > MAX_UNDO_STEPS:
+		_undo_stack.pop_front()
+	# 新操作后清除重做栈
+	_redo_stack.clear()
+
+## 撤销
+func _undo() -> void:
+	if _undo_stack.is_empty():
+		return
+	# 保存当前状态到重做栈
+	var current_snapshot: Array = []
+	for slot in _sequencer_data:
+		current_snapshot.append(slot.duplicate())
+	_redo_stack.append(current_snapshot)
+
+	# 恢复上一个状态
+	var prev_state: Array = _undo_stack.pop_back()
+	_apply_snapshot(prev_state)
+
+## 重做
+func _redo() -> void:
+	if _redo_stack.is_empty():
+		return
+	# 保存当前状态到撤销栈
+	var current_snapshot: Array = []
+	for slot in _sequencer_data:
+		current_snapshot.append(slot.duplicate())
+	_undo_stack.append(current_snapshot)
+
+	# 恢复下一个状态
+	var next_state: Array = _redo_stack.pop_back()
+	_apply_snapshot(next_state)
+
+## 应用快照状态
+func _apply_snapshot(snapshot: Array) -> void:
+	for i in range(mini(snapshot.size(), TOTAL_CELLS)):
+		var slot: Dictionary = snapshot[i]
+		var slot_type: String = slot.get("type", "rest")
+		match slot_type:
+			"note":
+				SpellcraftSystem.set_sequencer_note(i, slot.get("note", 0))
+			"rest":
+				SpellcraftSystem.set_sequencer_rest(i)
+			"chord":
+				# 和弦需要特殊处理，跳过单独恢复
+				pass
+
+## 复制选中的单元格
+func _copy_selected() -> void:
+	if _selected_cells.is_empty():
+		return
+	_clipboard.clear()
+	# 按索引排序
+	var sorted_cells := _selected_cells.duplicate()
+	sorted_cells.sort()
+	var base_idx: int = sorted_cells[0]
+	for idx in sorted_cells:
+		if idx < _sequencer_data.size():
+			var slot_copy := _sequencer_data[idx].duplicate()
+			slot_copy["_offset"] = idx - base_idx
+			_clipboard.append(slot_copy)
+
+## 粘贴到当前悬停位置
+func _paste_at_cursor() -> void:
+	if _clipboard.is_empty() or _hover_cell_idx < 0:
+		return
+	_push_undo_snapshot()
+	for slot_data in _clipboard:
+		var offset: int = slot_data.get("_offset", 0)
+		var target_idx := _hover_cell_idx + offset
+		if target_idx >= 0 and target_idx < TOTAL_CELLS:
+			var slot_type: String = slot_data.get("type", "rest")
+			match slot_type:
+				"note":
+					SpellcraftSystem.set_sequencer_note(target_idx, slot_data.get("note", 0))
+					note_placed.emit(target_idx, slot_data.get("note", 0))
+				"rest":
+					SpellcraftSystem.set_sequencer_rest(target_idx)
+
+## 全选
+func _select_all() -> void:
+	_selected_cells.clear()
+	for i in range(TOTAL_CELLS):
+		_selected_cells.append(i)
+
+## 删除选中的单元格
+func _delete_selected() -> void:
+	if _selected_cells.is_empty():
+		return
+	_push_undo_snapshot()
+	for idx in _selected_cells:
+		SpellcraftSystem.set_sequencer_rest(idx)
+		cell_cleared.emit(idx)
+	_selected_cells.clear()

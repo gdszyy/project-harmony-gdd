@@ -156,6 +156,7 @@ func _setup_players() -> void:
 func _connect_signals() -> void:
 	if GameManager.has_signal("game_state_changed"):
 		GameManager.game_state_changed.connect(_on_game_state_changed)
+	_connect_fatigue_signals()
 
 func _init_default_patterns() -> void:
 	## Hi-Hat 默认模式：八分音符 (每隔一个十六分音符)
@@ -779,6 +780,62 @@ func _update_pad_chord() -> void:
 # 动态混合
 # ============================================================
 
+## 疲劳等级驱动的BGM动态混音
+## 疲劳度越高，音乐越“混乱”：
+##   - NONE/MILD: 正常混音
+##   - MODERATE: 音调微降，微微失调，加入轻微延迟
+##   - SEVERE: 音调明显下降，音量波动，节奏不稳
+##   - CRITICAL: 极度失调，闷音效果，节奏崩溃
+var _fatigue_mix_timer: float = 0.0
+var _fatigue_pitch_offset: float = 0.0
+var _fatigue_volume_wobble: float = 0.0
+
+## 根据疲劳等级更新BGM混音参数
+func update_fatigue_mix(fatigue_level: int, fatigue_afi: float) -> void:
+	_fatigue_mix_timer += 0.016  # 假设60fps
+
+	match fatigue_level:
+		MusicData.FatigueLevel.NONE, MusicData.FatigueLevel.MILD:
+			# 正常状态：清晰的音乐
+			_fatigue_pitch_offset = 0.0
+			_fatigue_volume_wobble = 0.0
+			_apply_muffle_effect(false)
+		MusicData.FatigueLevel.MODERATE:
+			# 中度疲劳：轻微失调
+			_fatigue_pitch_offset = -0.02 * fatigue_afi
+			_fatigue_volume_wobble = sin(_fatigue_mix_timer * 2.0) * 1.0
+		MusicData.FatigueLevel.SEVERE:
+			# 重度疲劳：明显失调 + 音量波动
+			_fatigue_pitch_offset = -0.05 * fatigue_afi
+			_fatigue_volume_wobble = sin(_fatigue_mix_timer * 4.0) * 3.0
+			# 切换到不稳定的节奏型
+			set_hihat_pattern("shuffle")
+		MusicData.FatigueLevel.CRITICAL:
+			# 临界疲劳：极度失调 + 闷音 + 音量剧烈波动
+			_fatigue_pitch_offset = -0.08
+			_fatigue_volume_wobble = sin(_fatigue_mix_timer * 6.0) * 5.0
+			_apply_muffle_effect(true)
+			set_hihat_pattern("shuffle")
+			set_ghost_pattern("busy")
+
+	# 应用音调偏移到所有音轨层
+	for layer_name in _layer_config:
+		var player: AudioStreamPlayer = _layer_config[layer_name]["player"]
+		if player:
+			player.pitch_scale = 1.0 + _fatigue_pitch_offset
+			# 音量波动
+			var base_vol: float = _layer_config[layer_name]["volume_db"]
+			player.volume_db = base_vol + _fatigue_volume_wobble
+
+## 连接疲劳系统信号
+func _connect_fatigue_signals() -> void:
+	if FatigueManager and FatigueManager.has_signal("fatigue_level_changed"):
+		FatigueManager.fatigue_level_changed.connect(_on_fatigue_level_changed)
+
+func _on_fatigue_level_changed(new_level: MusicData.FatigueLevel) -> void:
+	var afi: float = FatigueManager.current_afi if FatigueManager else 0.0
+	update_fatigue_mix(new_level, afi)
+
 ## 根据 _intensity 值自动调整各层的启用状态和音量
 func _update_layer_mix() -> void:
 	# Kick: 始终开启，强度影响音量
@@ -876,6 +933,75 @@ func _apply_muffle_effect(enable: bool) -> void:
 		tween.tween_method(func(vol: float):
 			AudioServer.set_bus_volume_db(bus_idx, vol),
 			AudioServer.get_bus_volume_db(bus_idx), 0.0, 0.3)
+
+# ============================================================
+# 外部 BGM 文件播放接口
+# ============================================================
+
+## 外部 BGM 播放器
+var _external_bgm_player: AudioStreamPlayer = null
+var _using_external_bgm: bool = false
+
+## 播放外部 BGM 文件（自动处理淡入淡出）
+## track_path: 音频文件路径，如 "res://audio/bgm/bgm_ch1_explore.ogg"
+## fade_duration: 淡入淡出时长（秒）
+func play_external_bgm(track_path: String, fade_duration: float = 1.0) -> void:
+	# 初始化外部播放器
+	if _external_bgm_player == null:
+		_external_bgm_player = AudioStreamPlayer.new()
+		_external_bgm_player.bus = MUSIC_BUS_NAME
+		add_child(_external_bgm_player)
+
+	# 加载音频文件
+	if not ResourceLoader.exists(track_path):
+		push_warning("BGMManager: 外部BGM文件不存在: " + track_path)
+		return
+
+	var stream = ResourceLoader.load(track_path)
+	if stream == null:
+		push_warning("BGMManager: 无法加载外部BGM: " + track_path)
+		return
+
+	# 淡出程序化 BGM
+	var tween := create_tween()
+	var music_bus_idx := AudioServer.get_bus_index(MUSIC_BUS_NAME)
+	if music_bus_idx >= 0 and _is_playing:
+		tween.tween_method(func(vol: float):
+			AudioServer.set_bus_volume_db(music_bus_idx, vol),
+			AudioServer.get_bus_volume_db(music_bus_idx), -40.0, fade_duration * 0.5)
+		tween.tween_callback(func():
+			stop_bgm()
+			_external_bgm_player.stream = stream
+			_external_bgm_player.volume_db = -40.0
+			_external_bgm_player.play()
+			_using_external_bgm = true
+		)
+		tween.tween_property(_external_bgm_player, "volume_db", 0.0, fade_duration * 0.5)
+		tween.tween_method(func(vol: float):
+			AudioServer.set_bus_volume_db(music_bus_idx, vol),
+			-40.0, 0.0, 0.1)
+	else:
+		_external_bgm_player.stream = stream
+		_external_bgm_player.volume_db = -40.0
+		_external_bgm_player.play()
+		_using_external_bgm = true
+		tween.tween_property(_external_bgm_player, "volume_db", 0.0, fade_duration)
+
+	bgm_changed.emit(track_path.get_file())
+
+## 停止外部 BGM 并回到程序化 BGM
+func stop_external_bgm(fade_duration: float = 1.0) -> void:
+	if _external_bgm_player == null or not _using_external_bgm:
+		return
+
+	var tween := create_tween()
+	tween.tween_property(_external_bgm_player, "volume_db", -40.0, fade_duration)
+	tween.tween_callback(func():
+		_external_bgm_player.stop()
+		_using_external_bgm = false
+		# 恢复程序化 BGM
+		start_bgm()
+	)
 
 # ============================================================
 # 信号回调

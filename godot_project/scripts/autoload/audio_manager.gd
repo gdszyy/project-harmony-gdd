@@ -898,8 +898,64 @@ func play_spell_cast_sfx(position: Vector2, is_perfect_beat: bool = false) -> vo
 			randf_range(0.95, 1.05), PLAYER_BUS_NAME)
 
 ## 播放和弦施放音效
-func play_chord_cast_sfx(position: Vector2) -> void:
+## 增强版：支持多音符同时播放，根据和弦类型生成不同音色
+func play_chord_cast_sfx(position: Vector2, chord_data: Dictionary = {}) -> void:
+	var notes: Array = chord_data.get("notes", [])
+	var timbre: int = chord_data.get("timbre", MusicData.TimbreType.NONE)
+	var spell_form = chord_data.get("spell_form", -1)
+
+	# 如果有具体音符数据，使用 NoteSynthesizer 生成和弦音效
+	if notes.size() >= 2:
+		var synth := NoteSynthesizer.new()
+		var chord_wav := synth.generate_chord(notes, timbre, 4, 0.5, 0.7)
+		if chord_wav:
+			var player := _get_pooled_2d()
+			if player:
+				player.stream = chord_wav
+				player.global_position = position
+				player.volume_db = -5.0
+				player.pitch_scale = 1.0
+				player.bus = PLAYER_BUS_NAME
+				player.play()
+				sfx_played.emit("chord_synth", position)
+
+	# 根据法术形态播放额外的法术音效
+	_play_spell_form_sfx(spell_form, position)
+
+	# 始终播放基础和弦解决音效
 	_play_2d_sound("chord_resolve", position, -6.0, 1.0, PLAYER_BUS_NAME)
+
+## 根据法术形态播放对应的特殊音效
+func _play_spell_form_sfx(spell_form: int, position: Vector2) -> void:
+	if spell_form < 0:
+		return
+	match spell_form:
+		MusicData.SpellForm.EXPLOSIVE:
+			# 爆炸：低频冲击
+			_play_2d_sound("void_impact", position, -4.0, 0.7, PLAYER_BUS_NAME)
+		MusicData.SpellForm.SHOCKWAVE:
+			# 冲击波：重低音扩散
+			_play_2d_sound("structure_collapse", position, -5.0, 0.5, PLAYER_BUS_NAME)
+		MusicData.SpellForm.DIVINE_STRIKE:
+			# 天降打击：金属撞击 + 高音铃声
+			_play_2d_sound("metal_impact", position, -3.0, 1.2, PLAYER_BUS_NAME)
+			_play_2d_sound("perfect_beat_ring", position, -6.0, 0.8, PLAYER_BUS_NAME)
+		MusicData.SpellForm.SHIELD_HEAL:
+			# 护盾/治疗：柔和的清洗音
+			_play_2d_sound("rest_cleanse", position, -4.0, 1.2, PLAYER_BUS_NAME)
+		MusicData.SpellForm.FIELD:
+			# 法阵：持续的低频嵌套音
+			_play_2d_sound("low_hum", position, -6.0, 0.6, PLAYER_BUS_NAME)
+		MusicData.SpellForm.SUMMON:
+			# 召唤：神秘的铃声
+			_play_2d_sound("cast_chime", position, -4.0, 0.7, PLAYER_BUS_NAME)
+		MusicData.SpellForm.ANNIHILATION_RAY:
+			# 湮灭射线：尖锐的能量释放
+			_play_2d_sound("feedback_explosion", position, -3.0, 1.5, PLAYER_BUS_NAME)
+		MusicData.SpellForm.FINALE:
+			# 终焉乐章：发射全部音效的叠加
+			_play_2d_sound("progression_fanfare", position, -2.0, 1.0, PLAYER_BUS_NAME)
+			_play_2d_sound("structure_collapse", position, -3.0, 0.4, PLAYER_BUS_NAME)
 
 ## 播放和弦进行完成音效
 func play_progression_resolve_sfx() -> void:
@@ -1031,7 +1087,7 @@ func _on_spell_cast(spell_data: Dictionary) -> void:
 
 func _on_chord_cast(chord_data: Dictionary) -> void:
 	var pos: Vector2 = chord_data.get("position", Vector2.ZERO)
-	play_chord_cast_sfx(pos)
+	play_chord_cast_sfx(pos, chord_data)
 
 func _on_spell_blocked_by_silence(_note: int) -> void:
 	play_note_silenced_sfx()

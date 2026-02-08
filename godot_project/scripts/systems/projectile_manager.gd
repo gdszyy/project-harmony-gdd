@@ -223,74 +223,149 @@ func _spawn_shockwave(data: Dictionary, pos: Vector2) -> void:
 	_projectiles.append(proj)
 
 func _spawn_field(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+	## 法阵/区域 (属七和弦) — 在指定位置生成持续伤害区域
+	## 法阵会缓慢旋转，每 tick 对范围内敌人造成伤害
+	## 法阵存在期间会产生减速光环效果
 	var target_pos := pos + dir * 200.0
+	var base_dmg: float = data.get("damage", 20.0)
+	var multiplier: float = data.get("multiplier", 1.0)
 	var proj := {
 		"position": target_pos,
 		"velocity": Vector2.ZERO,
-		"damage": data.get("damage", 20.0),
-		"size": 60.0,
+		"damage": base_dmg * multiplier,
+		"size": 80.0,
+		"max_size": 100.0,
 		"duration": 4.0,
 		"time_alive": 0.0,
 		"color": Color(0.0, 0.6, 1.0),
 		"is_field": true,
+		"field_type": "damage",
 		"field_tick_interval": 0.5,
 		"field_tick_timer": 0.0,
+		"slow_factor": 0.4,
+		"rotation": 0.0,
+		"rotation_speed": 2.0,
+		"pulse_phase": 0.0,
 		"active": true,
 		"modifier": -1,
+		# 法阵入场动画：从小到大展开
+		"spawn_anim": true,
+		"spawn_duration": 0.3,
 	}
 	_projectiles.append(proj)
 
 func _spawn_divine_strike(data: Dictionary, _pos: Vector2, dir: Vector2) -> void:
+	## 天降打击 (减七和弦) — 从天而降的高伤害单体攻击
+	## 伤害倍率 3.0x，命中时产生小范围爆炸 + 屏幕震动
+	## 落点会显示一个警告标记，给玩家蹲避时间
 	var target_pos := _get_player_position() + dir * 300.0
-	var proj := {
-		"position": target_pos + Vector2(0, -500),  # 从天而降
-		"target_position": target_pos,
-		"velocity": Vector2(0, 800),
-		"damage": data.get("damage", 100.0),
-		"size": 40.0,
-		"duration": 1.5,
+	var base_dmg: float = data.get("damage", 100.0)
+	var multiplier: float = data.get("multiplier", 3.0)
+
+	# 预警标记（地面光圈）
+	var warning := {
+		"position": target_pos,
+		"velocity": Vector2.ZERO,
+		"damage": 0.0,
+		"size": 50.0,
+		"duration": 0.6,
 		"time_alive": 0.0,
-		"color": Color(1.0, 0.2, 0.2),
-		"is_divine_strike": true,
+		"color": Color(1.0, 0.2, 0.2, 0.4),
+		"is_warning_marker": true,
 		"active": true,
 		"modifier": -1,
+		"pulse_phase": 0.0,
+	}
+	_projectiles.append(warning)
+
+	# 天降弹体（延迟发射，等待警告标记）
+	var proj := {
+		"position": target_pos + Vector2(0, -600),
+		"target_position": target_pos,
+		"velocity": Vector2(0, 1200),
+		"damage": base_dmg * multiplier,
+		"size": 45.0,
+		"duration": 2.0,
+		"time_alive": -0.4,  # 延迟0.4秒发射
+		"color": Color(1.0, 0.15, 0.15),
+		"is_divine_strike": true,
+		"has_landed": false,
+		"impact_radius": 70.0,
+		"impact_damage_ratio": 0.5,  # 爆炸伤害为主体的50%
+		"active": true,
+		"modifier": -1,
+		"trail_positions": [] as Array[Vector2],
+		"trail_max": 6,
 	}
 	_projectiles.append(proj)
 
 func _spawn_shield(data: Dictionary, pos: Vector2) -> void:
-	# 护盾/治疗法阵
-	GameManager.heal_player(20.0)
+	## 护盾/治疗法阵 (大七和弦) — 为玩家提供临时护盾 + 持续治疗
+	## 立即恢复 25 HP，然后每秒恢复 8 HP
+	## 护盾泡泡跟随玩家移动，可吸收一定量的伤害
+	## 护盾存在期间减少疲劳度累积速度
+	var burst_heal: float = 25.0
+	GameManager.heal_player(burst_heal)
+
+	# 护盾泡泡（跟随玩家）
 	var proj := {
 		"position": pos,
 		"velocity": Vector2.ZERO,
 		"damage": 0.0,
-		"size": 50.0,
-		"duration": 3.0,
+		"size": 60.0,
+		"duration": 4.0,
 		"time_alive": 0.0,
-		"color": Color(0.2, 1.0, 0.4),
+		"color": Color(0.2, 1.0, 0.4, 0.6),
 		"is_shield": true,
-		"heal_per_second": 5.0,
+		"follows_player": true,
+		"heal_per_second": 8.0,
 		"heal_timer": 0.0,
+		"shield_hp": 40.0,
+		"max_shield_hp": 40.0,
+		"fatigue_reduction": 0.01,  # 每秒减少疲劳度
+		"fatigue_timer": 0.0,
+		"pulse_phase": 0.0,
 		"active": true,
 		"modifier": -1,
+		# 护盾入场动画
+		"spawn_anim": true,
+		"spawn_duration": 0.25,
 	}
 	_projectiles.append(proj)
 
 func _spawn_summon(data: Dictionary, pos: Vector2) -> void:
+	## 召唤/构造 (小七和弦) — 在战场上放置自动攻击的构造体
+	## 构造体会跟随玩家移动，自动向最近敌人发射小弹体
+	## 攻击间隔 0.8 秒，射程 180px，持续 6 秒
+	## 构造体会缓慢旋转并发出光芒
+	var base_dmg: float = data.get("damage", 15.0)
+	var multiplier: float = data.get("multiplier", 0.8)
+	var spawn_offset := Vector2(randf_range(-60, 60), randf_range(-60, 60))
 	var proj := {
-		"position": pos + Vector2(randf_range(-50, 50), randf_range(-50, 50)),
+		"position": pos + spawn_offset,
 		"velocity": Vector2.ZERO,
-		"damage": data.get("damage", 15.0),
-		"size": 30.0,
-		"duration": 5.0,
+		"damage": base_dmg * multiplier,
+		"size": 35.0,
+		"duration": 6.0,
 		"time_alive": 0.0,
-		"color": Color(0.3, 0.3, 0.8),
+		"color": Color(0.3, 0.4, 0.9),
 		"is_summon": true,
-		"attack_interval": 1.0,
+		"follows_player": true,
+		"follow_distance": 80.0,
+		"follow_speed": 120.0,
+		"attack_interval": 0.8,
 		"attack_timer": 0.0,
-		"attack_range": 150.0,
+		"attack_range": 180.0,
+		"rotation": randf() * TAU,
+		"rotation_speed": 1.5,
+		"pulse_phase": randf() * TAU,
+		"total_attacks": 0,
+		"max_attacks": 8,  # 最多攻击8次后消失
 		"active": true,
 		"modifier": -1,
+		# 入场动画
+		"spawn_anim": true,
+		"spawn_duration": 0.3,
 	}
 	_projectiles.append(proj)
 
@@ -336,35 +411,40 @@ func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void
 			proj["color"] = Color(1.0, 0.0, 0.5)
 			_projectiles.append(proj)
 
-## 属九：风暴区域
+## 属九：风暴区域 — 持续伤害 + 减速 + 旋转视觉
 func _spawn_storm_field(data: Dictionary, pos: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 50.0)
 	var field := {
 		"position": pos,
 		"velocity": Vector2.ZERO,
-		"damage": data.get("damage", 50.0) * 0.5,
-		"size": 120.0,
+		"damage": base_dmg * 0.5,
+		"size": 130.0,
 		"duration": 5.0,
 		"time_alive": 0.0,
 		"color": Color(0.3, 0.8, 1.0),
 		"active": true,
 		"is_field": true,
 		"field_type": "storm",
-		"field_tick_interval": 0.5,
+		"field_tick_interval": 0.4,
 		"field_tick_timer": 0.0,
+		"slow_factor": 0.5,
 		"rotation": 0.0,
-		"rotation_speed": 3.0,
+		"rotation_speed": 4.0,
+		"pulse_phase": 0.0,
 		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.4,
 	}
 	_projectiles.append(field)
 
-## 大九：圣光领域
+## 大九：圣光领域 — 治疗区域 + 伤害加成光环
 func _spawn_holy_domain(data: Dictionary, pos: Vector2) -> void:
 	var domain := {
 		"position": pos,
 		"velocity": Vector2.ZERO,
 		"damage": 0.0,
 		"heal_per_sec": 15.0,
-		"size": 100.0,
+		"size": 110.0,
 		"duration": 6.0,
 		"time_alive": 0.0,
 		"color": Color(1.0, 0.95, 0.6),
@@ -374,84 +454,138 @@ func _spawn_holy_domain(data: Dictionary, pos: Vector2) -> void:
 		"field_type": "heal",
 		"heal_per_second": 15.0,
 		"heal_timer": 0.0,
+		"damage_boost": 0.2,  # 范围内玩家伤害+20%
+		"fatigue_reduction": 0.02,
+		"fatigue_timer": 0.0,
+		"rotation": 0.0,
+		"rotation_speed": 1.0,
+		"pulse_phase": 0.0,
 		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.5,
 	}
 	_projectiles.append(domain)
 
-## 减九：湮灭射线
+## 减九：湮灭射线 — 贯穿全屏的高伤害射线 (4.0x 伤害倍率)
 func _spawn_annihilation_ray(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
-	var ray := {
-		"position": pos,
-		"velocity": dir * 1200.0,
-		"damage": data.get("damage", 80.0),
-		"size": 16.0,
-		"duration": 0.8,
-		"time_alive": 0.0,
-		"color": Color(0.8, 0.0, 0.8),
-		"active": true,
-		"pierce": true,
-		"max_pierce": 999,
-		"pierce_count": 0,
-		"is_ray": true,
-		"modifier": -1,
-	}
-	_projectiles.append(ray)
+	var base_dmg: float = data.get("damage", 80.0)
+	var multiplier: float = data.get("multiplier", 4.0)
+	# 射线由多个密集弹体组成，模拟光束效果
+	var beam_segments := 8
+	for i in range(beam_segments):
+		var offset_time := float(i) * 0.02  # 微小延迟创建流动感
+		var ray := {
+			"position": pos + dir * (i * 30.0),
+			"velocity": dir * 1500.0,
+			"damage": base_dmg * multiplier / float(beam_segments),
+			"size": 20.0 - i * 0.5,  # 射线头部稍粗
+			"duration": 0.6,
+			"time_alive": -offset_time,
+			"color": Color(0.8, 0.0, 0.8).lerp(Color(1.0, 0.3, 1.0), float(i) / float(beam_segments)),
+			"active": true,
+			"pierce": true,
+			"max_pierce": 999,
+			"pierce_count": 0,
+			"is_ray": true,
+			"modifier": -1,
+			"trail_positions": [] as Array[Vector2],
+			"trail_max": 10,
+		}
+		_projectiles.append(ray)
 
-## 属十一：时空裂隙
+## 属十一：时空裂雙 — 强力减速区域 + 持续伤害
 func _spawn_time_rift(data: Dictionary, pos: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 30.0)
 	var rift := {
 		"position": pos,
 		"velocity": Vector2.ZERO,
-		"damage": data.get("damage", 30.0) * 0.6,
-		"size": 150.0,
-		"duration": 4.0,
+		"damage": base_dmg * 0.6,
+		"size": 160.0,
+		"duration": 5.0,
 		"time_alive": 0.0,
 		"color": Color(0.5, 0.0, 1.0),
 		"active": true,
 		"is_field": true,
 		"field_type": "slow",
-		"field_tick_interval": 0.5,
+		"field_tick_interval": 0.4,
 		"field_tick_timer": 0.0,
 		"slow_factor": 0.3,
+		"rotation": 0.0,
+		"rotation_speed": -2.0,  # 反向旋转表示时间扣曲
+		"pulse_phase": 0.0,
 		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.5,
 	}
 	_projectiles.append(rift)
 
-## 属十三：交响风暴
+## 属十三：交响风暴 — 多波次环形弹幕 + 螺旋弹道
 func _spawn_symphony_storm(data: Dictionary, pos: Vector2) -> void:
-	var wave_count := 3
-	var projectiles_per_wave := 12
+	var wave_count := 4
+	var projectiles_per_wave := 16
+	var base_dmg: float = data.get("damage", 40.0)
 
 	for wave in range(wave_count):
+		var wave_offset := float(wave) * (TAU / float(projectiles_per_wave) / 2.0)  # 每波偏转
 		for i in range(projectiles_per_wave):
-			var angle := (TAU / projectiles_per_wave) * i
+			var angle := (TAU / projectiles_per_wave) * i + wave_offset
 			var dir := Vector2.from_angle(angle)
+			var speed := 350.0 + wave * 80.0
 			var proj := {
 				"position": pos,
-				"velocity": dir * (400.0 + wave * 100.0),
-				"damage": data.get("damage", 40.0) * 0.6,
-				"size": 20.0,
-				"duration": 2.0,
-				"time_alive": -wave * 0.3,  # 延迟发射
-				"color": Color(1.0, 0.6, 0.0),
+				"velocity": dir * speed,
+				"damage": base_dmg * 0.5 / float(wave_count),
+				"size": 18.0 - wave * 1.5,
+				"duration": 2.5,
+				"time_alive": -wave * 0.35,  # 延迟发射
+				"color": Color(1.0, 0.6, 0.0).lerp(Color(1.0, 0.2, 0.0), float(wave) / float(wave_count)),
 				"active": true,
 				"modifier": -1,
+				"wave_trajectory": wave % 2 == 1,  # 奇数波次使用螺旋弹道
+				"wave_freq": 6.0,
+				"wave_amp": 40.0,
+				"trail_positions": [] as Array[Vector2],
+				"trail_max": 6,
 			}
 			_projectiles.append(proj)
 
-## 减十三：终焉乐章
+## 减十三：终焉乐章 — 毁灭性全屏攻击 (5.0x 伤害倍率)
+## 分两步：先蓄力收缩，然后全屏爆发
 func _spawn_finale(data: Dictionary, pos: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 200.0)
+	var multiplier: float = data.get("multiplier", 5.0)
+
+	# 第一步：蓄力收缩效果（向内吸引的光环）
+	var charge := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": 0.0,
+		"size": 200.0,
+		"duration": 0.8,
+		"time_alive": 0.0,
+		"color": Color(1.0, 0.0, 0.0, 0.6),
+		"is_shockwave": true,
+		"expand_speed": -200.0,  # 负值 = 收缩
+		"max_size": 200.0,
+		"active": true,
+		"modifier": -1,
+	}
+	_projectiles.append(charge)
+
+	# 第二步：全屏爆发（延迟发射）
 	var finale := {
 		"position": pos,
 		"velocity": Vector2.ZERO,
-		"damage": data.get("damage", 200.0),
-		"size": 999999.0,
-		"duration": 0.5,
-		"time_alive": 0.0,
-		"color": Color(1.0, 0.0, 0.0),
+		"damage": base_dmg * multiplier,
+		"size": 10.0,
+		"max_size": 2000.0,
+		"duration": 1.0,
+		"time_alive": -0.8,  # 蓄力完成后爆发
+		"color": Color(1.0, 0.1, 0.0),
 		"active": true,
+		"is_shockwave": true,
 		"is_aoe": true,
-		"expansion_speed": 2000.0,
+		"expand_speed": 3000.0,
 		"modifier": -1,
 	}
 	_projectiles.append(finale)
@@ -499,10 +633,71 @@ func _update_projectiles(delta: float) -> void:
 				proj["velocity"] = proj.get("final_velocity", Vector2(800, 0))
 			continue
 
-		# 冲击波扩展
+		# 冲击波扩展/收缩
 		if proj.get("is_shockwave", false):
-			proj["size"] = min(proj["size"] + proj.get("expand_speed", 200.0) * delta, proj.get("max_size", 150.0))
+			var expand_spd: float = proj.get("expand_speed", 200.0)
+			proj["size"] += expand_spd * delta
+			if expand_spd > 0.0:
+				proj["size"] = min(proj["size"], proj.get("max_size", 150.0))
+			else:
+				proj["size"] = max(proj["size"], 5.0)  # 收缩最小值
 			continue
+
+		# 天降打击着陆检测
+		if proj.get("is_divine_strike", false) and not proj.get("has_landed", false):
+			var target_y: float = proj.get("target_position", proj["position"]).y
+			if proj["position"].y >= target_y:
+				proj["has_landed"] = true
+				proj["position"].y = target_y
+				proj["velocity"] = Vector2.ZERO
+				# 着陆爆炸
+				var impact := {
+					"position": proj["position"],
+					"velocity": Vector2.ZERO,
+					"damage": proj["damage"] * proj.get("impact_damage_ratio", 0.5),
+					"size": proj.get("impact_radius", 70.0),
+					"duration": 0.3,
+					"time_alive": 0.0,
+					"color": Color(1.0, 0.4, 0.1, 0.8),
+					"active": true,
+					"is_explosion_effect": true,
+					"modifier": -1,
+				}
+				_projectiles.append(impact)
+				# 着陆后弹体快速消失
+				proj["duration"] = proj["time_alive"] + 0.3
+
+		# 警告标记脉冲
+		if proj.get("is_warning_marker", false):
+			proj["pulse_phase"] = proj.get("pulse_phase", 0.0) + delta * 15.0
+			var pulse := (sin(proj["pulse_phase"]) + 1.0) * 0.5
+			proj["color"].a = 0.2 + pulse * 0.4
+
+		# 护盾跟随玩家 + 疲劳减少
+		if proj.get("is_shield", false) and proj.get("follows_player", false):
+			proj["position"] = _get_player_position()
+			# 疲劳度减少
+			proj["fatigue_timer"] = proj.get("fatigue_timer", 0.0) + delta
+			if proj["fatigue_timer"] >= 1.0:
+				proj["fatigue_timer"] = 0.0
+				if FatigueManager:
+					FatigueManager.reduce_fatigue(proj.get("fatigue_reduction", 0.01))
+			# 护盾脉冲效果
+			proj["pulse_phase"] = proj.get("pulse_phase", 0.0) + delta * 3.0
+			var shield_ratio: float = proj.get("shield_hp", 0.0) / proj.get("max_shield_hp", 1.0)
+			proj["color"].a = 0.3 + shield_ratio * 0.4 + sin(proj["pulse_phase"]) * 0.1
+
+		# 入场动画（从小到大展开）
+		if proj.get("spawn_anim", false):
+			var spawn_dur: float = proj.get("spawn_duration", 0.3)
+			if proj["time_alive"] < spawn_dur:
+				var progress: float = proj["time_alive"] / spawn_dur
+				# 弹性缩放：超调后回弹
+				var scale_factor: float = 1.0 + (1.0 - progress) * 0.3
+				proj["_render_scale"] = progress * scale_factor
+			else:
+				proj["spawn_anim"] = false
+				proj["_render_scale"] = 1.0
 
 		# 追踪逻辑（HOMING 修饰符 — 已实现）
 		if proj.get("homing", false):
@@ -533,15 +728,31 @@ func _update_projectiles(delta: float) -> void:
 
 		# 召唤物自动攻击
 		if proj.get("is_summon", false):
+			# 旋转动画
+			proj["rotation"] = proj.get("rotation", 0.0) + proj.get("rotation_speed", 1.5) * delta
+			proj["pulse_phase"] = proj.get("pulse_phase", 0.0) + delta * 2.0
+			# 自动攻击
 			proj["attack_timer"] += delta
-			if proj["attack_timer"] >= proj.get("attack_interval", 1.0):
+			if proj["attack_timer"] >= proj.get("attack_interval", 0.8):
 				proj["attack_timer"] = 0.0
 				_summon_attack(proj)
-			# 召唤物跟随玩家
+				proj["total_attacks"] = proj.get("total_attacks", 0) + 1
+				# 达到最大攻击次数后消失
+				if proj["total_attacks"] >= proj.get("max_attacks", 8):
+					proj["active"] = false
+			# 跟随玩家（保持一定距离）
 			var player_pos := _get_player_position()
 			var to_player = (player_pos - proj["position"])
-			if to_player.length() > 80.0:
-				proj["position"] += to_player.normalized() * 100.0 * delta
+			var follow_dist: float = proj.get("follow_distance", 80.0)
+			var follow_spd: float = proj.get("follow_speed", 120.0)
+			if to_player.length() > follow_dist:
+				proj["position"] += to_player.normalized() * follow_spd * delta
+			# 小幅径向浮动（视觉效果）
+			var orbit_offset := Vector2(
+				cos(proj["rotation"]) * 5.0,
+				sin(proj["rotation"]) * 5.0
+			)
+			proj["position"] += orbit_offset * delta
 
 		# 位置更新
 		proj["position"] += proj["velocity"] * delta
@@ -865,6 +1076,13 @@ func _update_render() -> void:
 		# 渲染弹体本体
 		var t := Transform2D()
 		var scale_factor: float = proj["size"] / 16.0  # 基准大小16px
+		# 应用入场动画缩放
+		var render_scale: float = proj.get("_render_scale", 1.0)
+		scale_factor *= render_scale
+		# 应用旋转（法阵/召唤物）
+		var rot: float = proj.get("rotation", 0.0)
+		if rot != 0.0:
+			t = t.rotated(rot)
 		t = t.scaled(Vector2(scale_factor, scale_factor))
 		t.origin = proj["position"]
 
