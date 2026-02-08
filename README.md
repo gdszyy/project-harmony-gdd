@@ -78,5 +78,6 @@ project-harmony-gdd/
 11. **局外成长系统 (v2.2)**：名为"和谐殿堂"的永久成长系统，包含四大模块（乐器调优/乐理研习/调式风格/声学降噪），已在跑分系统中预留架构接口。
 12. **关卡与Boss体系 (v2.3)**：基于音乐史演进的七章节结构，每章配有独特场景、敌人和Boss战，通过“风格排斥”系统驱动玩法进化。
 13. **UI与美术风格优化 (v2.4)**：统一视觉语言（全局调色板、色彩规范）、UI动态“多汁感”提升、关键UI主题化重绘（Boss血条、和谐殿堂、谐振法典）、核心玩法视觉反馈强化（5个新Shader + VFX管理器）。
+14. **Boss 核心系统补全 (v2.4)**：音乐史七大 Boss (Pythagoras, Guido, Bach, Mozart, Beethoven, Jazz, Noise) 的核心战斗逻辑、阶段系统及专属机制已全部补全。
 
 详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)**、**[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)** 和 **[关卡与Boss设计](Docs/Level_And_Boss_Design.md)**。
