@@ -173,6 +173,8 @@ func reset_game() -> void:
 	_update_beat_interval()
 
 	# 重置所有子系统
+	if NoteInventory.has_method("reset"):
+		NoteInventory.reset()
 	if FatigueManager.has_method("reset"):
 		FatigueManager.reset()
 	if SpellcraftSystem.has_method("reset"):
@@ -311,8 +313,19 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 			_apply_modifier_mastery_upgrade(upgrade)
 		"special":
 			_apply_special_upgrade(upgrade)
+		"note_acquire":
+			_apply_note_acquire_upgrade(upgrade)
+
+	# ★ 每次升级额外获得一个随机音符（基础奖励）
+	NoteInventory.add_random_note(1, "level_up_bonus")
 
 	upgrade_selected.emit(upgrade)
+
+## 音符获取类升级（由五度圈罗盘系统触发）
+func _apply_note_acquire_upgrade(upgrade: Dictionary) -> void:
+	# 音符获取已由 circle_of_fifths_upgrade.gd 的 _process_note_acquisition 处理
+	# 此处仅作为占位，避免 match 警告
+	pass
 
 func _apply_note_stat_upgrade(upgrade: Dictionary) -> void:
 	var note_key = upgrade.get("target_note", -1)

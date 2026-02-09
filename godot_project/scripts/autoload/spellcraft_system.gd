@@ -2,10 +2,10 @@
 ## 法术构建系统 (Autoload)
 ## 管理序列器、手动施法、和弦构建、弹体生成
 ##
-## v2.0 更新：
-##   - 集成单音寂静检查：被寂静的音符无法施放
-##   - 集成密度过载精准度惩罚：过载时弹体方向随机偏移
-##   - 完善黑键双重身份：黑键在和弦缓冲窗口内参与和弦构建，否则作为修饰符
+## v3.0 更新：
+##   - 集成音符经济系统：序列器/手动槽编辑时自动装备/卸下音符
+##   - 集成法术书：和弦法术从法术书装备/卸下
+##   - 集成单音寂静检查、密度过载惩罚、黑键双重身份
 ##   - 完善手动施法：支持快捷键触发，对齐八分音符精度
 ##   - 完善和弦进行效果：D→T/T→D/PD→D 三种转换效果完整实现
 ##   - 不和谐法术缓解单调值的交互
@@ -144,10 +144,17 @@ func _init_manual_slots() -> void:
 # 序列器编辑
 # ============================================================
 
-## 在序列器指定位置放置音符
+## 在序列器指定位置放置音符（集成音符经济：自动装备）
 func set_sequencer_note(position: int, white_key: MusicData.WhiteKey) -> void:
 	if position < 0 or position >= SEQUENCER_LENGTH:
 		return
+
+	# ★ 音符经济：尝试从库存装备音符
+	if not NoteInventory.equip_note(white_key):
+		return  # 库存不足，无法放置
+
+	# 如果该位置已有音符，先卸下旧音符
+	_unequip_sequencer_slot(position)
 
 	sequencer[position] = {
 		"type": "note",
@@ -157,13 +164,45 @@ func set_sequencer_note(position: int, white_key: MusicData.WhiteKey) -> void:
 	_update_measure_rhythm(position / BEATS_PER_MEASURE)
 	sequencer_updated.emit(sequencer)
 
-## 在序列器指定位置放置和弦（占据整个小节）
-func set_sequencer_chord(measure: int, chord_notes: Array) -> void:
+## 在序列器指定小节放置和弦法术（从法术书装备，占据整个小节）
+func set_sequencer_chord(measure: int, spell_id: String) -> void:
+	if measure < 0 or measure >= MEASURES:
+		return
+
+	var spell := NoteInventory.get_chord_spell(spell_id)
+	if spell.is_empty():
+		return
+	if spell["is_equipped"]:
+		return  # 已装备到其他槽位
+
+	# 先卸下该小节内的所有旧内容
+	var start_pos := measure * BEATS_PER_MEASURE
+	for i in range(BEATS_PER_MEASURE):
+		_unequip_sequencer_slot(start_pos + i)
+
+	# 标记法术为已装备
+	NoteInventory.mark_spell_equipped(spell_id, "sequencer_M%d" % (measure + 1))
+
+	# 和弦占据整个小节
+	for i in range(BEATS_PER_MEASURE):
+		if i == 0:
+			sequencer[start_pos + i] = {
+				"type": "chord",
+				"chord_notes": spell["chord_notes"],
+				"spell_id": spell_id,
+			}
+		else:
+			sequencer[start_pos + i] = { "type": "chord_sustain", "spell_id": spell_id }
+
+	_update_measure_rhythm(measure)
+	sequencer_updated.emit(sequencer)
+
+## 兼容旧接口：直接用音符数组放置和弦（用于自动施法等不需要库存的场景）
+func set_sequencer_chord_raw(measure: int, chord_notes: Array) -> void:
 	if measure < 0 or measure >= MEASURES:
 		return
 
 	var start_pos := measure * BEATS_PER_MEASURE
-	# 和弦占据整个小节
 	for i in range(BEATS_PER_MEASURE):
 		if i == 0:
 			sequencer[start_pos + i] = {
@@ -176,29 +215,96 @@ func set_sequencer_chord(measure: int, chord_notes: Array) -> void:
 	_update_measure_rhythm(measure)
 	sequencer_updated.emit(sequencer)
 
-## 在序列器指定位置放置休止符
+## 在序列器指定位置放置休止符（自动卸下旧音符）
 func set_sequencer_rest(position: int) -> void:
 	if position < 0 or position >= SEQUENCER_LENGTH:
 		return
+
+	# ★ 音符经济：卸下旧音符返回库存
+	_unequip_sequencer_slot(position)
 
 	sequencer[position] = { "type": "rest" }
 	_update_measure_rhythm(position / BEATS_PER_MEASURE)
 	sequencer_updated.emit(sequencer)
 
-## 清空序列器
+## 清空序列器（所有音符返回库存）
 func clear_sequencer() -> void:
+	# ★ 音符经济：卸下所有已装备的音符和和弦法术
+	for i in range(SEQUENCER_LENGTH):
+		_unequip_sequencer_slot(i)
 	_init_sequencer()
 	sequencer_updated.emit(sequencer)
+
+## ★ 内部工具：卸下序列器某个位置的内容，将音符/和弦返回库存/法术书
+func _unequip_sequencer_slot(position: int) -> void:
+	if position < 0 or position >= SEQUENCER_LENGTH:
+		return
+	var slot := sequencer[position]
+	var slot_type: String = slot.get("type", "rest")
+
+	match slot_type:
+		"note":
+			# 音符返回库存
+			var note_key: int = slot.get("note", -1)
+			if note_key >= 0:
+				NoteInventory.unequip_note(note_key)
+		"chord":
+			# 和弦法术返回法术书
+			var spell_id: String = slot.get("spell_id", "")
+			if not spell_id.is_empty():
+				NoteInventory.mark_spell_unequipped(spell_id)
+		"chord_sustain":
+			# 和弦延续槽位，不需要单独处理（由主槽位统一处理）
+			pass
 
 # ============================================================
 # 手动施法槽（完善版：支持快捷键触发和八分音符对齐）
 # ============================================================
 
-## 设置手动施法槽
+## 设置手动施法槽（集成音符经济）
 func set_manual_slot(slot_index: int, spell_data: Dictionary) -> void:
 	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
 		return
+
+	# ★ 卸下旧槽位内容
+	_unequip_manual_slot(slot_index)
+
+	# ★ 装备新内容
+	var slot_type: String = spell_data.get("type", "empty")
+	if slot_type == "note":
+		var note_key: int = spell_data.get("note", -1)
+		if note_key >= 0 and not NoteInventory.equip_note(note_key):
+			return  # 库存不足
+	elif slot_type == "chord":
+		var spell_id: String = spell_data.get("spell_id", "")
+		if not spell_id.is_empty():
+			NoteInventory.mark_spell_equipped(spell_id, "manual_%d" % slot_index)
+
 	manual_cast_slots[slot_index] = spell_data
+
+## 清空手动施法槽（卸下内容返回库存/法术书）
+func clear_manual_slot(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
+		return
+	_unequip_manual_slot(slot_index)
+	manual_cast_slots[slot_index] = { "type": "empty" }
+
+## ★ 内部工具：卸下手动施法槽的内容
+func _unequip_manual_slot(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
+		return
+	var slot := manual_cast_slots[slot_index]
+	var slot_type: String = slot.get("type", "empty")
+
+	match slot_type:
+		"note":
+			var note_key: int = slot.get("note", -1)
+			if note_key >= 0:
+				NoteInventory.unequip_note(note_key)
+		"chord":
+			var spell_id: String = slot.get("spell_id", "")
+			if not spell_id.is_empty():
+				NoteInventory.mark_spell_unequipped(spell_id)
 
 ## 触发手动施法（完善版：对齐到八分音符精度）
 func trigger_manual_cast(slot_index: int) -> void:
@@ -908,6 +1014,12 @@ func get_sequencer_data() -> Array:
 
 ## 重置系统状态（供 GameManager.reset_game 调用）
 func reset() -> void:
+	# ★ 音符经济：先卸下所有已装备的内容
+	for i in range(SEQUENCER_LENGTH):
+		_unequip_sequencer_slot(i)
+	for i in range(MAX_MANUAL_SLOTS):
+		_unequip_manual_slot(i)
+
 	_init_sequencer()
 	_init_manual_slots()
 	_empower_buff_active = false
