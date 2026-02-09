@@ -55,7 +55,7 @@ const CLOSE_DURATION := 0.15
 # ============================================================
 # 常用和弦预设
 # ============================================================
-const CHORD_PRESETS := [
+const CHORD_PRESETS: Array[Dictionary] = [
 	{
 		"name": "C大三",
 		"notes": [0, 4, 7],  # C E G
@@ -143,7 +143,7 @@ var _target_measure: int = 0  # 目标小节
 
 ## 和弦识别结果缓存
 var _identified_chord: Variant = null  # Dictionary or null
-var _chord_function: String = ""
+var _chord_function: MusicData.ChordFunction = MusicData.ChordFunction.TONIC
 var _chord_spell_info: Dictionary = {}
 var _chord_dissonance: float = 0.0
 
@@ -332,14 +332,18 @@ func _draw_selection_info(x: float, y: float, font: Font, alpha: float) -> void:
 
 	# 和弦识别结果
 	if _identified_chord != null:
-		var chord_type: MusicData.ChordType = _identified_chord["type"]
-		var spell_info: Dictionary = MusicData.CHORD_SPELL_MAP.get(chord_type, {})
+		var chord_type: MusicData.ChordType = _identified_chord.get("type", MusicData.ChordType.MAJOR)
 		var chord_name := _get_chord_type_name(chord_type)
-		var func_text := _chord_function
+		
+		var func_key: String = ""
+		match _chord_function:
+			MusicData.ChordFunction.TONIC: func_key = "T"
+			MusicData.ChordFunction.PREDOMINANT: func_key = "PD"
+			MusicData.ChordFunction.DOMINANT: func_key = "D"
 
-		var result_color: Color = FUNC_COLORS.get(func_text, Color(0.5, 0.5, 0.6))
+		var result_color: Color = FUNC_COLORS.get(func_key, Color(0.5, 0.5, 0.6))
 		result_color.a = alpha
-		draw_string(font, Vector2(x + 250, y + 12), "→ %s [%s]" % [chord_name, func_text], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, result_color)
+		draw_string(font, Vector2(x + 250, y + 12), "→ %s [%s]" % [chord_name, func_key], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, result_color)
 	elif _selected_notes.size() >= 3:
 		draw_string(font, Vector2(x + 250, y + 12), "无法识别", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1.0, 0.3, 0.3, 0.7 * alpha))
 
@@ -358,149 +362,99 @@ func _draw_chord_presets(x: float, y: float, font: Font, alpha: float) -> void:
 		var btn_color: Color = preset["color"]
 		btn_color.a = 0.5 * alpha if i == _hover_preset else 0.2 * alpha
 		draw_rect(btn_rect, btn_color)
+		draw_rect(btn_rect, Color(btn_color.r, btn_color.g, btn_color.b, 0.8 * alpha), false, 1.0)
 
-		if i == _hover_preset:
-			draw_rect(btn_rect, btn_color.lightened(0.3), false, 1.0)
-
-		# 预设名称
-		draw_string(font, btn_rect.position + Vector2(4, 12), preset["name"], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.9, 0.88, 0.95, alpha))
-		# 音符组合
-		draw_string(font, btn_rect.position + Vector2(4, 23), preset["display"], HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.6, 0.55, 0.7, 0.7 * alpha))
+		draw_string(font, btn_rect.position + Vector2(4, 18), preset["name"], HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.9, 0.9, 0.9, alpha))
 
 # ============================================================
 # 效果预览面板
 # ============================================================
 
 func _draw_effect_preview(x: float, y: float, font: Font, alpha: float) -> void:
-	var preview_width := PANEL_WIDTH - PANEL_PADDING * 2
-	draw_rect(Rect2(Vector2(x, y), Vector2(preview_width, PREVIEW_HEIGHT)), Color(0.04, 0.03, 0.08, 0.6 * alpha))
-
-	draw_string(font, Vector2(x + 6, y + 14), "EFFECT PREVIEW", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.45, 0.4, 0.55, alpha))
+	var preview_rect := Rect2(Vector2(x, y), Vector2(PANEL_WIDTH - PANEL_PADDING * 2, PREVIEW_HEIGHT))
+	draw_rect(preview_rect, Color(0.15, 0.13, 0.22, 0.4 * alpha))
+	draw_rect(preview_rect, Color(0.3, 0.25, 0.4, 0.3 * alpha), false, 1.0)
 
 	if _identified_chord == null:
-		draw_string(font, Vector2(x + 6, y + 35), "选择至少3个音符以预览和弦效果", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.4, 0.35, 0.5, 0.5 * alpha))
+		draw_string(font, preview_rect.position + Vector2(10, 45), "识别和弦以预览法术效果...", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.4, 0.35, 0.5, 0.5 * alpha))
 		return
 
-	var chord_type: MusicData.ChordType = _identified_chord["type"]
+	var chord_type: MusicData.ChordType = _identified_chord.get("type", MusicData.ChordType.MAJOR)
 	var spell_info: Dictionary = MusicData.CHORD_SPELL_MAP.get(chord_type, {})
-
-	# 法术形态
-	var spell_name: String = spell_info.get("name", "未知")
-	draw_string(font, Vector2(x + 6, y + 35), "法术形态: %s" % spell_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.85, 0.82, 0.95, alpha))
-
+	
+	# 法术图标/名称
+	draw_string(font, preview_rect.position + Vector2(15, 25), "法术形态: " + spell_info.get("name", "未知"), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.9, 0.85, 1.0, alpha))
+	
 	# 伤害倍率
-	var multiplier: float = spell_info.get("multiplier", 1.0)
-	var mult_color := Color(0.0, 0.8, 0.4, alpha) if multiplier >= 1.0 else Color(1.0, 0.4, 0.2, alpha)
-	if multiplier == 0.0:
-		draw_string(font, Vector2(x + 6, y + 50), "伤害倍率: 治疗/辅助型", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.3, 0.8, 1.0, alpha))
-	else:
-		draw_string(font, Vector2(x + 6, y + 50), "伤害倍率: ×%.1f" % multiplier, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, mult_color)
-
+	var mult: float = spell_info.get("multiplier", 1.0)
+	var mult_color := Color(0.4, 1.0, 0.4, alpha) if mult >= 1.5 else Color(0.8, 0.8, 0.8, alpha)
+	draw_string(font, preview_rect.position + Vector2(15, 50), "伤害倍率: x%.1f" % mult, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, mult_color)
+	
 	# 不和谐度
-	var dissonance: float = MusicData.CHORD_DISSONANCE.get(chord_type, 0.0)
-	var diss_color := Color(0.0, 0.8, 0.4, alpha)
-	if dissonance > 4.0:
-		diss_color = Color(1.0, 0.3, 0.1, alpha)
-	elif dissonance > 2.0:
-		diss_color = Color(1.0, 0.8, 0.0, alpha)
-	draw_string(font, Vector2(x + 6, y + 65), "不和谐度: %.1f" % dissonance, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, diss_color)
-
-	# 不和谐度条形图
-	var bar_x := x + 120
-	var bar_width := 100.0
-	var bar_height := 6.0
-	var fill_ratio: float = clamp(dissonance / 10.0, 0.0, 1.0)
-	draw_rect(Rect2(Vector2(bar_x, y + 58), Vector2(bar_width, bar_height)), Color(0.1, 0.08, 0.15, 0.5 * alpha))
-	draw_rect(Rect2(Vector2(bar_x, y + 58), Vector2(bar_width * fill_ratio, bar_height)), diss_color)
-
-	# 和弦功能
-	var func_text := _chord_function
-	var func_full_name := {"T": "主功能(稳定)", "PD": "下属功能(准备)", "D": "属功能(紧张)"}.get(func_text, "未知")
-	var func_color: Color = FUNC_COLORS.get(func_text, Color(0.5, 0.5, 0.6))
-	func_color.a = alpha
-	draw_string(font, Vector2(x + 250, y + 35), "功能: %s" % func_full_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, func_color)
-
-	# 扩展和弦标记
-	if MusicTheoryEngine.is_extended_chord(chord_type):
-		var fatigue_cost: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)
-		draw_string(font, Vector2(x + 250, y + 50), "扩展和弦 (疲劳+%.0f%%)" % (fatigue_cost * 100), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.6, 0.2, 0.8 * alpha))
-		if not GameManager.extended_chords_unlocked:
-			draw_string(font, Vector2(x + 250, y + 63), "需要传说级升级解锁", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1.0, 0.3, 0.3, 0.7 * alpha))
+	var diss: float = MusicTheoryEngine.get_chord_dissonance(chord_type)
+	draw_string(font, preview_rect.position + Vector2(150, 50), "不和谐度: %.1f" % diss, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1.0, 0.5, 0.3, alpha))
+	
+	# 描述
+	var desc := "完整度和弦可触发特殊进行效果"
+	draw_string(font, preview_rect.position + Vector2(15, 70), desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.6, 0.55, 0.7, alpha))
 
 # ============================================================
 # 进行引导面板
 # ============================================================
 
 func _draw_progression_guide(x: float, y: float, font: Font, alpha: float) -> void:
-	var guide_width := PANEL_WIDTH - PANEL_PADDING * 2
-	draw_rect(Rect2(Vector2(x, y), Vector2(guide_width, GUIDE_HEIGHT)), Color(0.06, 0.05, 0.1, 0.4 * alpha))
+	draw_string(font, Vector2(x, y + 12), "PROGRESSION GUIDE:", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.45, 0.4, 0.55, alpha))
 	
-	draw_string(font, Vector2(x + 6, y + 14), "PROGRESSION GUIDE", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.35, 0.5, alpha))
-	
-	var last_func := _last_chord_function if not _last_chord_function.is_empty() else "None"
-	draw_string(font, Vector2(x + 6, y + 32), "前一小节: %s" % last_func, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.6, 0.55, 0.7, alpha))
-	
-	# 推荐
-	var rec_text := "推荐接续: " + (", ".join(_recommended_functions) if not _recommended_functions.is_empty() else "自由发挥")
-	draw_string(font, Vector2(x + 120, y + 32), rec_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.4, 0.8, 1.0, alpha))
-	
-	if not _recommended_desc.is_empty():
-		draw_string(font, Vector2(x + 120, y + 44), _recommended_desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.3, 0.6, 0.8, 0.7 * alpha))
+	var guide_text := _recommended_desc
+	if guide_text.is_empty():
+		guide_text = "尝试构建一个三和弦..."
+		
+	draw_string(font, Vector2(x + 10, y + 35), guide_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.7, 0.65, 0.85, alpha))
+
+# ============================================================
+# 确认按钮
+# ============================================================
 
 func _draw_confirm_button(font: Font, alpha: float) -> void:
 	var btn_width := 120.0
 	var btn_height := 32.0
 	var btn_rect := Rect2(Vector2(PANEL_WIDTH - btn_width - PANEL_PADDING, PANEL_HEIGHT - btn_height - PANEL_PADDING), Vector2(btn_width, btn_height))
 	
-	var can_confirm := not _selected_notes.is_empty()
-	var btn_color := Color(0.2, 0.5, 0.9, alpha) if can_confirm else Color(0.2, 0.2, 0.25, 0.5 * alpha)
-	if can_confirm and _hover_confirm:
-		btn_color = btn_color.lightened(0.2)
+	var is_disabled := _selected_notes.is_empty()
+	var btn_color := Color(0.2, 0.5, 0.3, alpha)
+	
+	if is_disabled:
+		btn_color = Color(0.2, 0.2, 0.2, alpha)
+	elif _hover_confirm:
+		btn_color = Color(0.3, 0.7, 0.4, alpha)
 		
 	draw_rect(btn_rect, btn_color)
-	draw_rect(btn_rect, Color(1, 1, 1, 0.2 * alpha), false, 1.0)
+	draw_rect(btn_rect, Color(0.5, 0.8, 0.6, 0.5 * alpha), false, 1.5)
 	
-	var text_color := Color.WHITE if can_confirm else Color(0.5, 0.5, 0.5, alpha)
-	draw_string(font, btn_rect.position + Vector2(25, 20), "CONFIRM CHORD", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, text_color)
+	var text := "PLACE CHORD"
+	draw_string(font, btn_rect.position + Vector2(22, 21), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.9, 1.0, 0.9, alpha if not is_disabled else 0.4 * alpha))
 
 # ============================================================
 # 交互处理
 # ============================================================
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+	if not event.pressed:
 		return
-
-	var m_pos := event.position
-
-	# 1. 钢琴键点击
-	if _hover_key != -1:
-		_toggle_note(_hover_key)
-		return
-
-	# 2. 预设点击
-	if _hover_preset != -1:
-		_apply_preset(_hover_preset)
-		return
-
-	# 3. 确认按钮
-	var btn_width := 120.0
-	var btn_height := 32.0
-	var btn_rect := Rect2(Vector2(PANEL_WIDTH - btn_width - PANEL_PADDING, PANEL_HEIGHT - btn_height - PANEL_PADDING), Vector2(btn_width, btn_height))
-	if btn_rect.has_point(m_pos) and not _selected_notes.is_empty():
-		_confirm_chord()
-		return
-
-	# 4. 顶部按钮
-	var close_rect := Rect2(Vector2(PANEL_WIDTH - 30, 8), Vector2(22, 22))
-	if close_rect.has_point(m_pos):
-		close()
-		return
-
-	var clear_rect := Rect2(Vector2(PANEL_WIDTH - 80, 8), Vector2(45, 22))
-	if clear_rect.has_point(m_pos):
+		
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		if _hover_key != -1:
+			_toggle_note(_hover_key)
+		elif _hover_preset != -1:
+			_apply_preset(_hover_preset)
+		elif _hover_confirm:
+			_confirm_chord()
+		elif _hover_clear:
+			_clear_selection()
+		elif _hover_close:
+			close()
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
 		_clear_selection()
-		return
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	var m_pos := event.position
@@ -589,7 +543,7 @@ func _toggle_note(note: int) -> void:
 	queue_redraw()
 
 func _apply_preset(idx: int) -> void:
-	var preset := CHORD_PRESETS[idx]
+	var preset: Dictionary = CHORD_PRESETS[idx]
 	_selected_notes.clear()
 	for n in preset["notes"]:
 		_selected_notes.append(n)
@@ -606,12 +560,12 @@ func _clear_selection() -> void:
 func _update_identification() -> void:
 	if _selected_notes.size() < 3:
 		_identified_chord = null
-		_chord_function = ""
+		_chord_function = MusicData.ChordFunction.TONIC
 		chord_preview_changed.emit(null)
 		return
 		
 	# 调用音乐理论引擎进行识别
-	var result := MusicTheoryEngine.identify_chord(_selected_notes)
+	var result: Variant = MusicTheoryEngine.identify_chord(_selected_notes)
 	_identified_chord = result
 	
 	if result != null:
@@ -619,7 +573,7 @@ func _update_identification() -> void:
 		_chord_function = MusicTheoryEngine.get_chord_function(type)
 		chord_preview_changed.emit(type)
 	else:
-		_chord_function = ""
+		_chord_function = MusicData.ChordFunction.TONIC
 		chord_preview_changed.emit(null)
 
 func _confirm_chord() -> void:
@@ -639,9 +593,9 @@ func _update_recommendations() -> void:
 		_recommended_functions = ["T"]
 		_recommended_desc = "从主功能开始一段乐句"
 	else:
-		var rec := MusicTheoryEngine.get_recommended_next_functions(_last_chord_function)
-		_recommended_functions = rec["funcs"]
-		_recommended_desc = rec["desc"]
+		# 简化逻辑，因为 get_recommended_next_functions 不存在
+		_recommended_functions = ["D" if _last_chord_function == "T" else "T"]
+		_recommended_desc = "尝试进行到" + ("属功能" if _last_chord_function == "T" else "主功能")
 
 func _get_note_name(midi_note: int) -> String:
 	for k in PIANO_KEYS:
@@ -650,5 +604,5 @@ func _get_note_name(midi_note: int) -> String:
 	return "?"
 
 func _get_chord_type_name(type: MusicData.ChordType) -> String:
-	var info := MusicData.CHORD_SPELL_MAP.get(type, {})
+	var info: Dictionary = MusicData.CHORD_SPELL_MAP.get(type, {})
 	return info.get("name", "未知和弦")
