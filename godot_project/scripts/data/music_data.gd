@@ -309,11 +309,11 @@ const TIMBRE_ADSR: Dictionary = {
 		"name": "吹奏", "desc": "穿透性、气息聚焦的管乐质感",
 	},
 	TimbreType.PERCUSSIVE: {
-		"attack_time": 0.002, "decay_time": 0.0,
-		"sustain_level": 0.75, "release_time": 0.03,
-		"wave_shape": "square",
-		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.0], [4.0, 0.25], [5.0, 0.0], [6.0, 0.12]],
-		"name": "打击", "desc": "节奏感、重音冲击的钢琴质感",
+		"attack_time": 0.001, "decay_time": 0.08,
+		"sustain_level": 0.0, "release_time": 0.02,
+		"wave_shape": "sine",
+		"harmonics": [[1.0, 1.0], [1.5, 0.3], [2.0, 0.15]],
+		"name": "打击", "desc": "Techno风格电子鼓组，瞬态冲击感强",
 	},
 }
 

@@ -202,7 +202,7 @@ func get_current_timbre() -> int:
 ## timbre_override: 音色覆盖，-1 表示使用当前音色
 ## velocity: 力度 (0.0 ~ 1.0)
 ## pitch_shift: 音高偏移（半音数，用于八度变化）
-func play_note_sound(note: int, duration: float = 0.3,
+func play_note_sound(note: int, duration: float = 0.2,
 		timbre_override: int = -1, velocity: float = 0.8,
 		pitch_shift: int = 0) -> void:
 
@@ -244,7 +244,7 @@ func play_note_sound(note: int, duration: float = 0.3,
 ## duration: 和弦时长（秒）
 ## timbre_override: 音色覆盖
 ## velocity: 力度
-func play_chord_sound(notes: Array, duration: float = 0.5,
+func play_chord_sound(notes: Array, duration: float = 0.3,
 		timbre_override: int = -1, velocity: float = 0.7) -> void:
 
 	if notes.is_empty():

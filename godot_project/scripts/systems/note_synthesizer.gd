@@ -28,7 +28,7 @@ extends RefCounted
 const SAMPLE_RATE: int = 44100
 
 ## 默认音符时长（秒）
-const DEFAULT_NOTE_DURATION: float = 0.4
+const DEFAULT_NOTE_DURATION: float = 0.2
 
 ## 最大缓存音效数量 (12音符 × 5音色 × 3八度 = 180，实际按需生成)
 const MAX_CACHE_SIZE: int = 256
@@ -113,7 +113,7 @@ func generate_note(note: int, timbre: int = MusicData.TimbreType.NONE,
 ## duration: 和弦时长（秒）
 ## velocity: 力度
 func generate_chord(notes: Array, timbre: int = MusicData.TimbreType.NONE,
-		octave: int = 4, duration: float = 0.5,
+		octave: int = 4, duration: float = 0.3,
 		velocity: float = 0.7) -> AudioStreamWAV:
 
 	if notes.is_empty():
