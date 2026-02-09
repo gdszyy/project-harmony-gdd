@@ -282,7 +282,7 @@ func _generate_options() -> void:
 	_option_directions.append("clockwise")
 
 func _pick_random_from_pool(pool: Array) -> Dictionary:
-	var available := pool.duplicate(true)
+	var available: Array = pool.duplicate(true)
 
 	# 过滤已获得的一次性升级
 	if GameManager.extended_chords_unlocked:

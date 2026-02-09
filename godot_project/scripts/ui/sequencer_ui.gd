@@ -847,7 +847,9 @@ func _place_at_cell(cell_idx: int) -> void:
 			_chord_notes.append(_selected_note)
 			if _chord_notes.size() >= 3:
 				var measure_idx := cell_idx / BEATS_PER_MEASURE
-				SpellcraftSystem.set_sequencer_chord(measure_idx, _chord_notes)
+				# 注意：set_sequencer_chord 需要 spell_id (String)，而不是音符数组
+				# 这里应该调用 set_sequencer_chord_raw 或者先生成法术ID
+				SpellcraftSystem.set_sequencer_chord_raw(measure_idx, _chord_notes)
 				_chord_notes.clear()
 
 # ============================================================

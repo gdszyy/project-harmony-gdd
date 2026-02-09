@@ -151,7 +151,7 @@ func _draw_slot(index: int, font: Font) -> void:
 	var config := _slot_configs[index]
 	var is_hover := (_hover_slot == index)
 	var is_active := (_active_config_slot == index)
-	var is_filled := config.get("type", "empty") != "empty"
+		var is_filled: bool = config.get("type", "empty") != "empty"
 
 	# 背景
 	var bg_color := SLOT_EMPTY_COLOR
@@ -289,7 +289,7 @@ func _draw_config_item(index: int, font: Font) -> void:
 			"x%d" % count, HORIZONTAL_ALIGNMENT_RIGHT, -1, 8, count_color)
 
 	elif item_type == "chord":
-		var spell := item.get("spell", {})
+		var spell: Dictionary = item.get("spell", {})
 		var chord_color := Color(1.0, 0.8, 0.0)
 
 		draw_rect(rect, chord_color * 0.15, false, 1.0)

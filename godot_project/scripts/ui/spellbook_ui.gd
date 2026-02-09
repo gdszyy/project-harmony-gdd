@@ -156,7 +156,7 @@ func _draw_spell_card(rect: Rect2, spell: Dictionary, index: int, font: Font) ->
 		spell.get("spell_name", "Unknown"), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, name_color)
 
 	# 法术形态
-	var form_text := spell.get("spell_form", "unknown").replace("_", " ").capitalize()
+		var form_text: String = spell.get("spell_form", "unknown").replace("_", " ").capitalize()
 	draw_string(font, rect.position + Vector2(10, 40),
 		form_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, SPELL_FORM_COLOR)
 
