@@ -239,6 +239,50 @@ func play_note_sound(note: int, duration: float = 0.2,
 	var pos = player_node.global_position if player_node else Vector2.ZERO
 	request_spell_sfx.emit(pos, false)
 
+## 播放带修饰符的音符音效
+func play_note_sound_with_modifier(
+		note: int,
+		modifier: MusicData.ModifierEffect,
+		duration: float = 0.2,
+		timbre_override: int = -1,
+		velocity: float = 0.8,
+		pitch_shift: int = 0) -> void:
+	
+	# 冷却检查
+	var cooldown_key := "note_%d_mod_%d" % [note, modifier]
+	if not _check_note_cooldown(cooldown_key):
+		return
+	
+	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
+	var octave := 4 + (pitch_shift / 12)
+	
+	# 生成带修饰符的音符
+	if _synthesizer == null:
+		_init_synthesizer()
+	
+	var wav := _synthesizer.generate_note_with_modifier(
+		note, modifier, timbre, octave, duration, velocity
+	)
+	if wav == null:
+		return
+	
+	# 播放
+	var player := _get_note_player()
+	if player == null:
+		return
+	
+	player.stream = wav
+	player.volume_db = _velocity_to_db(velocity)
+	player.pitch_scale = 1.0
+	player.play()
+	
+	note_played.emit(note, timbre)
+	
+	# 通知SFX
+	var player_node2 := get_tree().get_first_node_in_group("player")
+	var pos2 = player_node2.global_position if player_node2 else Vector2.ZERO
+	request_spell_sfx.emit(pos2, false)
+
 ## 播放和弦音效
 ## notes: MusicData.Note 枚举值数组
 ## duration: 和弦时长（秒）
@@ -279,6 +323,49 @@ func play_chord_sound(notes: Array, duration: float = 0.3,
 	var player_node := get_tree().get_first_node_in_group("player")
 	var pos = player_node.global_position if player_node else Vector2.ZERO
 	request_chord_sfx.emit(pos)
+
+## 播放带和弦形态效果的和弦音效
+func play_chord_sound_with_effect(
+		notes: Array,
+		chord_type: MusicData.ChordType,
+		duration: float = 0.3,
+		timbre_override: int = -1,
+		velocity: float = 0.7) -> void:
+	
+	if notes.is_empty():
+		return
+	
+	# 冷却检查
+	var cooldown_key := "chord_%s_type_%d" % [str(notes), chord_type]
+	if not _check_note_cooldown(cooldown_key):
+		return
+	
+	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
+	
+	if _synthesizer == null:
+		_init_synthesizer()
+	
+	var wav := _synthesizer.generate_chord_with_effect(
+		notes, chord_type, timbre, 4, duration, velocity
+	)
+	if wav == null:
+		return
+	
+	var player := _get_note_player()
+	if player == null:
+		return
+	
+	player.stream = wav
+	player.volume_db = _velocity_to_db(velocity)
+	player.pitch_scale = 1.0
+	player.play()
+	
+	chord_played.emit(notes, timbre)
+	
+	# 通知SFX
+	var player_node2 := get_tree().get_first_node_in_group("player")
+	var pos2 = player_node2.global_position if player_node2 else Vector2.ZERO
+	request_chord_sfx.emit(pos2)
 
 # ============================================================
 # 内部工具

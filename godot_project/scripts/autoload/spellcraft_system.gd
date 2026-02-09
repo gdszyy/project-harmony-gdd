@@ -488,11 +488,17 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"is_chord": false,
 	})
 
-	# 播放音符音效
+	# 播放音符音效（带修饰符效果）
 	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
-	if gmm and gmm.has_method("play_note_sound"):
-		gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
+	var modifier: int = spell_data.get("modifier", -1)
+	if gmm:
+		if modifier >= 0 and gmm.has_method("play_note_sound_with_modifier"):
+			# 播放带修饰符效果的音符
+			gmm.play_note_sound_with_modifier(note_enum, modifier, spell_data["duration"], timbre)
+		elif gmm.has_method("play_note_sound"):
+			# 回退到普通音符
+			gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
 
 	# 节奏型行为：连射（EVEN_EIGHTH）发射多个弹体
 	if spell_data["is_rapid_fire"] and spell_data["rapid_fire_count"] > 1:
@@ -572,11 +578,17 @@ func _cast_single_note(note: int) -> void:
 		"is_chord": false,
 	})
 
-	# 播放音符音效
+	# 播放音符音效（带修饰符效果）
 	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
-	if gmm and gmm.has_method("play_note_sound"):
-		gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
+	var modifier: int = spell_data.get("modifier", -1)
+	if gmm:
+		if modifier >= 0 and gmm.has_method("play_note_sound_with_modifier"):
+			# 播放带修饰符效果的音符
+			gmm.play_note_sound_with_modifier(note_enum, modifier, spell_data["duration"], timbre)
+		elif gmm.has_method("play_note_sound"):
+			# 回退到普通音符
+			gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
 
 	spell_cast.emit(spell_data)
 
@@ -670,14 +682,19 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		# 触发和弦进行效果
 		_trigger_progression_effect(progression)
 
-	# 播放和弦音效
+	# 播放和弦音效（带和弦形态效果）
 	var chord_notes_for_sound: Array = chord_result.get("notes", [])
 	var note_enums: Array = []
 	for n in chord_notes_for_sound:
 		note_enums.append(n % 12)  # 转换为 Note 枚举 (0-11)
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
-	if gmm and gmm.has_method("play_chord_sound"):
-		gmm.play_chord_sound(note_enums, 0.5, timbre)
+	if gmm:
+		if gmm.has_method("play_chord_sound_with_effect"):
+			# 播放带和弦形态效果的和弦
+			gmm.play_chord_sound_with_effect(note_enums, chord_type, 0.3, timbre)
+		elif gmm.has_method("play_chord_sound"):
+			# 回退到普通和弦
+			gmm.play_chord_sound(note_enums, 0.3, timbre)
 
 	chord_cast.emit(chord_data)
 

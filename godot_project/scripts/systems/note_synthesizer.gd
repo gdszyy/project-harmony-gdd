@@ -106,6 +106,33 @@ func generate_note(note: int, timbre: int = MusicData.TimbreType.NONE,
 	_cache_put(cache_key, wav)
 	return wav
 
+## 生成带修饰符效果的音符
+## modifier: MusicData.ModifierEffect 修饰符类型
+func generate_note_with_modifier(note: int, modifier: MusicData.ModifierEffect,
+		timbre: int = MusicData.TimbreType.NONE, octave: int = 4,
+		duration: float = DEFAULT_NOTE_DURATION, velocity: float = 0.8) -> AudioStreamWAV:
+	
+	# 检查缓存（包含修饰符）
+	var cache_key := "%d_%d_%d_%d_mod_%d" % [timbre, note, octave, int(duration * 1000), modifier]
+	if _cache.has(cache_key):
+		return _cache[cache_key]
+	
+	# 先生成基础音符
+	var wav := generate_note(note, timbre, octave, duration, velocity)
+	if wav == null or modifier < 0:
+		return wav
+	
+	# 提取音频数据
+	var buffer := AudioEffectProcessor.byte_array_to_float_buffer(wav.data)
+	
+	# 应用修饰符效果
+	AudioEffectProcessor.apply_modifier_effect(buffer, modifier, SAMPLE_RATE)
+	
+	# 转换回WAV
+	var processed_wav := _buffer_to_wav(buffer)
+	_cache_put(cache_key, processed_wav)
+	return processed_wav
+
 ## 生成和弦音效（多个音符叠加）
 ## notes: MusicData.Note 枚举值数组
 ## timbre: MusicData.TimbreType 音色系别
@@ -150,6 +177,32 @@ func generate_chord(notes: Array, timbre: int = MusicData.TimbreType.NONE,
 	var wav := _buffer_to_wav(mix_buffer)
 	_cache_put(cache_key, wav)
 	return wav
+
+## 生成带和弦形态效果的和弦
+func generate_chord_with_effect(notes: Array, chord_type: MusicData.ChordType,
+		timbre: int = MusicData.TimbreType.NONE, octave: int = 4,
+		duration: float = 0.3, velocity: float = 0.7) -> AudioStreamWAV:
+	
+	# 检查缓存（包含和弦类型）
+	var cache_key := "chord_%d_%s_%d_%d_type_%d" % [timbre, str(notes), octave, int(duration * 1000), chord_type]
+	if _cache.has(cache_key):
+		return _cache[cache_key]
+	
+	# 先生成基础和弦
+	var wav := generate_chord(notes, timbre, octave, duration, velocity)
+	if wav == null:
+		return wav
+	
+	# 提取音频数据
+	var buffer := AudioEffectProcessor.byte_array_to_float_buffer(wav.data)
+	
+	# 应用和弦形态效果
+	AudioEffectProcessor.apply_chord_form_effect(buffer, chord_type, SAMPLE_RATE)
+	
+	# 转换回WAV
+	var processed_wav := _buffer_to_wav(buffer)
+	_cache_put(cache_key, processed_wav)
+	return processed_wav
 
 ## 预生成常用音符（可在 _ready 中调用以减少运行时延迟）
 func pregenerate_common_notes(timbre: int = MusicData.TimbreType.NONE) -> void:
