@@ -260,6 +260,12 @@
 
 **与 Boss 基类 (boss_base.gd) 的整合**：所有 Boss 的设计都严格遵循现有 `boss_base.gd` 中定义的多阶段框架（Phase System）、攻击模式管理器（Attack Pattern Manager）、护盾系统、狂暴系统和脆弱状态系统。新增的"风格排斥"机制可以作为一种新的攻击模式类型（`attack_selection: "reactive"`）集成到现有框架中 [5]。
 
+**与频谱相位系统（共鸣切片）的整合**：频谱相位系统为 Boss 战增添了全新的解谜维度。具体整合点如下：
+
+- **第三章·巴赫**：赋格迷宫的多条弹幕轨迹将分布在不同相位中。玩家必须在三个相位间快速切换，才能看清所有声部的完整轨迹，否则会被来自“不可见维度”的攻击命中。
+- **第五章·贝多芬**：“弹性速度”机制影响相位切换效率。`Accelerando` 阶段切换能量消耗加倍；`Ritardando` 阶段极端相位的持续消耗减半，鼓励玩家在此时进行破盾/刺杀操作。
+- **第七章·器噪音**：这是频谱相位系统的终极考验。Boss 的四种波形攻击与相位完美对应：锯齿波只在高通相位可见且造成伤害；方波只在全频相位生效；正弦波只在低通相位可见且造成伤害；白噪音在所有相位都造成伤害，但只有在全频相位才能通过攻击 Boss 核心来打断 [8]。
+
 **与局外成长系统的整合**：各章节的通关奖励（解锁和弦类型、节奏型、音色能力等）需要与"和谐殿堂"的"乐理研习"模块进行对接，确保解锁逻辑的一致性 [6]。
 
 ---
@@ -273,4 +279,5 @@
 [5] `godot_project/scripts/entities/enemies/boss_base.gd` — Boss 基类代码
 [6] `Docs/MetaProgressionSystem_Documentation.md` — 局外成长系统设计文档
 [7] `Docs/Enemy_System_Design.md` — 敌人系统设计文档
-[8] `Docs/Numerical_Design_Documentation.md` — 数值设计文档
+[8] `Docs/ResonanceSlicing_System_Design.md` — 频谱相位系统设计文档
+[9] `Docs/Numerical_Design_Documentation.md` — 数值设计文档
