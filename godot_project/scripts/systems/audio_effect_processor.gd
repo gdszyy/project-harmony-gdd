@@ -54,20 +54,20 @@ static func apply_chord_form_effect(
 ) -> void:
 	match chord_type:
 		MusicData.ChordType.AUGMENTED:
-			# 爆炸弹体：失真 + 低音增强
-			_apply_distortion(buffer, 0.3, 0.4)
-			_apply_sub_bass_boost(buffer, 0.3)
+			# 爆炸弹体：轿微失真 + 轻微低音增强
+			_apply_distortion(buffer, 0.15, 0.2)
+			_apply_sub_bass_boost(buffer, 0.15)
 		MusicData.ChordType.DIMINISHED, MusicData.ChordType.DIMINISHED_7:
-			# 冲击波：环形调制 + 混响
-			_apply_ring_modulation(buffer, 220.0, 0.25, sample_rate)
-			_apply_simple_reverb(buffer, 0.8, 0.6, sample_rate)
+			# 冲击波：轻微环形调制 + 混响
+			_apply_ring_modulation(buffer, 220.0, 0.12, sample_rate)
+			_apply_simple_reverb(buffer, 0.5, 0.35, sample_rate)
 		MusicData.ChordType.DOMINANT_7:
-			# 法阵：柔和音色 + 长混响
-			_apply_low_pass_filter(buffer, 2000.0, sample_rate)
-			_apply_simple_reverb(buffer, 0.9, 0.7, sample_rate)
+			# 法阵：轻微柔和音色 + 混响
+			_apply_low_pass_filter(buffer, 3000.0, sample_rate)
+			_apply_simple_reverb(buffer, 0.6, 0.4, sample_rate)
 		MusicData.ChordType.MAJOR:
-			# 强化弹体：压缩 + 泛音增强
-			_apply_soft_compression(buffer, 0.6, 3.0)
+			# 强化弹体：轻微压缩
+			_apply_soft_compression(buffer, 0.7, 2.0)
 
 # ============================================================
 # 修饰符效果实现
@@ -75,41 +75,41 @@ static func apply_chord_form_effect(
 
 ## 穿透效果：高通滤波 + 增强Attack
 static func _apply_pierce_effect(buffer: Array[float], sample_rate: int) -> void:
-	# 高通滤波器，保留高频
-	_apply_high_pass_filter(buffer, 2000.0, sample_rate)
-	# 增强瞬态冲击
-	_apply_transient_boost(buffer, 1.5)
-	# 轻微混响，增加穿透感
-	_apply_simple_reverb(buffer, 0.2, 0.15, sample_rate)
+	# 轻微高通滤波器，保留高频但不过度
+	_apply_high_pass_filter(buffer, 1200.0, sample_rate)
+	# 轻微增强瞬态冲击
+	_apply_transient_boost(buffer, 1.2)
+	# 极轻微混响，增加空间感
+	_apply_simple_reverb(buffer, 0.15, 0.08, sample_rate)
 
-## 追踪效果：音高调制（LFO）
+## 追踪效果：轻微的音量调制（不改变音高）
 static func _apply_homing_effect(buffer: Array[float], sample_rate: int) -> void:
-	# LFO音高调制，模拟弹体转向时的多普勒效应
-	_apply_pitch_lfo(buffer, 4.0, 0.15, sample_rate)
-	# 添加轻微颤音
-	_apply_vibrato(buffer, 5.5, 0.008, sample_rate)
+	# 使用轻微的音量调制模拟弹体运动，不改变音高
+	_apply_tremolo(buffer, 6.0, 0.12, sample_rate)
+	# 极轻微混响，增加空间动态感
+	_apply_simple_reverb(buffer, 0.2, 0.1, sample_rate)
 
-## 分裂效果：合唱 + 立体声展宽
+## 分裂效果：轻微合唱
 static func _apply_split_effect(buffer: Array[float], _sample_rate: int) -> void:
-	# 合唱效果，模拟多个声部
-	_apply_simple_chorus(buffer, 3, 0.02)
+	# 轻微合唱效果，模拟多个声部但不过度
+	_apply_simple_chorus(buffer, 2, 0.008)
 	# 注意：立体声展宽需要双声道，这里简化为单声道合唱
 
-## 回响效果：延迟
+## 回响效果：轻微延迟
 static func _apply_echo_effect(buffer: Array[float], sample_rate: int) -> void:
-	# 延迟效果，模拟回声
-	_apply_delay(buffer, 0.3, 0.4, sample_rate)
+	# 轻微延迟效果，模拟回声但不过度
+	_apply_delay(buffer, 0.25, 0.25, sample_rate)
 	# 对延迟部分应用低通滤波，模拟声音在空间中的传播
-	_apply_low_pass_filter(buffer, 3000.0, sample_rate)
+	_apply_low_pass_filter(buffer, 4000.0, sample_rate)
 
-## 散射效果：混响 + 噪声层
+## 散射效果：轻微混响
 static func _apply_scatter_effect(buffer: Array[float], sample_rate: int) -> void:
-	# 混响效果，增强空间感
-	_apply_simple_reverb(buffer, 0.6, 0.5, sample_rate)
-	# 添加噪声层，模拟散射的混乱感
-	_apply_noise_layer(buffer, 0.08)
-	# 轻微随机化音量
-	_apply_volume_randomization(buffer, 0.15)
+	# 轻微混响效果，增强空间感但不过度
+	_apply_simple_reverb(buffer, 0.4, 0.25, sample_rate)
+	# 极轻微噪声层，模拟散射的质感
+	_apply_noise_layer(buffer, 0.03)
+	# 极轻微随机化音量
+	_apply_volume_randomization(buffer, 0.08)
 
 # ============================================================
 # DSP 算法实现
@@ -247,8 +247,8 @@ static func _apply_pitch_lfo(
 		var idx := clampi(i + offset, 0, buffer.size() - 1)
 		buffer[i] = original[idx]
 
-## 颤音效果
-static func _apply_vibrato(
+## Tremolo（音量调制，不改变音高）
+static func _apply_tremolo(
 	buffer: Array[float],
 	rate: float,
 	depth: float,
@@ -257,14 +257,12 @@ static func _apply_vibrato(
 	if buffer.is_empty():
 		return
 	
-	var original := buffer.duplicate()
-	
 	for i in range(buffer.size()):
 		var t := float(i) / float(sample_rate)
-		var vibrato := sin(t * rate * TAU) * depth
-		var offset := int(vibrato * sample_rate * 0.01)
-		var idx := clampi(i + offset, 0, buffer.size() - 1)
-		buffer[i] = original[idx]
+		# 使用LFO调制音量，不改变音高
+		var lfo := sin(t * rate * TAU) * depth
+		var gain := 1.0 + lfo
+		buffer[i] *= gain
 
 ## 瞬态增强
 static func _apply_transient_boost(buffer: Array[float], multiplier: float) -> void:
