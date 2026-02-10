@@ -794,7 +794,7 @@ func _demo_cast_note(config: Dictionary) -> void:
 	# 通过 ProjectileManager 的实际接口生成弹体
 	_spawn_demo_projectile(spell_data)
 
-	var note_name := MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
+	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
 	_update_demo_status("施放: %s | DMG=%.0f SPD=%.0f DUR=%.1fs SIZE=%.0fpx" % [
 		note_name, spell_data["damage"], spell_data["speed"],
 		spell_data["duration"], spell_data["size"]
@@ -811,7 +811,7 @@ func _demo_cast_note_modifier(config: Dictionary) -> void:
 
 	_spawn_demo_projectile(spell_data)
 
-	var note_name := MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
+	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
 	var mod_name := _get_modifier_display_name(modifier)
 	_update_demo_status("施放: %s + %s" % [note_name, mod_name])
 
@@ -824,7 +824,7 @@ func _demo_cast_chord(config: Dictionary) -> void:
 		return
 
 	# 构建和弦 spell_data（与 SpellcraftSystem._execute_chord_cast 一致）
-	var root_stats := MusicData.WHITE_KEY_STATS.get(MusicData.WhiteKey.C, {})
+	var root_stats: Dictionary = MusicData.WHITE_KEY_STATS.get(MusicData.WhiteKey.C, {})
 	var base_dmg: float = root_stats.get("dmg", 3) * MusicData.PARAM_CONVERSION["dmg_per_point"]
 	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
 	var dissonance: float = MusicData.CHORD_DISSONANCE.get(chord_type, 0.0)
@@ -837,7 +837,7 @@ func _demo_cast_chord(config: Dictionary) -> void:
 		"damage": base_dmg * chord_multiplier,
 		"dissonance": dissonance,
 		"modifier": -1,
-		"timbre": MusicData.TimbreFamily.NONE,
+		"timbre": MusicData.TimbreType.NONE,
 		"accuracy_offset": 0.0,
 	}
 
@@ -891,7 +891,7 @@ func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
 		"size": size,
 		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
 		"modifier": modifier,
-		"timbre": MusicData.TimbreFamily.NONE,
+		"timbre": MusicData.TimbreType.NONE,
 		"timbre_name": "合成器",
 		"is_rapid_fire": false,
 		"rapid_fire_count": 1,

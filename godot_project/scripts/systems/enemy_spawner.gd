@@ -471,7 +471,7 @@ func _scripted_unlock(params: Dictionary) -> void:
 
 func _resolve_spawn_position(position_param) -> Vector2:
 	var player := get_tree().get_first_node_in_group("player")
-	var player_pos := player.global_position if player else Vector2.ZERO
+	var player_pos: Vector2 = player.global_position if player else Vector2.ZERO
 	
 	if position_param is Vector2:
 		return player_pos + position_param

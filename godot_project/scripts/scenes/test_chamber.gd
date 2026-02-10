@@ -488,7 +488,7 @@ func test_set_mode(mode_id: String) -> void:
 ## 自动施法逻辑：循环施放所有可用白键音符
 var _auto_fire_note_index: int = 0
 func _auto_fire_cast() -> void:
-	var available_keys := ModeSystem.get_available_white_keys() if ModeSystem else [
+	var available_keys: Array = ModeSystem.available_white_keys if ModeSystem else [
 		MusicData.WhiteKey.C, MusicData.WhiteKey.D, MusicData.WhiteKey.E,
 		MusicData.WhiteKey.F, MusicData.WhiteKey.G, MusicData.WhiteKey.A,
 		MusicData.WhiteKey.B,

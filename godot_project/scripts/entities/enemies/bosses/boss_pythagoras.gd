@@ -498,8 +498,8 @@ func _update_harmony_shield(delta: float) -> void:
 	
 	# 每 2 秒（约 4 拍@BPM=120）释放全屏脉冲
 	_harmony_shield_pulse_timer += delta
-	var beat_interval := 60.0 / max(GameManager.current_bpm, 1.0)
-	var pulse_interval := beat_interval * 4.0  # 4 拍
+	var beat_interval: float = 60.0 / maxf(GameManager.current_bpm, 1.0)
+	var pulse_interval: float = beat_interval * 4.0  # 4 拍
 	
 	if _harmony_shield_pulse_timer >= pulse_interval:
 		_harmony_shield_pulse_timer -= pulse_interval
@@ -569,9 +569,9 @@ func _update_irregular_pulse(delta: float) -> void:
 		_irregular_pulse_timer = 0.0
 		return
 	
-	var beat_interval := 60.0 / max(GameManager.current_bpm, 1.0)
+	var beat_interval: float = 60.0 / maxf(GameManager.current_bpm, 1.0)
 	var current_pattern_beats: float = _irregular_pulse_pattern[_irregular_pulse_index % _irregular_pulse_pattern.size()]
-	var pulse_interval := beat_interval * current_pattern_beats
+	var pulse_interval: float = beat_interval * current_pattern_beats
 	
 	# 简单计时器检测
 	# 使用 meta 存储上次脉冲时间

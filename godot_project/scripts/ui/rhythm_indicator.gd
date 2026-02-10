@@ -198,8 +198,8 @@ func judge_beat_accuracy() -> String:
 	var time_to_next_beat := _beat_interval - time_since_beat
 	
 	# 取距离最近的拍的时间差
-	var min_offset := min(time_since_beat, time_to_next_beat)
-	var offset_ratio := min_offset / _beat_interval
+	var min_offset: float = minf(time_since_beat, time_to_next_beat)
+	var offset_ratio: float = min_offset / _beat_interval
 	
 	if offset_ratio <= perfect_window:
 		_beat_accuracy = "perfect"
@@ -226,7 +226,7 @@ func get_beat_offset_ratio() -> float:
 	var current_time := Time.get_ticks_msec() / 1000.0
 	var time_since_beat := current_time - _last_beat_time
 	var time_to_next_beat := _beat_interval - time_since_beat
-	var min_offset := min(time_since_beat, time_to_next_beat)
+	var min_offset: float = minf(time_since_beat, time_to_next_beat)
 	return min_offset / _beat_interval
 
 ## 当前是否处于完美卡拍窗口内

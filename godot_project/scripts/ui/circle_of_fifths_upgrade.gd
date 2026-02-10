@@ -326,7 +326,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), BG_OVERLAY_COLOR)
 
 	# 标题
-	var title_alpha := clamp(_appear_progress * 2.0, 0.0, 1.0)
+	var title_alpha: float = clampf(_appear_progress * 2.0, 0.0, 1.0)
 	var title_color := TITLE_COLOR
 	title_color.a = title_alpha
 	draw_string(font, Vector2(_center.x - 60, _center.y - COMPASS_RADIUS - 50),

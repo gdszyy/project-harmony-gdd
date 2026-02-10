@@ -151,7 +151,7 @@ func _draw_slot(index: int, font: Font) -> void:
 	var config := _slot_configs[index]
 	var is_hover := (_hover_slot == index)
 	var is_active := (_active_config_slot == index)
-		var is_filled: bool = config.get("type", "empty") != "empty"
+	var is_filled: bool = config.get("type", "empty") != "empty"
 
 	# 背景
 	var bg_color := SLOT_EMPTY_COLOR

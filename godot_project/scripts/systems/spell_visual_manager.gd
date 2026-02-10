@@ -314,7 +314,7 @@ func _modifier_vfx_homing(pos: Vector2, color: Color) -> void:
 func _modifier_vfx_split(pos: Vector2, color: Color) -> void:
 	# 三个分裂核心
 	var cores: Array[Polygon2D] = []
-	var core_offsets := [
+	var core_offsets: Array[Vector2] = [
 		Vector2(0, -12),
 		Vector2(-10, 8),
 		Vector2(10, 8),
@@ -1806,3 +1806,16 @@ func clear_all() -> void:
 			if is_instance_valid(node):
 				node.queue_free()
 	_active_effects.clear()
+
+## 暂击视觉效果：在玩家位置生成一个闪光环
+func _spawn_crit_flash(pos: Vector2) -> void:
+	var flash := _create_ring(pos, 40.0, Color(1.0, 0.9, 0.2, 0.9))
+	flash.z_index = 60
+	var tween := flash.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(flash, "scale", Vector2(2.5, 2.5), 0.25)
+	tween.tween_property(flash, "modulate:a", 0.0, 0.3)
+	tween.chain()
+	tween.tween_callback(flash.queue_free)
+	_spawn_floating_text(pos + Vector2(0, -20), "★CRIT★", Color(1.0, 0.85, 0.1))
+	visual_effect_spawned.emit("crit_flash", pos)
