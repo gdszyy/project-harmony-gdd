@@ -21,12 +21,22 @@
 3. **重构或删除**：更新受影响条目的描述和状态，必要时添加说明。
 4. **归档内容**：被替换或废弃的实现应移入 `Archive/` 目录，并在 TODO 中注明。
 
+## 文档规范
+
+> **文档维护指南：** 所有文档贡献者应遵守 [文档维护规范](DOCUMENTATION_GUIDELINES.md)，包括命名规范、结构规范、归档流程等。该规范确保文档库的一致性和可维护性。
+
+**快速链接：**
+- **文档命名规范**：[DOCUMENTATION_GUIDELINES.md#一文档命名规范](DOCUMENTATION_GUIDELINES.md#一文档命名规范)
+- **归档流程**：[DOCUMENTATION_GUIDELINES.md#三文档归档流程](DOCUMENTATION_GUIDELINES.md#三文档归档流程)
+- **归档索引**：[Archive/INDEX.md](Archive/INDEX.md)
+
 ## 仓库结构
 
 ```
 project-harmony-gdd/
 ├── GDD.md                  # [核心] 实时主设计文档，包含最新最完整的游戏设计方案
 ├── README.md               # 本文件，仓库导航与开发规范
+├── DOCUMENTATION_GUIDELINES.md  # 文档维护规范（命名、结构、归档流程）
 ├── Feature_Completeness_Report.md  # 功能完整性检查报告（持续更新）
 ├── Assets/                 # 当前 GDD 引用的可视化图表
 │   ├── black_key_dual_role_v5.png
@@ -61,6 +71,7 @@ project-harmony-gdd/
 │   ├── TODO.md             # [关键] 开发任务清单 — 项目状态的唯一可信来源
 │   └── ...
 └── Archive/                # 历史版本存档
+    ├── INDEX.md            # 归档索引（所有归档文档的摘要和导航）
     ├── Reports/            # 实现与修复报告归档
     │   ├── AUDIO_EFFECTS_DESIGN.md
     │   ├── AUDIO_EFFECTS_IMPLEMENTATION_REPORT.md
@@ -109,3 +120,8 @@ project-harmony-gdd/
 ## 文档整理说明（2026-02-10）
 
 本次整理将历史实现报告和修复报告移入 `Archive/Reports/`，旧版设计文档移入 `Docs/Archive/`，删除了重复的 `Level_And_Boss_Design.md`（已被 v3.0 版本替代）。所有当前活跃的设计文档均保留在根目录和 `Docs/` 目录下，确保仓库结构清晰、易于导航。
+
+**同时建立了文档维护体系：**
+- 创建 [Archive/INDEX.md](Archive/INDEX.md) 归档索引，提供所有归档文档的摘要和导航
+- 制定 [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) 文档维护规范，明确命名、结构、归档流程
+- 在 README 中新增“文档规范”章节，为贡献者提供快速入口
