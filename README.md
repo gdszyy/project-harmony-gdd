@@ -30,6 +30,14 @@
 - **归档流程**：[DOCUMENTATION_GUIDELINES.md#三文档归档流程](DOCUMENTATION_GUIDELINES.md#三文档归档流程)
 - **归档索引**：[Archive/INDEX.md](Archive/INDEX.md)
 
+## 文档关联图
+
+为了帮助理解各设计文档之间的复杂关系，我们提供了一份可视化的文档关联图。
+
+[查看文档关联图](Docs/ProjectHarmony_Documentation_Map.md)
+
+---
+
 ## 仓库结构
 
 ```
@@ -46,7 +54,9 @@ project-harmony-gdd/
 │   ├── 关卡与Boss整合设计文档_v3.0.md  # [最新] v3.0 波次级精确设计
 │   ├── AestheticFatigueSystem_Documentation.md
 │   ├── ART_IMPLEMENTATION_FRAMEWORK.md  # [v2.0] 美术框架实施方案
-│   ├── Art_And_VFX_Direction.md  # [v2.0] 美术与VFX方向
+│   ├── Art_And_VFX_Direction.md  # [v2.1] 美术与VFX方向
+│   ├── Spell_Visual_Enhancement_Design.md # [v2.0] 法术系统视觉增强设计
+│   ├── ProjectHarmony_Documentation_Map.md  # 文档关联图
 │   ├── Audio_Design_Guide.md
 │   ├── Enemy_System_Design.md
 │   ├── MetaProgressionSystem_Documentation.md
@@ -111,7 +121,8 @@ project-harmony-gdd/
 13. **UI与美术风格优化 (v2.4)**：统一视觉语言（全局调色板、色彩规范）、UI动态"多汁感"提升、关键UI主题化重绘（Boss血条、和谐殿堂、谐振法典）、核心玩法视觉反馈强化（5个新Shader + VFX管理器）。
 14. **Boss 核心系统补全 (v2.4)**：音乐史七大 Boss (Pythagoras, Guido, Bach, Mozart, Beethoven, Jazz, Noise) 的核心战斗逻辑、阶段系统及专属机制已全部补全。
 15. **v5.0 音频与弹体系统强化**：新增 BGM 程序化音乐生成、受击反馈管理器、护盾伤害吸收、召唤物自动攻击、结晶障碍物、Boss 血条 UI 等。
-16. **频谱相位系统（共鸣切片）**：核心战斗解谜机制，通过音色相位切换（Attack/Sustain/Release）解锁特殊战术增益，并引入频谱偏移疲劳机制。
+16. **频谱相位系统（共鸣切片）**：核心战斗解谜机制，通过音色相位切换（Attack/Sustain/Release）解锁特殊战术增益，并引入频谱偏移疆劳机制。
+17. **法术系统视觉增强 (v2.0)**：对超过60种法术效果进行七大层级的细粒度视觉设计，涵盖一次性修饰层、法术形态层、攻击质感层、行为模式层、组合效果层、环境与惩罚层、频谱相位层。
 
 详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)**、**[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)** 和 **[关卡与Boss整合设计文档 v3.0](Docs/关卡与Boss整合设计文档_v3.0.md)**。
 

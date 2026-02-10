@@ -1,7 +1,7 @@
 # 《Project Harmony》美术风格评估与 Godot 图形 / VFX 实现方案
 
 **作者：** Manus AI
-**版本：** 2.0
+**版本：** 2.1
 **日期：** 2026年2月10日
 
 ---
@@ -1174,7 +1174,7 @@ var death_vfx_config = {
 
 ## 9. 法术形态与音色系统视觉设计
 
-> **扩展阅读**：本章提供了法术系统视觉设计的核心概述。对于更细粒度的设计规范，包括每种效果的具体视觉表现、交互反馈和实现细节，请参阅专项文档 [Spell_Visual_Enhancement_Design.md](./Spell_Visual_Enhancement_Design.md)。
+> **深度解析**：本章为法术系统的视觉设计提供了宏观框架和核心示例。关于所有法术效果（包括七大层级、超过60种具体机制）的逐项细粒度设计规范、完整的交互反馈方案以及技术实现细节，请参阅作为本文档官方扩展的 **[《法术系统视觉增强设计文档》](./Spell_Visual_Enhancement_Design.md)** [17]。该文档是实现所有法术视觉效果的最终执行依据。
 
 ### 9.1. 九种和弦法术的视觉形态
 
@@ -1474,3 +1474,5 @@ func update_projectiles(projectile_data: Array):
 8. `GDD.md` — 游戏设计文档主文件
 9. Godot 4.x 官方文档 — Shading Language, GPU Particles, MultiMesh
 10. 《Rez Infinite》、《Just Shapes & Beats》、《Geometry Wars》— 同类游戏美术参考
+
+[17]: ./Spell_Visual_Enhancement_Design.md "法术系统视觉增强设计文档"
