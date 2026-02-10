@@ -1,8 +1,14 @@
-## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 - v3.0 Full Interactive
+## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 - v4.0 Full Interactive + Demo
 ##
 ## 视觉风格：充满神秘感的魔法书，背景为羊皮纸/星图纹理。
-## 布局：顶部标题栏 + 左侧卷标签页/条目列表 + 右侧条目详情页
-## 功能：四卷完整数据浏览、条目解锁状态、搜索过滤、详情展示
+## 布局：顶部标题栏 + 左侧卷标签页/条目列表 + 右侧条目详情页（含法术演示区域）
+## 功能：四卷完整数据浏览、条目解锁状态、搜索过滤、详情展示、法术演示
+##
+## ★ v4.0 新增：法术演示区域
+##   - 在条目详情页底部新增演示区域
+##   - 演示使用实际 SpellcraftSystem 的施法接口（而非独立模拟）
+##   - 内嵌 SubViewport 渲染弹体效果，与游戏内表现完全一致
+##   - 支持音符、和弦、修饰符、节奏型等所有法术类型的演示
 extends Control
 
 # ============================================================
@@ -31,6 +37,8 @@ const ENTRY_BG := Color("#18142C")
 const ENTRY_HOVER := Color("#201A38")
 const ENTRY_SELECTED := Color("#2A2248")
 const DETAIL_BG := Color("#120E22F2")
+const DEMO_BG := Color("#0D0A1A")
+const DEMO_BORDER := Color("#9D6FFF33")
 
 # ============================================================
 # 卷配置 — 完整四卷数据映射
@@ -103,6 +111,16 @@ var _title_label: Label = null
 var _progress_label: Label = null
 var _subcat_bar: HBoxContainer = null
 
+# ★ 法术演示区域节点
+var _demo_viewport: SubViewport = null
+var _demo_viewport_container: SubViewportContainer = null
+var _demo_projectile_manager: Node2D = null
+var _demo_section: VBoxContainer = null
+var _demo_cast_btn: Button = null
+var _demo_clear_btn: Button = null
+var _demo_info_label: Label = null
+var _demo_status_label: Label = null
+
 # ============================================================
 # 状态
 # ============================================================
@@ -110,6 +128,8 @@ var _current_volume_idx: int = 0
 var _current_subcat_idx: int = 0
 var _current_entry_id: String = ""
 var _search_filter: String = ""
+var _demo_active: bool = false
+var _demo_timer: float = 0.0
 
 ## 解锁状态 (从 CodexManager 同步)
 var _unlocked_entries: Dictionary = {}  # { "entry_id": true }
@@ -124,6 +144,15 @@ func _ready() -> void:
 	_load_unlock_state()
 	_build_ui()
 	_select_volume(0)
+
+func _process(delta: float) -> void:
+	# 更新演示区域的弹体
+	if _demo_active and _demo_projectile_manager:
+		_demo_projectile_manager.update_projectiles(delta)
+		_demo_timer += delta
+		# 自动清理超过 5 秒的演示
+		if _demo_timer > 5.0:
+			_clear_demo()
 
 func _load_unlock_state() -> void:
 	if _codex_manager and _codex_manager.has_method("get_unlocked_entries"):
@@ -384,7 +413,9 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 	if is_unlocked:
 		var name_text: String = entry.get("name", entry_id)
 		var subtitle: String = entry.get("subtitle", "")
-		btn.text = "%s  —  %s" % [name_text, subtitle] if not subtitle.is_empty() else name_text
+		var has_demo := CodexData.has_demo(entry_id)
+		var demo_indicator := " ▶" if has_demo else ""
+		btn.text = "%s  —  %s%s" % [name_text, subtitle, demo_indicator] if not subtitle.is_empty() else name_text + demo_indicator
 		# 稀有度颜色指示（通过文字前缀模拟）
 		btn.add_theme_color_override("font_color", rarity_color)
 	else:
@@ -406,6 +437,9 @@ func _show_entry_detail(entry_id: String) -> void:
 	var entry := CodexData.find_entry(entry_id)
 	if entry.is_empty():
 		return
+
+	# 停止当前演示
+	_clear_demo()
 
 	# 清除旧详情
 	for child in _detail_container.get_children():
@@ -463,6 +497,10 @@ func _show_entry_detail(entry_id: String) -> void:
 	# ---- 属性表格 (根据条目类型显示不同信息) ----
 	_build_detail_stats(entry_id, entry)
 
+	# ---- ★ 法术演示区域 ----
+	if CodexData.has_demo(entry_id):
+		_build_demo_section(entry_id, entry)
+
 	# 重建条目列表以更新选中状态
 	_rebuild_entry_list()
 
@@ -505,13 +543,18 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 	stats_grid.add_theme_constant_override("h_separation", 16)
 	stats_grid.add_theme_constant_override("v_separation", 6)
 
-	# 音符属性
+	# 音符属性 — 显示原始参数和实际转换值
 	if entry.has("stats"):
 		var stats: Dictionary = entry["stats"]
-		_add_stat_row(stats_grid, "伤害 (DMG)", str(stats.get("dmg", 0)))
-		_add_stat_row(stats_grid, "速度 (SPD)", str(stats.get("spd", 0)))
-		_add_stat_row(stats_grid, "持续 (DUR)", str(stats.get("dur", 0)))
-		_add_stat_row(stats_grid, "范围 (SIZE)", str(stats.get("size", 0)))
+		var dmg: int = stats.get("dmg", 0)
+		var spd: int = stats.get("spd", 0)
+		var dur: int = stats.get("dur", 0)
+		var sz: int = stats.get("size", 0)
+		_add_stat_row(stats_grid, "伤害 (DMG)", "%d (= %d 基础伤害)" % [dmg, dmg * 10])
+		_add_stat_row(stats_grid, "速度 (SPD)", "%d (= %d 像素/秒)" % [spd, spd * 200])
+		_add_stat_row(stats_grid, "持续 (DUR)", "%d (= %.1f 秒)" % [dur, dur * 0.5])
+		_add_stat_row(stats_grid, "范围 (SIZE)", "%d (= %d 像素)" % [sz, sz * 8])
+		_add_stat_row(stats_grid, "参数总和", "%d / 12" % (dmg + spd + dur + sz))
 
 	# 和弦属性
 	if entry.has("intervals"):
@@ -519,8 +562,12 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 		_add_stat_row(stats_grid, "音程构成", str(intervals))
 	if entry.has("spell_form"):
 		_add_stat_row(stats_grid, "法术形态", str(entry["spell_form"]))
+	if entry.has("multiplier"):
+		_add_stat_row(stats_grid, "伤害倍率", "%.1fx" % entry["multiplier"])
 	if entry.has("dissonance"):
-		_add_stat_row(stats_grid, "不和谐度", "%.1f" % entry["dissonance"])
+		var diss: float = entry["dissonance"]
+		var diss_warning := " (超过 2.0 触发生命腐蚀)" if diss > 2.0 else ""
+		_add_stat_row(stats_grid, "不和谐度", "%.1f%s" % [diss, diss_warning])
 	if entry.has("fatigue_cost"):
 		_add_stat_row(stats_grid, "疲劳代价", "%.2f" % entry["fatigue_cost"])
 
@@ -533,6 +580,8 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 		_add_stat_row(stats_grid, "可用音符", str(entry["available_keys"]))
 	if entry.has("passive"):
 		_add_stat_row(stats_grid, "被动效果", str(entry["passive"]))
+	if entry.has("damage_multiplier"):
+		_add_stat_row(stats_grid, "伤害倍率", "%.1fx" % entry["damage_multiplier"])
 
 	# 音色属性
 	if entry.has("family"):
@@ -548,7 +597,7 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 	if entry.has("hp"):
 		_add_stat_row(stats_grid, "生命值", str(entry["hp"]))
 	if entry.has("speed"):
-		_add_stat_row(stats_grid, "移动速度", str(entry["speed"]))
+		_add_stat_row(stats_grid, "移动速度", "%d 像素/秒" % entry["speed"])
 	if entry.has("damage"):
 		_add_stat_row(stats_grid, "接触伤害", str(entry["damage"]))
 	if entry.has("quantized_fps"):
@@ -580,6 +629,11 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 	if entry.has("chapter"):
 		_add_stat_row(stats_grid, "所属章节", "第 %d 章" % entry["chapter"])
 
+	# 颜色
+	if entry.has("color"):
+		var c: Color = entry["color"]
+		_add_stat_row(stats_grid, "弹体颜色", "R%.2f G%.2f B%.2f" % [c.r, c.g, c.b])
+
 	if stats_grid.get_child_count() > 0:
 		_detail_container.add_child(HSeparator.new())
 		var stats_title := Label.new()
@@ -603,6 +657,322 @@ func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) 
 	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(value)
+
+# ============================================================
+# ★ 法术演示区域
+# ============================================================
+
+## 构建法术演示区域
+func _build_demo_section(entry_id: String, entry: Dictionary) -> void:
+	var demo_config := CodexData.get_demo_config(entry_id)
+	if demo_config.is_empty():
+		return
+
+	_detail_container.add_child(HSeparator.new())
+
+	# 演示区域标题
+	var demo_title := Label.new()
+	demo_title.text = "▶ 法术演示"
+	demo_title.add_theme_font_size_override("font_size", 14)
+	demo_title.add_theme_color_override("font_color", GOLD)
+	_detail_container.add_child(demo_title)
+
+	# 演示说明
+	_demo_info_label = Label.new()
+	_demo_info_label.text = demo_config.get("demo_desc", "点击下方按钮查看法术效果。")
+	_demo_info_label.add_theme_font_size_override("font_size", 11)
+	_demo_info_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	_demo_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_container.add_child(_demo_info_label)
+
+	# 演示视口容器（带边框背景）
+	var demo_panel := PanelContainer.new()
+	demo_panel.custom_minimum_size = Vector2(0, 220)
+
+	# 创建 SubViewport 用于渲染弹体
+	_demo_viewport_container = SubViewportContainer.new()
+	_demo_viewport_container.custom_minimum_size = Vector2(0, 200)
+	_demo_viewport_container.stretch = true
+	_demo_viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	_demo_viewport = SubViewport.new()
+	_demo_viewport.size = Vector2i(600, 200)
+	_demo_viewport.transparent_bg = true
+	_demo_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+	# 在 SubViewport 中创建 ProjectileManager 实例
+	# ★ 使用与游戏相同的 ProjectileManager 脚本
+	var pm_script = load("res://scripts/systems/projectile_manager.gd")
+	if pm_script:
+		_demo_projectile_manager = Node2D.new()
+		_demo_projectile_manager.set_script(pm_script)
+		_demo_viewport.add_child(_demo_projectile_manager)
+
+		# 添加深色背景
+		var bg := ColorRect.new()
+		bg.color = DEMO_BG
+		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		bg.z_index = -1
+		_demo_viewport.add_child(bg)
+
+		# 添加网格线（帮助感知弹体运动）
+		var grid := _create_demo_grid()
+		_demo_viewport.add_child(grid)
+
+	_demo_viewport_container.add_child(_demo_viewport)
+	demo_panel.add_child(_demo_viewport_container)
+	_detail_container.add_child(demo_panel)
+
+	# 控制按钮栏
+	var btn_bar := HBoxContainer.new()
+	btn_bar.add_theme_constant_override("separation", 8)
+
+	_demo_cast_btn = Button.new()
+	_demo_cast_btn.text = "▶ 施放演示"
+	_demo_cast_btn.custom_minimum_size = Vector2(120, 32)
+	_demo_cast_btn.pressed.connect(_on_demo_cast.bind(entry_id))
+	btn_bar.add_child(_demo_cast_btn)
+
+	_demo_clear_btn = Button.new()
+	_demo_clear_btn.text = "✕ 清除"
+	_demo_clear_btn.custom_minimum_size = Vector2(80, 32)
+	_demo_clear_btn.pressed.connect(_clear_demo)
+	btn_bar.add_child(_demo_clear_btn)
+
+	# 状态标签
+	_demo_status_label = Label.new()
+	_demo_status_label.text = ""
+	_demo_status_label.add_theme_font_size_override("font_size", 10)
+	_demo_status_label.add_theme_color_override("font_color", TEXT_DIM)
+	_demo_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_bar.add_child(_demo_status_label)
+
+	_detail_container.add_child(btn_bar)
+
+## 创建演示区域的网格背景
+func _create_demo_grid() -> Node2D:
+	var grid := Node2D.new()
+	grid.z_index = -1
+	# 网格将在 _draw 中绘制（通过自定义 Node2D）
+	return grid
+
+## 演示施法按钮回调
+func _on_demo_cast(entry_id: String) -> void:
+	var demo_config := CodexData.get_demo_config(entry_id)
+	if demo_config.is_empty():
+		return
+
+	# 清除之前的弹体
+	if _demo_projectile_manager and _demo_projectile_manager.has_method("clear_all"):
+		_demo_projectile_manager.clear_all()
+
+	_demo_active = true
+	_demo_timer = 0.0
+
+	var demo_type: String = demo_config.get("demo_type", "")
+	match demo_type:
+		"note":
+			_demo_cast_note(demo_config)
+		"note_modifier":
+			_demo_cast_note_modifier(demo_config)
+		"chord":
+			_demo_cast_chord(demo_config)
+		"rhythm":
+			_demo_cast_rhythm(demo_config)
+		_:
+			_update_demo_status("未知演示类型: %s" % demo_type)
+
+## ★ 演示施放音符（通过 SpellcraftSystem 信号链 + 本地 ProjectileManager）
+func _demo_cast_note(config: Dictionary) -> void:
+	var white_key: int = config.get("demo_note", 0)
+	var spell_data := _build_demo_spell_data(white_key, -1)
+
+	# 调整弹体位置和方向以适应演示视口
+	spell_data["_demo_origin"] = Vector2(50, 100)  # 从左侧发射
+	spell_data["_demo_direction"] = Vector2.RIGHT
+
+	# 通过 ProjectileManager 的实际接口生成弹体
+	_spawn_demo_projectile(spell_data)
+
+	var note_name := MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
+	_update_demo_status("施放: %s | DMG=%.0f SPD=%.0f DUR=%.1fs SIZE=%.0fpx" % [
+		note_name, spell_data["damage"], spell_data["speed"],
+		spell_data["duration"], spell_data["size"]
+	])
+
+## ★ 演示施放带修饰符的音符
+func _demo_cast_note_modifier(config: Dictionary) -> void:
+	var white_key: int = config.get("demo_note", 0)
+	var modifier: int = config.get("demo_modifier", -1)
+	var spell_data := _build_demo_spell_data(white_key, modifier)
+
+	spell_data["_demo_origin"] = Vector2(50, 100)
+	spell_data["_demo_direction"] = Vector2.RIGHT
+
+	_spawn_demo_projectile(spell_data)
+
+	var note_name := MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
+	var mod_name := _get_modifier_display_name(modifier)
+	_update_demo_status("施放: %s + %s" % [note_name, mod_name])
+
+## ★ 演示施放和弦法术
+func _demo_cast_chord(config: Dictionary) -> void:
+	var chord_type: int = config.get("demo_chord_type", 0)
+	var spell_info: Dictionary = MusicData.CHORD_SPELL_MAP.get(chord_type, {})
+	if spell_info.is_empty():
+		_update_demo_status("未知和弦类型")
+		return
+
+	# 构建和弦 spell_data（与 SpellcraftSystem._execute_chord_cast 一致）
+	var root_stats := MusicData.WHITE_KEY_STATS.get(MusicData.WhiteKey.C, {})
+	var base_dmg: float = root_stats.get("dmg", 3) * MusicData.PARAM_CONVERSION["dmg_per_point"]
+	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
+	var dissonance: float = MusicData.CHORD_DISSONANCE.get(chord_type, 0.0)
+
+	var chord_data := {
+		"type": "chord",
+		"chord_type": chord_type,
+		"spell_form": spell_info.get("form", 0),
+		"spell_name": spell_info.get("name", ""),
+		"damage": base_dmg * chord_multiplier,
+		"dissonance": dissonance,
+		"modifier": -1,
+		"timbre": MusicData.TimbreFamily.NONE,
+		"accuracy_offset": 0.0,
+	}
+
+	# 通过 ProjectileManager 的和弦施法接口生成弹体
+	if _demo_projectile_manager and _demo_projectile_manager.has_method("spawn_chord_projectiles"):
+		# 设置演示用的玩家位置（视口中心）
+		_demo_projectile_manager.spawn_chord_projectiles(chord_data, Vector2(300, 100), Vector2.RIGHT)
+	else:
+		# 回退：通过 SpellcraftSystem 信号链（弹体会出现在主游戏场景中）
+		SpellcraftSystem.chord_cast.emit(chord_data)
+
+	_update_demo_status("施放和弦: %s | DMG=%.0f | 不和谐度=%.1f" % [
+		spell_info.get("name", ""), base_dmg * chord_multiplier, dissonance
+	])
+
+## ★ 演示节奏型效果
+func _demo_cast_rhythm(config: Dictionary) -> void:
+	var white_key: int = config.get("demo_note", 4)  # 默认 G
+	var pattern_type: String = config.get("demo_rhythm_pattern", "full")
+
+	# 根据节奏型模式连续施放多个弹体以展示效果
+	var spell_count := 4
+	var delay := 0.15
+
+	for i in range(spell_count):
+		var spell_data := _build_demo_spell_data(white_key, -1)
+		spell_data["_demo_origin"] = Vector2(50, 40 + i * 40)
+		spell_data["_demo_direction"] = Vector2.RIGHT
+
+		# 应用节奏型效果到弹体（与 ProjectileManager._apply_rhythm_to_projectile 一致）
+		_apply_demo_rhythm_effect(spell_data, pattern_type)
+		_spawn_demo_projectile(spell_data)
+
+	_update_demo_status("节奏型演示: %s (4 个弹体)" % pattern_type)
+
+## 构建演示用的 spell_data（与 SpellcraftSystem 的实际数据结构一致）
+func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
+	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(white_key, MusicData.WHITE_KEY_STATS[MusicData.WhiteKey.C])
+	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"]
+	var speed: float = stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"]
+	var duration: float = stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"]
+	var size: float = stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"]
+
+	return {
+		"type": "note",
+		"note": white_key,
+		"stats": stats,
+		"damage": base_damage,
+		"speed": speed,
+		"duration": duration,
+		"size": size,
+		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
+		"modifier": modifier,
+		"timbre": MusicData.TimbreFamily.NONE,
+		"timbre_name": "合成器",
+		"is_rapid_fire": false,
+		"rapid_fire_count": 1,
+		"has_knockback": false,
+		"dodge_back": false,
+		"accuracy_offset": 0.0,
+	}
+
+## 在演示 ProjectileManager 中生成弹体
+func _spawn_demo_projectile(spell_data: Dictionary) -> void:
+	if not _demo_projectile_manager:
+		return
+
+	var origin: Vector2 = spell_data.get("_demo_origin", Vector2(50, 100))
+	var direction: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+
+	# 通过 ProjectileManager 的实际接口生成弹体
+	if _demo_projectile_manager.has_method("spawn_from_spell"):
+		_demo_projectile_manager.spawn_from_spell(spell_data, origin, direction)
+	elif _demo_projectile_manager.has_method("spawn_projectile"):
+		# 回退：直接调用底层生成方法
+		_demo_projectile_manager.spawn_projectile({
+			"position": origin,
+			"velocity": direction * spell_data["speed"],
+			"damage": spell_data["damage"],
+			"size": spell_data["size"],
+			"duration": spell_data["duration"],
+			"color": spell_data["color"],
+			"modifier": spell_data.get("modifier", -1),
+		})
+
+## 应用演示用的节奏型效果
+func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> void:
+	match pattern_type:
+		"full":
+			# 均匀八分音符：连射效果
+			spell_data["damage"] *= 0.6
+			spell_data["speed"] *= 1.2
+			spell_data["size"] *= 0.7
+		"dotted":
+			# 附点节奏：重击
+			spell_data["damage"] *= 1.4
+			spell_data["size"] *= 1.2
+		"syncopated":
+			# 切分节奏：高速穿透
+			spell_data["speed"] *= 1.3
+		"swing":
+			# 摇摆节奏：波浪弹道（标记，由 ProjectileManager 处理）
+			spell_data["_wave_trajectory"] = true
+		"triplet":
+			# 三连音：小弹体
+			spell_data["size"] *= 0.8
+			spell_data["duration"] *= 0.8
+		"rest_boost":
+			# 精准蓄力：增强
+			spell_data["damage"] *= 1.8
+			spell_data["size"] *= 1.3
+
+## 清除演示
+func _clear_demo() -> void:
+	_demo_active = false
+	_demo_timer = 0.0
+	if _demo_projectile_manager and _demo_projectile_manager.has_method("clear_all"):
+		_demo_projectile_manager.clear_all()
+	if _demo_status_label:
+		_demo_status_label.text = ""
+
+## 更新演示状态文字
+func _update_demo_status(text: String) -> void:
+	if _demo_status_label:
+		_demo_status_label.text = text
+
+## 获取修饰符显示名称
+func _get_modifier_display_name(modifier: int) -> String:
+	match modifier:
+		MusicData.ModifierEffect.PIERCE: return "锐化(穿透)"
+		MusicData.ModifierEffect.HOMING: return "追踪"
+		MusicData.ModifierEffect.SPLIT: return "分裂"
+		MusicData.ModifierEffect.ECHO: return "回响"
+		MusicData.ModifierEffect.SCATTER: return "散射"
+		_: return "无"
 
 # ============================================================
 # 进度统计
@@ -649,6 +1019,7 @@ func _on_search_changed(new_text: String) -> void:
 	_rebuild_entry_list()
 
 func _on_back_pressed() -> void:
+	_clear_demo()
 	back_pressed.emit()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
