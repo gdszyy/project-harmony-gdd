@@ -35,6 +35,8 @@ signal transition_progress_updated(progress: float)  ## 0.0 → 1.0
 signal color_theme_changed(from_color: Color, to_color: Color, progress: float)
 signal special_mechanic_activated(mechanic_name: String, params: Dictionary)
 signal special_mechanic_deactivated(mechanic_name: String)
+signal scripted_wave_injected(wave_name: String)
+signal scripted_wave_finished(wave_name: String)
 
 ## 新增信号：游戏通关
 signal game_completed()
@@ -97,6 +99,11 @@ var _completed_chapters: Array[int] = []
 ## 无尽模式循环计数
 var _endless_loop_count: int = 0
 var _is_endless_mode: bool = false
+
+## 剧本波次调度
+var _scripted_wave_schedule: Array = []  # 当前章节的剧本波次调度表
+var _scripted_wave_index: int = 0  # 下一个待触发的剧本波次索引
+var _pending_scripted_wave: Resource = null  # 待执行的剧本波次
 
 ## 章节过渡视觉状态
 var _transition_from_color: Color = Color.BLACK
@@ -226,6 +233,11 @@ func _start_chapter(chapter_index: int) -> void:
 	_current_boss_key = ""
 	_elites_spawned_this_chapter = 0
 	
+	# 初始化剧本波次调度表
+	_scripted_wave_schedule = _chapter_config.get("scripted_waves", [])
+	_scripted_wave_index = 0
+	_pending_scripted_wave = null
+	
 	# 设置章节BPM
 	var target_bpm: float = _chapter_config.get("bpm", 120)
 	_start_bpm_transition(target_bpm)
@@ -242,6 +254,15 @@ func _start_chapter(chapter_index: int) -> void:
 	
 	# 通知 EnemySpawner 切换到章节模式
 	_notify_spawner_chapter_start()
+	
+	# 连接 EnemySpawner 的剧本波次完成信号
+	var spawner := get_tree().get_first_node_in_group("enemy_spawner")
+	if spawner:
+		if spawner.has_signal("scripted_wave_completed") and not spawner.scripted_wave_completed.is_connected(_on_scripted_wave_completed):
+			spawner.scripted_wave_completed.connect(_on_scripted_wave_completed)
+	
+	# 检查是否有 chapter_start 触发的剧本波次
+	_check_scripted_wave_trigger("chapter_start", 0)
 
 func _process_chapter(delta: float) -> void:
 	_chapter_timer += delta
@@ -629,6 +650,65 @@ func advance_chapter_wave() -> void:
 	var wave_type: String = template.get("type", "normal")
 	
 	wave_started_in_chapter.emit(_current_chapter, _chapter_wave, wave_type)
+	
+	# 检查是否应触发剧本波次
+	_check_scripted_wave_trigger("after_random_wave", _chapter_wave)
+
+# ============================================================
+# 剧本波次调度器
+# ============================================================
+
+## 检查并触发剧本波次
+func _check_scripted_wave_trigger(trigger_type: String, wave_number: int) -> void:
+	if _scripted_wave_index >= _scripted_wave_schedule.size():
+		return
+	
+	var entry: Dictionary = _scripted_wave_schedule[_scripted_wave_index]
+	var entry_trigger: String = entry.get("trigger", "")
+	
+	var should_trigger := false
+	
+	match entry_trigger:
+		"chapter_start":
+			should_trigger = (trigger_type == "chapter_start")
+		"after_random_wave":
+			var trigger_wave: int = entry.get("trigger_wave", 0)
+			should_trigger = (trigger_type == "after_random_wave" and wave_number >= trigger_wave)
+		"time_based":
+			var trigger_time: float = entry.get("trigger_time", 0.0)
+			should_trigger = (_chapter_timer >= trigger_time)
+	
+	if should_trigger:
+		var wave_data_path: String = entry.get("wave_data", "")
+		if not wave_data_path.is_empty():
+			var wave_data = load(wave_data_path)
+			if wave_data:
+				_inject_scripted_wave(wave_data)
+			else:
+				push_warning("ChapterManager: Failed to load wave data: %s" % wave_data_path)
+		_scripted_wave_index += 1
+
+## 注入剧本波次到 EnemySpawner
+func _inject_scripted_wave(wave_data: Resource) -> void:
+	var spawner := get_tree().get_first_node_in_group("enemy_spawner")
+	if spawner and spawner.has_method("play_scripted_wave"):
+		spawner.play_scripted_wave(wave_data)
+		var wave_name: String = wave_data.wave_name if wave_data.has("wave_name") else "unknown"
+		scripted_wave_injected.emit(wave_name)
+	else:
+		push_warning("ChapterManager: EnemySpawner not found or missing play_scripted_wave method")
+
+## 剧本波次完成回调
+func _on_scripted_wave_completed(wave_data: Resource) -> void:
+	var wave_name: String = wave_data.wave_name if wave_data and wave_data.has("wave_name") else "unknown"
+	scripted_wave_finished.emit(wave_name)
+	
+	# 检查是否有紧接的下一个剧本波次
+	if _scripted_wave_index < _scripted_wave_schedule.size():
+		var next_entry: Dictionary = _scripted_wave_schedule[_scripted_wave_index]
+		var next_trigger: String = next_entry.get("trigger", "")
+		if next_trigger == "after_scripted":
+			_check_scripted_wave_trigger("after_scripted", 0)
 
 # ============================================================
 # 难度缩放接口

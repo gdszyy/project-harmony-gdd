@@ -16,6 +16,8 @@ signal wave_started(wave_number: int, wave_type: String)
 signal wave_completed(wave_number: int)
 signal elite_spawned(enemy_type: String, position: Vector2)
 signal spawn_count_changed(active: int, total_spawned: int)
+signal scripted_wave_completed(wave_data: Resource)
+signal scripted_wave_started(wave_name: String)
 
 # ============================================================
 # 敌人场景预加载（基础五种）
@@ -127,6 +129,14 @@ var _chapter_wave: int = 0  # 章节内波次号
 var _current_wave_template: Dictionary = {}
 var _boss_phase_active: bool = false  # Boss 阶段（暂停普通生成）
 
+## ===== 剧本波次模式状态 =====
+var _scripted_wave_active: bool = false
+var _scripted_wave_data: Resource = null  # WaveData
+var _scripted_wave_timer: float = 0.0
+var _scripted_event_index: int = 0
+var _scripted_enemies: Array[Node2D] = []  # 剧本波次生成的敌人
+var _last_spawned_enemy: Node2D = null  # 最后生成的敌人（用于 SPAWN_ESCORT）
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -144,6 +154,12 @@ func _process(delta: float) -> void:
 	
 	# Boss 阶段暂停普通生成
 	if _boss_phase_active:
+		_cleanup_dead_enemies()
+		return
+	
+	# 剧本模式优先
+	if _scripted_wave_active:
+		_process_scripted_wave(delta)
 		_cleanup_dead_enemies()
 		return
 	
@@ -228,6 +244,304 @@ func exit_boss_phase() -> void:
 	_boss_phase_active = false
 	_is_resting = true
 	_wave_rest_timer = 2.0
+
+# ============================================================
+# 剧本波次接口（由 ChapterManager 调用）
+# ============================================================
+
+## 注入一个剧本波次，暂停随机生成
+func play_scripted_wave(wave_data: Resource) -> void:
+	_scripted_wave_active = true
+	_scripted_wave_data = wave_data
+	_scripted_wave_timer = 0.0
+	_scripted_event_index = 0
+	_scripted_enemies.clear()
+	_last_spawned_enemy = null
+	# 暂停随机生成
+	_is_wave_active = false
+	_is_resting = false
+	scripted_wave_started.emit(wave_data.wave_name if wave_data else "unknown")
+
+## 恢复随机生成
+func resume_random_spawning() -> void:
+	_scripted_wave_active = false
+	_scripted_wave_data = null
+	_scripted_enemies.clear()
+	_is_resting = true
+	_wave_rest_timer = 2.0
+
+## 检查剧本波次是否正在进行
+func is_scripted_wave_active() -> bool:
+	return _scripted_wave_active
+
+# ============================================================
+# 剧本波次处理
+# ============================================================
+
+func _process_scripted_wave(delta: float) -> void:
+	if _scripted_wave_data == null:
+		_scripted_wave_active = false
+		return
+	
+	_scripted_wave_timer += delta
+	var events: Array = _scripted_wave_data.events
+	
+	# 按时间戳触发事件
+	while _scripted_event_index < events.size():
+		var event: Dictionary = events[_scripted_event_index]
+		var timestamp: float = event.get("timestamp", 0.0)
+		if _scripted_wave_timer >= timestamp:
+			_execute_scripted_event(event)
+			_scripted_event_index += 1
+		else:
+			break
+	
+	# 所有事件已触发后，检查完成条件
+	if _scripted_event_index >= events.size():
+		var condition: String = _scripted_wave_data.success_condition if _scripted_wave_data.has("success_condition") else "kill_all"
+		var is_complete := false
+		
+		match condition:
+			"kill_all":
+				# 所有剧本敌人已被击杀
+				var alive_scripted := _scripted_enemies.filter(
+					func(e): return is_instance_valid(e) and e.get_meta("scripted", false)
+				)
+				is_complete = alive_scripted.is_empty()
+			"survive":
+				var survive_time: float = _scripted_wave_data.success_params.get("time", 30.0) if _scripted_wave_data.has("success_params") else 30.0
+				is_complete = _scripted_wave_timer >= (_scripted_wave_data.get_last_event_timestamp() + survive_time)
+			_:
+				is_complete = true
+		
+		if is_complete:
+			var completed_data := _scripted_wave_data
+			scripted_wave_completed.emit(completed_data)
+			resume_random_spawning()
+
+func _execute_scripted_event(event: Dictionary) -> void:
+	var event_type: String = event.get("type", "")
+	var params: Dictionary = event.get("params", {})
+	
+	# 如果参数直接在 event 顶层（兼容简化格式）
+	if params.is_empty():
+		params = event.duplicate()
+		params.erase("timestamp")
+		params.erase("type")
+	
+	match event_type:
+		"SPAWN":
+			_scripted_spawn(params)
+		"SPAWN_SWARM":
+			_scripted_spawn_swarm(params)
+		"SPAWN_ESCORT":
+			_scripted_spawn_escort(params)
+		"SET_BPM":
+			_scripted_set_bpm(params)
+		"SHOW_HINT":
+			_scripted_show_hint(params)
+		"CONDITIONAL_HINT":
+			_scripted_conditional_hint(params)
+		"UNLOCK":
+			_scripted_unlock(params)
+
+func _scripted_spawn(params: Dictionary) -> void:
+	var enemy_type: String = params.get("enemy", "static")
+	var position_param = params.get("position", "NORTH")
+	var spawn_pos := _resolve_spawn_position(position_param)
+	
+	_spawn_enemy_at(spawn_pos, enemy_type)
+	
+	# 获取刚生成的敌人并应用剧本参数
+	if not _active_enemies.is_empty():
+		var enemy := _active_enemies[-1]
+		if is_instance_valid(enemy):
+			_apply_scripted_params(enemy, params)
+			enemy.set_meta("scripted", true)
+			_scripted_enemies.append(enemy)
+			_last_spawned_enemy = enemy
+
+func _scripted_spawn_swarm(params: Dictionary) -> void:
+	var enemy_type: String = params.get("enemy", "static")
+	var count: int = params.get("count", 5)
+	var formation: String = params.get("formation", "LINE")
+	var direction: String = params.get("direction", "NORTH")
+	var speed: float = params.get("speed", 80.0)
+	var swarm_enabled: bool = params.get("swarm_enabled", false)
+	
+	var player := get_tree().get_first_node_in_group("player")
+	var base_pos := _resolve_spawn_position(direction)
+	
+	for i in range(count):
+		var offset := _get_formation_offset(formation, i, count)
+		var spawn_pos := base_pos + offset
+		
+		_spawn_enemy_at(spawn_pos, enemy_type)
+		
+		if not _active_enemies.is_empty():
+			var enemy := _active_enemies[-1]
+			if is_instance_valid(enemy):
+				enemy.set("move_speed", speed)
+				enemy.set_meta("scripted", true)
+				if swarm_enabled:
+					enemy.set_meta("swarm_enabled", true)
+				_scripted_enemies.append(enemy)
+				_last_spawned_enemy = enemy
+
+func _scripted_spawn_escort(params: Dictionary) -> void:
+	var enemy_type: String = params.get("enemy", "static")
+	var count: int = params.get("count", 4)
+	var orbit_radius: float = params.get("orbit_radius", 80.0)
+	var speed: float = params.get("speed", 80.0)
+	var orbit_target_str: String = params.get("orbit_target", "LAST_SPAWNED")
+	
+	var orbit_center := Vector2.ZERO
+	if orbit_target_str == "LAST_SPAWNED" and is_instance_valid(_last_spawned_enemy):
+		orbit_center = _last_spawned_enemy.global_position
+	
+	for i in range(count):
+		var angle := (TAU / count) * i
+		var spawn_pos := orbit_center + Vector2.from_angle(angle) * orbit_radius
+		
+		_spawn_enemy_at(spawn_pos, enemy_type)
+		
+		if not _active_enemies.is_empty():
+			var enemy := _active_enemies[-1]
+			if is_instance_valid(enemy):
+				enemy.set("move_speed", speed)
+				enemy.set_meta("scripted", true)
+				enemy.set_meta("escort", true)
+				if is_instance_valid(_last_spawned_enemy):
+					enemy.set_meta("escort_target", _last_spawned_enemy)
+				_scripted_enemies.append(enemy)
+
+func _scripted_set_bpm(params: Dictionary) -> void:
+	var bpm: float = params.get("bpm", 120.0)
+	var chapter_mgr := get_node_or_null("/root/ChapterManager")
+	if chapter_mgr and chapter_mgr.has_method("force_bpm_change"):
+		chapter_mgr.force_bpm_change(bpm, false)
+	else:
+		GameManager.current_bpm = bpm
+		if GameManager.has_method("_update_beat_interval"):
+			GameManager._update_beat_interval()
+
+func _scripted_show_hint(params: Dictionary) -> void:
+	var text: String = params.get("text", "")
+	var duration: float = params.get("duration", 4.0)
+	var highlight_ui: String = params.get("highlight_ui", "")
+	
+	var hint_mgr := get_node_or_null("/root/TutorialHintManager")
+	if hint_mgr and hint_mgr.has_method("show_hint"):
+		hint_mgr.show_hint(text, duration, highlight_ui)
+
+func _scripted_conditional_hint(params: Dictionary) -> void:
+	var condition: String = params.get("condition", "")
+	var text: String = params.get("text", "")
+	var highlight_ui: String = params.get("highlight_ui", "")
+	
+	var hint_mgr := get_node_or_null("/root/TutorialHintManager")
+	if hint_mgr:
+		if hint_mgr.has_method("register_conditional_hint"):
+			hint_mgr.register_conditional_hint(condition, text, highlight_ui)
+		# 解析条件中的超时时间（如 NO_REST_USED_FOR_15s → 15秒）
+		var timeout := _parse_condition_timeout(condition)
+		if timeout > 0.0 and hint_mgr.has_method("start_condition_tracker"):
+			hint_mgr.start_condition_tracker(condition, timeout)
+
+func _scripted_unlock(params: Dictionary) -> void:
+	var unlock_type: String = params.get("type", "")
+	var message: String = params.get("message", "")
+	var unlock_name: String = ""
+	
+	match unlock_type:
+		"note":
+			unlock_name = params.get("note", "")
+		"feature":
+			unlock_name = params.get("feature", "")
+		"rhythm":
+			unlock_name = params.get("rhythm", "")
+	
+	var hint_mgr := get_node_or_null("/root/TutorialHintManager")
+	if hint_mgr and hint_mgr.has_method("show_unlock"):
+		hint_mgr.show_unlock(unlock_type, unlock_name, message)
+
+# ============================================================
+# 剧本波次辅助函数
+# ============================================================
+
+func _resolve_spawn_position(position_param) -> Vector2:
+	var player := get_tree().get_first_node_in_group("player")
+	var player_pos := player.global_position if player else Vector2.ZERO
+	
+	if position_param is Vector2:
+		return player_pos + position_param
+	
+	if position_param is String:
+		# 检查是否是 Vector2 字符串格式
+		var pos_str: String = position_param
+		if pos_str.begins_with("Vector2("):
+			var inner := pos_str.substr(8, pos_str.length() - 9)
+			var parts := inner.split(",")
+			if parts.size() == 2:
+				return player_pos + Vector2(float(parts[0].strip_edges()), float(parts[1].strip_edges()))
+		
+		# 方位关键字
+		match pos_str:
+			"NORTH":
+				return player_pos + Vector2(randf_range(-100, 100), -spawn_radius)
+			"SOUTH":
+				return player_pos + Vector2(randf_range(-100, 100), spawn_radius)
+			"EAST":
+				return player_pos + Vector2(spawn_radius, randf_range(-100, 100))
+			"WEST":
+				return player_pos + Vector2(-spawn_radius, randf_range(-100, 100))
+	
+	# 默认：随机位置
+	return _calculate_spawn_position(player_pos)
+
+func _apply_scripted_params(enemy: Node, params: Dictionary) -> void:
+	if params.has("speed"):
+		enemy.set("move_speed", params["speed"])
+	if params.has("hp"):
+		enemy.set("max_hp", params["hp"])
+		enemy.set("current_hp", params["hp"])
+	if params.has("shield"):
+		if enemy.has_method("set_shield"):
+			enemy.set_shield(params["shield"])
+		else:
+			enemy.set_meta("shield_hp", params["shield"])
+	if params.has("damage"):
+		enemy.set("contact_damage", params["damage"])
+
+func _get_formation_offset(formation: String, index: int, total: int) -> Vector2:
+	match formation:
+		"LINE":
+			var spacing := 40.0
+			var start_x := -(total - 1) * spacing / 2.0
+			return Vector2(start_x + index * spacing, 0.0)
+		"CIRCLE":
+			var angle := (TAU / total) * index
+			return Vector2.from_angle(angle) * 60.0
+		"SCATTERED":
+			return Vector2(randf_range(-120, 120), randf_range(-80, 80))
+		"V_SHAPE":
+			var half := total / 2
+			var side := 1 if index < half else -1
+			var depth := index if index < half else index - half
+			return Vector2(side * (depth + 1) * 35.0, depth * 25.0)
+		_:
+			return Vector2(randf_range(-80, 80), randf_range(-80, 80))
+
+func _parse_condition_timeout(condition: String) -> float:
+	# 从条件字符串中解析超时时间
+	# 例如 "NO_REST_USED_FOR_15s" → 15.0
+	var regex_match := condition.find("FOR_")
+	if regex_match >= 0:
+		var after := condition.substr(regex_match + 4)
+		var num_str := after.rstrip("s")
+		if num_str.is_valid_float():
+			return float(num_str)
+	return 0.0
 
 ## 为Boss召唤小兵
 func spawn_minions_for_boss(count: int, type: String, boss_pos: Vector2) -> void:

@@ -65,6 +65,39 @@ const CHAPTERS: Dictionary = {
 			"script_path": "res://scripts/entities/enemies/bosses/boss_pythagoras.gd",
 		},
 		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch1/wave_1_1.tres",
+			},
+			{
+				"trigger": "after_random_wave",
+				"trigger_wave": 3,
+				"wave_data": "res://data/waves/ch1/wave_1_2.tres",
+			},
+			{
+				"trigger": "after_random_wave",
+				"trigger_wave": 5,
+				"wave_data": "res://data/waves/ch1/wave_1_3.tres",
+			},
+			{
+				"trigger": "after_random_wave",
+				"trigger_wave": 7,
+				"wave_data": "res://data/waves/ch1/wave_1_4.tres",
+			},
+			{
+				"trigger": "after_random_wave",
+				"trigger_wave": 8,
+				"wave_data": "res://data/waves/ch1/wave_1_5.tres",
+			},
+			{
+				"trigger": "after_random_wave",
+				"trigger_wave": 9,
+				"wave_data": "res://data/waves/ch1/wave_1_6.tres",
+			},
+		],
+		
 		# ---- 波次模板 ----
 		"wave_templates": [
 			{

@@ -125,6 +125,26 @@ func _ready() -> void:
 func _on_enemy_ready() -> void:
 	pass
 
+## 由 EnemySpawner 在剧本模式下调用，设置精确参数
+func initialize_scripted(params: Dictionary) -> void:
+	if params.has("speed"):
+		move_speed = params["speed"]
+	if params.has("hp"):
+		max_hp = params["hp"]
+		current_hp = params["hp"]
+	if params.has("damage"):
+		contact_damage = params["damage"]
+	if params.has("shield"):
+		if has_method("set_shield"):
+			call("set_shield", params["shield"])
+		else:
+			set_meta("shield_hp", params["shield"])
+	if params.has("quantized_fps"):
+		quantized_fps = params["quantized_fps"]
+		_quantize_interval = 1.0 / quantized_fps
+	# 标记为剧本敌人
+	set_meta("scripted", true)
+
 func _physics_process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
