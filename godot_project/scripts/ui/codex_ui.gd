@@ -147,8 +147,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	# 更新演示区域的弹体
-	if _demo_active and _demo_projectile_manager:
-		_demo_projectile_manager.update_projectiles(delta)
+	if _demo_active and is_instance_valid(_demo_projectile_manager):
+		if _demo_projectile_manager.has_method("update_projectiles"):
+			_demo_projectile_manager.update_projectiles(delta)
 		_demo_timer += delta
 		# 自动清理超过 5 秒的演示
 		if _demo_timer > 5.0:
@@ -706,6 +707,10 @@ func _build_demo_section(entry_id: String, entry: Dictionary) -> void:
 	if pm_script:
 		_demo_projectile_manager = Node2D.new()
 		_demo_projectile_manager.set_script(pm_script)
+		# ★ 设置演示模式标志，跳过 GameManager 状态检查和全局信号连接
+		_demo_projectile_manager.set("_demo_mode", true)
+		# ★ 禁用 _process 自动更新，改由 codex_ui._process 手动调用 update_projectiles
+		_demo_projectile_manager.set_process(false)
 		_demo_viewport.add_child(_demo_projectile_manager)
 
 		# 添加深色背景
@@ -954,7 +959,7 @@ func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> 
 func _clear_demo() -> void:
 	_demo_active = false
 	_demo_timer = 0.0
-	if _demo_projectile_manager and _demo_projectile_manager.has_method("clear_all"):
+	if is_instance_valid(_demo_projectile_manager) and _demo_projectile_manager.has_method("clear_all"):
 		_demo_projectile_manager.clear_all()
 	if _demo_status_label:
 		_demo_status_label.text = ""

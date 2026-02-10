@@ -22,8 +22,8 @@ const CLEANUP_INTERVAL: float = 0.5
 ## 活跃弹体数组 (纯数据，无节点)
 var _projectiles: Array[Dictionary] = []
 
-## MultiMesh 渲染节点
-@onready var _multi_mesh_instance: MultiMeshInstance2D = $MultiMeshInstance2D
+## MultiMesh 渲染节点 (不使用 @onready，改为在 _ready 中安全获取/创建)
+var _multi_mesh_instance: MultiMeshInstance2D = null
 
 ## 清理计时器
 var _cleanup_timer: float = 0.0
@@ -39,13 +39,21 @@ var _echo_queue: Array[Dictionary] = []
 # ============================================================
 
 func _ready() -> void:
+	# 尝试从场景树获取已有的 MultiMeshInstance2D 子节点
+	_multi_mesh_instance = get_node_or_null("MultiMeshInstance2D") as MultiMeshInstance2D
 	_setup_multi_mesh()
 	_setup_collision_optimizer()
-	SpellcraftSystem.spell_cast.connect(_on_spell_cast)
-	SpellcraftSystem.chord_cast.connect(_on_chord_cast)
+	# 演示模式下不连接全局信号，避免节点释放后产生 Lambda capture freed 错误
+	if _demo_mode:
+		return
+	if SpellcraftSystem and not SpellcraftSystem.spell_cast.is_connected(_on_spell_cast):
+		SpellcraftSystem.spell_cast.connect(_on_spell_cast)
+	if SpellcraftSystem and not SpellcraftSystem.chord_cast.is_connected(_on_chord_cast):
+		SpellcraftSystem.chord_cast.connect(_on_chord_cast)
 
 func _process(delta: float) -> void:
-	if GameManager.current_state != GameManager.GameState.PLAYING:
+	# 在演示模式下跳过 GameManager 状态检查（GameManager 可能不在 PLAYING 状态）
+	if not _demo_mode and GameManager and GameManager.current_state != GameManager.GameState.PLAYING:
 		return
 
 	_update_projectiles(delta)
@@ -56,6 +64,15 @@ func _process(delta: float) -> void:
 	if _cleanup_timer >= CLEANUP_INTERVAL:
 		_cleanup_timer = 0.0
 		_cleanup_expired()
+
+## 演示模式标志（由 codex_ui 设置，跳过 GameManager 状态检查）
+var _demo_mode: bool = false
+
+## 公共接口：外部调用更新弹体（供 codex_ui 演示区域使用）
+func update_projectiles(delta: float) -> void:
+	_update_projectiles(delta)
+	_update_echo_queue(delta)
+	_update_render()
 
 # ============================================================
 # MultiMesh 设置
@@ -1127,6 +1144,14 @@ func _cleanup_expired() -> void:
 		if p["active"]:
 			active_projs.append(p)
 	_projectiles = active_projs
+
+## 节点离开场景树时断开信号连接，防止 Lambda capture freed 错误
+func _exit_tree() -> void:
+	if SpellcraftSystem:
+		if SpellcraftSystem.spell_cast.is_connected(_on_spell_cast):
+			SpellcraftSystem.spell_cast.disconnect(_on_spell_cast)
+		if SpellcraftSystem.chord_cast.is_connected(_on_chord_cast):
+			SpellcraftSystem.chord_cast.disconnect(_on_chord_cast)
 
 ## 清除所有弹体
 func clear_all() -> void:
