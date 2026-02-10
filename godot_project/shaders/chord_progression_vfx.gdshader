@@ -78,10 +78,7 @@ vec4 pd_to_d_effect(vec2 uv, float prog) {
 void fragment() {
 	if (progress < 0.01 || effect_intensity < 0.01) {
 		COLOR = texture(screen_texture, SCREEN_UV);
-		return;
-	}
-	
-	if (progression_type == 0) {
+	} else if (progression_type == 0) {
 		COLOR = d_to_t_effect(SCREEN_UV, progress);
 	} else if (progression_type == 1) {
 		COLOR = t_to_d_effect(SCREEN_UV, progress);

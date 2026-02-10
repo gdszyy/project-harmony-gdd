@@ -22,10 +22,25 @@ signal player_moved(position: Vector2)
 # ============================================================
 # 节点引用
 # ============================================================
-@onready var _visual: Node2D = $PlayerVisual
+@onready var _visual: Node2D = _find_visual_node()
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _invincibility_timer: Timer = $InvincibilityTimer
 @onready var _pickup_area: Area2D = $PickupArea
+
+# ============================================================
+# 节点查找辅助
+# ============================================================
+
+## 兼容 PlayerVisual 和 PlayerVisualEnhanced 两种场景结构
+func _find_visual_node() -> Node2D:
+	var node := get_node_or_null("PlayerVisualEnhanced")
+	if node:
+		return node
+	node = get_node_or_null("PlayerVisual")
+	if node:
+		return node
+	# 找不到视觉节点时返回 null，不报错
+	return null
 
 # ============================================================
 # 状态

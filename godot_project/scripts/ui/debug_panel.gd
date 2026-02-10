@@ -113,6 +113,8 @@ func _build_ui() -> void:
 	_build_enemy_spawner()
 	_build_player_config()
 	_build_spell_config()
+	_build_spell_quick_test()
+	_build_sequencer_editor()
 	_build_dps_stats()
 	_build_log_area()
 
@@ -466,6 +468,329 @@ func _build_spell_config() -> void:
 	codex_grid.add_child(reset_codex_btn)
 
 	_content.add_child(codex_grid)
+
+# ---- 法术快速测试区 ----
+func _build_spell_quick_test() -> void:
+	_add_section_header("法术快速测试")
+
+	# ---- 音符施放 ----
+	_add_subsection_header("单音符施放")
+	var note_grid := GridContainer.new()
+	note_grid.columns = 4
+	note_grid.add_theme_constant_override("h_separation", 4)
+	note_grid.add_theme_constant_override("v_separation", 4)
+
+	var note_names := ["C", "D", "E", "F", "G", "A", "B"]
+	var note_colors := [
+		Color(1.0, 0.3, 0.3), Color(1.0, 0.6, 0.2), Color(1.0, 1.0, 0.3),
+		Color(0.3, 1.0, 0.3), Color(0.3, 0.8, 1.0), Color(0.5, 0.3, 1.0),
+		Color(0.9, 0.3, 0.9),
+	]
+	for i in range(7):
+		var btn := Button.new()
+		btn.text = note_names[i]
+		btn.custom_minimum_size = Vector2(0, 32)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(btn, note_colors[i])
+		var note_idx: int = i
+		btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_cast_note(note_idx))
+		note_grid.add_child(btn)
+
+	# 第8个按钮：全部连射
+	var all_btn := Button.new()
+	all_btn.text = "全部"
+	all_btn.custom_minimum_size = Vector2(0, 32)
+	all_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(all_btn, SUCCESS_COLOR)
+	all_btn.pressed.connect(func():
+		if _test_chamber:
+			for j in range(7):
+				_test_chamber.test_cast_note(j)
+	)
+	note_grid.add_child(all_btn)
+	_content.add_child(note_grid)
+
+	# ---- 修饰符选择 ----
+	_add_subsection_header("修饰符 + 音符")
+	var mod_hbox := HBoxContainer.new()
+	var mod_option := OptionButton.new()
+	mod_option.name = "ModifierOption"
+	mod_option.add_item("穿透 (C#)")
+	mod_option.add_item("追踪 (D#)")
+	mod_option.add_item("分裂 (F#)")
+	mod_option.add_item("回响 (G#)")
+	mod_option.add_item("散射 (A#)")
+	mod_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mod_option.add_theme_font_size_override("font_size", 11)
+	mod_hbox.add_child(mod_option)
+
+	var mod_note_option := OptionButton.new()
+	mod_note_option.name = "ModNoteOption"
+	for n in note_names:
+		mod_note_option.add_item(n)
+	mod_note_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mod_note_option.add_theme_font_size_override("font_size", 11)
+	mod_hbox.add_child(mod_note_option)
+
+	var mod_cast_btn := Button.new()
+	mod_cast_btn.text = "施放"
+	mod_cast_btn.custom_minimum_size = Vector2(50, 28)
+	_style_action_button(mod_cast_btn, Color(0.8, 0.5, 1.0))
+	mod_cast_btn.pressed.connect(func():
+		if not _test_chamber: return
+		var mod_idx: int = mod_option.selected
+		var note_key: int = mod_note_option.selected
+		_test_chamber.test_cast_note_with_modifier(note_key, mod_idx)
+	)
+	mod_hbox.add_child(mod_cast_btn)
+	_content.add_child(mod_hbox)
+
+	# ---- 和弦施放 ----
+	_add_subsection_header("和弦法术")
+	var chord_grid := GridContainer.new()
+	chord_grid.columns = 2
+	chord_grid.add_theme_constant_override("h_separation", 4)
+	chord_grid.add_theme_constant_override("v_separation", 4)
+
+	var chord_types := [
+		["大三和弦", 0], ["小三和弦", 1], ["增三和弦", 2],
+		["减三和弦", 3], ["挂留和弦", 4], ["属七和弦", 5],
+		["减七和弦", 6], ["大七和弦", 7], ["小七和弦", 8],
+	]
+	for ct in chord_types:
+		var btn := Button.new()
+		btn.text = ct[0]
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(btn, Color(0.3, 0.7, 1.0))
+		var chord_id: int = ct[1]
+		btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_cast_chord(chord_id))
+		chord_grid.add_child(btn)
+	_content.add_child(chord_grid)
+
+	# ---- 音色选择 ----
+	_add_subsection_header("音色系别")
+	var timbre_grid := GridContainer.new()
+	timbre_grid.columns = 3
+	timbre_grid.add_theme_constant_override("h_separation", 4)
+	timbre_grid.add_theme_constant_override("v_separation", 4)
+
+	var timbres := [
+		["合成器", 0, Color(0.0, 1.0, 0.8)],
+		["弹拨", 1, Color(0.85, 0.75, 0.3)],
+		["拉弦", 2, Color(0.8, 0.2, 0.3)],
+		["吹奏", 3, Color(0.6, 0.9, 0.7)],
+		["打击", 4, Color(0.9, 0.9, 0.9)],
+	]
+	for t in timbres:
+		var btn := Button.new()
+		btn.text = t[0]
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(btn, t[2])
+		var timbre_id: int = t[1]
+		btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_set_timbre(timbre_id))
+		timbre_grid.add_child(btn)
+	_content.add_child(timbre_grid)
+
+	# ---- 自动施法控制 ----
+	_add_subsection_header("自动施法")
+	var auto_hbox := HBoxContainer.new()
+
+	var auto_check := CheckBox.new()
+	auto_check.text = "自动施法 (F10)"
+	auto_check.add_theme_font_size_override("font_size", 11)
+	auto_check.add_theme_color_override("font_color", TEXT_COLOR)
+	auto_check.toggled.connect(func(on):
+		if _test_chamber:
+			_test_chamber.auto_fire = on
+	)
+	auto_hbox.add_child(auto_check)
+	_content.add_child(auto_hbox)
+
+	var interval_hbox := HBoxContainer.new()
+	var interval_label := Label.new()
+	interval_label.text = "施法间隔:"
+	interval_label.add_theme_font_size_override("font_size", 11)
+	interval_label.add_theme_color_override("font_color", TEXT_COLOR)
+	interval_hbox.add_child(interval_label)
+
+	var interval_spin := SpinBox.new()
+	interval_spin.value = 0.5
+	interval_spin.min_value = 0.05
+	interval_spin.max_value = 3.0
+	interval_spin.step = 0.05
+	interval_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	interval_spin.value_changed.connect(func(val):
+		if _test_chamber: _test_chamber._auto_fire_interval = val
+	)
+	interval_hbox.add_child(interval_spin)
+	_content.add_child(interval_hbox)
+
+	# ---- 预设组合 ----
+	_add_subsection_header("预设组合")
+	var preset_grid := GridContainer.new()
+	preset_grid.columns = 2
+	preset_grid.add_theme_constant_override("h_separation", 4)
+	preset_grid.add_theme_constant_override("v_separation", 4)
+
+	var presets := [
+		["全音符连射", "full_note"],
+		["蓄力序列", "charged"],
+		["全修饰符", "all_mods"],
+		["基础和弦", "basic_chords"],
+		["七和弦", "seventh_chords"],
+	]
+	for p in presets:
+		var btn := Button.new()
+		btn.text = p[0]
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(btn, Color(0.9, 0.7, 0.2))
+		var preset_id: String = p[1]
+		btn.pressed.connect(func():
+			if not _test_chamber: return
+			match preset_id:
+				"full_note": _test_chamber.preset_full_note_sequencer()
+				"charged": _test_chamber.preset_charged_sequencer()
+				"all_mods": _test_chamber.preset_all_modifiers()
+				"basic_chords": _test_chamber.preset_all_basic_chords()
+				"seventh_chords": _test_chamber.preset_all_seventh_chords()
+		)
+		preset_grid.add_child(btn)
+	_content.add_child(preset_grid)
+
+# ---- 序列器编辑区 ----
+func _build_sequencer_editor() -> void:
+	_add_section_header("序列器编辑")
+
+	# 序列器16拍可视化编辑
+	_add_subsection_header("16拍序列器 (点击设置音符)")
+
+	# 音符选择器
+	var note_select_hbox := HBoxContainer.new()
+	var note_select_label := Label.new()
+	note_select_label.text = "音符:"
+	note_select_label.add_theme_font_size_override("font_size", 11)
+	note_select_label.add_theme_color_override("font_color", TEXT_COLOR)
+	note_select_hbox.add_child(note_select_label)
+
+	var seq_note_option := OptionButton.new()
+	seq_note_option.name = "SeqNoteOption"
+	var note_names := ["C", "D", "E", "F", "G", "A", "B", "休止符"]
+	for n in note_names:
+		seq_note_option.add_item(n)
+	seq_note_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	seq_note_option.add_theme_font_size_override("font_size", 11)
+	note_select_hbox.add_child(seq_note_option)
+	_content.add_child(note_select_hbox)
+
+	# 4x4 网格按钮代表16拍
+	var seq_grid := GridContainer.new()
+	seq_grid.columns = 4
+	seq_grid.add_theme_constant_override("h_separation", 3)
+	seq_grid.add_theme_constant_override("v_separation", 3)
+
+	for i in range(16):
+		var btn := Button.new()
+		btn.text = "%d" % (i + 1)
+		btn.custom_minimum_size = Vector2(0, 28)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(btn, DIM_COLOR)
+		var beat_idx: int = i
+		btn.pressed.connect(func():
+			if not _test_chamber or not SpellcraftSystem: return
+			var selected: int = seq_note_option.selected
+			if selected >= 7:  # 休止符
+				SpellcraftSystem.set_sequencer_rest(beat_idx)
+				btn.text = "%d: -" % (beat_idx + 1)
+				_style_action_button(btn, DIM_COLOR)
+			else:
+				SpellcraftSystem.set_sequencer_note(beat_idx, selected)
+				var names := ["C", "D", "E", "F", "G", "A", "B"]
+				btn.text = "%d: %s" % [beat_idx + 1, names[selected]]
+				var colors := [
+					Color(1.0, 0.3, 0.3), Color(1.0, 0.6, 0.2), Color(1.0, 1.0, 0.3),
+					Color(0.3, 1.0, 0.3), Color(0.3, 0.8, 1.0), Color(0.5, 0.3, 1.0),
+					Color(0.9, 0.3, 0.9),
+				]
+				_style_action_button(btn, colors[selected])
+			if _test_chamber: _test_chamber._log("序列器 [%d] 已设置" % (beat_idx + 1))
+		)
+		seq_grid.add_child(btn)
+	_content.add_child(seq_grid)
+
+	# 清空序列器按钮
+	var clear_seq_btn := Button.new()
+	clear_seq_btn.text = "清空序列器"
+	clear_seq_btn.custom_minimum_size.y = 28
+	_style_action_button(clear_seq_btn, DANGER_COLOR)
+	clear_seq_btn.pressed.connect(func():
+		if SpellcraftSystem:
+			SpellcraftSystem.clear_sequencer()
+			if _test_chamber: _test_chamber._log("序列器已清空")
+			# 重置按钮文本
+			var idx := 0
+			for child in seq_grid.get_children():
+				if child is Button:
+					child.text = "%d" % (idx + 1)
+					_style_action_button(child, DIM_COLOR)
+					idx += 1
+	)
+	_content.add_child(clear_seq_btn)
+
+	# 手动施法槽配置
+	_add_subsection_header("手动施法槽")
+	var manual_grid := GridContainer.new()
+	manual_grid.columns = 3
+	manual_grid.add_theme_constant_override("h_separation", 4)
+	manual_grid.add_theme_constant_override("v_separation", 4)
+
+	for slot_i in range(3):
+		var slot_label := Label.new()
+		slot_label.text = "槽%d:" % (slot_i + 1)
+		slot_label.add_theme_font_size_override("font_size", 11)
+		slot_label.add_theme_color_override("font_color", TEXT_COLOR)
+		manual_grid.add_child(slot_label)
+
+		var slot_note := OptionButton.new()
+		var slot_note_names := ["C", "D", "E", "F", "G", "A", "B", "空"]
+		for n in slot_note_names:
+			slot_note.add_item(n)
+		slot_note.selected = 7  # 默认空
+		slot_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slot_note.add_theme_font_size_override("font_size", 11)
+		manual_grid.add_child(slot_note)
+
+		var slot_set_btn := Button.new()
+		slot_set_btn.text = "设置"
+		slot_set_btn.custom_minimum_size = Vector2(45, 24)
+		_style_action_button(slot_set_btn, ACCENT)
+		var si: int = slot_i
+		slot_set_btn.pressed.connect(func():
+			if not _test_chamber: return
+			var sel: int = slot_note.selected
+			if sel >= 7:
+				_test_chamber.test_set_manual_slot(si, {"type": "empty"})
+			else:
+				_test_chamber.test_set_manual_slot(si, {"type": "note", "note": sel})
+		)
+		manual_grid.add_child(slot_set_btn)
+	_content.add_child(manual_grid)
+
+	# 触发手动施法按钮
+	var trigger_hbox := HBoxContainer.new()
+	trigger_hbox.add_theme_constant_override("separation", 4)
+	for slot_i in range(3):
+		var trigger_btn := Button.new()
+		trigger_btn.text = "触发槽%d" % (slot_i + 1)
+		trigger_btn.custom_minimum_size = Vector2(0, 28)
+		trigger_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_style_action_button(trigger_btn, SUCCESS_COLOR)
+		var si: int = slot_i
+		trigger_btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_trigger_manual_cast(si))
+		trigger_hbox.add_child(trigger_btn)
+	_content.add_child(trigger_hbox)
 
 # ---- DPS 统计区 ----
 func _build_dps_stats() -> void:

@@ -75,11 +75,15 @@ func _ready() -> void:
 
 func _preload_boss_scenes() -> void:
 	for boss_name in BOSS_SCENES:
-		var scene := load(BOSS_SCENES[boss_name]) as PackedScene
+		var scene_path: String = BOSS_SCENES[boss_name]
+		if not ResourceLoader.exists(scene_path):
+			push_warning("BossSpawner: Boss scene not found (will use code fallback): %s" % scene_path)
+			continue
+		var scene := load(scene_path) as PackedScene
 		if scene:
 			_cached_boss_scenes[boss_name] = scene
 		else:
-			push_warning("BossSpawner: Failed to load boss scene: %s" % BOSS_SCENES[boss_name])
+			push_warning("BossSpawner: Failed to load boss scene: %s" % scene_path)
 
 # ============================================================
 # 公共接口
