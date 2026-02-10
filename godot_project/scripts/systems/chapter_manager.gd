@@ -699,14 +699,14 @@ func _inject_scripted_wave(wave_data: Resource) -> void:
 	var spawner := get_tree().get_first_node_in_group("enemy_spawner")
 	if spawner and spawner.has_method("play_scripted_wave"):
 		spawner.play_scripted_wave(wave_data)
-		var wave_name: String = wave_data.wave_name if wave_data.has("wave_name") else "unknown"
+		var wave_name: String = wave_data.wave_name if "wave_name" in wave_data else "unknown"
 		scripted_wave_injected.emit(wave_name)
 	else:
 		push_warning("ChapterManager: EnemySpawner not found or missing play_scripted_wave method")
 
 ## 剧本波次完成回调
 func _on_scripted_wave_completed(wave_data: Resource) -> void:
-	var wave_name: String = wave_data.wave_name if wave_data and wave_data.has("wave_name") else "unknown"
+	var wave_name: String = wave_data.wave_name if wave_data and "wave_name" in wave_data else "unknown"
 	scripted_wave_finished.emit(wave_name)
 	
 	# 检查是否有紧接的下一个剧本波次
