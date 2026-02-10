@@ -721,11 +721,45 @@ func _spawn_chladni_visual(damage_mult: float) -> void:
 			node.queue_free()
 	_chladni_visual_nodes.clear()
 	
-	# 生成危险区域视觉（同心环形线条）
+	# 生成危险区域视觉（同心环形线条 + chladni_pattern.gdshader）
 	var danger_visual := Node2D.new()
 	danger_visual.global_position = global_position
 	get_parent().add_child(danger_visual)
 	_chladni_visual_nodes.append(danger_visual)
+	
+	# 应用克拉尼图形 Shader（审计报告 2.4 修复：激活闲置 Shader）
+	var chladni_shader := load("res://shaders/chladni_pattern.gdshader")
+	if chladni_shader:
+		var chladni_bg := Sprite2D.new()
+		var tex := GradientTexture2D.new()
+		tex.width = 512
+		tex.height = 512
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.8, 0.3, 0.2, 0.4))
+		grad.set_color(1, Color(0.0, 0.0, 0.0, 0.0))
+		tex.gradient = grad
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		chladni_bg.texture = tex
+		var mat := ShaderMaterial.new()
+		mat.shader = chladni_shader
+		# 根据图形类型设置模态参数
+		match _chladni_pattern_index:
+			0: # 八度：简单同心圆
+				mat.set_shader_parameter("pattern_n", 2.0)
+				mat.set_shader_parameter("pattern_m", 2.0)
+			1: # 五度：花瓣形
+				mat.set_shader_parameter("pattern_n", 3.0)
+				mat.set_shader_parameter("pattern_m", 5.0)
+			2: # 四度叠加：复杂
+				mat.set_shader_parameter("pattern_n", 4.0)
+				mat.set_shader_parameter("pattern_m", 7.0)
+			3: # 终焉和弦：最复杂
+				mat.set_shader_parameter("pattern_n", 5.0)
+				mat.set_shader_parameter("pattern_m", 8.0)
+		mat.set_shader_parameter("pattern_blend", 0.5)
+		chladni_bg.material = mat
+		chladni_bg.z_index = -1
+		danger_visual.add_child(chladni_bg)
 	
 	# 根据图形类型绘制不同的克拉尼图案
 	var ring_count := 5

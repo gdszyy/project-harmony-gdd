@@ -5,7 +5,7 @@
 ## 设计要点：
 ##   - 显示所有已合成的和弦法术及其状态（可用/已装备）
 ##   - 可从法术书拖拽和弦法术到序列器的小节或手动施法槽
-##   - 按 Tab 键或点击按钮打开/关闭
+##   - 按 B 键或点击按钮打开/关闭
 extends Control
 
 # ============================================================
@@ -222,7 +222,7 @@ func _handle_click(pos: Vector2) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_TAB:
+		if event.keycode == KEY_B:
 			toggle()
 			get_viewport().set_input_as_handled()
 

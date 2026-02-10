@@ -665,9 +665,16 @@ func _get_chord_type_enum() -> int:
 # ============================================================
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_V:
+			if _is_visible:
+				hide_panel()
+			else:
+				show_panel()
+			get_viewport().set_input_as_handled()
+			return
 	if not _is_visible:
 		return
-
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
 			hide_panel()

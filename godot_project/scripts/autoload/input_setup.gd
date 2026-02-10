@@ -34,6 +34,11 @@ func _register_input_actions() -> void:
 	_add_action("manual_cast_2", [KEY_2])
 	_add_action("manual_cast_3", [KEY_3])
 
+	# === UI 切换 ===
+	_add_action("toggle_spellbook", [KEY_B])
+	_add_action("toggle_alchemy", [KEY_V])
+	_add_action("toggle_timbre", [KEY_Q])
+
 	# === 系统 ===
 	_add_action("pause_game", [KEY_ESCAPE])
 	_add_action("toggle_sequencer", [KEY_TAB])

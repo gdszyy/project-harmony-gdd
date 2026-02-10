@@ -26,6 +26,7 @@ const VERSION_COLOR := Color("#6B668A")
 
 const BUTTON_CONFIGS: Array = [
 	{ "name": "StartButton", "text": "BEGIN RESONANCE", "accent": Color("#9D6FFF") },
+	{ "name": "HallButton", "text": "HALL OF HARMONY", "accent": Color("#FFD700") },
 	{ "name": "CodexButton", "text": "CODEX RESONARE", "accent": Color("#4DFFF3") },
 	{ "name": "TestChamberButton", "text": "ECHOING CHAMBER", "accent": Color("#FF8C42") },
 	{ "name": "SettingsButton", "text": "SETTINGS", "accent": Color("#A098C8") },
@@ -144,10 +145,11 @@ func _setup_ui() -> void:
 	
 	# 连接按钮信号
 	_buttons[0].pressed.connect(_on_start_pressed)
-	_buttons[1].pressed.connect(_on_codex_pressed)
-	_buttons[2].pressed.connect(_on_test_chamber_pressed)
-	# _buttons[3] settings - can be connected later
-	_buttons[4].pressed.connect(_on_quit_pressed)
+	_buttons[1].pressed.connect(_on_hall_pressed)
+	_buttons[2].pressed.connect(_on_codex_pressed)
+	_buttons[3].pressed.connect(_on_test_chamber_pressed)
+	# _buttons[4] settings - can be connected later
+	_buttons[5].pressed.connect(_on_quit_pressed)
 
 	# ---- 版本号（右下角）----
 	if _version_label == null:
@@ -273,6 +275,26 @@ func _on_codex_pressed() -> void:
 
 func _on_test_chamber_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/test_chamber.tscn")
+
+func _on_hall_pressed() -> void:
+	# 打开和谐殿堂（局外成长系统）—— 审计报告 建议3 修复
+	var hall_script := load("res://scripts/ui/hall_of_harmony.gd")
+	if hall_script == null:
+		return
+	var hall := Control.new()
+	hall.set_script(hall_script)
+	hall.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hall.z_index = 100
+	add_child(hall)
+	if hall.has_signal("start_game_pressed"):
+		hall.start_game_pressed.connect(func():
+			hall.queue_free()
+			_on_start_pressed()
+		)
+	if hall.has_signal("back_pressed"):
+		hall.back_pressed.connect(func():
+			hall.queue_free()
+		)
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()

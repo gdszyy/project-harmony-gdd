@@ -14,6 +14,7 @@ extends Node
 # ============================================================
 signal mode_changed(mode_id: String)
 signal crit_from_dissonance(crit_chance: float)
+signal transpose_changed(semitone_offset: int)
 
 # ============================================================
 # 调式定义：可用白键和专属效果
@@ -93,6 +94,19 @@ var blues_crit_chance: float = 0.0
 ## 多利亚调式：施法计数器（用于自动回响）
 var _dorian_cast_counter: int = 0
 
+## 转调偏移（半音数，正值升调，负值降调）
+var transpose_offset: int = 0
+
+## 是否已解锁转调能力（“转调大师”升级）
+var transpose_unlocked: bool = false
+
+## 转调范围（半音）
+const TRANSPOSE_MIN: int = -6
+const TRANSPOSE_MAX: int = 6
+
+## 调号名称映射
+const KEY_NAMES: Array = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"]
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -135,6 +149,7 @@ func apply_mode(mode_id: String) -> void:
 func reset() -> void:
 	blues_crit_chance = 0.0
 	_dorian_cast_counter = 0
+	transpose_offset = 0
 	apply_mode(SaveManager.get_selected_mode())
 
 # ============================================================
@@ -210,3 +225,62 @@ func check_crit() -> bool:
 ## 获取当前暴击率（布鲁斯被动）
 func get_crit_chance() -> float:
 	return blues_crit_chance
+
+# ============================================================
+# 转调系统（审计报告 2.2 修复）
+# ============================================================
+
+## 检查转调是否已解锁
+func is_transpose_unlocked() -> bool:
+	# 检查局外成长是否已购买“转调大师”
+	var meta := get_node_or_null("/root/MetaProgressionManager")
+	if meta and meta.has_method("is_theory_unlocked"):
+		return meta.is_theory_unlocked("modulation_master")
+	return transpose_unlocked
+
+## 设置转调偏移（半音数）
+func set_transpose(semitones: int) -> void:
+	if not is_transpose_unlocked():
+		push_warning("ModeSystem: Transpose not unlocked yet")
+		return
+	semitones = clampi(semitones, TRANSPOSE_MIN, TRANSPOSE_MAX)
+	if semitones == transpose_offset:
+		return
+	transpose_offset = semitones
+	transpose_changed.emit(transpose_offset)
+
+## 升调一个半音
+func transpose_up() -> void:
+	set_transpose(transpose_offset + 1)
+
+## 降调一个半音
+func transpose_down() -> void:
+	set_transpose(transpose_offset - 1)
+
+## 重置转调
+func reset_transpose() -> void:
+	transpose_offset = 0
+	transpose_changed.emit(0)
+
+## 获取当前调号名称（如 "C", "D", "Eb" 等）
+func get_current_key_name() -> String:
+	var idx := posmod(transpose_offset, 12)
+	return KEY_NAMES[idx]
+
+## 将音符应用转调偏移（返回转调后的 MusicData.Note 值）
+func apply_transpose(note: int) -> int:
+	if transpose_offset == 0:
+		return note
+	return posmod(note + transpose_offset, 12)
+
+## 获取转调后的音符频率偏移（pitch_shift 参数，用于传给 GlobalMusicManager）
+func get_pitch_shift() -> int:
+	return transpose_offset
+
+## 获取转调信息（用于UI显示）
+func get_transpose_info() -> Dictionary:
+	return {
+		"offset": transpose_offset,
+		"key_name": get_current_key_name(),
+		"unlocked": is_transpose_unlocked(),
+	}

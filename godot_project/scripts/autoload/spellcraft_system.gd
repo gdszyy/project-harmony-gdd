@@ -594,17 +594,21 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"is_chord": false,
 	})
 
-	# 播放音符音效（带修饰符效果）
+	# 播放音符音效（带修饰符效果 + 转调偏移）
 	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
+	var pitch_shift: int = ModeSystem.get_pitch_shift()  # 转调偏移
+	var transposed_note: int = ModeSystem.apply_transpose(note_enum)  # 转调后音符
+	spell_data["transposed_note"] = transposed_note
+	spell_data["pitch_shift"] = pitch_shift
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
 	var modifier: int = spell_data.get("modifier", -1)
 	if gmm:
 		if modifier >= 0 and gmm.has_method("play_note_sound_with_modifier"):
-			# 播放带修饰符效果的音符
-			gmm.play_note_sound_with_modifier(note_enum, modifier, spell_data["duration"], timbre)
+			# 播放带修饰符效果的音符（应用转调）
+			gmm.play_note_sound_with_modifier(transposed_note, modifier, spell_data["duration"], timbre, 0.8, pitch_shift)
 		elif gmm.has_method("play_note_sound"):
-			# 回退到普通音符
-			gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
+			# 回退到普通音符（应用转调）
+			gmm.play_note_sound(transposed_note, spell_data["duration"], timbre, 0.8, pitch_shift)
 
 	# 节奏型行为：连射（EVEN_EIGHTH）发射多个弹体
 	if spell_data["is_rapid_fire"] and spell_data["rapid_fire_count"] > 1:
@@ -684,17 +688,21 @@ func _cast_single_note(note: int) -> void:
 		"is_chord": false,
 	})
 
-	# 播放音符音效（带修饰符效果）
+	# 播放音符音效（带修饰符效果 + 转调偏移）
 	var note_enum: int = MusicData.WHITE_KEY_TO_NOTE.get(white_key, MusicData.Note.C)
+	var pitch_shift: int = ModeSystem.get_pitch_shift()  # 转调偏移
+	var transposed_note: int = ModeSystem.apply_transpose(note_enum)  # 转调后音符
+	spell_data["transposed_note"] = transposed_note
+	spell_data["pitch_shift"] = pitch_shift
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
 	var modifier: int = spell_data.get("modifier", -1)
 	if gmm:
 		if modifier >= 0 and gmm.has_method("play_note_sound_with_modifier"):
-			# 播放带修饰符效果的音符
-			gmm.play_note_sound_with_modifier(note_enum, modifier, spell_data["duration"], timbre)
+			# 播放带修饰符效果的音符（应用转调）
+			gmm.play_note_sound_with_modifier(transposed_note, modifier, spell_data["duration"], timbre, 0.8, pitch_shift)
 		elif gmm.has_method("play_note_sound"):
-			# 回退到普通音符
-			gmm.play_note_sound(note_enum, spell_data["duration"], timbre)
+			# 回退到普通音符（应用转调）
+			gmm.play_note_sound(transposed_note, spell_data["duration"], timbre, 0.8, pitch_shift)
 
 	spell_cast.emit(spell_data)
 

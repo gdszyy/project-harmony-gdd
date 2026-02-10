@@ -29,7 +29,7 @@ const SECTOR_GAP: float = 0.08
 ## 打开/关闭动画时间
 const ANIM_DURATION: float = 0.15
 ## 触发按键
-const TRIGGER_KEY: Key = KEY_TAB
+const TRIGGER_KEY: Key = KEY_Q
 
 # ============================================================
 # 音色扇区配置
@@ -323,7 +323,7 @@ func _draw() -> void:
 	
 	# ========== 快捷键提示 ==========
 	var hint_pos := _center + Vector2(0, -WHEEL_RADIUS * scale - 25)
-	draw_string(font, hint_pos + Vector2(-40, 0), "松开 Tab 确认", HORIZONTAL_ALIGNMENT_CENTER, -1, 10, Color(0.5, 0.5, 0.6, 0.6 * alpha))
+	draw_string(font, hint_pos + Vector2(-40, 0), "松开 Q 确认", HORIZONTAL_ALIGNMENT_CENTER, -1, 10, Color(0.5, 0.5, 0.6, 0.6 * alpha))
 
 # ============================================================
 # ADSR 波形预览

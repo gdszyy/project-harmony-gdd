@@ -42,6 +42,11 @@ const TIMBRE_COLORS: Dictionary = {
 	MusicData.TimbreType.PERCUSSIVE: Color(0.9, 0.9, 0.9),  # 坚实白色
 }
 
+## 预加载 Shader（审计报告 2.4 修复：激活闲置 Shader）
+var _timbre_projectile_shader: Shader = null
+var _modifier_vfx_shader: Shader = null
+var _scanline_glow_shader: Shader = null
+
 ## 和弦进行颜色映射（层级五）
 const PROGRESSION_COLORS: Dictionary = {
 	"burst_heal_or_damage": Color(1.0, 0.85, 0.2),   # D→T 金色冲击波
@@ -66,6 +71,11 @@ var _current_timbre: MusicData.TimbreType = MusicData.TimbreType.NONE
 # ============================================================
 
 func _ready() -> void:
+	# 预加载 Shader 资源（审计报告 2.4 修复）
+	_timbre_projectile_shader = load("res://shaders/timbre_projectile.gdshader")
+	_modifier_vfx_shader = load("res://shaders/modifier_vfx.gdshader")
+	_scanline_glow_shader = load("res://shaders/scanline_glow.gdshader")
+
 	# 连接法术系统信号
 	SpellcraftSystem.spell_cast.connect(_on_spell_cast)
 	SpellcraftSystem.chord_cast.connect(_on_chord_cast)
@@ -115,10 +125,11 @@ func _on_spell_cast(spell_data: Dictionary) -> void:
 	if modifier >= 0:
 		_spawn_modifier_visual_enhanced(player_pos, aim_dir, modifier, spell_data)
 	
-	# 层级三：音色系别弹体修饰
+		# 层级三：音色系别弹体修饰（集成 timbre_projectile.gdshader）
 	var timbre = spell_data.get("timbre", MusicData.TimbreType.NONE)
 	if timbre != MusicData.TimbreType.NONE:
 		_spawn_timbre_cast_feedback(player_pos, timbre)
+		_apply_timbre_shader_to_cast(player_pos, timbre, spell_data)
 	
 	# 层级四：节奏型施法反馈
 	var rhythm = spell_data.get("rhythm_pattern", -1)
@@ -1798,6 +1809,72 @@ func _find_nearest_enemy(pos: Vector2) -> Vector2:
 				nearest_dist = dist
 				nearest_pos = enemy.global_position
 	return nearest_pos
+
+# ============================================================
+# Shader 集成（审计报告 2.4 修复：激活闲置 Shader）
+# ============================================================
+
+## 应用音色弹体 Shader 到施法反馈
+func _apply_timbre_shader_to_cast(pos: Vector2, timbre: MusicData.TimbreType, _spell_data: Dictionary) -> void:
+	if _timbre_projectile_shader == null:
+		return
+	var timbre_sprite := Sprite2D.new()
+	var tex := GradientTexture2D.new()
+	tex.width = 32
+	tex.height = 32
+	var grad := Gradient.new()
+	var timbre_color: Color = TIMBRE_COLORS.get(timbre, Color.WHITE)
+	grad.set_color(0, timbre_color)
+	grad.set_color(1, Color(timbre_color.r, timbre_color.g, timbre_color.b, 0.0))
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	timbre_sprite.texture = tex
+	timbre_sprite.global_position = pos
+	var mat := ShaderMaterial.new()
+	mat.shader = _timbre_projectile_shader
+	mat.set_shader_parameter("timbre_type", timbre)
+	mat.set_shader_parameter("timbre_color", timbre_color)
+	mat.set_shader_parameter("intensity", 1.0)
+	mat.set_shader_parameter("beat_phase", GlobalMusicManager.get_beat_energy())
+	timbre_sprite.material = mat
+	add_child(timbre_sprite)
+	var tween := timbre_sprite.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(timbre_sprite, "scale", Vector2(3.0, 3.0), 0.2)
+	tween.tween_property(timbre_sprite, "modulate:a", 0.0, 0.25)
+	tween.chain()
+	tween.tween_callback(timbre_sprite.queue_free)
+
+## 应用修饰符 VFX Shader 到修饰符视觉效果
+func _apply_modifier_shader(node: Node2D, modifier: MusicData.ModifierEffect) -> void:
+	if _modifier_vfx_shader == null or node == null:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = _modifier_vfx_shader
+	var mod_type: int = 0
+	match modifier:
+		MusicData.ModifierEffect.PIERCE: mod_type = 0
+		MusicData.ModifierEffect.HOMING: mod_type = 1
+		MusicData.ModifierEffect.SPLIT: mod_type = 2
+		MusicData.ModifierEffect.ECHO: mod_type = 3
+		MusicData.ModifierEffect.SCATTER: mod_type = 4
+	mat.set_shader_parameter("modifier_type", mod_type)
+	var color: Color = MODIFIER_COLORS.get(modifier, Color.WHITE)
+	mat.set_shader_parameter("modifier_color", color)
+	mat.set_shader_parameter("intensity", 1.0)
+	mat.set_shader_parameter("time_offset", GameManager.game_time)
+	node.material = mat
+
+## 应用扫描线发光 Shader（用于特殊效果）
+func _apply_scanline_glow(node: Node2D, color: Color) -> void:
+	if _scanline_glow_shader == null or node == null:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = _scanline_glow_shader
+	mat.set_shader_parameter("glow_color", color)
+	mat.set_shader_parameter("scan_speed", 0.5)
+	mat.set_shader_parameter("scan_width", 0.1)
+	node.material = mat
 
 ## 清除所有视觉效果
 func clear_all() -> void:

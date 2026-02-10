@@ -1,10 +1,14 @@
 ## main_game.gd
-## 主游戏场景
+## 主游戏场景 v2.0 — 全系统集成版
 ## 管理游戏循环、碰撞检测、场景组件协调
+## 集成：ChapterManager、BossSpawner、SpellVisualManager、VfxManager、
+##       DeathVfxManager、DamageNumberManager、SummonManager
+##       以及所有UI面板（NoteInventoryUI、SpellbookUI、ChordAlchemyPanel、
+##       TimbreWheelUI、ManualSlotConfig、BossHPBar）
 extends Node2D
 
 # ============================================================
-# 节点引用
+# 节点引用 — 核心
 # ============================================================
 @onready var _player: CharacterBody2D = $Player
 @onready var _enemy_spawner: Node2D = $EnemySpawner
@@ -13,6 +17,27 @@ extends Node2D
 @onready var _ground: Node2D = $Ground
 @onready var _hud: CanvasLayer = $HUD
 @onready var _event_horizon: Node2D = $EventHorizon
+
+# ============================================================
+# 节点引用 — 系统管理器（审计报告 2.4 / 2.5 修复）
+# ============================================================
+@onready var _chapter_manager: Node = $ChapterManager
+@onready var _boss_spawner: Node = $BossSpawner
+@onready var _spell_visual_manager: Node2D = $SpellVisualManager
+@onready var _death_vfx_manager: Node2D = $DeathVfxManager
+@onready var _damage_number_manager: Node2D = $DamageNumberManager
+@onready var _summon_manager: Node = $SummonManager
+@onready var _vfx_manager: CanvasLayer = $VfxManager
+
+# ============================================================
+# 节点引用 — UI 面板（审计报告 2.1 / 2.2 修复）
+# ============================================================
+@onready var _note_inventory_ui: Control = $HUD/NoteInventoryUI
+@onready var _spellbook_ui: Control = $HUD/SpellbookUI
+@onready var _chord_alchemy_panel: Control = $HUD/ChordAlchemyPanel
+@onready var _timbre_wheel_ui: Control = $HUD/TimbreWheelUI
+@onready var _manual_slot_config: Control = $HUD/ManualSlotConfig
+@onready var _boss_hp_bar: Control = $HUD/BossHPBar
 
 # ============================================================
 # 配置
@@ -26,6 +51,9 @@ const COLLISION_CHECK_INTERVAL: float = 0.033  # ~30Hz
 # 状态
 # ============================================================
 var _collision_timer: float = 0.0
+## 游戏结束场景跳转延迟
+var _game_over_timer: float = -1.0
+const GAME_OVER_DELAY: float = 2.0
 
 # ============================================================
 # 生命周期
@@ -33,6 +61,8 @@ var _collision_timer: float = 0.0
 
 func _ready() -> void:
 	_setup_scene()
+	_connect_system_signals()
+	_start_chapter_system()
 	GameManager.start_game()
 
 func _input(event: InputEvent) -> void:
@@ -43,6 +73,14 @@ func _input(event: InputEvent) -> void:
 			GameManager.resume_game()
 
 func _process(delta: float) -> void:
+	# 游戏结束延迟跳转
+	if _game_over_timer >= 0.0:
+		_game_over_timer += delta
+		if _game_over_timer >= GAME_OVER_DELAY:
+			_game_over_timer = -1.0
+			get_tree().change_scene_to_file("res://scenes/game_over.tscn")
+		return
+
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
 
@@ -77,6 +115,130 @@ func _setup_scene() -> void:
 
 	# 创建事件视界（竞技场边界）
 	_setup_event_horizon()
+
+# ============================================================
+# 系统信号连接（审计报告修复核心）
+# ============================================================
+
+func _connect_system_signals() -> void:
+	# --- 游戏状态信号 ---
+	if not GameManager.player_died.is_connected(_on_player_died):
+		GameManager.player_died.connect(_on_player_died)
+	if not GameManager.game_state_changed.is_connected(_on_game_state_changed):
+		GameManager.game_state_changed.connect(_on_game_state_changed)
+
+	# --- 章节管理器信号 ---
+	if _chapter_manager:
+		if _chapter_manager.has_signal("boss_triggered"):
+			_chapter_manager.boss_triggered.connect(_on_chapter_boss_triggered)
+		if _chapter_manager.has_signal("chapter_started"):
+			_chapter_manager.chapter_started.connect(_on_chapter_started)
+		if _chapter_manager.has_signal("chapter_completed"):
+			_chapter_manager.chapter_completed.connect(_on_chapter_completed)
+		if _chapter_manager.has_signal("game_completed"):
+			_chapter_manager.game_completed.connect(_on_game_completed)
+
+	# --- Boss 生成器信号 ---
+	if _boss_spawner:
+		if _boss_spawner.has_signal("boss_fight_started"):
+			_boss_spawner.boss_fight_started.connect(_on_boss_fight_started)
+		if _boss_spawner.has_signal("boss_fight_ended"):
+			_boss_spawner.boss_fight_ended.connect(_on_boss_fight_ended)
+
+	# --- 敌人击杀 → 死亡特效 ---
+	if not GameManager.enemy_killed.is_connected(_on_enemy_killed_vfx):
+		GameManager.enemy_killed.connect(_on_enemy_killed_vfx)
+
+	# --- 和弦炼成完成信号 ---
+	if _chord_alchemy_panel and _chord_alchemy_panel.has_signal("alchemy_completed"):
+		_chord_alchemy_panel.alchemy_completed.connect(_on_alchemy_completed)
+
+# ============================================================
+# 章节系统启动（审计报告 2.4 修复）
+# ============================================================
+
+func _start_chapter_system() -> void:
+	if _chapter_manager and _chapter_manager.has_method("start_game"):
+		_chapter_manager.start_game()
+
+# ============================================================
+# 信号回调 — 游戏状态
+# ============================================================
+
+func _on_player_died() -> void:
+	# 启动游戏结束延迟跳转
+	_game_over_timer = 0.0
+
+func _on_game_state_changed(new_state: GameManager.GameState) -> void:
+	match new_state:
+		GameManager.GameState.GAME_OVER:
+			# 游戏结束处理（跳转由 _game_over_timer 控制）
+			pass
+		GameManager.GameState.PAUSED:
+			pass
+		GameManager.GameState.PLAYING:
+			pass
+
+# ============================================================
+# 信号回调 — 章节系统
+# ============================================================
+
+func _on_chapter_started(_chapter_index: int, _chapter_name: String) -> void:
+	# 章节开始的全屏特效（使用 play_screen_flash + play_mode_switch）
+	if _vfx_manager:
+		if _vfx_manager.has_method("play_screen_flash"):
+			_vfx_manager.play_screen_flash(Color(0.2, 0.8, 1.0, 0.5), 0.3)
+		if _vfx_manager.has_method("play_mode_switch"):
+			var mode_name := ModeSystem.get_current_mode_name() if ModeSystem else "ionian"
+			_vfx_manager.play_mode_switch(mode_name)
+
+func _on_chapter_completed(_chapter_index: int) -> void:
+	pass
+
+func _on_chapter_boss_triggered(_chapter_index: int, _boss_key: String) -> void:
+	# Boss 战开始时显示 Boss 血条
+	if _boss_hp_bar:
+		_boss_hp_bar.visible = true
+
+func _on_game_completed() -> void:
+	# 全部章节通关
+	_game_over_timer = 0.0
+
+# ============================================================
+# 信号回调 — Boss 系统
+# ============================================================
+
+func _on_boss_fight_started(_boss_name: String) -> void:
+	if _boss_hp_bar:
+		_boss_hp_bar.visible = true
+	if _vfx_manager and _vfx_manager.has_method("play_boss_phase_transition"):
+		_vfx_manager.play_boss_phase_transition()
+
+func _on_boss_fight_ended(_boss_name: String, _victory: bool) -> void:
+	if _boss_hp_bar:
+		_boss_hp_bar.visible = false
+	if _vfx_manager and _vfx_manager.has_method("play_screen_flash"):
+		_vfx_manager.play_screen_flash(Color(1.0, 0.9, 0.3, 0.6), 0.5)
+
+# ============================================================
+# 信号回调 — 视觉特效
+# ============================================================
+
+func _on_enemy_killed_vfx(enemy_position: Vector2, enemy_type: String = "static") -> void:
+	if _death_vfx_manager and _death_vfx_manager.has_method("play_death_effect"):
+		_death_vfx_manager.play_death_effect(enemy_position, enemy_type)
+	# 同时显示击杀伤害数字
+	if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
+		_damage_number_manager.show_damage(0.0, enemy_position)  # 0 = 击杀标记
+
+# ============================================================
+# 信号回调 — 和弦炼成
+# ============================================================
+
+func _on_alchemy_completed(_chord_spell: Dictionary) -> void:
+	# 炼成完成后自动打开法术书
+	if _spellbook_ui and _spellbook_ui.has_method("open_panel"):
+		_spellbook_ui.open_panel()
 
 # ============================================================
 # 地面设置
@@ -124,14 +286,12 @@ func _setup_event_horizon() -> void:
 		add_child(_event_horizon)
 
 	# 创建环形边界视觉效果
-	# 使用多个 Sprite2D 排列成圆形，应用 event_horizon Shader
 	var segments := 64
 	for i in range(segments):
 		var angle := (TAU / segments) * i
 		var pos := Vector2.from_angle(angle) * arena_radius
 
 		var segment_sprite := Sprite2D.new()
-		# 使用简单的白色纹理 + Shader
 		var tex := GradientTexture2D.new()
 		tex.width = 64
 		tex.height = 256
@@ -154,7 +314,6 @@ func _setup_event_horizon() -> void:
 		_event_horizon.add_child(segment_sprite)
 
 func _update_event_horizon() -> void:
-	# 更新事件视界 Shader 参数
 	if _event_horizon == null:
 		return
 
@@ -189,9 +348,15 @@ func _check_collisions() -> void:
 
 			enemy_node.take_damage(hit["damage"], knockback_dir)
 
-			# 显示伤害数字
-			if _hud and _hud.has_method("show_damage_number"):
+			# 显示伤害数字（优先使用 DamageNumberManager）
+			if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
+				_damage_number_manager.show_damage(hit["position"], hit["damage"])
+			elif _hud and _hud.has_method("show_damage_number"):
 				_hud.show_damage_number(hit["position"], hit["damage"])
+
+			# 命中视觉特效
+			if _spell_visual_manager and _spell_visual_manager.has_method("on_projectile_hit"):
+				_spell_visual_manager.on_projectile_hit(hit["position"], proj)
 
 # ============================================================
 # 竞技场边界

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://main_game"]
+[gd_scene load_steps=25 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -9,6 +9,20 @@
 [ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="7_upgrade"]
 [ext_resource type="PackedScene" uid="uid://pause_menu_001" path="res://scenes/pause_menu.tscn" id="8_pause"]
 [ext_resource type="Script" path="res://scripts/ui/game_mechanics_panel.gd" id="9_mechanics"]
+[ext_resource type="Script" path="res://scripts/ui/note_inventory_ui.gd" id="10_note_inv"]
+[ext_resource type="Script" path="res://scripts/ui/spellbook_ui.gd" id="11_spellbook"]
+[ext_resource type="Script" path="res://scripts/ui/chord_alchemy_panel.gd" id="12_alchemy"]
+[ext_resource type="Script" path="res://scripts/ui/timbre_wheel_ui.gd" id="13_timbre"]
+[ext_resource type="Script" path="res://scripts/ui/manual_slot_config.gd" id="14_manual_slot"]
+[ext_resource type="Script" path="res://scripts/systems/chapter_manager.gd" id="15_chapter"]
+[ext_resource type="Script" path="res://scripts/systems/boss_spawner.gd" id="16_boss_spawner"]
+[ext_resource type="Script" path="res://scripts/systems/spell_visual_manager.gd" id="17_spell_visual"]
+[ext_resource type="Script" path="res://scripts/systems/vfx_manager.gd" id="18_vfx"]
+[ext_resource type="Script" path="res://scripts/systems/death_vfx_manager.gd" id="19_death_vfx"]
+[ext_resource type="Script" path="res://scripts/systems/damage_number_manager.gd" id="20_dmg_num"]
+[ext_resource type="Script" path="res://scripts/systems/summon_manager.gd" id="21_summon"]
+[ext_resource type="Script" path="res://scripts/entities/player_visual_enhanced.gd" id="22_player_visual"]
+[ext_resource type="Script" path="res://scripts/ui/boss_hp_bar_ui.gd" id="23_boss_hp"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -26,9 +40,8 @@ script = ExtResource("1_main_game")
 [node name="Player" type="CharacterBody2D" parent="."]
 script = ExtResource("2_player")
 
-[node name="PlayerVisual" type="Polygon2D" parent="Player"]
-color = Color(0, 0.9, 0.7, 1)
-polygon = PackedVector2Array(-12, 0, -6, -10, 6, -10, 12, 0, 6, 10, -6, 10)
+[node name="PlayerVisualEnhanced" type="Node2D" parent="Player"]
+script = ExtResource("22_player_visual")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("CircleShape2D_player")
@@ -52,6 +65,28 @@ script = ExtResource("3_spawner")
 script = ExtResource("4_projectile")
 
 [node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
+
+[node name="ChapterManager" type="Node" parent="."]
+script = ExtResource("15_chapter")
+
+[node name="BossSpawner" type="Node" parent="."]
+script = ExtResource("16_boss_spawner")
+
+[node name="SpellVisualManager" type="Node2D" parent="."]
+script = ExtResource("17_spell_visual")
+
+[node name="DeathVfxManager" type="Node2D" parent="."]
+script = ExtResource("19_death_vfx")
+
+[node name="DamageNumberManager" type="Node2D" parent="."]
+script = ExtResource("20_dmg_num")
+
+[node name="SummonManager" type="Node" parent="."]
+script = ExtResource("21_summon")
+
+[node name="VfxManager" type="CanvasLayer" parent="."]
+layer = 15
+script = ExtResource("18_vfx")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 10
@@ -107,6 +142,65 @@ horizontal_alignment = 1
 [node name="EnemyCountLabel" type="Label" parent="HUD/InfoPanel"]
 text = "Enemies: 0"
 horizontal_alignment = 1
+
+[node name="NoteInventoryUI" type="Control" parent="HUD"]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 280.0
+offset_bottom = 140.0
+script = ExtResource("10_note_inv")
+
+[node name="SpellbookUI" type="Control" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -290.0
+offset_top = 160.0
+offset_right = -10.0
+offset_bottom = 560.0
+script = ExtResource("11_spellbook")
+
+[node name="ChordAlchemyPanel" type="Control" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -225.0
+offset_right = 300.0
+offset_bottom = 225.0
+script = ExtResource("12_alchemy")
+
+[node name="TimbreWheelUI" type="Control" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("13_timbre")
+
+[node name="ManualSlotConfig" type="Control" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -220.0
+offset_right = 100.0
+offset_bottom = -160.0
+script = ExtResource("14_manual_slot")
+
+[node name="BossHPBar" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 60.0
+script = ExtResource("23_boss_hp")
 
 [node name="SuggestionPanel" type="PanelContainer" parent="HUD"]
 anchors_preset = 7

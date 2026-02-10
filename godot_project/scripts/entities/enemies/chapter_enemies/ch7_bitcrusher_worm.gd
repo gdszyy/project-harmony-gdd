@@ -107,6 +107,17 @@ func _add_segment() -> void:
 	var t := float(_segments.size()) / max_segments
 	seg_visual.color = base_color.lerp(Color(0.0, 0.3, 0.2), t)
 	
+	# 应用 bitcrush.gdshader（审计报告 2.4 修复：激活闲置 Shader）
+	var bitcrush_shader := load("res://shaders/bitcrush.gdshader")
+	if bitcrush_shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = bitcrush_shader
+		mat.set_shader_parameter("pixel_size", 4.0 + t * 8.0)  # 尾部更像素化
+		mat.set_shader_parameter("color_depth", 16.0 - t * 8.0)  # 尾部颜色更粗糙
+		mat.set_shader_parameter("corruption", t * 0.3)  # 尾部更损坏
+		mat.set_shader_parameter("scanline_intensity", 0.3)
+		seg_visual.material = mat
+	
 	var pos := global_position
 	if _segments.size() > 0:
 		pos = _segments[-1]["position"]
