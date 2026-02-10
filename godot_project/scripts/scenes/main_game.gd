@@ -340,23 +340,27 @@ func _check_collisions() -> void:
 	# 处理命中
 	for hit in hits:
 		var enemy_node = hit["enemy"].get("node")
-		if enemy_node and is_instance_valid(enemy_node) and enemy_node.has_method("take_damage"):
-			var knockback_dir := Vector2.ZERO
-			var proj = hit["projectile"]
-			if proj.get("velocity", Vector2.ZERO) != Vector2.ZERO:
-				knockback_dir = proj["velocity"].normalized()
-
-			enemy_node.take_damage(hit["damage"], knockback_dir)
-
-			# 显示伤害数字（优先使用 DamageNumberManager）
-			if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
-				_damage_number_manager.show_damage(hit["damage"], hit["position"])
-			elif _hud and _hud.has_method("show_damage_number"):
-				_hud.show_damage_number(hit["position"], hit["damage"])
-
-			# 命中视觉特效
-			if _spell_visual_manager and _spell_visual_manager.has_method("on_projectile_hit"):
-				_spell_visual_manager.on_projectile_hit(hit["position"], proj)
+		if not enemy_node or not is_instance_valid(enemy_node):
+			continue
+		if not enemy_node.has_method("take_damage"):
+			continue
+		
+		var knockback_dir := Vector2.ZERO
+		var proj = hit["projectile"]
+		if proj.get("velocity", Vector2.ZERO) != Vector2.ZERO:
+			knockback_dir = proj["velocity"].normalized()
+		
+		enemy_node.take_damage(hit["damage"], knockback_dir)
+		
+		# 显示伤害数字（优先使用 DamageNumberManager）
+		if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
+			_damage_number_manager.show_damage(hit["damage"], hit["position"])
+		elif _hud and _hud.has_method("show_damage_number"):
+			_hud.show_damage_number(hit["position"], hit["damage"])
+		
+		# 命中视觉特效
+		if _spell_visual_manager and _spell_visual_manager.has_method("on_projectile_hit"):
+			_spell_visual_manager.on_projectile_hit(hit["position"], proj)
 
 # ============================================================
 # 竞技场边界
