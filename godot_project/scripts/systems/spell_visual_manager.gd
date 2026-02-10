@@ -1800,7 +1800,7 @@ func _get_aim_direction() -> Vector2:
 	# ★ 优先瞄准最近的敌人（自动瞄准），无敌人时回退到鼠标方向
 	var nearest := _find_nearest_enemy(player.global_position)
 	if nearest != Vector2.ZERO:
-		var dist := player.global_position.distance_to(nearest)
+		var dist: float = player.global_position.distance_to(nearest)
 		if dist < 9999.0:  # 确保不是 INF
 			return (nearest - player.global_position).normalized()
 
