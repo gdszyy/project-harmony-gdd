@@ -189,7 +189,7 @@ func _on_chapter_started(_chapter_index: int, _chapter_name: String) -> void:
 		if _vfx_manager.has_method("play_screen_flash"):
 			_vfx_manager.play_screen_flash(Color(0.2, 0.8, 1.0, 0.5), 0.3)
 		if _vfx_manager.has_method("play_mode_switch"):
-			var mode_name := ModeSystem.get_current_mode_name() if ModeSystem else "ionian"
+			var mode_name: String = ModeSystem.get_current_mode_name() if ModeSystem else "ionian"
 			_vfx_manager.play_mode_switch(mode_name)
 
 func _on_chapter_completed(_chapter_index: int) -> void:
