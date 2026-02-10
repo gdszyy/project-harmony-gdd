@@ -67,6 +67,9 @@ func _ready() -> void:
 	
 	# 初始化
 	_beat_interval = 60.0 / GameManager.current_bpm
+	
+	# 应用局外升级的节拍判定窗口加成
+	_apply_meta_timing_bonus()
 
 func _process(delta: float) -> void:
 	# 更新拍间隔
@@ -236,3 +239,24 @@ func is_in_perfect_window() -> bool:
 ## 当前是否处于良好卡拍窗口内
 func is_in_good_window() -> bool:
 	return get_beat_offset_ratio() <= good_window
+
+# ============================================================
+# 局外升级加成
+# ============================================================
+
+## 应用节拍判定窗口加成（从 MetaProgressionManager 读取）
+func _apply_meta_timing_bonus() -> void:
+	# 从 SaveManager 获取窗口加成（已委托给 MetaProgressionManager）
+	var bonus_ms: float = SaveManager.get_timing_window_bonus()
+	if bonus_ms <= 0.0:
+		return
+	
+	# 将毫秒加成转换为比例加成
+	# 基础拍间隔 = 60/BPM 秒 = 500ms (120BPM)
+	# 每级 +15ms，最高5级 = +75ms
+	# 转换为比例: bonus_ms / (beat_interval_ms)
+	var beat_interval_ms: float = _beat_interval * 1000.0
+	if beat_interval_ms > 0.0:
+		var bonus_ratio: float = bonus_ms / beat_interval_ms
+		perfect_window += bonus_ratio
+		good_window += bonus_ratio

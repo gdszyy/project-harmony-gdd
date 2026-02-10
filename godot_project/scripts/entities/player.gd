@@ -52,6 +52,9 @@ func _ready() -> void:
 	if _pickup_area and not _pickup_area.area_entered.is_connected(_on_pickup_area_entered):
 		_pickup_area.area_entered.connect(_on_pickup_area_entered)
 
+	# 应用局外升级的拾取范围加成
+	_apply_meta_pickup_range()
+
 func _physics_process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
@@ -164,3 +167,27 @@ func _setup_timers() -> void:
 ## 获取朝向鼠标的方向
 func get_aim_direction() -> Vector2:
 	return (get_global_mouse_position() - global_position).normalized()
+
+# ============================================================
+# 局外升级加成
+# ============================================================
+
+## 应用拾取范围加成（从 MetaProgressionManager 读取）
+func _apply_meta_pickup_range() -> void:
+	if not _pickup_area:
+		return
+
+	# 从 SaveManager 获取拾取范围加成（已委托给 MetaProgressionManager）
+	var bonus_range: float = SaveManager.get_pickup_range_bonus()
+	if bonus_range <= 0.0:
+		return
+
+	# 查找 PickupArea 下的 CollisionShape2D 并扩大其半径
+	for child in _pickup_area.get_children():
+		if child is CollisionShape2D:
+			var shape = child.shape
+			if shape is CircleShape2D:
+				shape.radius += bonus_range
+			elif shape is RectangleShape2D:
+				shape.size += Vector2(bonus_range, bonus_range)
+			break

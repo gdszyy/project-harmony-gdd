@@ -224,9 +224,11 @@ func resume_game() -> void:
 func game_over() -> void:
 	current_state = GameState.GAME_OVER
 
-	# 局结算：保存进度并计算共鸣碎片奖励
+	# 局结算：保存局内进度
 	SaveManager.save_game()
-	_award_resonance_fragments()
+	# ★ 碎片奖励统一由 RunResultsScreen.show_results() 触发
+	#   通过 MetaProgressionManager.on_run_completed() 计算并发放
+	#   避免双重发放碎片
 
 	game_state_changed.emit(current_state)
 
@@ -418,15 +420,28 @@ func get_bpm() -> float:
 # ============================================================
 
 func _award_resonance_fragments() -> void:
-	# 基础奖励：存活时间
-	var time_bonus: int = int(game_time / 30.0) * 5  # 每30秒5碎片
-
-	# 击杀奖励
-	var kill_bonus: int = session_kills * 1  # 每次击杀1碎片
-
-	# 等级奖励
-	var level_bonus: int = (player_level - 1) * 3  # 每级3碎片
-
-	var total: int = time_bonus + kill_bonus + level_bonus
-	if total > 0:
-		SaveManager.add_resonance_fragments(total)
+	# ★ 统一使用 MetaProgressionManager.on_run_completed 计算碎片奖励
+	# 避免 GameManager 和 MetaProgressionManager 双重计算
+	var meta := get_node_or_null("/root/MetaProgressionManager")
+	if meta and meta.has_method("on_run_completed"):
+		var run_data := {
+			"survival_time": game_time,
+			"total_kills": session_kills,
+			"bosses_defeated": 0,  # TODO: 接入 Boss 击败计数
+			"max_level": player_level,
+			"harmony_score": 0.0,  # TODO: 接入和谐度评分
+		}
+		# 尝试从 FatigueManager 获取和谐度数据
+		if FatigueManager.has_method("query_fatigue"):
+			var fatigue_data := FatigueManager.query_fatigue()
+			# 和谐度 = 1 - 疲劳度（疲劳越低越和谐）
+			run_data["harmony_score"] = 1.0 - fatigue_data.get("afi", 0.5)
+		meta.on_run_completed(run_data)
+	else:
+		# 回退方案：直接通过 SaveManager 添加碎片
+		var time_bonus: int = int(game_time / 30.0) * 5
+		var kill_bonus: int = session_kills * 1
+		var level_bonus: int = (player_level - 1) * 3
+		var total: int = time_bonus + kill_bonus + level_bonus
+		if total > 0:
+			SaveManager.add_resonance_fragments(total)

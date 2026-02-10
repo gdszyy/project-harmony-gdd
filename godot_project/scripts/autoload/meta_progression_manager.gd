@@ -626,25 +626,18 @@ func _apply_instrument_bonuses() -> void:
 		GameManager.player_max_hp += hp_bonus
 		GameManager.player_current_hp = GameManager.player_max_hp
 	
-	# 伤害倍率（存储到 GameManager，由 ProjectileManager 读取）
-	var damage_mult := get_instrument_bonus("damage_mult")
-	if damage_mult > 0.0:
-		# 存储为百分比加成
-		if not GameManager.has_meta("meta_damage_mult"):
-			GameManager.set_meta("meta_damage_mult", 1.0)
-		GameManager.set_meta("meta_damage_mult", 1.0 + damage_mult / 100.0)
+	# 伤害倍率 — 由 SaveManager.get_damage_multiplier() 委托读取，无需额外存储
+	# SpellcraftSystem 已通过 SaveManager.get_damage_multiplier() 获取
 	
-	# 投射物速度倍率
-	var speed_mult := get_instrument_bonus("projectile_speed_mult")
-	if speed_mult > 0.0:
-		GameManager.set_meta("meta_speed_mult", 1.0 + speed_mult / 100.0)
+	# 投射物速度倍率 — 由 SaveManager.get_speed_multiplier() 委托读取
+	# SpellcraftSystem 已通过 SaveManager.get_speed_multiplier() 获取
 	
-	# 拾取范围
+	# 拾取范围 → 存储到 GameManager meta，供 player.gd 读取
 	var pickup_range := get_instrument_bonus("pickup_range")
 	if pickup_range > 0.0:
 		GameManager.set_meta("meta_pickup_range_bonus", pickup_range)
 	
-	# 完美判定窗口
+	# 完美判定窗口 → 存储到 GameManager meta，供 rhythm_indicator.gd 读取
 	var perfect_window := get_instrument_bonus("perfect_window_ms")
 	if perfect_window > 0.0:
 		GameManager.set_meta("meta_perfect_window_bonus_ms", perfect_window)
@@ -658,22 +651,26 @@ func _apply_mode_passive() -> void:
 	GameManager.set_meta("meta_mode_passive_value", passive["value"])
 
 func _apply_acoustic_bonuses() -> void:
-	# 单调值减少
+	# 单调值减少 → 直接应用到 FatigueManager
 	var monotony_reduction := get_acoustic_bonus("monotony_reduction")
-	if monotony_reduction > 0.0:
-		GameManager.set_meta("meta_monotony_reduction", monotony_reduction / 100.0)
+	if monotony_reduction > 0.0 and FatigueManager.has_method("apply_resistance_upgrade"):
+		FatigueManager.apply_resistance_upgrade({
+			"type": "monotony_resist",
+			"value": monotony_reduction / 100.0,
+		})
 	
-	# 密度恢复加速
+	# 密度恢复加速 → 直接应用到 FatigueManager
 	var density_recovery := get_acoustic_bonus("density_recovery")
-	if density_recovery > 0.0:
-		GameManager.set_meta("meta_density_recovery_bonus", density_recovery / 100.0)
+	if density_recovery > 0.0 and FatigueManager.has_method("apply_resistance_upgrade"):
+		FatigueManager.apply_resistance_upgrade({
+			"type": "density_resist",
+			"value": density_recovery / 100.0,
+		})
 	
-	# 不和谐伤害减少
-	var dissonance_reduction := get_acoustic_bonus("dissonance_damage_reduction")
-	if dissonance_reduction > 0.0:
-		GameManager.set_meta("meta_dissonance_damage_reduction", dissonance_reduction)
+	# 不和谐伤害减少（由 SaveManager.get_dissonance_resist_multiplier 读取）
+	# 无需额外操作，GameManager.apply_dissonance_damage 已通过 SaveManager 委托读取
 	
-	# 休止符效率
+	# 休止符效率 → 存储到 GameManager meta 供 FatigueManager 读取
 	var rest_efficiency := get_acoustic_bonus("rest_efficiency")
 	if rest_efficiency > 0.0:
 		GameManager.set_meta("meta_rest_efficiency_bonus", rest_efficiency / 100.0)

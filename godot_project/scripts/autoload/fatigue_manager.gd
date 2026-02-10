@@ -806,10 +806,17 @@ func reset_rest_counter() -> void:
 func _apply_rest_cleanse() -> void:
 	var current_time := GameManager.game_time
 
-	# 1. 减少所有被寂静音符的剩余时间
+	# 获取局外升级的休止符效率加成
+	var rest_efficiency_bonus: float = 0.0
+	if GameManager.has_meta("meta_rest_efficiency_bonus"):
+		rest_efficiency_bonus = GameManager.get_meta("meta_rest_efficiency_bonus")
+	var efficiency_mult: float = 1.0 + rest_efficiency_bonus  # 例如 +45% = 1.45倍
+
+	# 1. 减少所有被寂静音符的剩余时间（应用休止符效率加成）
+	var effective_silence_reduction: float = REST_SILENCE_REDUCTION * efficiency_mult
 	var cleansed_notes: Array = []
 	for note_key in _silenced_notes:
-		_silenced_notes[note_key] -= REST_SILENCE_REDUCTION
+		_silenced_notes[note_key] -= effective_silence_reduction
 		if _silenced_notes[note_key] <= current_time:
 			cleansed_notes.append(note_key)
 
@@ -817,8 +824,9 @@ func _apply_rest_cleanse() -> void:
 		_silenced_notes.erase(note_key)
 		note_unsilenced.emit(note_key)
 
-	# 2. 减少总体疲劳度
-	current_afi = clampf(current_afi - REST_FATIGUE_REDUCTION, 0.0, 1.0)
+	# 2. 减少总体疲劳度（应用休止符效率加成）
+	var effective_fatigue_reduction: float = REST_FATIGUE_REDUCTION * efficiency_mult
+	current_afi = clampf(current_afi - effective_fatigue_reduction, 0.0, 1.0)
 
 	# 3. 缓解密度过载（减少近期施法记录的影响）
 	if is_density_overloaded:
