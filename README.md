@@ -1,9 +1,9 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.5.1 (Live Document)
-**最后更新：** 2026年2月8日
-**最新修复：** [v5.0 代码审查与修复报告](BUG_FIX_REPORT_v5.0_2026_02_08.md) — 修复 8 个问题，涵盖护盾系统、受击反馈、和谐殿堂、图鉴解锁
-**前次修复：** [Bug 修复报告 2026-02-08](BUG_FIX_REPORT_2026_02_08.md) — 修复 20 个关键问题，涵盖 UI、游戏功能、信号连接、经验值系统
+**版本：** 2.5.2 (Live Document)
+**最后更新：** 2026年2月10日
+**最新设计：** [关卡与Boss整合设计文档 v3.0](Docs/关卡与Boss整合设计文档_v3.0.md) — 全七章波次级精确设计，遵循"环境即教程"原则
+**最新修复：** [v5.0 代码审查与修复报告](Archive/Reports/BUG_FIX_REPORT_v5.0_2026_02_08.md) — 修复 8 个问题，涵盖护盾系统、受击反馈、和谐殿堂、图鉴解锁
 
 ---
 
@@ -27,25 +27,29 @@
 project-harmony-gdd/
 ├── GDD.md                  # [核心] 实时主设计文档，包含最新最完整的游戏设计方案
 ├── README.md               # 本文件，仓库导航与开发规范
-├── BUG_FIX_REPORT_v5.0_2026_02_08.md  # [最新] v5.0 代码审查与修复报告
-├── BUG_FIX_REPORT_2026_02_08.md  # Bug 修复报告 (2026-02-08)
-├── Feature_Completeness_Report.md  # 功能完整性检查报告
+├── Feature_Completeness_Report.md  # 功能完整性检查报告（持续更新）
 ├── Assets/                 # 当前 GDD 引用的可视化图表
 │   ├── black_key_dual_role_v5.png
 │   ├── chord_spell_form_v5.png
 │   └── generalized_progression_v5.png
 ├── Docs/                   # 专项设计文档与技术文档
+│   ├── 关卡与Boss整合设计文档_v3.0.md  # [最新] v3.0 波次级精确设计
 │   ├── AestheticFatigueSystem_Documentation.md
-│   ├── Art_Direction_Resonance_Horizon.md
+│   ├── ART_IMPLEMENTATION_FRAMEWORK.md  # [v2.0] 美术框架实施方案
+│   ├── Art_And_VFX_Direction.md  # [v2.0] 美术与VFX方向
 │   ├── Audio_Design_Guide.md
 │   ├── Enemy_System_Design.md
-│   ├── Godot_Implementation_Guide.md
-│   ├── Level_And_Boss_Design.md
 │   ├── MetaProgressionSystem_Documentation.md
 │   ├── Numerical_Design_Documentation.md
+│   ├── ResonanceSlicing_System_Design.md  # 频谱相位系统（共鸣切片）
 │   ├── SummoningSystem_Documentation.md
 │   ├── TimbreSystem_Documentation.md
-│   └── UI_Art_Style_Enhancement_Proposal.md  # [v2.4] UI与美术风格优化提案
+│   └── Archive/            # 历史设计文档
+│       ├── 关卡与Boss机制设计文档.md (v2.0)
+│       ├── Design_Update_Proposal_v1.md
+│       ├── Art_Direction_Resonance_Horizon.md
+│       ├── Godot_Implementation_Guide.md
+│       └── UI_Art_Style_Enhancement_Proposal.md
 ├── BalanceKit/             # 平衡性跑分系统 (v2.2)
 │   ├── Methodology.md
 │   ├── balance_scorer.py
@@ -57,10 +61,20 @@ project-harmony-gdd/
 │   ├── TODO.md             # [关键] 开发任务清单 — 项目状态的唯一可信来源
 │   └── ...
 └── Archive/                # 历史版本存档
+    ├── Reports/            # 实现与修复报告归档
+    │   ├── AUDIO_EFFECTS_DESIGN.md
+    │   ├── AUDIO_EFFECTS_IMPLEMENTATION_REPORT.md
+    │   ├── AUDIO_EFFECTS_PARAMETER_OPTIMIZATION.md
+    │   ├── AUDIO_EFFECTS_VERIFICATION.md
+    │   ├── MUSIC_OPTIMIZATION_REPORT.md
+    │   ├── BUG_FIX_REPORT_2026_02_08.md
+    │   ├── BUG_FIX_REPORT_v5.0_2026_02_08.md
+    │   ├── IMPLEMENTATION_REPORT_2.1_2.2.md
+    │   └── Assessment_And_Implementation_Plan.md
     ├── Boss_DissonantConductor/  # [归档] 失谐指挥家Boss（已由音乐史Boss体系替代）
-    ├── Max_Issues_Implementation_Report.md  # [归档] 旧版Issue实现报告
-    ├── fix_report.md  # [归档] 第一轮修复报告 (2026-02-08)
-    ├── review_report_round2.md  # [归档] 第二轮审查报告 (2026-02-08)
+    ├── Max_Issues_Implementation_Report.md
+    ├── fix_report.md
+    ├── review_report_round2.md
     ├── Project_Harmony_Proposal_v1~v5.md
     ├── Numerical_Design_Documentation_v1.md
     ├── Assessment_Report_Density_Fatigue.md
@@ -82,9 +96,16 @@ project-harmony-gdd/
 9.  **平衡性跑分系统**：自动化的策略评估工具，支持一键验证数值平衡性。
 10. **延迟与距离风险系统 (v2.1)**：将法术的延迟和短射程纳入风险评估，验证伤害/范围补偿的合理性。
 11. **局外成长系统 (v2.2)**：名为"和谐殿堂"的永久成长系统，包含四大模块（乐器调优/乐理研习/调式风格/声学降噪），已在跑分系统中预留架构接口。
-12. **关卡与Boss体系 (v2.3)**：基于音乐史演进的七章节结构，每章配有独特场景、敌人和Boss战，通过“风格排斥”系统驱动玩法进化。
-13. **UI与美术风格优化 (v2.4)**：统一视觉语言（全局调色板、色彩规范）、UI动态“多汁感”提升、关键UI主题化重绘（Boss血条、和谐殿堂、谐振法典）、核心玩法视觉反馈强化（5个新Shader + VFX管理器）。
+12. **关卡与Boss体系 (v2.3/v3.0)**：基于音乐史演进的七章节结构，每章配有独特场景、敌人和Boss战，通过"风格排斥"系统驱动玩法进化。v3.0 版本提供了波次级精确设计，遵循"环境即教程"、"先安全试错再实战检验"、"辩证否定链"三大原则。
+13. **UI与美术风格优化 (v2.4)**：统一视觉语言（全局调色板、色彩规范）、UI动态"多汁感"提升、关键UI主题化重绘（Boss血条、和谐殿堂、谐振法典）、核心玩法视觉反馈强化（5个新Shader + VFX管理器）。
 14. **Boss 核心系统补全 (v2.4)**：音乐史七大 Boss (Pythagoras, Guido, Bach, Mozart, Beethoven, Jazz, Noise) 的核心战斗逻辑、阶段系统及专属机制已全部补全。
 15. **v5.0 音频与弹体系统强化**：新增 BGM 程序化音乐生成、受击反馈管理器、护盾伤害吸收、召唤物自动攻击、结晶障碍物、Boss 血条 UI 等。
+16. **频谱相位系统（共鸣切片）**：核心战斗解谜机制，通过音色相位切换（Attack/Sustain/Release）解锁特殊战术增益，并引入频谱偏移疲劳机制。
 
-详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)**、**[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)** 和 **[关卡与Boss设计](Docs/Level_And_Boss_Design.md)**。
+详细内容请查阅 **[GDD.md](GDD.md)**、**[数值设计文档](Docs/Numerical_Design_Documentation.md)**、**[局外成长系统文档](Docs/MetaProgressionSystem_Documentation.md)** 和 **[关卡与Boss整合设计文档 v3.0](Docs/关卡与Boss整合设计文档_v3.0.md)**。
+
+---
+
+## 文档整理说明（2026-02-10）
+
+本次整理将历史实现报告和修复报告移入 `Archive/Reports/`，旧版设计文档移入 `Docs/Archive/`，删除了重复的 `Level_And_Boss_Design.md`（已被 v3.0 版本替代）。所有当前活跃的设计文档均保留在根目录和 `Docs/` 目录下，确保仓库结构清晰、易于导航。
