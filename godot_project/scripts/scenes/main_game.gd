@@ -350,7 +350,7 @@ func _check_collisions() -> void:
 
 			# 显示伤害数字（优先使用 DamageNumberManager）
 			if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
-				_damage_number_manager.show_damage(hit["position"], hit["damage"])
+				_damage_number_manager.show_damage(hit["damage"], hit["position"])
 			elif _hud and _hud.has_method("show_damage_number"):
 				_hud.show_damage_number(hit["position"], hit["damage"])
 

@@ -69,32 +69,32 @@ const CHAPTERS: Dictionary = {
 		"scripted_waves": [
 			{
 				"trigger": "chapter_start",
-				"wave_data": "res://data/waves/ch1/wave_1_1.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_1.gd",
 			},
 			{
 				"trigger": "after_random_wave",
 				"trigger_wave": 3,
-				"wave_data": "res://data/waves/ch1/wave_1_2.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_2.gd",
 			},
 			{
 				"trigger": "after_random_wave",
 				"trigger_wave": 5,
-				"wave_data": "res://data/waves/ch1/wave_1_3.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_3.gd",
 			},
 			{
 				"trigger": "after_random_wave",
 				"trigger_wave": 7,
-				"wave_data": "res://data/waves/ch1/wave_1_4.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_4.gd",
 			},
 			{
 				"trigger": "after_random_wave",
 				"trigger_wave": 8,
-				"wave_data": "res://data/waves/ch1/wave_1_5.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_5.gd",
 			},
 			{
 				"trigger": "after_random_wave",
 				"trigger_wave": 9,
-				"wave_data": "res://data/waves/ch1/wave_1_6.tres",
+				"wave_data": "res://data/waves/ch1/wave_1_6.gd",
 			},
 		],
 		

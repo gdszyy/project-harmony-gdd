@@ -681,8 +681,14 @@ func _check_scripted_wave_trigger(trigger_type: String, wave_number: int) -> voi
 	if should_trigger:
 		var wave_data_path: String = entry.get("wave_data", "")
 		if not wave_data_path.is_empty():
-			var wave_data = load(wave_data_path)
-			if wave_data:
+			var loaded = load(wave_data_path)
+			var wave_data: Resource = null
+			if loaded:
+				# .gd 脚本文件需要实例化，.tres 资源文件直接使用
+				if loaded is GDScript:
+					wave_data = loaded.new()
+				else:
+					wave_data = loaded
 				_inject_scripted_wave(wave_data)
 			else:
 				push_warning("ChapterManager: Failed to load wave data: %s" % wave_data_path)
