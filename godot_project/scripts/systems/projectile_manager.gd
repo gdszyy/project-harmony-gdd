@@ -74,6 +74,117 @@ func update_projectiles(delta: float) -> void:
 	_update_echo_queue(delta)
 	_update_render()
 
+## 公共接口：从指定位置和方向生成单音符弹体（供 codex_ui 演示区域使用）
+## 与 _create_projectile 逻辑一致，但使用外部传入的 origin/direction 替代 player 位置
+func spawn_from_spell(spell_data: Dictionary, origin: Vector2, direction: Vector2) -> void:
+	if _projectiles.size() >= MAX_PROJECTILES:
+		return
+
+	var aim_dir := direction.normalized() if direction != Vector2.ZERO else Vector2.RIGHT
+
+	# 支持连射角度偏移
+	var angle_offset: float = spell_data.get("rapid_fire_angle_offset", 0.0)
+	if angle_offset != 0.0:
+		aim_dir = aim_dir.rotated(angle_offset)
+
+	var projectile := {
+		"position": origin,
+		"velocity": aim_dir * spell_data.get("speed", 600.0),
+		"damage": spell_data.get("damage", 30.0),
+		"size": spell_data.get("size", 24.0),
+		"duration": spell_data.get("duration", 1.5),
+		"time_alive": 0.0,
+		"color": spell_data.get("color", Color(0.0, 1.0, 0.8)),
+		"note": spell_data.get("note", -1),
+		"modifier": spell_data.get("modifier", -1),
+		"active": true,
+		"wave_trajectory": spell_data.get("_wave_trajectory", false),
+		"knockback": spell_data.get("has_knockback", false),
+		"trail_positions": [] as Array[Vector2],
+		"trail_max": 8,
+	}
+
+	# 应用修饰符
+	_apply_modifier(projectile, spell_data)
+
+	# 应用节奏型
+	var rhythm = spell_data.get("rhythm_pattern", -1)
+	_apply_rhythm_to_projectile(projectile, rhythm, spell_data)
+
+	_projectiles.append(projectile)
+
+## 公共接口：从指定位置和方向生成和弦法术弹体（供 codex_ui 演示区域使用）
+## 与 _create_chord_projectile 逻辑一致，但使用外部传入的 origin/direction
+func spawn_chord_projectiles(chord_data: Dictionary, origin: Vector2, direction: Vector2) -> void:
+	var spell_form = chord_data.get("spell_form", -1)
+	var aim_dir := direction.normalized() if direction != Vector2.ZERO else Vector2.RIGHT
+
+	match spell_form:
+		MusicData.SpellForm.ENHANCED_PROJECTILE:
+			_spawn_enhanced_projectile(chord_data, origin, aim_dir)
+		MusicData.SpellForm.DOT_PROJECTILE:
+			_spawn_dot_projectile(chord_data, origin, aim_dir)
+		MusicData.SpellForm.EXPLOSIVE:
+			_spawn_explosive(chord_data, origin, aim_dir)
+		MusicData.SpellForm.SHOCKWAVE:
+			_spawn_shockwave(chord_data, origin)
+		MusicData.SpellForm.FIELD:
+			_spawn_field(chord_data, origin, aim_dir)
+		MusicData.SpellForm.DIVINE_STRIKE:
+			_spawn_divine_strike(chord_data, origin, aim_dir)
+		MusicData.SpellForm.SHIELD_HEAL:
+			_spawn_shield_demo(chord_data, origin)
+		MusicData.SpellForm.SUMMON:
+			_spawn_summon_demo(chord_data, origin)
+		MusicData.SpellForm.CHARGED:
+			_spawn_charged(chord_data, origin, aim_dir)
+		_:
+			_spawn_extended_spell(chord_data, origin, aim_dir)
+
+## 演示专用：护盾法术（跳过 GameManager 调用）
+func _spawn_shield_demo(data: Dictionary, pos: Vector2) -> void:
+	var proj := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": 0.0,
+		"size": 60.0,
+		"duration": 4.0,
+		"time_alive": 0.0,
+		"color": Color(0.2, 1.0, 0.4, 0.6),
+		"is_shield": true,
+		"follows_player": false,
+		"pulse_phase": 0.0,
+		"active": true,
+		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.25,
+	}
+	_projectiles.append(proj)
+
+## 演示专用：召唤法术（不跟随玩家，不自动攻击）
+func _spawn_summon_demo(data: Dictionary, pos: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 15.0)
+	var multiplier: float = data.get("multiplier", 0.8)
+	var proj := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": base_dmg * multiplier,
+		"size": 35.0,
+		"duration": 4.0,
+		"time_alive": 0.0,
+		"color": Color(0.3, 0.4, 0.9),
+		"is_summon": false,
+		"rotation": 0.0,
+		"rotation_speed": 1.5,
+		"pulse_phase": randf() * TAU,
+		"active": true,
+		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.3,
+	}
+	_projectiles.append(proj)
+
+
 # ============================================================
 # MultiMesh 设置
 # ============================================================
@@ -645,8 +756,8 @@ func _update_projectiles(delta: float) -> void:
 			# 爆炸弹体在消失时触发爆炸
 			if proj.get("is_explosive", false):
 				_trigger_explosion(proj)
-			# 护盾消失时清除 GameManager 中的护盾值
-			if proj.get("is_shield", false):
+			# 护盾消失时清除 GameManager 中的护盾值（演示模式下跳过）
+			if proj.get("is_shield", false) and not _demo_mode:
 				GameManager.shield_hp = 0.0
 				GameManager.max_shield_hp = 0.0
 			continue
@@ -799,14 +910,15 @@ func _update_projectiles(delta: float) -> void:
 				proj["field_tick_timer"] = 0.0
 				# 对范围内敌人造成伤害（由碰撞检测处理）
 
-		# 护盾治疗 tick
+		# 护盾治疗 tick（演示模式下跳过 GameManager 调用）
 		if proj.get("is_shield", false):
 			if not proj.has("heal_timer"):
 				proj["heal_timer"] = 0.0
 			proj["heal_timer"] += delta
 			if proj["heal_timer"] >= 1.0:
 				proj["heal_timer"] = 0.0
-				GameManager.heal_player(proj.get("heal_per_second", 5.0))
+				if not _demo_mode:
+					GameManager.heal_player(proj.get("heal_per_second", 5.0))
 
 		# 风暴旋转
 		if proj.get("field_type", "") == "storm":
