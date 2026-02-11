@@ -92,6 +92,9 @@ func _process(delta: float) -> void:
 	# 3. 同步敌人位置到 3D 代理
 	_sync_enemy_proxies()
 
+	# 4. 同步普通敌人 MultiMesh 批量渲染 (Issue #35 修复)
+	_sync_enemy_multimesh()
+
 # ============================================================
 # 3D 场景构建
 # ============================================================
@@ -103,8 +106,11 @@ func _build_3d_scene() -> void:
 	_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_viewport_container.stretch = true
 	_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 设置为透明，使 3D 渲染叠加在 2D 之上
+	# 设置为透明混合，使 3D 渲染叠加在 2D 之上而不遮挡 2D 内容
+	# 修复 Issue #35：确保 SubViewportContainer 不会完全遮挡下层 2D 渲染
 	_viewport_container.self_modulate = Color(1, 1, 1, 1)
+	# 启用透明混合模式，确保 3D SubViewport 的透明背景能正确透过
+	_viewport_container.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 	# --- SubViewport ---
 	_sub_viewport = SubViewport.new()
@@ -157,6 +163,9 @@ func _build_3d_scene() -> void:
 
 	# --- 弹幕 3D 渲染器 ---
 	_setup_projectile_renderer()
+
+	# --- 普通敌人 MultiMesh 批量渲染器 (Issue #35 修复) ---
+	_setup_enemy_multimesh()
 
 	# --- 将 SubViewportContainer 添加到场景 ---
 	# 它需要作为 CanvasLayer 的子节点，以确保在 2D 之上渲染
@@ -306,6 +315,47 @@ func create_player_proxy(player_2d: Node2D) -> void:
 	point_light.omni_attenuation = 1.5
 	_player_proxy_3d.add_child(point_light)
 
+	# 可见几何体 — 发光球体（修复 Issue #35：玩家在 3D 层不可见）
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "PlayerMesh3D"
+	var sphere_mesh := SphereMesh.new()
+	sphere_mesh.radius = 0.25
+	sphere_mesh.height = 0.5
+	sphere_mesh.radial_segments = 16
+	sphere_mesh.rings = 8
+	mesh_instance.mesh = sphere_mesh
+
+	# 自发光材质（确保在暗场景中也可见）
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.0, 1.0, 0.83)
+	mat.emission_enabled = true
+	mat.emission = Color(0.0, 1.0, 0.83)
+	mat.emission_energy_multiplier = 3.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color.a = 0.9
+	mesh_instance.material_override = mat
+	_player_proxy_3d.add_child(mesh_instance)
+
+	# 外层光晕环（增强视觉辨识度）
+	var halo_mesh_instance := MeshInstance3D.new()
+	halo_mesh_instance.name = "PlayerHalo3D"
+	var torus_mesh := TorusMesh.new()
+	torus_mesh.inner_radius = 0.3
+	torus_mesh.outer_radius = 0.4
+	torus_mesh.rings = 16
+	torus_mesh.ring_segments = 12
+	halo_mesh_instance.mesh = torus_mesh
+	halo_mesh_instance.rotation_degrees = Vector3(90, 0, 0)  # 水平放置
+
+	var halo_mat := StandardMaterial3D.new()
+	halo_mat.albedo_color = Color(1.0, 0.85, 0.0, 0.6)
+	halo_mat.emission_enabled = true
+	halo_mat.emission = Color(1.0, 0.85, 0.0)
+	halo_mat.emission_energy_multiplier = 2.0
+	halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo_mesh_instance.material_override = halo_mat
+	_player_proxy_3d.add_child(halo_mesh_instance)
+
 	# 拖尾粒子
 	var trail_particles := GPUParticles3D.new()
 	trail_particles.name = "PlayerTrail3D"
@@ -350,8 +400,8 @@ func update_player_light_color(color: Color) -> void:
 # 敌人 3D 代理管理
 # ============================================================
 
-## 为 2D 敌人创建 3D 渲染代理（带发光点光源）
-func register_enemy_proxy(enemy_2d: Node2D, enemy_color: Color = Color.RED) -> void:
+## 为 2D 敌人创建 3D 渲染代理（带发光点光源 + 可见几何体）
+func register_enemy_proxy(enemy_2d: Node2D, enemy_color: Color = Color.RED, is_elite: bool = false) -> void:
 	if _enemy_proxies.has(enemy_2d):
 		return
 
@@ -361,11 +411,35 @@ func register_enemy_proxy(enemy_2d: Node2D, enemy_color: Color = Color.RED) -> v
 	# 敌人发光光源
 	var light := OmniLight3D.new()
 	light.name = "EnemyGlow"
-	light.light_energy = 0.5
+	light.light_energy = 1.0 if is_elite else 0.5
 	light.light_color = enemy_color
-	light.omni_range = 2.0
+	light.omni_range = 3.0 if is_elite else 2.0
 	light.omni_attenuation = 2.0
 	proxy.add_child(light)
+
+	# 可见几何体（修复 Issue #35：敌人在 3D 层不可见）
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "EnemyMesh3D"
+	if is_elite:
+		# 精英敌人使用更大的菱形体
+		var prism_mesh := PrismMesh.new()
+		prism_mesh.size = Vector3(0.35, 0.35, 0.35)
+		mesh_instance.mesh = prism_mesh
+	else:
+		# 普通敌人使用小方块
+		var box_mesh := BoxMesh.new()
+		box_mesh.size = Vector3(0.15, 0.15, 0.15)
+		mesh_instance.mesh = box_mesh
+
+	var enemy_mat := StandardMaterial3D.new()
+	enemy_mat.albedo_color = enemy_color
+	enemy_mat.emission_enabled = true
+	enemy_mat.emission = enemy_color
+	enemy_mat.emission_energy_multiplier = 2.5 if is_elite else 1.5
+	enemy_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	enemy_mat.albedo_color.a = 0.85
+	mesh_instance.material_override = enemy_mat
+	proxy.add_child(mesh_instance)
 
 	proxy.global_position = to_3d(enemy_2d.global_position)
 	_entity_layer.add_child(proxy)
@@ -514,3 +588,70 @@ func get_entity_layer() -> Node3D:
 ## 获取地面层节点
 func get_ground_layer() -> Node3D:
 	return _ground_layer
+
+# ============================================================
+# 普通敌人批量 3D 渲染（Issue #35 修复 — MultiMesh 方案）
+# ============================================================
+
+## MultiMeshInstance3D 用于批量渲染普通敌人的 3D 代理
+var _enemy_multimesh_instance: MultiMeshInstance3D
+var _enemy_multimesh: MultiMesh
+## 追踪的普通敌人列表（弱引用）
+var _tracked_normal_enemies: Array = []
+## 批量渲染的最大实例数
+const MAX_ENEMY_INSTANCES: int = 256
+
+## 初始化普通敌人的 MultiMesh 批量渲染器
+func _setup_enemy_multimesh() -> void:
+	_enemy_multimesh = MultiMesh.new()
+	_enemy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	_enemy_multimesh.use_colors = true
+	_enemy_multimesh.instance_count = MAX_ENEMY_INSTANCES
+	_enemy_multimesh.visible_instance_count = 0
+
+	# 使用小立方体作为普通敌人的 3D 表现
+	var box := BoxMesh.new()
+	box.size = Vector3(0.12, 0.12, 0.12)
+
+	var enemy_mat := StandardMaterial3D.new()
+	enemy_mat.vertex_color_use_as_albedo = true
+	enemy_mat.emission_enabled = true
+	enemy_mat.emission_energy_multiplier = 1.5
+	# 使用顶点颜色作为自发光色
+	enemy_mat.emission = Color(1.0, 1.0, 1.0)
+	enemy_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	box.material = enemy_mat
+
+	_enemy_multimesh.mesh = box
+
+	_enemy_multimesh_instance = MultiMeshInstance3D.new()
+	_enemy_multimesh_instance.name = "EnemyMultiMesh3D"
+	_enemy_multimesh_instance.multimesh = _enemy_multimesh
+	_entity_layer.add_child(_enemy_multimesh_instance)
+
+## 注册普通敌人到 MultiMesh 批量渲染（轻量级，不创建独立 Node3D）
+func register_normal_enemy(enemy_2d: Node2D, enemy_color: Color = Color(0.7, 0.3, 0.3)) -> void:
+	if _tracked_normal_enemies.size() >= MAX_ENEMY_INSTANCES:
+		return
+	_tracked_normal_enemies.append({"node": enemy_2d, "color": enemy_color})
+
+## 批量同步普通敌人位置到 MultiMesh（在 _process 中调用）
+func _sync_enemy_multimesh() -> void:
+	if _enemy_multimesh == null:
+		return
+
+	# 清理已失效的引用
+	_tracked_normal_enemies = _tracked_normal_enemies.filter(
+		func(entry): return is_instance_valid(entry["node"])
+	)
+
+	var count := mini(_tracked_normal_enemies.size(), MAX_ENEMY_INSTANCES)
+	_enemy_multimesh.visible_instance_count = count
+
+	for i in range(count):
+		var entry: Dictionary = _tracked_normal_enemies[i]
+		var enemy_2d: Node2D = entry["node"]
+		var pos_3d := to_3d(enemy_2d.global_position)
+		var xform := Transform3D(Basis(), pos_3d)
+		_enemy_multimesh.set_instance_transform(i, xform)
+		_enemy_multimesh.set_instance_color(i, entry["color"])
