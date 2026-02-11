@@ -298,7 +298,7 @@ func _process_scripted_wave(delta: float) -> void:
 	
 	# 所有事件已触发后，检查完成条件
 	if _scripted_event_index >= events.size():
-		var condition: String = _scripted_wave_data.success_condition if _scripted_wave_data.has("success_condition") else "kill_all"
+		var condition: String = _scripted_wave_data.success_condition if _scripted_wave_data and "success_condition" in _scripted_wave_data else "kill_all"
 		var is_complete := false
 		
 		match condition:
