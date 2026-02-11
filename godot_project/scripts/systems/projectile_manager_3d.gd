@@ -40,6 +40,7 @@ func _setup_multimesh() -> void:
 	# 使用 QuadMesh 作为弹体基础
 	var quad := QuadMesh.new()
 	quad.size = Vector2(mesh_size, mesh_size)
+	quad.orientation = PlaneMesh.FACE_Y  # 修复：面向Y轴，确保俯视正交摄像机下可见
 	mm.mesh = quad
 	
 	mm_instance.multimesh = mm
