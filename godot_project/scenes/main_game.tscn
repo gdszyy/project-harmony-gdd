@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://main_game"]
+[gd_scene load_steps=25 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -14,7 +14,6 @@
 [ext_resource type="Script" path="res://scripts/ui/chord_alchemy_panel.gd" id="12_alchemy"]
 [ext_resource type="Script" path="res://scripts/ui/timbre_wheel_ui.gd" id="13_timbre"]
 [ext_resource type="Script" path="res://scripts/ui/manual_slot_config.gd" id="14_manual_slot"]
-[ext_resource type="Script" path="res://scripts/systems/chapter_manager.gd" id="15_chapter"]
 [ext_resource type="Script" path="res://scripts/systems/boss_spawner.gd" id="16_boss_spawner"]
 [ext_resource type="Script" path="res://scripts/systems/spell_visual_manager.gd" id="17_spell_visual"]
 [ext_resource type="Script" path="res://scripts/systems/vfx_manager.gd" id="18_vfx"]
@@ -69,8 +68,6 @@ script = ExtResource("4_projectile")
 
 [node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
 
-[node name="ChapterManager" type="Node" parent="."]
-script = ExtResource("15_chapter")
 
 [node name="BossSpawner" type="Node" parent="."]
 script = ExtResource("16_boss_spawner")

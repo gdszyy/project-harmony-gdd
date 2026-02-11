@@ -94,8 +94,8 @@ const ELITE_TYPES: Array = ["pulse", "wall"]
 # v2.0: 2.5D 渲染桥接层
 @onready var _render_bridge: Node = $RenderBridge3D
 
-# v2.0: 章节管理器
-@onready var _chapter_manager: Node = $ChapterManager
+# v2.0: 章节管理器 (P0 Fix #46: 使用 Autoload 单例)
+var _chapter_manager: Node = null
 
 # v2.0: 视觉管理器
 @onready var _spell_visual_manager: Node2D = $SpellVisualManager
@@ -142,6 +142,8 @@ var _ground_sprite: Sprite2D = null
 # ============================================================
 
 func _ready() -> void:
+	# P0 Fix #46: 从 Autoload 获取 ChapterManager 单例
+	_chapter_manager = get_node_or_null("/root/ChapterManager")
 	_dps_tracker["session_start"] = Time.get_ticks_msec() / 1000.0
 	_dps_tracker["window_start"] = _dps_tracker["session_start"]
 
