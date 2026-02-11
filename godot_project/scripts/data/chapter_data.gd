@@ -822,6 +822,419 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 }
 
 # ============================================================
+# 章节专属音色武器配置 (v2.0 — Issue #38)
+# 每个章节拥有一种专属音色武器，与章节主题深度绑定
+# ============================================================
+const CHAPTER_TIMBRES: Dictionary = {
+	Chapter.CH1_PYTHAGORAS: {
+		"timbre": MusicData.ChapterTimbre.LYRE,
+		"name": "里拉琴",
+		"name_en": "Lyre",
+		"electronic_variant": MusicData.ElectronicVariant.SINE_WAVE_SYNTH,
+		"electronic_name": "Sine Wave Synth",
+		"electronic_name_cn": "正弦波合成",
+		"core_mechanic": "harmonic_resonance",
+		"chord_interaction": MusicData.ChordType.DOMINANT_7,
+		"desc": "纯净的泛音共鸣，基于数学比例的伤害加成",
+	},
+	Chapter.CH2_GUIDO: {
+		"timbre": MusicData.ChapterTimbre.ORGAN,
+		"name": "管风琴",
+		"name_en": "Organ",
+		"electronic_variant": MusicData.ElectronicVariant.DRONE_SYNTH,
+		"electronic_name": "Drone Synth",
+		"electronic_name_cn": "无人机音合成",
+		"core_mechanic": "harmonic_stacking",
+		"chord_interaction": MusicData.ChordType.MINOR,
+		"desc": "持续的和声层叠，多声部叠加攻击",
+	},
+	Chapter.CH3_BACH: {
+		"timbre": MusicData.ChapterTimbre.HARPSICHORD,
+		"name": "羽管键琴",
+		"name_en": "Harpsichord",
+		"electronic_variant": MusicData.ElectronicVariant.ARPEGGIATOR_SYNTH,
+		"electronic_name": "Arpeggiator Synth",
+		"electronic_name_cn": "琶音器合成",
+		"core_mechanic": "counterpoint_weave",
+		"chord_interaction": MusicData.ChordType.AUGMENTED,
+		"desc": "精密的对位攻击，多弹道交织",
+	},
+	Chapter.CH4_MOZART: {
+		"timbre": MusicData.ChapterTimbre.FORTEPIANO,
+		"name": "钢琴",
+		"name_en": "Fortepiano",
+		"electronic_variant": MusicData.ElectronicVariant.VELOCITY_PAD,
+		"electronic_name": "Velocity Pad",
+		"electronic_name_cn": "力度感应垫",
+		"core_mechanic": "velocity_dynamics",
+		"chord_interaction": MusicData.ChordType.MINOR_7,
+		"desc": "力度动态控制，强弱拍伤害差异化",
+	},
+	Chapter.CH5_BEETHOVEN: {
+		"timbre": MusicData.ChapterTimbre.TUTTI,
+		"name": "管弦全奏",
+		"name_en": "Tutti",
+		"electronic_variant": MusicData.ElectronicVariant.SUPERSAW_SYNTH,
+		"electronic_name": "Supersaw Synth",
+		"electronic_name_cn": "超级锯齿波",
+		"core_mechanic": "emotional_crescendo",
+		"chord_interaction": MusicData.ChordType.DIMINISHED,
+		"desc": "情感爆发式攻击，渐强渐弱的伤害曲线",
+	},
+	Chapter.CH6_JAZZ: {
+		"timbre": MusicData.ChapterTimbre.SAXOPHONE,
+		"name": "萨克斯",
+		"name_en": "Saxophone",
+		"electronic_variant": MusicData.ElectronicVariant.FM_SYNTH,
+		"electronic_name": "FM Synth",
+		"electronic_name_cn": "FM合成器",
+		"core_mechanic": "swing_attack",
+		"chord_interaction": MusicData.ChordType.MAJOR_7,
+		"desc": "摇摆节奏攻击，反拍强化",
+	},
+	Chapter.CH7_NOISE: {
+		"timbre": MusicData.ChapterTimbre.SYNTHESIZER,
+		"name": "合成主脑",
+		"name_en": "Synthesizer",
+		"electronic_variant": MusicData.ElectronicVariant.GLITCH_ENGINE,
+		"electronic_name": "Glitch Engine",
+		"electronic_name_cn": "故障引擎",
+		"core_mechanic": "waveform_morph",
+		"chord_interaction": MusicData.ChordType.DIMINISHED_7,
+		"desc": "波形变换攻击，频率操控",
+	},
+}
+
+# ============================================================
+# 章节专属词条配置 (v2.0 — Issue #38)
+# 每个章节有 3 个专属词条（普通/稀有/史诗各 1 个）
+# 词条与章节音色武器有协同效果
+# ============================================================
+const CHAPTER_INSCRIPTIONS: Dictionary = {
+	# ---- Ch1 数之和谐 · 毕达哥拉斯词条 ----
+	Chapter.CH1_PYTHAGORAS: [
+		{
+			"id": "ch1_golden_ratio",
+			"name": "黄金比例",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "弹体飞行距离为黄金比例（约 1.618 倍基础距离）时，伤害 +25%",
+			"synergy_desc": "里拉琴弹体自动调整飞行距离至黄金比例",
+			"params": {
+				"distance_ratio": 1.618,
+				"distance_tolerance": 0.1,
+				"damage_bonus": 0.25,
+			},
+		},
+		{
+			"id": "ch1_pythagorean_interval",
+			"name": "毕达哥拉斯音程",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "同时存在的弹体数量为 2 的幂次时（2/4/8），全体弹体伤害 +15%",
+			"synergy_desc": "里拉琴的泛音共鸣自动生成 2^n 个衍生弹体",
+			"params": {
+				"power_of_two_targets": [2, 4, 8],
+				"damage_bonus": 0.15,
+			},
+		},
+		{
+			"id": "ch1_music_of_spheres",
+			"name": "天球之乐",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "每 30 秒触发一次'天球共鸣'，对全屏敌人造成当前 DPS 50% 的伤害",
+			"synergy_desc": "里拉琴使用期间天球共鸣冷却时间 -10s",
+			"params": {
+				"cooldown": 30.0,
+				"synergy_cooldown_reduction": 10.0,
+				"dps_ratio": 0.50,
+			},
+		},
+	],
+	
+	# ---- Ch2 记谱之光 · 圭多词条 ----
+	Chapter.CH2_GUIDO: [
+		{
+			"id": "ch2_four_line_staff",
+			"name": "四线谱",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "弹体飞行轨迹上留下持续 1s 的'谱线'，敌人经过时受到 10% 额外伤害",
+			"synergy_desc": "管风琴的持续音自动生成四条平行谱线",
+			"params": {
+				"trail_duration": 1.0,
+				"trail_damage_bonus": 0.10,
+				"synergy_parallel_count": 4,
+			},
+		},
+		{
+			"id": "ch2_solmization",
+			"name": "唱名法",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "连续使用不同音符施法（Do-Re-Mi...），每个不同音符 +8% 伤害（最多 +56%）",
+			"synergy_desc": "管风琴的多声部自动计入不同音符数",
+			"params": {
+				"damage_per_unique_note": 0.08,
+				"max_unique_notes": 7,
+				"max_damage_bonus": 0.56,
+			},
+		},
+		{
+			"id": "ch2_chant_echo",
+			"name": "圣咏回响",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "法术命中敌人后，在命中位置生成持续 3s 的'圣咏区域'，区域内敌人受到的所有伤害 +20%",
+			"synergy_desc": "管风琴的持续音延长圣咏区域至 5s",
+			"params": {
+				"zone_duration": 3.0,
+				"synergy_zone_duration": 5.0,
+				"damage_amplify": 0.20,
+				"zone_radius": 80.0,
+			},
+		},
+	],
+	
+	# ---- Ch3 复调迷宫 · 巴赫词条 ----
+	Chapter.CH3_BACH: [
+		{
+			"id": "ch3_canon",
+			"name": "卡农",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "每发弹体在 0.3s 后生成一个延迟复制体，沿相同轨迹飞行，伤害为 60%",
+			"synergy_desc": "羽管键琴的对位弹体也会触发卡农",
+			"params": {
+				"copy_delay": 0.3,
+				"copy_damage_ratio": 0.60,
+			},
+		},
+		{
+			"id": "ch3_fugue_subject",
+			"name": "赋格主题",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "标记第一个命中的敌人为'主题'，后续弹体命中其他敌人时，'主题'敌人也受到 30% 传导伤害",
+			"synergy_desc": "羽管键琴的多弹道使'主题'传导更频繁",
+			"params": {
+				"conduct_damage_ratio": 0.30,
+				"subject_mark_duration": 10.0,
+			},
+		},
+		{
+			"id": "ch3_goldberg_variations",
+			"name": "哥德堡变奏",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "每 30 次施法后，下一次施法的效果翻倍（伤害、范围、持续时间均 x2）",
+			"synergy_desc": "羽管键琴的快速施法加速触发变奏",
+			"params": {
+				"cast_threshold": 30,
+				"double_multiplier": 2.0,
+			},
+		},
+	],
+	
+	# ---- Ch4 完美形式 · 莫扎特词条 ----
+	Chapter.CH4_MOZART: [
+		{
+			"id": "ch4_sonata_form",
+			"name": "奏鸣曲式",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "战斗分为'呈示-展开-再现'三阶段，每阶段切换时获得 3s 全属性 +15%",
+			"synergy_desc": "钢琴的力度控制在阶段切换时自动最大化",
+			"params": {
+				"phase_count": 3,
+				"transition_buff_duration": 3.0,
+				"all_stats_bonus": 0.15,
+			},
+		},
+		{
+			"id": "ch4_perfect_cadence",
+			"name": "完美终止",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "击杀敌人时，若使用的是 V-I（属-主）和弦进行，额外获得 2 倍经验",
+			"synergy_desc": "钢琴自动将终止式的力度提升至 fortissimo",
+			"params": {
+				"xp_multiplier": 2.0,
+				"required_progression": "D_to_T",
+			},
+		},
+		{
+			"id": "ch4_mozart_effect",
+			"name": "莫扎特效应",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "保持 15s 不受伤，获得'灵感'状态：施法速度 +30%，持续 10s",
+			"synergy_desc": "钢琴在'灵感'状态下解锁隐藏的装饰音弹体",
+			"params": {
+				"no_damage_threshold": 15.0,
+				"inspiration_duration": 10.0,
+				"cast_speed_bonus": 0.30,
+			},
+		},
+	],
+	
+	# ---- Ch5 命运之力 · 贝多芬词条 ----
+	Chapter.CH5_BEETHOVEN: [
+		{
+			"id": "ch5_fate_motif",
+			"name": "命运动机",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "每 4 次攻击的第 4 次（da-da-da-DUM）伤害 +40%",
+			"synergy_desc": "管弦全奏的第 4 拍自动触发全体乐器齐奏",
+			"params": {
+				"attack_cycle": 4,
+				"fourth_hit_bonus": 0.40,
+			},
+		},
+		{
+			"id": "ch5_heroic_symphony",
+			"name": "英雄交响",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "生命值低于 30% 时，攻击力 +50%，移动速度 +20%",
+			"synergy_desc": "管弦全奏在低血量时自动切换为'暴风雨'模式",
+			"params": {
+				"hp_threshold": 0.30,
+				"attack_bonus": 0.50,
+				"speed_bonus": 0.20,
+			},
+		},
+		{
+			"id": "ch5_ode_to_joy",
+			"name": "欢乐颂",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "击杀 100 个敌人后触发'欢乐颂'：15s 内所有法术无消耗、无疲劳",
+			"synergy_desc": "管弦全奏在欢乐颂期间解锁'合唱终章'超级弹幕",
+			"params": {
+				"kill_threshold": 100,
+				"ode_duration": 15.0,
+				"no_cost": true,
+				"no_fatigue": true,
+			},
+		},
+	],
+	
+	# ---- Ch6 切分行者 · 爵士词条 ----
+	Chapter.CH6_JAZZ: [
+		{
+			"id": "ch6_blue_scale",
+			"name": "蓝调音阶",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "使用降音（b3, b5, b7）时，弹体获得'忧郁穿透'：无视 20% 护甲",
+			"synergy_desc": "萨克斯的摇摆攻击自动附带蓝调音阶效果",
+			"params": {
+				"armor_penetration": 0.20,
+				"blue_notes": ["b3", "b5", "b7"],
+			},
+		},
+		{
+			"id": "ch6_improvisation",
+			"name": "即兴独奏",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "连续 5s 不重复使用同一音符，触发'即兴独奏'：下一次施法伤害 x3",
+			"synergy_desc": "萨克斯在即兴独奏期间攻击速度翻倍",
+			"params": {
+				"no_repeat_duration": 5.0,
+				"next_cast_multiplier": 3.0,
+				"synergy_attack_speed_mult": 2.0,
+			},
+		},
+		{
+			"id": "ch6_syncopation_counter",
+			"name": "切分反击",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "在敌人攻击的反拍（弱拍）施法，该法术伤害 +100% 且附带 1s 眩晕",
+			"synergy_desc": "萨克斯自动将施法时机偏移至最近的反拍",
+			"params": {
+				"offbeat_damage_bonus": 1.00,
+				"stun_duration": 1.0,
+			},
+		},
+	],
+	
+	# ---- Ch7 数字虚空 · 电子词条 ----
+	Chapter.CH7_NOISE: [
+		{
+			"id": "ch7_bitcrush",
+			"name": "降采样",
+			"name_en": "Bitcrush",
+			"rarity": MusicData.InscriptionRarity.COMMON,
+			"desc": "弹体命中敌人后，敌人的移动变为'低帧率'（每 0.2s 才更新一次位置），持续 2s",
+			"synergy_desc": "合成主脑的 Bitcrusher 模式使降采样效果范围扩大至 AOE",
+			"params": {
+				"frame_interval": 0.2,
+				"effect_duration": 2.0,
+				"synergy_aoe_radius": 80.0,
+			},
+		},
+		{
+			"id": "ch7_fm_modulation",
+			"name": "频率调制",
+			"name_en": "FM",
+			"rarity": MusicData.InscriptionRarity.RARE,
+			"desc": "弹体的伤害随飞行时间呈正弦波动（±30%），波峰时命中可触发额外的谐波爆炸",
+			"synergy_desc": "合成主脑可调节 FM 的调制频率和深度",
+			"params": {
+				"damage_oscillation": 0.30,
+				"oscillation_frequency": 2.0,
+				"harmonic_explosion_radius": 60.0,
+				"harmonic_explosion_damage": 0.50,
+			},
+		},
+		{
+			"id": "ch7_glitch_overflow",
+			"name": "故障溢出",
+			"name_en": "Glitch Overflow",
+			"rarity": MusicData.InscriptionRarity.EPIC,
+			"desc": "每次击杀敌人有 10% 几率触发'故障溢出'：敌人死亡动画变为数据崩溃效果，对周围敌人造成 200% 伤害",
+			"synergy_desc": "合成主脑使故障溢出几率提升至 25%",
+			"params": {
+				"base_chance": 0.10,
+				"synergy_chance": 0.25,
+				"explosion_damage_ratio": 2.00,
+				"explosion_radius": 100.0,
+			},
+		},
+	],
+}
+
+# ============================================================
+# 跨章节词条组合 · 音乐史彩蛋 (v2.0 — Issue #38)
+# ============================================================
+const INSCRIPTION_EASTER_EGGS: Array = [
+	{
+		"id": "ancient_modern_symphony",
+		"name": "古今交响",
+		"required_inscriptions": ["ch1_music_of_spheres", "ch5_ode_to_joy"],
+		"desc": "天球共鸣和欢乐颂可同时触发",
+		"effect": "simultaneous_trigger",
+	},
+	{
+		"id": "counterpoint_and_improv",
+		"name": "对位与即兴",
+		"required_inscriptions": ["ch3_fugue_subject", "ch6_improvisation"],
+		"desc": "赋格主题的传导伤害可触发即兴独奏",
+		"effect": "conduct_triggers_improv",
+	},
+	{
+		"id": "digital_pythagoras",
+		"name": "数字毕达哥拉斯",
+		"required_inscriptions": ["ch1_golden_ratio", "ch7_bitcrush"],
+		"desc": "黄金比例的距离判定精度放宽 20%",
+		"effect": "golden_ratio_tolerance_up",
+		"params": { "tolerance_bonus": 0.20 },
+	},
+	{
+		"id": "notation_to_glitch",
+		"name": "从记谱到故障",
+		"required_inscriptions": ["ch2_four_line_staff", "ch7_glitch_overflow"],
+		"desc": "四线谱的谱线变为故障数据流，伤害 +15%",
+		"effect": "glitch_staff_lines",
+		"params": { "trail_damage_bonus_extra": 0.15 },
+	},
+	{
+		"id": "fate_and_form",
+		"name": "命运与形式",
+		"required_inscriptions": ["ch4_sonata_form", "ch5_fate_motif"],
+		"desc": "奏鸣曲式的阶段切换自动触发命运动机的第 4 击效果",
+		"effect": "phase_triggers_fate",
+	},
+]
+
+# ============================================================
 # 公共接口
 # ============================================================
 
@@ -939,3 +1352,40 @@ static func get_next_chapter(current: int) -> int:
 static func get_special_mechanics(chapter: int) -> Dictionary:
 	var config := get_chapter_config(chapter)
 	return config.get("special_mechanics", {})
+
+## 获取章节专属音色武器配置
+static func get_chapter_timbre(chapter: int) -> Dictionary:
+	return CHAPTER_TIMBRES.get(chapter, {})
+
+## 获取章节专属词条池
+static func get_chapter_inscriptions(chapter: int) -> Array:
+	return CHAPTER_INSCRIPTIONS.get(chapter, [])
+
+## 根据词条 ID 获取词条数据
+static func get_inscription_by_id(inscription_id: String) -> Dictionary:
+	for chapter in CHAPTER_INSCRIPTIONS:
+		for inscription in CHAPTER_INSCRIPTIONS[chapter]:
+			if inscription["id"] == inscription_id:
+				return inscription
+	return {}
+
+## 检查是否触发了音乐史彩蛋
+static func check_easter_eggs(owned_inscription_ids: Array[String]) -> Array[Dictionary]:
+	var triggered: Array[Dictionary] = []
+	for egg in INSCRIPTION_EASTER_EGGS:
+		var all_met := true
+		for req_id in egg["required_inscriptions"]:
+			if req_id not in owned_inscription_ids:
+				all_met = false
+				break
+		if all_met:
+			triggered.append(egg)
+	return triggered
+
+## 获取章节音色武器的电子乐变体信息
+static func get_electronic_variant(chapter: int) -> Dictionary:
+	var timbre_config := get_chapter_timbre(chapter)
+	if timbre_config.is_empty():
+		return {}
+	var variant_enum = timbre_config.get("electronic_variant", MusicData.ElectronicVariant.NONE)
+	return MusicData.ELECTRONIC_VARIANT_DATA.get(variant_enum, {})

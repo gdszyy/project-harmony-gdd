@@ -17,6 +17,9 @@ signal enemy_killed(enemy_position: Vector2)
 signal xp_gained(amount: int)
 signal level_up(new_level: int)
 signal upgrade_selected(upgrade: Dictionary)
+signal chapter_timbre_changed(new_timbre: int)     ## 章节音色武器变更
+signal inscription_acquired(inscription: Dictionary) ## 获得章节词条
+signal easter_egg_triggered(egg: Dictionary)         ## 音乐史彩蛋触发
 
 # ============================================================
 # 枚举
@@ -66,6 +69,22 @@ var is_test_mode: bool = false
 ## 护盾值（由 ProjectileManager 的护盾法阵提供）
 var shield_hp: float = 0.0
 var max_shield_hp: float = 0.0
+
+# ============================================================
+# 章节音色武器系统 (v2.0 — Issue #38)
+# ============================================================
+## 当前激活的音色武器
+var active_chapter_timbre: int = MusicData.ChapterTimbre.NONE
+## 是否使用电子乐变体
+var is_electronic_variant: bool = false
+## 已解锁的音色武器列表
+var available_timbres: Array[int] = []
+## 已获得的章节词条
+var active_inscriptions: Array[Dictionary] = []
+## 当前章节词条池
+var current_chapter_inscription_pool: Array[Dictionary] = []
+## 已触发的音乐史彩蛋
+var triggered_easter_eggs: Array[Dictionary] = []
 
 # ============================================================
 # 节拍系统
@@ -171,6 +190,14 @@ func reset_game() -> void:
 	shield_hp = 0.0
 	max_shield_hp = 0.0
 	_update_beat_interval()
+
+	# 重置音色武器系统
+	active_chapter_timbre = MusicData.ChapterTimbre.NONE
+	is_electronic_variant = false
+	available_timbres.clear()
+	active_inscriptions.clear()
+	current_chapter_inscription_pool.clear()
+	triggered_easter_eggs.clear()
 
 	# 重置所有子系统
 	if NoteInventory.has_method("reset"):
@@ -317,6 +344,8 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 			_apply_special_upgrade(upgrade)
 		"note_acquire":
 			_apply_note_acquire_upgrade(upgrade)
+		"inscription":
+			_apply_inscription_upgrade(upgrade)
 
 	# ★ 每次升级额外获得一个随机音符（基础奖励）
 	NoteInventory.add_random_note(1, "level_up_bonus")
@@ -367,6 +396,13 @@ func _apply_timbre_mastery_upgrade(upgrade: Dictionary) -> void:
 	# 音色精通升级由 SpellcraftSystem 读取 acquired_upgrades 处理
 	pass
 
+## 章节词条升级
+func _apply_inscription_upgrade(upgrade: Dictionary) -> void:
+	var inscription: Dictionary = upgrade.get("inscription", {})
+	if inscription.is_empty():
+		return
+	acquire_inscription(inscription)
+
 ## 修饰符精通升级
 func _apply_modifier_mastery_upgrade(upgrade: Dictionary) -> void:
 	# 修饰符精通升级由 SpellcraftSystem 读取 acquired_upgrades 处理
@@ -414,6 +450,99 @@ func get_beat_in_measure() -> int:
 ## 获取当前BPM
 func get_bpm() -> float:
 	return current_bpm
+
+# ============================================================
+# 章节音色武器管理 (v2.0 — Issue #38)
+# ============================================================
+
+## 进入新章节时激活对应音色武器
+func activate_chapter_timbre(chapter: int) -> void:
+	var config: Dictionary = ChapterData.get_chapter_timbre(chapter)
+	if config.is_empty():
+		return
+	var timbre: int = config["timbre"]
+	active_chapter_timbre = timbre
+	if timbre not in available_timbres:
+		available_timbres.append(timbre)
+	# 加载章节词条池
+	current_chapter_inscription_pool = ChapterData.get_chapter_inscriptions(chapter)
+	chapter_timbre_changed.emit(active_chapter_timbre)
+
+## 切换音色武器
+func switch_timbre(timbre: int) -> void:
+	if timbre == active_chapter_timbre:
+		return
+	if timbre not in available_timbres:
+		return
+	# 判断是否跨章节使用，产生额外疲劳
+	var current_chapter_config: Dictionary = ChapterData.get_chapter_timbre(
+		ChapterManager.get_current_chapter() if ChapterManager else 0
+	)
+	var chapter_timbre: int = current_chapter_config.get("timbre", -1)
+	if chapter_timbre != timbre:
+		# 跨章节使用，产生额外疲劳
+		var fatigue_cost: float = MusicData.CROSS_CHAPTER_TIMBRE_FATIGUE
+		if is_electronic_variant:
+			fatigue_cost *= MusicData.ELECTRONIC_VARIANT_FATIGUE_MULT
+		if FatigueManager.has_method("apply_manual_fatigue"):
+			FatigueManager.apply_manual_fatigue(fatigue_cost)
+	active_chapter_timbre = timbre
+	chapter_timbre_changed.emit(active_chapter_timbre)
+
+## 获取词条
+func acquire_inscription(inscription: Dictionary) -> void:
+	# 检查是否已拥有
+	for existing in active_inscriptions:
+		if existing["id"] == inscription["id"]:
+			return
+	active_inscriptions.append(inscription)
+	inscription_acquired.emit(inscription)
+	_check_music_history_easter_eggs()
+
+## 获取尚未拥有的当前章节词条
+func get_unacquired_inscriptions() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var owned_ids: Array[String] = []
+	for ins in active_inscriptions:
+		owned_ids.append(ins["id"])
+	for ins in current_chapter_inscription_pool:
+		if ins["id"] not in owned_ids:
+			result.append(ins)
+	return result
+
+## 检查音乐史彩蛋
+func _check_music_history_easter_eggs() -> void:
+	var owned_ids: Array[String] = []
+	for ins in active_inscriptions:
+		owned_ids.append(ins["id"])
+	var eggs: Array[Dictionary] = ChapterData.check_easter_eggs(owned_ids)
+	for egg in eggs:
+		var already_triggered := false
+		for existing in triggered_easter_eggs:
+			if existing["id"] == egg["id"]:
+				already_triggered = true
+				break
+		if not already_triggered:
+			triggered_easter_eggs.append(egg)
+			easter_egg_triggered.emit(egg)
+
+## 检查当前音色武器是否为章节专属（无额外疲劳）
+func is_current_chapter_timbre() -> bool:
+	var config: Dictionary = ChapterData.get_chapter_timbre(
+		ChapterManager.get_current_chapter() if ChapterManager else 0
+	)
+	return config.get("timbre", -1) == active_chapter_timbre
+
+## 获取词条与当前音色武器的协同加成状态
+func get_inscription_synergy_active(inscription: Dictionary) -> bool:
+	if not is_current_chapter_timbre():
+		return false
+	# 检查词条是否属于当前章节
+	var chapter_inscriptions: Array = current_chapter_inscription_pool
+	for ins in chapter_inscriptions:
+		if ins["id"] == inscription["id"]:
+			return true
+	return false
 
 # ============================================================
 # 局结算：共鸣碎片奖励

@@ -89,36 +89,60 @@ const UPGRADE_POOL := [
 			"type": "dodge", "value": 0.03,
 			"icon_color": Color(0.8, 0.8, 1.0),
 		},
-		# === 音色精通 (Issue #21) ===
+		# === 音色武器精通 (v2.0 — Issue #38，替代旧版四大系别精通) ===
 		{
-			"id": "timbre_plucked", "category": "timbre_mastery", "rarity": "rare",
-			"name": "弹拨精通", "desc": "弹拨系音色伤害 +15%",
-			"type": "timbre_boost", "timbre": 1, "value": 0.15,
-			"icon_color": Color(1.0, 0.7, 0.3),
+			"id": "timbre_harmonic_amp", "category": "timbre_mastery", "rarity": "common",
+			"name": "泛音增幅", "desc": "里拉琴共鸣伤害 +10%",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.LYRE, "value": 0.10,
+			"icon_color": Color(0.9, 0.8, 0.3),
 		},
 		{
-			"id": "timbre_bowed", "category": "timbre_mastery", "rarity": "rare",
-			"name": "拉弦精通", "desc": "拉弦系音色伤害 +15%",
-			"type": "timbre_boost", "timbre": 2, "value": 0.15,
-			"icon_color": Color(0.8, 0.4, 0.6),
+			"id": "timbre_voice_extend", "category": "timbre_mastery", "rarity": "common",
+			"name": "声部扩展", "desc": "管风琴最大声部层 +1（5 层）",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.ORGAN, "value": 1,
+			"icon_color": Color(0.6, 0.3, 0.7),
 		},
 		{
-			"id": "timbre_wind", "category": "timbre_mastery", "rarity": "rare",
-			"name": "吹奏精通", "desc": "吹奏系音色伤害 +15%",
-			"type": "timbre_boost", "timbre": 3, "value": 0.15,
-			"icon_color": Color(0.5, 0.8, 1.0),
+			"id": "timbre_counterpoint_acc", "category": "timbre_mastery", "rarity": "rare",
+			"name": "对位精度", "desc": "羽管键琴对位弹体伤害 60% → 70%",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.HARPSICHORD, "value": 0.10,
+			"icon_color": Color(0.8, 0.6, 0.2),
 		},
 		{
-			"id": "timbre_percussive", "category": "timbre_mastery", "rarity": "rare",
-			"name": "打击精通", "desc": "打击系音色伤害 +15%",
-			"type": "timbre_boost", "timbre": 4, "value": 0.15,
-			"icon_color": Color(0.9, 0.5, 0.9),
+			"id": "timbre_velocity_master", "category": "timbre_mastery", "rarity": "rare",
+			"name": "力度大师", "desc": "钢琴 forte 伤害倍率 1.5 → 1.8",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.FORTEPIANO, "value": 0.30,
+			"icon_color": Color(0.9, 0.9, 0.95),
+		},
+		{
+			"id": "timbre_emotion_resonance", "category": "timbre_mastery", "rarity": "rare",
+			"name": "情感共鸣", "desc": "管弦全奏情感强度递增速度 +50%",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.TUTTI, "value": 0.50,
+			"icon_color": Color(0.9, 0.2, 0.2),
+		},
+		{
+			"id": "timbre_swing_master", "category": "timbre_mastery", "rarity": "rare",
+			"name": "摇摆大师", "desc": "萨克斯反拍伤害加成 25% → 40%",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.SAXOPHONE, "value": 0.15,
+			"icon_color": Color(0.2, 0.5, 0.9),
+		},
+		{
+			"id": "timbre_waveform_fusion", "category": "timbre_mastery", "rarity": "epic",
+			"name": "波形融合", "desc": "合成主脑可同时激活两种波形",
+			"type": "timbre_boost", "timbre": MusicData.ChapterTimbre.SYNTHESIZER, "value": 1,
+			"icon_color": Color(0.0, 0.9, 0.7),
 		},
 		{
 			"id": "timbre_switch_free", "category": "timbre_mastery", "rarity": "epic",
-			"name": "音色自如", "desc": "音色切换不再产生疲劳",
+			"name": "音色自如", "desc": "跨章节音色切换不再产生额外疲劳",
 			"type": "timbre_switch_free",
 			"icon_color": Color(1.0, 0.9, 0.5),
+		},
+		{
+			"id": "electronic_variant_unlock", "category": "timbre_mastery", "rarity": "rare",
+			"name": "电子乐变体", "desc": "将当前音色武器切换为电子乐变体（疲劳 -50%）",
+			"type": "electronic_variant",
+			"icon_color": Color(0.0, 0.8, 0.6),
 		},
 		# === 节奏型精通 (Issue #21) ===
 		{
@@ -244,7 +268,48 @@ func _generate_options(count: int) -> Array[Dictionary]:
 	for i in range(min(count, available.size())):
 		selected.append(available[i])
 
+	# === 章节词条插入 (v2.0 — Issue #38) ===
+	# 15% 概率替换一个选项为章节专属词条
+	if randf() < MusicData.INSCRIPTION_APPEAR_CHANCE:
+		var unacquired := GameManager.get_unacquired_inscriptions()
+		if not unacquired.is_empty():
+			var inscription: Dictionary = unacquired[randi() % unacquired.size()]
+			var inscription_option := _create_inscription_option(inscription)
+			if not selected.is_empty():
+				selected[randi() % selected.size()] = inscription_option
+
 	return selected
+
+## 将章节词条转换为升级选项格式
+func _create_inscription_option(inscription: Dictionary) -> Dictionary:
+	var rarity_map := {
+		MusicData.InscriptionRarity.COMMON: "common",
+		MusicData.InscriptionRarity.RARE: "rare",
+		MusicData.InscriptionRarity.EPIC: "epic",
+	}
+	var rarity_str: String = rarity_map.get(inscription.get("rarity", 0), "common")
+	
+	# 章节词条颜色映射
+	var color_map := {
+		MusicData.InscriptionRarity.COMMON: Color(0.7, 0.7, 0.5),
+		MusicData.InscriptionRarity.RARE: Color(0.3, 0.7, 1.0),
+		MusicData.InscriptionRarity.EPIC: Color(0.8, 0.4, 1.0),
+	}
+	
+	var synergy_text: String = inscription.get("synergy_desc", "")
+	var full_desc: String = inscription.get("desc", "")
+	if synergy_text != "":
+		full_desc += "\n★ 协同: " + synergy_text
+	
+	return {
+		"id": inscription["id"],
+		"category": "inscription",
+		"rarity": rarity_str,
+		"name": "【词条】" + inscription.get("name", "???"),
+		"desc": full_desc,
+		"inscription": inscription,
+		"icon_color": color_map.get(inscription.get("rarity", 0), Color.WHITE),
+	}
 
 # ============================================================
 # UI 构建
