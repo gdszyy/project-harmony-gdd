@@ -80,7 +80,7 @@ func _setup_3d_environment() -> void:
 	main_env.glow_hdr_threshold = 0.8
 	
 	# 色彩映射
-	main_env.tonemap_mode = Environment.TONE_MAP_ACES
+	main_env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	main_env.tonemap_exposure = 1.0
 	main_env.tonemap_white = 1.0
 	

@@ -96,7 +96,7 @@ func _create_world_environment() -> void:
 	_environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 
 	# Tonemap
-	_environment.tonemap_mode = Environment.TONE_MAP_ACES
+	_environment.tonemap_mode = Environment.TONE_MAPPER_ACES
 
 	# Adjustments
 	_environment.adjustment_enabled = true
