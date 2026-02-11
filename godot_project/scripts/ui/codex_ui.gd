@@ -1362,7 +1362,7 @@ func _demo_cast_note(config: Dictionary) -> void:
 		spell_data["duration"], spell_data["size"]
 	])
 
-## ★ 演示施放带修饰符的音符（v5.1: 统一 3D）
+## ★ 演示施放带修饰符的音符（v5.2: 修饰符视觉效果增强）
 func _demo_cast_note_modifier(config: Dictionary) -> void:
 	var white_key: int = config.get("demo_note", 0)
 	var modifier: int = config.get("demo_modifier", -1)
@@ -1371,14 +1371,26 @@ func _demo_cast_note_modifier(config: Dictionary) -> void:
 	spell_data["_demo_origin"] = Vector2(50, 110)
 	spell_data["_demo_direction"] = Vector2.RIGHT
 
-	# v5.1: 仅在 3D 层生成发光弹体
-	_spawn_demo_3d_projectile(spell_data)
+	# v5.2: 根据修饰符类型生成不同的 3D 弹体视觉效果
+	match modifier:
+		MusicData.ModifierEffect.PIERCE:
+			_spawn_demo_3d_projectile_pierce(spell_data)
+		MusicData.ModifierEffect.HOMING:
+			_spawn_demo_3d_projectile_homing(spell_data)
+		MusicData.ModifierEffect.SPLIT:
+			_spawn_demo_3d_projectile_split(spell_data)
+		MusicData.ModifierEffect.ECHO:
+			_spawn_demo_3d_projectile_echo(spell_data)
+		MusicData.ModifierEffect.SCATTER:
+			_spawn_demo_3d_projectile_scatter(spell_data)
+		_:
+			_spawn_demo_3d_projectile(spell_data)
 
 	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
 	var mod_name := _get_modifier_display_name(modifier)
 	_update_demo_status("施放: %s + %s" % [note_name, mod_name])
 
-## ★ 演示施放和弦法术
+## ★ 演示施放和弦法术（v5.2: 根据法术形态生成独特视觉效果）
 func _demo_cast_chord(config: Dictionary) -> void:
 	var chord_type: int = config.get("demo_chord_type", 0)
 	var spell_info: Dictionary = MusicData.CHORD_SPELL_MAP.get(chord_type, {})
@@ -1404,33 +1416,118 @@ func _demo_cast_chord(config: Dictionary) -> void:
 		"accuracy_offset": 0.0,
 	}
 
-	# v5.1: 仅在 3D 层生成和弦爆发粒子
-	_spawn_demo_3d_chord_burst(chord_data)
+	# v5.2: 根据法术形态生成对应的 3D 视觉效果
+	var spell_form: int = chord_data.get("spell_form", 0)
+	match spell_form:
+		MusicData.SpellForm.ENHANCED_PROJECTILE:
+			_spawn_demo_3d_chord_enhanced_projectile(chord_data)
+		MusicData.SpellForm.DOT_PROJECTILE:
+			_spawn_demo_3d_chord_dot(chord_data)
+		MusicData.SpellForm.EXPLOSIVE:
+			_spawn_demo_3d_chord_explosive(chord_data)
+		MusicData.SpellForm.SHOCKWAVE:
+			_spawn_demo_3d_chord_shockwave(chord_data)
+		MusicData.SpellForm.FIELD:
+			_spawn_demo_3d_chord_field(chord_data)
+		MusicData.SpellForm.DIVINE_STRIKE:
+			_spawn_demo_3d_chord_divine_strike(chord_data)
+		MusicData.SpellForm.SHIELD_HEAL:
+			_spawn_demo_3d_chord_shield_heal(chord_data)
+		MusicData.SpellForm.SUMMON:
+			_spawn_demo_3d_chord_summon(chord_data)
+		MusicData.SpellForm.CHARGED:
+			_spawn_demo_3d_chord_charged(chord_data)
+		MusicData.SpellForm.STORM_FIELD:
+			_spawn_demo_3d_chord_storm_field(chord_data)
+		MusicData.SpellForm.HOLY_DOMAIN:
+			_spawn_demo_3d_chord_holy_domain(chord_data)
+		MusicData.SpellForm.ANNIHILATION_RAY:
+			_spawn_demo_3d_chord_annihilation_ray(chord_data)
+		MusicData.SpellForm.TIME_RIFT:
+			_spawn_demo_3d_chord_time_rift(chord_data)
+		MusicData.SpellForm.SYMPHONY_STORM:
+			_spawn_demo_3d_chord_symphony_storm(chord_data)
+		MusicData.SpellForm.FINALE:
+			_spawn_demo_3d_chord_finale(chord_data)
+		_:
+			_spawn_demo_3d_chord_burst(chord_data)
 
 	_update_demo_status("施放和弦: %s | DMG=%.0f | 不和谐度=%.1f" % [
 		spell_info.get("name", ""), base_dmg * chord_multiplier, dissonance
 	])
 
-## ★ 演示节奏型效果
+## ★ 演示节奏型效果（v5.2: 根据节奏型生成独特视觉效果）
 func _demo_cast_rhythm(config: Dictionary) -> void:
 	var white_key: int = config.get("demo_note", 4)  # 默认 G
 	var pattern_type: String = config.get("demo_rhythm_pattern", "full")
 
-	# 根据节奏型模式连续施放多个弹体以展示效果
-	var spell_count := 4
-	var delay := 0.15
-
-	for i in range(spell_count):
-		var spell_data := _build_demo_spell_data(white_key, -1)
-		spell_data["_demo_origin"] = Vector2(50, 40 + i * 45)
-		spell_data["_demo_direction"] = Vector2.RIGHT
-
-		# 应用节奏型效果到弹体（与 ProjectileManager._apply_rhythm_to_projectile 一致）
-		_apply_demo_rhythm_effect(spell_data, pattern_type)
-		# v5.1: 仅在 3D 层生成弹体
-		_spawn_demo_3d_projectile(spell_data)
-
-	_update_demo_status("节奏型演示: %s (4 个弹体)" % pattern_type)
+	# v5.2: 根据节奏型模式生成不同数量和行为的弹体
+	match pattern_type:
+		"full":
+			# 均匀八分音符：连射效果 — 每拍 2 个弹体，共 4 拍 = 8 个弹体
+			for i in range(4):
+				for j in range(2):
+					var spell_data := _build_demo_spell_data(white_key, -1)
+					_apply_demo_rhythm_effect(spell_data, pattern_type)
+					spell_data["_demo_origin"] = Vector2(50, 30 + i * 50 + j * 20)
+					spell_data["_demo_direction"] = Vector2.RIGHT
+					spell_data["color"] = Color(0.0, 1.0, 0.8, 0.8)  # 连射特征色
+					_spawn_demo_3d_projectile(spell_data)
+			_update_demo_status("节奏型: 均匀八分音符「连射」| 每拍×2弹体 | DMG×0.6 SPD×1.2 SIZE×0.7")
+		"dotted":
+			# 附点节奏：重击效果 — 增大弹体 + 击退指示
+			for i in range(3):
+				var spell_data := _build_demo_spell_data(white_key, -1)
+				_apply_demo_rhythm_effect(spell_data, pattern_type)
+				spell_data["_demo_origin"] = Vector2(50, 40 + i * 60)
+				spell_data["_demo_direction"] = Vector2.RIGHT
+				spell_data["color"] = Color(1.0, 0.6, 0.2)  # 重击橙色
+				_spawn_demo_3d_projectile_with_knockback(spell_data)
+			_update_demo_status("节奏型: 附点节奏「重击」| DMG×1.4 SIZE×1.2 + 击退")
+		"syncopated":
+			# 切分节奏：闪避射击 — 弹体 + 后退位移视觉
+			for i in range(3):
+				var spell_data := _build_demo_spell_data(white_key, -1)
+				_apply_demo_rhythm_effect(spell_data, pattern_type)
+				spell_data["_demo_origin"] = Vector2(80, 40 + i * 60)  # 稍微靠右（模拟后退后的位置）
+				spell_data["_demo_direction"] = Vector2.RIGHT
+				spell_data["color"] = Color(0.5, 0.8, 1.0)  # 闪避蓝色
+				_spawn_demo_3d_projectile_with_dodge(spell_data)
+			_update_demo_status("节奏型: 切分节奏「闪避射击」| 发射时后退位移 | SPD×1.3")
+		"swing":
+			# 摇摆节奏：S 型波浪弹道
+			for i in range(3):
+				var spell_data := _build_demo_spell_data(white_key, -1)
+				_apply_demo_rhythm_effect(spell_data, pattern_type)
+				spell_data["_demo_origin"] = Vector2(50, 40 + i * 60)
+				spell_data["_demo_direction"] = Vector2.RIGHT
+				spell_data["color"] = Color(0.8, 0.5, 1.0)  # 摇摆紫色
+				_spawn_demo_3d_projectile_wave(spell_data)
+			_update_demo_status("节奏型: 摇摆节奏「摇摆弹道」| S型波浪轨迹 (频率8.0, 振幅80px)")
+		"triplet":
+			# 三连音：每拍 3 个扇形弹体
+			for i in range(3):
+				var base_origin := Vector2(50, 40 + i * 60)
+				for j in range(3):
+					var spell_data := _build_demo_spell_data(white_key, -1)
+					_apply_demo_rhythm_effect(spell_data, pattern_type)
+					spell_data["_demo_origin"] = base_origin
+					# 扇形展开：-30°, 0°, +30°
+					var angle_offset := deg_to_rad(30.0) * (j - 1)
+					spell_data["_demo_direction"] = Vector2.RIGHT.rotated(angle_offset)
+					spell_data["color"] = Color(0.0, 1.0, 0.5)  # 三连绿色
+					_spawn_demo_3d_projectile(spell_data)
+			_update_demo_status("节奏型: 三连音「三连发」| 每拍×3扇形弹体 | DMG×0.5 SIZE×0.8")
+		"rest_boost":
+			# 精准蓄力：延迟发射 + 蓄力增强视觉
+			for i in range(2):
+				var spell_data := _build_demo_spell_data(white_key, -1)
+				_apply_demo_rhythm_effect(spell_data, pattern_type)
+				spell_data["_demo_origin"] = Vector2(50, 60 + i * 80)
+				spell_data["_demo_direction"] = Vector2.RIGHT
+				spell_data["color"] = Color(1.0, 0.9, 0.3)  # 蓄力金色
+				_spawn_demo_3d_projectile_charged(spell_data)
+			_update_demo_status("节奏型: 休止符「精准蓄力」| 延迟0.5s DMG×1.8 SIZE×1.3")
 
 ## 构建演示用的 spell_data（与 SpellcraftSystem 的实际数据结构一致）
 func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
@@ -1852,3 +1949,1167 @@ func get_total_progress() -> Dictionary:
 		"unlocked": unlocked,
 		"percentage": (float(unlocked) / max(total, 1)) * 100.0,
 	}
+
+
+# ============================================================
+# v5.2: 修饰符弹体 3D 视觉效果
+# ============================================================
+
+## 辅助：获取法术形态对应颜色（与 spell_visual_manager 一致）
+func _get_spell_form_color_3d(spell_form: int) -> Color:
+	match spell_form:
+		MusicData.SpellForm.ENHANCED_PROJECTILE: return Color(1.0, 0.9, 0.3)
+		MusicData.SpellForm.DOT_PROJECTILE: return Color(0.15, 0.1, 0.6)
+		MusicData.SpellForm.EXPLOSIVE: return Color(1.0, 0.5, 0.0)
+		MusicData.SpellForm.SHOCKWAVE: return Color(0.5, 0.0, 0.5)
+		MusicData.SpellForm.FIELD: return Color(0.9, 0.8, 0.0)
+		MusicData.SpellForm.DIVINE_STRIKE: return Color(0.8, 0.0, 0.0)
+		MusicData.SpellForm.SHIELD_HEAL: return Color(0.2, 0.9, 0.4)
+		MusicData.SpellForm.SUMMON: return Color(0.15, 0.15, 0.7)
+		MusicData.SpellForm.CHARGED: return Color(0.9, 0.9, 1.0)
+		MusicData.SpellForm.STORM_FIELD: return Color(0.3, 0.8, 1.0)
+		MusicData.SpellForm.HOLY_DOMAIN: return Color(1.0, 0.95, 0.6)
+		MusicData.SpellForm.ANNIHILATION_RAY: return Color(0.8, 0.0, 0.8)
+		MusicData.SpellForm.TIME_RIFT: return Color(0.5, 0.0, 1.0)
+		MusicData.SpellForm.SYMPHONY_STORM: return Color(1.0, 0.6, 0.0)
+		MusicData.SpellForm.FINALE: return Color(1.0, 0.0, 0.0)
+		_: return Color(0.6, 0.4, 1.0)
+
+## 辅助：创建 3D 发光球体节点
+func _create_3d_glow_sphere(pos: Vector3, radius: float, color: Color, energy: float = 4.0) -> Node3D:
+	var node := Node3D.new()
+	node.position = pos
+	var mesh_inst := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = radius
+	sphere.height = radius * 2.0
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	mesh_inst.mesh = sphere
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = energy
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mesh_inst.material_override = mat
+	node.add_child(mesh_inst)
+	var light := OmniLight3D.new()
+	light.light_energy = 1.5
+	light.light_color = color
+	light.omni_range = 1.5
+	light.omni_attenuation = 2.0
+	node.add_child(light)
+	return node
+
+## 辅助：创建 3D 粒子爆发
+func _create_3d_burst(pos: Vector3, color: Color, amount: int = 32, lifetime: float = 0.8, velocity_max: float = 3.0) -> GPUParticles3D:
+	var burst := GPUParticles3D.new()
+	burst.name = "DemoBurst3D"
+	burst.one_shot = true
+	burst.amount = amount
+	burst.lifetime = lifetime
+	burst.explosiveness = 1.0
+	burst.position = pos
+	var burst_mat := ParticleProcessMaterial.new()
+	burst_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	burst_mat.emission_sphere_radius = 0.1
+	burst_mat.direction = Vector3(0, 0, 0)
+	burst_mat.spread = 180.0
+	burst_mat.initial_velocity_min = velocity_max * 0.3
+	burst_mat.initial_velocity_max = velocity_max
+	burst_mat.damping_min = 2.0
+	burst_mat.damping_max = 4.0
+	burst_mat.gravity = Vector3(0, 0, 0)
+	burst_mat.scale_min = 0.02
+	burst_mat.scale_max = 0.08
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(color.r, color.g, color.b, 1.0))
+	gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = gradient
+	burst_mat.color_ramp = ramp
+	burst.process_material = burst_mat
+	return burst
+
+## 辅助：闪烁 Glow 效果
+func _flash_demo_glow(intensity: float = 1.5, fade_time: float = 0.5) -> void:
+	if _demo_3d_env and _demo_3d_env.environment:
+		_demo_3d_env.environment.glow_intensity = intensity
+		var tween := create_tween()
+		tween.tween_property(_demo_3d_env.environment, "glow_intensity", 0.8, fade_time)
+
+## 辅助：创建 3D 环形（用 TorusMesh 模拟）
+func _create_3d_ring(pos: Vector3, radius: float, color: Color) -> Node3D:
+	var node := Node3D.new()
+	node.position = pos
+	var mesh_inst := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = radius * 0.9
+	torus.outer_radius = radius
+	torus.rings = 24
+	torus.ring_segments = 12
+	mesh_inst.mesh = torus
+	mesh_inst.rotation_degrees = Vector3(90, 0, 0)  # 水平放置
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(color.r, color.g, color.b, 0.7)
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 3.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mesh_inst.material_override = mat
+	node.add_child(mesh_inst)
+	return node
+
+# ---- 穿透修饰符弹体 ----
+func _spawn_demo_3d_projectile_pierce(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var base_color: Color = spell_data.get("color", Color.WHITE)
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var pierce_color := Color(0.0, 0.9, 0.9)  # 青色激光
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+
+	# 主弹体（拉长的圆柱形，表示穿透）
+	var projectile := Node3D.new()
+	projectile.name = "DemoProjectile3D"
+	projectile.position = pos_3d
+	var mesh_inst := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = size / 400.0
+	cylinder.bottom_radius = size / 400.0
+	cylinder.height = size / 80.0
+	mesh_inst.mesh = cylinder
+	mesh_inst.rotation_degrees = Vector3(0, 0, 90)  # 水平放置
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = pierce_color
+	mat.emission_energy_multiplier = 6.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mesh_inst.material_override = mat
+	projectile.add_child(mesh_inst)
+	# 青色激光拖尾
+	var trail := GPUParticles3D.new()
+	trail.amount = 12
+	trail.lifetime = 0.3
+	trail.emitting = true
+	var trail_mat := ParticleProcessMaterial.new()
+	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	trail_mat.emission_sphere_radius = 0.01
+	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
+	trail_mat.spread = 5.0
+	trail_mat.initial_velocity_min = 0.3
+	trail_mat.initial_velocity_max = 0.8
+	trail_mat.gravity = Vector3(0, 0, 0)
+	trail_mat.scale_min = 0.005
+	trail_mat.scale_max = 0.02
+	var trail_gradient := Gradient.new()
+	trail_gradient.set_color(0, Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.9))
+	trail_gradient.set_color(1, Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.0))
+	var trail_ramp := GradientTexture1D.new()
+	trail_ramp.gradient = trail_gradient
+	trail_mat.color_ramp = trail_ramp
+	trail.process_material = trail_mat
+	projectile.add_child(trail)
+	# 点光源
+	var light := OmniLight3D.new()
+	light.light_energy = 2.0
+	light.light_color = pierce_color
+	light.omni_range = 2.0
+	projectile.add_child(light)
+	_demo_3d_entity_layer.add_child(projectile)
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", target_pos, duration)
+	tween.tween_callback(projectile.queue_free)
+
+# ---- 追踪修饰符弹体 ----
+func _spawn_demo_3d_projectile_homing(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var homing_color := Color(0.2, 0.6, 1.0)  # 蓝色准星
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+
+	# 弹体先向右飞，然后弧线转向敌人目标
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, homing_color, 5.0)
+	projectile.name = "DemoProjectile3D"
+	# 追踪拖尾（蓝色）
+	var trail := GPUParticles3D.new()
+	trail.amount = 10
+	trail.lifetime = 0.5
+	trail.emitting = true
+	var trail_mat := ParticleProcessMaterial.new()
+	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	trail_mat.emission_sphere_radius = 0.02
+	trail_mat.direction = Vector3(0, 0, 0)
+	trail_mat.spread = 30.0
+	trail_mat.initial_velocity_min = 0.1
+	trail_mat.initial_velocity_max = 0.3
+	trail_mat.gravity = Vector3(0, 0, 0)
+	trail_mat.scale_min = 0.01
+	trail_mat.scale_max = 0.03
+	var trail_gradient := Gradient.new()
+	trail_gradient.set_color(0, Color(homing_color.r, homing_color.g, homing_color.b, 0.8))
+	trail_gradient.set_color(1, Color(homing_color.r, homing_color.g, homing_color.b, 0.0))
+	var trail_ramp := GradientTexture1D.new()
+	trail_ramp.gradient = trail_gradient
+	trail_mat.color_ramp = trail_ramp
+	trail.process_material = trail_mat
+	projectile.add_child(trail)
+	_demo_3d_entity_layer.add_child(projectile)
+	# 弧线追踪动画：先向右上飞，然后转向敌人位置
+	var mid_pos := pos_3d + Vector3(1.5, 0.3, -0.5)
+	var enemy_pos := Vector3(3.5, 0, 1.1)  # 中间敌人位置
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", mid_pos, duration * 0.4).set_ease(Tween.EASE_OUT)
+	tween.tween_property(projectile, "position", enemy_pos, duration * 0.6).set_ease(Tween.EASE_IN)
+	tween.tween_callback(projectile.queue_free)
+
+# ---- 分裂修饰符弹体 ----
+func _spawn_demo_3d_projectile_split(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var split_color := Color(1.0, 0.5, 0.0)  # 橙色电弧
+	var base_color: Color = spell_data.get("color", Color.WHITE)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+
+	# 主弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	# 飞到中途后分裂
+	var mid_pos := pos_3d + vel_3d * duration * 0.5
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", mid_pos, duration * 0.5)
+	tween.tween_callback(func():
+		if not is_instance_valid(projectile):
+			return
+		projectile.queue_free()
+		# 分裂为 3 个小弹体
+		for i in range(3):
+			var angle := (float(i) - 1.0) * 0.4  # -0.4, 0, 0.4 弧度
+			var split_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
+			var split_vel := split_dir.rotated(Vector3.UP, angle) * vel_3d.length() * 0.7
+			var child := _create_3d_glow_sphere(mid_pos, size / 350.0, split_color, 5.0)
+			child.name = "DemoProjectile3D"
+			if _demo_3d_entity_layer:
+				_demo_3d_entity_layer.add_child(child)
+				var child_target := mid_pos + split_vel * duration * 0.5
+				var child_tween := create_tween()
+				child_tween.tween_property(child, "position", child_target, duration * 0.5)
+				child_tween.tween_callback(child.queue_free)
+	)
+
+# ---- 回响修饰符弹体 ----
+func _spawn_demo_3d_projectile_echo(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var echo_color := Color(0.5, 0.5, 1.0)  # 淡蓝残影
+	var base_color: Color = spell_data.get("color", Color.WHITE)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+
+	# 主弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", target_pos, duration)
+	tween.tween_callback(projectile.queue_free)
+	# 延迟后在原位置生成回响弹体（半透明）
+	get_tree().create_timer(0.4).timeout.connect(func():
+		if not _demo_3d_entity_layer:
+			return
+		var echo := _create_3d_glow_sphere(pos_3d, size / 250.0, echo_color, 3.0)
+		echo.name = "DemoProjectile3D"
+		_demo_3d_entity_layer.add_child(echo)
+		var echo_target := pos_3d + vel_3d * duration * 0.8
+		var echo_tween := create_tween()
+		echo_tween.tween_property(echo, "position", echo_target, duration * 0.8)
+		echo_tween.tween_callback(echo.queue_free)
+	)
+
+# ---- 散射修饰符弹体 ----
+func _spawn_demo_3d_projectile_scatter(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var scatter_color := Color(1.0, 1.0, 0.0)  # 黄色扇形
+	var base_color: Color = spell_data.get("color", Color.WHITE)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+
+	# 主弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", target_pos, duration)
+	tween.tween_callback(projectile.queue_free)
+	# 额外散射弹体（扇形展开）
+	for i in range(4):
+		var angle := (float(i) - 1.5) * 0.3
+		var scatter_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
+		var scatter_vel := scatter_dir.rotated(Vector3.UP, angle) * vel_3d.length() * 0.6
+		var scatter := _create_3d_glow_sphere(pos_3d, size / 350.0, scatter_color, 3.0)
+		scatter.name = "DemoProjectile3D"
+		_demo_3d_entity_layer.add_child(scatter)
+		var scatter_target := pos_3d + scatter_vel * duration * 0.7
+		var s_tween := create_tween()
+		s_tween.tween_property(scatter, "position", scatter_target, duration * 0.7)
+		s_tween.tween_callback(scatter.queue_free)
+
+# ============================================================
+# v5.2: 和弦法术 3D 视觉效果（15种独特形态）
+# ============================================================
+
+## 强化弹体（大三和弦）：金色增大弹体 + 六边形光环
+func _spawn_demo_3d_chord_enhanced_projectile(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(1.0, 0.9, 0.3)  # 圣光金
+	var center := Vector3(2.0, 0, 1.1)
+	# 增大的金色弹体
+	var projectile := _create_3d_glow_sphere(center, 0.15, color, 6.0)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	# 飞向敌人
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", Vector3(3.5, 0, 1.1), 0.8)
+	tween.tween_callback(projectile.queue_free)
+	# 金色粒子爆发
+	var burst := _create_3d_burst(center, color, 16, 0.6, 2.0)
+	_demo_3d_entity_layer.add_child(burst)
+	burst.emitting = true
+	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
+	# 六边形光环（用环形代替）
+	var ring := _create_3d_ring(center, 0.3, color)
+	ring.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(ring)
+	var ring_tween := create_tween()
+	ring_tween.set_parallel(true)
+	ring_tween.tween_property(ring, "scale", Vector3(3.0, 3.0, 3.0), 0.4)
+	ring_tween.tween_callback(func():
+		if is_instance_valid(ring): ring.queue_free()
+	)
+	_flash_demo_glow(1.5, 0.5)
+
+## DOT弹体（小三和弦）：暗蓝色毒液弹体 + 漩涡
+func _spawn_demo_3d_chord_dot(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.15, 0.1, 0.6)  # 暗蓝色
+	var center := Vector3(2.0, 0, 1.1)
+	# 毒液弹体
+	var projectile := _create_3d_glow_sphere(center, 0.1, color, 4.0)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", Vector3(3.5, 0, 1.1), 1.0)
+	tween.tween_callback(projectile.queue_free)
+	# 漩涡粒子（持续旋转的暗蓝色粒子）
+	var vortex := GPUParticles3D.new()
+	vortex.name = "DemoProjectile3D"
+	vortex.amount = 24
+	vortex.lifetime = 1.5
+	vortex.position = center
+	var v_mat := ParticleProcessMaterial.new()
+	v_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	v_mat.emission_ring_radius = 0.2
+	v_mat.emission_ring_inner_radius = 0.05
+	v_mat.emission_ring_height = 0.05
+	v_mat.direction = Vector3(0, 1, 0)
+	v_mat.spread = 30.0
+	v_mat.initial_velocity_min = 0.1
+	v_mat.initial_velocity_max = 0.3
+	v_mat.angular_velocity_min = 200.0
+	v_mat.angular_velocity_max = 400.0
+	v_mat.gravity = Vector3(0, 0, 0)
+	v_mat.scale_min = 0.01
+	v_mat.scale_max = 0.04
+	var v_gradient := Gradient.new()
+	v_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	v_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var v_ramp := GradientTexture1D.new()
+	v_ramp.gradient = v_gradient
+	v_mat.color_ramp = v_ramp
+	vortex.process_material = v_mat
+	_demo_3d_entity_layer.add_child(vortex)
+	vortex.emitting = true
+	get_tree().create_timer(3.0).timeout.connect(vortex.queue_free)
+	_flash_demo_glow(1.2, 0.6)
+
+## 爆炸弹体（增三和弦）：烈焰橙爆炸 + 火星迸发
+func _spawn_demo_3d_chord_explosive(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(1.0, 0.5, 0.0)  # 烈焰橙
+	var center := Vector3(3.0, 0, 1.1)
+	# 白色闪光核心
+	var flash := _create_3d_glow_sphere(center, 0.2, Color.WHITE, 10.0)
+	flash.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(flash)
+	var flash_tween := create_tween()
+	flash_tween.tween_property(flash, "scale", Vector3(4.0, 4.0, 4.0), 0.1)
+	flash_tween.tween_callback(flash.queue_free)
+	# 火焰粒子爆发（大量）
+	var burst := _create_3d_burst(center, color, 48, 1.0, 4.0)
+	_demo_3d_entity_layer.add_child(burst)
+	burst.emitting = true
+	get_tree().create_timer(2.5).timeout.connect(burst.queue_free)
+	# 第二波暖色粒子
+	get_tree().create_timer(0.05).timeout.connect(func():
+		if not _demo_3d_entity_layer: return
+		var burst2 := _create_3d_burst(center, Color(1.0, 0.3, 0.0), 24, 0.8, 3.0)
+		_demo_3d_entity_layer.add_child(burst2)
+		burst2.emitting = true
+		get_tree().create_timer(2.0).timeout.connect(burst2.queue_free)
+	)
+	_flash_demo_glow(2.0, 0.4)
+
+## 冲击波（减三和弦）：深紫色环形冲击波 + 地面裂纹
+func _spawn_demo_3d_chord_shockwave(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.5, 0.0, 0.5)  # 深紫色
+	var center := Vector3(2.0, 0, 1.1)
+	# 多层冲击波环
+	for i in range(3):
+		var ring := _create_3d_ring(center, 0.1 + i * 0.05, color.lightened(i * 0.15))
+		ring.name = "DemoProjectile3D"
+		_demo_3d_entity_layer.add_child(ring)
+		var ring_tween := create_tween()
+		ring_tween.set_parallel(true)
+		ring_tween.tween_property(ring, "scale", Vector3(15.0, 15.0, 15.0), 0.5 + i * 0.1)
+		ring_tween.chain()
+		ring_tween.tween_callback(ring.queue_free)
+	# 粒子爆发
+	var burst := _create_3d_burst(center, color, 32, 0.8, 3.5)
+	_demo_3d_entity_layer.add_child(burst)
+	burst.emitting = true
+	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
+	_flash_demo_glow(1.8, 0.5)
+
+## 法阵/区域（属七和弦）：旋转几何法阵 + 光柱
+func _spawn_demo_3d_chord_field(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.9, 0.8, 0.0)  # Dominant黄
+	var target := Vector3(3.0, 0, 1.1)
+	# 旋转法阵环
+	var ring := _create_3d_ring(target, 0.4, color)
+	ring.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(ring)
+	# 内环（旋转方向相反）
+	var inner_ring := _create_3d_ring(target, 0.25, color.lightened(0.2))
+	inner_ring.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(inner_ring)
+	# 旋转动画
+	var rot_tween := create_tween().set_loops(8)
+	rot_tween.tween_property(ring, "rotation:y", TAU, 2.0).as_relative()
+	var rot_tween2 := create_tween().set_loops(8)
+	rot_tween2.tween_property(inner_ring, "rotation:y", -TAU, 1.5).as_relative()
+	# 上升粒子
+	var particles := GPUParticles3D.new()
+	particles.name = "DemoProjectile3D"
+	particles.amount = 16
+	particles.lifetime = 1.5
+	particles.position = target
+	var p_mat := ParticleProcessMaterial.new()
+	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	p_mat.emission_ring_radius = 0.4
+	p_mat.emission_ring_inner_radius = 0.3
+	p_mat.emission_ring_height = 0.02
+	p_mat.direction = Vector3(0, 1, 0)
+	p_mat.spread = 10.0
+	p_mat.initial_velocity_min = 0.2
+	p_mat.initial_velocity_max = 0.5
+	p_mat.gravity = Vector3(0, 0, 0)
+	p_mat.scale_min = 0.01
+	p_mat.scale_max = 0.03
+	var p_gradient := Gradient.new()
+	p_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	p_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var p_ramp := GradientTexture1D.new()
+	p_ramp.gradient = p_gradient
+	p_mat.color_ramp = p_ramp
+	particles.process_material = p_mat
+	_demo_3d_entity_layer.add_child(particles)
+	particles.emitting = true
+	# 4秒后清理
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if is_instance_valid(ring): ring.queue_free()
+		if is_instance_valid(inner_ring): inner_ring.queue_free()
+		if is_instance_valid(particles): particles.queue_free()
+		rot_tween.kill()
+		rot_tween2.kill()
+	)
+	_flash_demo_glow(1.3, 0.8)
+
+## 天降打击（减七和弦）：血红色预警 + 从天而降的光柱
+func _spawn_demo_3d_chord_divine_strike(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.8, 0.0, 0.0)  # 血红色
+	var target := Vector3(3.0, 0, 1.1)
+	# 预警环（收缩）
+	var warning := _create_3d_ring(target, 0.5, Color(1.0, 0.0, 0.0))
+	warning.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(warning)
+	var warn_tween := create_tween()
+	warn_tween.tween_property(warning, "scale", Vector3(0.3, 0.3, 0.3), 0.5)
+	warn_tween.tween_callback(warning.queue_free)
+	# 延迟后光柱落下
+	get_tree().create_timer(0.5).timeout.connect(func():
+		if not _demo_3d_entity_layer: return
+		# 从天而降的光柱
+		var pillar := _create_3d_glow_sphere(target + Vector3(0, 3, 0), 0.1, color, 8.0)
+		pillar.name = "DemoProjectile3D"
+		_demo_3d_entity_layer.add_child(pillar)
+		var p_tween := create_tween()
+		p_tween.tween_property(pillar, "position", target, 0.15)
+		p_tween.tween_callback(func():
+			if is_instance_valid(pillar): pillar.queue_free()
+			# 落地爆炸
+			if _demo_3d_entity_layer:
+				var impact := _create_3d_burst(target, color, 48, 1.0, 5.0)
+				_demo_3d_entity_layer.add_child(impact)
+				impact.emitting = true
+				get_tree().create_timer(2.5).timeout.connect(impact.queue_free)
+		)
+		_flash_demo_glow(2.5, 0.3)
+	)
+
+## 护盾/治疗（大七和弦）：治愈绿色护盾泡泡 + 上升光粒子
+func _spawn_demo_3d_chord_shield_heal(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.2, 0.9, 0.4)  # 治愈绿
+	var center := Vector3(2.0, 0, 1.1)
+	# 护盾泡泡（半透明球体）
+	var shield := _create_3d_glow_sphere(center, 0.3, color, 2.0)
+	shield.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(shield)
+	# 脉冲动画
+	var pulse_tween := create_tween().set_loops(6)
+	pulse_tween.tween_property(shield, "scale", Vector3(1.2, 1.2, 1.2), 0.5)
+	pulse_tween.tween_property(shield, "scale", Vector3(1.0, 1.0, 1.0), 0.5)
+	# 上升治疗粒子
+	var heal_particles := GPUParticles3D.new()
+	heal_particles.name = "DemoProjectile3D"
+	heal_particles.amount = 12
+	heal_particles.lifetime = 1.5
+	heal_particles.position = center
+	var h_mat := ParticleProcessMaterial.new()
+	h_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	h_mat.emission_sphere_radius = 0.2
+	h_mat.direction = Vector3(0, 1, 0)
+	h_mat.spread = 20.0
+	h_mat.initial_velocity_min = 0.2
+	h_mat.initial_velocity_max = 0.5
+	h_mat.gravity = Vector3(0, 0, 0)
+	h_mat.scale_min = 0.01
+	h_mat.scale_max = 0.03
+	var h_gradient := Gradient.new()
+	h_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	h_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var h_ramp := GradientTexture1D.new()
+	h_ramp.gradient = h_gradient
+	h_mat.color_ramp = h_ramp
+	heal_particles.process_material = h_mat
+	_demo_3d_entity_layer.add_child(heal_particles)
+	heal_particles.emitting = true
+	# 3秒后清理
+	get_tree().create_timer(3.0).timeout.connect(func():
+		if is_instance_valid(shield): shield.queue_free()
+		if is_instance_valid(heal_particles): heal_particles.queue_free()
+		pulse_tween.kill()
+	)
+	_flash_demo_glow(1.2, 0.8)
+
+## 召唤/构造（小七和弦）：深蓝色凝聚 + 构造体出现
+func _spawn_demo_3d_chord_summon(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.15, 0.15, 0.7)  # 深蓝色
+	var summon_pos := Vector3(2.5, 0, 1.1)
+	# 凝聚粒子（从外向内）
+	var converge := GPUParticles3D.new()
+	converge.name = "DemoProjectile3D"
+	converge.amount = 24
+	converge.lifetime = 0.8
+	converge.one_shot = true
+	converge.explosiveness = 0.8
+	converge.position = summon_pos
+	var c_mat := ParticleProcessMaterial.new()
+	c_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	c_mat.emission_sphere_radius = 0.8
+	c_mat.direction = Vector3(0, 0, 0)
+	c_mat.spread = 180.0
+	c_mat.initial_velocity_min = -1.5
+	c_mat.initial_velocity_max = -0.5
+	c_mat.gravity = Vector3(0, 0, 0)
+	c_mat.scale_min = 0.02
+	c_mat.scale_max = 0.05
+	var c_gradient := Gradient.new()
+	c_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	c_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var c_ramp := GradientTexture1D.new()
+	c_ramp.gradient = c_gradient
+	c_mat.color_ramp = c_ramp
+	converge.process_material = c_mat
+	_demo_3d_entity_layer.add_child(converge)
+	converge.emitting = true
+	# 延迟后出现构造体
+	get_tree().create_timer(0.8).timeout.connect(func():
+		if not _demo_3d_entity_layer: return
+		if is_instance_valid(converge): converge.queue_free()
+		# 构造体（立方体）
+		var construct := Node3D.new()
+		construct.name = "DemoProjectile3D"
+		construct.position = summon_pos
+		var mesh := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.2, 0.2, 0.2)
+		mesh.mesh = box
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(color.r, color.g, color.b, 0.85)
+		mat.emission_enabled = true
+		mat.emission = color
+		mat.emission_energy_multiplier = 4.0
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh.material_override = mat
+		construct.add_child(mesh)
+		var light := OmniLight3D.new()
+		light.light_energy = 1.5
+		light.light_color = color
+		light.omni_range = 1.5
+		construct.add_child(light)
+		_demo_3d_entity_layer.add_child(construct)
+		# 旋转 + 脉冲
+		var rot_tween := create_tween().set_loops(6)
+		rot_tween.tween_property(construct, "rotation:y", TAU, 2.0).as_relative()
+		get_tree().create_timer(3.0).timeout.connect(func():
+			if is_instance_valid(construct): construct.queue_free()
+			rot_tween.kill()
+		)
+	)
+	_flash_demo_glow(1.3, 0.6)
+
+## 蓄力弹体（挂留和弦）：银白色能量球蓄力后释放
+func _spawn_demo_3d_chord_charged(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.9, 0.9, 1.0)  # 银白色
+	var center := Vector3(2.0, 0, 1.1)
+	# 蓄力能量球（逐渐变大）
+	var orb := _create_3d_glow_sphere(center, 0.05, color, 3.0)
+	orb.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(orb)
+	# 能量线被吸入（粒子向内收缩）
+	var absorb := GPUParticles3D.new()
+	absorb.name = "DemoProjectile3D"
+	absorb.amount = 16
+	absorb.lifetime = 0.6
+	absorb.position = center
+	var a_mat := ParticleProcessMaterial.new()
+	a_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	a_mat.emission_sphere_radius = 0.6
+	a_mat.direction = Vector3(0, 0, 0)
+	a_mat.spread = 180.0
+	a_mat.initial_velocity_min = -1.0
+	a_mat.initial_velocity_max = -0.3
+	a_mat.gravity = Vector3(0, 0, 0)
+	a_mat.scale_min = 0.01
+	a_mat.scale_max = 0.03
+	var a_gradient := Gradient.new()
+	a_gradient.set_color(0, Color(color.r, color.g, color.b, 0.6))
+	a_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var a_ramp := GradientTexture1D.new()
+	a_ramp.gradient = a_gradient
+	a_mat.color_ramp = a_ramp
+	absorb.process_material = a_mat
+	_demo_3d_entity_layer.add_child(absorb)
+	absorb.emitting = true
+	# 蓄力膨胀
+	var charge_tween := create_tween()
+	charge_tween.tween_property(orb, "scale", Vector3(4.0, 4.0, 4.0), 0.8)
+	charge_tween.tween_callback(func():
+		if is_instance_valid(absorb): absorb.queue_free()
+		if not is_instance_valid(orb): return
+		# 释放：高速飞向敌人
+		var release_tween := create_tween()
+		release_tween.tween_property(orb, "position", Vector3(3.5, 0, 1.1), 0.2)
+		release_tween.tween_callback(func():
+			if is_instance_valid(orb): orb.queue_free()
+			if _demo_3d_entity_layer:
+				var impact := _create_3d_burst(Vector3(3.5, 0, 1.1), color, 32, 0.6, 3.0)
+				_demo_3d_entity_layer.add_child(impact)
+				impact.emitting = true
+				get_tree().create_timer(2.0).timeout.connect(impact.queue_free)
+		)
+	)
+	_flash_demo_glow(1.5, 0.6)
+
+## 风暴区域（属九和弦）：蓝色旋转风暴漩涡
+func _spawn_demo_3d_chord_storm_field(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.3, 0.8, 1.0)
+	var center := Vector3(3.0, 0, 1.1)
+	# 风暴核心
+	var core := _create_3d_glow_sphere(center, 0.1, color, 5.0)
+	core.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(core)
+	# 旋转风暴粒子
+	var storm := GPUParticles3D.new()
+	storm.name = "DemoProjectile3D"
+	storm.amount = 48
+	storm.lifetime = 2.0
+	storm.position = center
+	var s_mat := ParticleProcessMaterial.new()
+	s_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	s_mat.emission_ring_radius = 0.5
+	s_mat.emission_ring_inner_radius = 0.1
+	s_mat.emission_ring_height = 0.3
+	s_mat.direction = Vector3(0, 1, 0)
+	s_mat.spread = 45.0
+	s_mat.initial_velocity_min = 0.3
+	s_mat.initial_velocity_max = 0.8
+	s_mat.angular_velocity_min = 300.0
+	s_mat.angular_velocity_max = 600.0
+	s_mat.gravity = Vector3(0, 0, 0)
+	s_mat.scale_min = 0.01
+	s_mat.scale_max = 0.04
+	var s_gradient := Gradient.new()
+	s_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	s_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var s_ramp := GradientTexture1D.new()
+	s_ramp.gradient = s_gradient
+	s_mat.color_ramp = s_ramp
+	storm.process_material = s_mat
+	_demo_3d_entity_layer.add_child(storm)
+	storm.emitting = true
+	# 旋转核心
+	var rot_tween := create_tween().set_loops(8)
+	rot_tween.tween_property(core, "rotation:y", TAU, 1.0).as_relative()
+	# 5秒后清理
+	get_tree().create_timer(5.0).timeout.connect(func():
+		if is_instance_valid(core): core.queue_free()
+		if is_instance_valid(storm): storm.queue_free()
+		rot_tween.kill()
+	)
+	_flash_demo_glow(1.3, 0.8)
+
+## 圣光领域（大九和弦）：金色光柱 + 治疗光环
+func _spawn_demo_3d_chord_holy_domain(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(1.0, 0.95, 0.6)
+	var center := Vector3(2.5, 0, 1.1)
+	# 光柱（从下到上的发光柱体）
+	var pillar_node := Node3D.new()
+	pillar_node.name = "DemoProjectile3D"
+	pillar_node.position = center
+	var pillar_mesh := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.15
+	cylinder.bottom_radius = 0.15
+	cylinder.height = 3.0
+	pillar_mesh.mesh = cylinder
+	pillar_mesh.position.y = 1.5
+	var p_mat := StandardMaterial3D.new()
+	p_mat.albedo_color = Color(color.r, color.g, color.b, 0.15)
+	p_mat.emission_enabled = true
+	p_mat.emission = color
+	p_mat.emission_energy_multiplier = 2.0
+	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pillar_mesh.material_override = p_mat
+	pillar_node.add_child(pillar_mesh)
+	_demo_3d_entity_layer.add_child(pillar_node)
+	# 治疗光环
+	var aura := _create_3d_ring(center, 0.5, color)
+	aura.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(aura)
+	# 上升粒子
+	var heal := GPUParticles3D.new()
+	heal.name = "DemoProjectile3D"
+	heal.amount = 16
+	heal.lifetime = 2.0
+	heal.position = center
+	var h_mat := ParticleProcessMaterial.new()
+	h_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	h_mat.emission_sphere_radius = 0.4
+	h_mat.direction = Vector3(0, 1, 0)
+	h_mat.spread = 15.0
+	h_mat.initial_velocity_min = 0.2
+	h_mat.initial_velocity_max = 0.5
+	h_mat.gravity = Vector3(0, 0, 0)
+	h_mat.scale_min = 0.01
+	h_mat.scale_max = 0.03
+	var h_gradient := Gradient.new()
+	h_gradient.set_color(0, Color(color.r, color.g, color.b, 0.7))
+	h_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var h_ramp := GradientTexture1D.new()
+	h_ramp.gradient = h_gradient
+	h_mat.color_ramp = h_ramp
+	heal.process_material = h_mat
+	_demo_3d_entity_layer.add_child(heal)
+	heal.emitting = true
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if is_instance_valid(pillar_node): pillar_node.queue_free()
+		if is_instance_valid(aura): aura.queue_free()
+		if is_instance_valid(heal): heal.queue_free()
+	)
+	_flash_demo_glow(1.5, 1.0)
+
+## 湮灭射线（减九和弦）：紫色激光贯穿全屏
+func _spawn_demo_3d_chord_annihilation_ray(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.8, 0.0, 0.8)
+	var start := Vector3(0.5, 0, 1.1)
+	var end_pos := Vector3(5.5, 0, 1.1)
+	# 激光柱体
+	var ray_node := Node3D.new()
+	ray_node.name = "DemoProjectile3D"
+	var mid := (start + end_pos) / 2.0
+	ray_node.position = mid
+	var ray_mesh := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 0.03
+	cylinder.bottom_radius = 0.03
+	cylinder.height = start.distance_to(end_pos)
+	ray_mesh.mesh = cylinder
+	ray_mesh.rotation_degrees = Vector3(0, 0, 90)  # 水平
+	var r_mat := StandardMaterial3D.new()
+	r_mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+	r_mat.emission_enabled = true
+	r_mat.emission = color
+	r_mat.emission_energy_multiplier = 8.0
+	r_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ray_mesh.material_override = r_mat
+	ray_node.add_child(ray_mesh)
+	# 外层光晕
+	var glow_mesh := MeshInstance3D.new()
+	var glow_cyl := CylinderMesh.new()
+	glow_cyl.top_radius = 0.1
+	glow_cyl.bottom_radius = 0.1
+	glow_cyl.height = start.distance_to(end_pos)
+	glow_mesh.mesh = glow_cyl
+	glow_mesh.rotation_degrees = Vector3(0, 0, 90)
+	var g_mat := StandardMaterial3D.new()
+	g_mat.albedo_color = Color(color.r, color.g, color.b, 0.3)
+	g_mat.emission_enabled = true
+	g_mat.emission = color
+	g_mat.emission_energy_multiplier = 3.0
+	g_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow_mesh.material_override = g_mat
+	ray_node.add_child(glow_mesh)
+	_demo_3d_entity_layer.add_child(ray_node)
+	# 灼烧粒子
+	for i in range(5):
+		var t := float(i) / 5.0
+		var burn_pos := start.lerp(end_pos, t)
+		var burn := _create_3d_burst(burn_pos, color, 8, 0.5, 1.5)
+		_demo_3d_entity_layer.add_child(burn)
+		burn.emitting = true
+		get_tree().create_timer(1.5).timeout.connect(burn.queue_free)
+	# 淡出
+	var ray_tween := create_tween()
+	ray_tween.tween_interval(0.3)
+	ray_tween.tween_callback(ray_node.queue_free)
+	_flash_demo_glow(2.5, 0.3)
+
+## 时空裂隙（属十一和弦）：紫色扭曲空间
+func _spawn_demo_3d_chord_time_rift(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(0.5, 0.0, 1.0)
+	var center := Vector3(3.0, 0, 1.1)
+	# 黑色核心
+	var core := _create_3d_glow_sphere(center, 0.15, Color(0.0, 0.0, 0.0), 1.0)
+	core.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(core)
+	# 多层扭曲环
+	for i in range(3):
+		var ring := _create_3d_ring(center, 0.2 + i * 0.15, color.lightened(i * 0.1))
+		ring.name = "DemoProjectile3D"
+		ring.rotation_degrees = Vector3(randf() * 30.0, 0, randf() * 30.0)
+		_demo_3d_entity_layer.add_child(ring)
+		var rot_tween := create_tween().set_loops(6)
+		rot_tween.tween_property(ring, "rotation:y", -TAU, 2.0 + i * 0.5).as_relative()
+		get_tree().create_timer(4.0).timeout.connect(func():
+			if is_instance_valid(ring): ring.queue_free()
+			rot_tween.kill()
+		)
+	# 吸入粒子
+	var absorb := GPUParticles3D.new()
+	absorb.name = "DemoProjectile3D"
+	absorb.amount = 20
+	absorb.lifetime = 1.0
+	absorb.position = center
+	var a_mat := ParticleProcessMaterial.new()
+	a_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	a_mat.emission_sphere_radius = 0.8
+	a_mat.direction = Vector3(0, 0, 0)
+	a_mat.spread = 180.0
+	a_mat.initial_velocity_min = -1.5
+	a_mat.initial_velocity_max = -0.5
+	a_mat.gravity = Vector3(0, 0, 0)
+	a_mat.scale_min = 0.01
+	a_mat.scale_max = 0.04
+	var a_gradient := Gradient.new()
+	a_gradient.set_color(0, Color(color.r, color.g, color.b, 0.7))
+	a_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var a_ramp := GradientTexture1D.new()
+	a_ramp.gradient = a_gradient
+	a_mat.color_ramp = a_ramp
+	absorb.process_material = a_mat
+	_demo_3d_entity_layer.add_child(absorb)
+	absorb.emitting = true
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if is_instance_valid(core): core.queue_free()
+		if is_instance_valid(absorb): absorb.queue_free()
+	)
+	_flash_demo_glow(1.5, 0.8)
+
+## 交响风暴（属十三和弦）：多色波次环形弹幕
+func _spawn_demo_3d_chord_symphony_storm(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var colors := [Color(1.0, 0.3, 0.0), Color(0.0, 0.8, 1.0), Color(1.0, 1.0, 0.0)]
+	var center := Vector3(2.5, 0, 1.1)
+	# 三波次环形弹幕
+	for wave in range(3):
+		get_tree().create_timer(wave * 0.4).timeout.connect(func():
+			if not _demo_3d_entity_layer: return
+			var wave_color: Color = colors[wave % colors.size()]
+			# 环形爆发
+			var ring := _create_3d_ring(center, 0.1, wave_color)
+			ring.name = "DemoProjectile3D"
+			_demo_3d_entity_layer.add_child(ring)
+			var ring_tween := create_tween()
+			ring_tween.tween_property(ring, "scale", Vector3(12.0, 12.0, 12.0), 0.6)
+			ring_tween.tween_callback(ring.queue_free)
+			# 粒子爆发
+			var burst := _create_3d_burst(center, wave_color, 24, 0.8, 3.0)
+			_demo_3d_entity_layer.add_child(burst)
+			burst.emitting = true
+			get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
+		)
+	_flash_demo_glow(2.0, 0.5)
+
+## 终焉乐章（减十三和弦）：全屏毁灭爆发
+func _spawn_demo_3d_chord_finale(_chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color := Color(1.0, 0.0, 0.0)
+	var center := Vector3(2.5, 0, 1.1)
+	# 蓄力收缩
+	var core := _create_3d_glow_sphere(center, 0.3, Color.WHITE, 8.0)
+	core.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(core)
+	var charge_tween := create_tween()
+	charge_tween.tween_property(core, "scale", Vector3(0.2, 0.2, 0.2), 0.5)
+	charge_tween.tween_callback(func():
+		if not is_instance_valid(core): return
+		core.queue_free()
+		if not _demo_3d_entity_layer: return
+		# 全屏爆发
+		for i in range(5):
+			var burst := _create_3d_burst(center, color.lightened(i * 0.1), 32, 1.2, 5.0 + i * 1.0)
+			_demo_3d_entity_layer.add_child(burst)
+			burst.emitting = true
+			get_tree().create_timer(3.0).timeout.connect(burst.queue_free)
+		# 多层冲击波
+		for i in range(5):
+			var ring := _create_3d_ring(center, 0.1, color.lightened(i * 0.1))
+			ring.name = "DemoProjectile3D"
+			_demo_3d_entity_layer.add_child(ring)
+			var r_tween := create_tween()
+			r_tween.tween_interval(i * 0.05)
+			r_tween.tween_property(ring, "scale", Vector3(20.0, 20.0, 20.0), 0.8)
+			r_tween.tween_callback(ring.queue_free)
+	)
+	_flash_demo_glow(3.0, 0.3)
+
+# ============================================================
+# v5.2: 节奏型弹体 3D 特殊效果
+# ============================================================
+
+## 重击弹体（附点节奏）：增大弹体 + 击退冲击波指示
+func _spawn_demo_3d_projectile_with_knockback(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var color: Color = spell_data.get("color", Color(1.0, 0.6, 0.2))
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+	# 增大的弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 150.0, color, 5.0)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", target_pos, duration)
+	tween.tween_callback(func():
+		if not is_instance_valid(projectile): return
+		# 命中时击退冲击波
+		var hit_pos := projectile.position
+		projectile.queue_free()
+		if _demo_3d_entity_layer:
+			var ring := _create_3d_ring(hit_pos, 0.1, color)
+			ring.name = "DemoProjectile3D"
+			_demo_3d_entity_layer.add_child(ring)
+			var r_tween := create_tween()
+			r_tween.tween_property(ring, "scale", Vector3(5.0, 5.0, 5.0), 0.3)
+			r_tween.tween_callback(ring.queue_free)
+	)
+
+## 闪避弹体（切分节奏）：弹体 + 后退残影
+func _spawn_demo_3d_projectile_with_dodge(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(80, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var color: Color = spell_data.get("color", Color(0.5, 0.8, 1.0))
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+	# 后退残影（半透明）
+	var dodge_pos := pos_3d - Vector3(vel_3d.x, 0, vel_3d.z).normalized() * 0.5
+	var ghost := _create_3d_glow_sphere(pos_3d, size / 250.0, Color(color.r, color.g, color.b, 0.3), 2.0)
+	ghost.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(ghost)
+	var ghost_tween := create_tween()
+	ghost_tween.tween_property(ghost, "position", dodge_pos, 0.15)
+	ghost_tween.tween_interval(0.2)
+	ghost_tween.tween_callback(ghost.queue_free)
+	# 主弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, color, 4.0)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile, "position", target_pos, duration)
+	tween.tween_callback(projectile.queue_free)
+
+## 波浪弹体（摇摆节奏）：S 型波浪轨迹
+func _spawn_demo_3d_projectile_wave(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var color: Color = spell_data.get("color", Color(0.8, 0.5, 1.0))
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+	# 弹体
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, color, 4.0)
+	projectile.name = "DemoProjectile3D"
+	# 更长的拖尾
+	var trail := GPUParticles3D.new()
+	trail.amount = 16
+	trail.lifetime = 0.6
+	trail.emitting = true
+	var trail_mat := ParticleProcessMaterial.new()
+	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	trail_mat.emission_sphere_radius = 0.02
+	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
+	trail_mat.spread = 15.0
+	trail_mat.initial_velocity_min = 0.1
+	trail_mat.initial_velocity_max = 0.3
+	trail_mat.gravity = Vector3(0, 0, 0)
+	trail_mat.scale_min = 0.01
+	trail_mat.scale_max = 0.03
+	var trail_gradient := Gradient.new()
+	trail_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	trail_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var trail_ramp := GradientTexture1D.new()
+	trail_ramp.gradient = trail_gradient
+	trail_mat.color_ramp = trail_ramp
+	trail.process_material = trail_mat
+	projectile.add_child(trail)
+	_demo_3d_entity_layer.add_child(projectile)
+	# S 型波浪轨迹（使用 tween_method 实现正弦波动）
+	var wave_freq := 8.0
+	var wave_amp := 0.8  # 80px / 100 = 0.8 unit
+	var forward_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
+	var lateral_dir := Vector3(-forward_dir.z, 0, forward_dir.x)  # 垂直方向
+	var total_dist := vel_3d.length() * duration
+	var wave_tween := create_tween()
+	wave_tween.tween_method(func(t: float):
+		if not is_instance_valid(projectile): return
+		var forward_pos := pos_3d + forward_dir * total_dist * t
+		var wave_offset := lateral_dir * sin(t * wave_freq * TAU) * wave_amp * exp(-t * 0.5)
+		projectile.position = forward_pos + wave_offset
+	, 0.0, 1.0, duration)
+	wave_tween.tween_callback(projectile.queue_free)
+
+## 蓄力弹体（精准蓄力节奏）：延迟发射 + 蓄力增强视觉
+func _spawn_demo_3d_projectile_charged(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var color: Color = spell_data.get("color", Color(1.0, 0.9, 0.3))
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+	# 蓄力阶段：小球逐渐变大
+	var projectile := _create_3d_glow_sphere(pos_3d, size / 400.0, color, 3.0)
+	projectile.name = "DemoProjectile3D"
+	_demo_3d_entity_layer.add_child(projectile)
+	# 蓄力吸收粒子
+	var absorb := _create_3d_burst(pos_3d, color, 12, 0.4, -1.0)
+	absorb.one_shot = false
+	_demo_3d_entity_layer.add_child(absorb)
+	absorb.emitting = true
+	# 蓄力膨胀 → 延迟 → 释放
+	var charge_tween := create_tween()
+	charge_tween.tween_property(projectile, "scale", Vector3(2.5, 2.5, 2.5), 0.5)
+	charge_tween.tween_callback(func():
+		if is_instance_valid(absorb): absorb.queue_free()
+	)
+	# 释放飞行
+	var target_pos := pos_3d + vel_3d * duration * 1.5
+	charge_tween.tween_property(projectile, "position", target_pos, duration * 0.8)
+	charge_tween.tween_callback(projectile.queue_free)
