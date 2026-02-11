@@ -290,9 +290,9 @@ func _draw() -> void:
 	for i in range(TIMBRE_SECTORS.size()):
 		var sector: Dictionary = TIMBRE_SECTORS[i]
 		var is_selected := (i == _selected_sector)
-		var is_current := (sector["timbre"] == _current_timbre)
-		var is_chapter_timbre := (sector["timbre"] == _current_chapter_timbre)
-		var is_unlocked := (sector["timbre"] in _unlocked_timbres)
+		var is_current: bool = (sector["timbre"] == _current_timbre)
+		var is_chapter_timbre: bool = (sector["timbre"] == _current_chapter_timbre)
+		var is_unlocked: bool = (sector["timbre"] in _unlocked_timbres)
 		var sector_color: Color = sector["color"]
 		var angle_center := _get_sector_center_angle(i)
 		
@@ -430,8 +430,8 @@ func _draw() -> void:
 	# ========== 选中扇区详情面板 ==========
 	if _selected_sector >= 0 and _selected_sector < TIMBRE_SECTORS.size():
 		var sector: Dictionary = TIMBRE_SECTORS[_selected_sector]
-		var is_unlocked := (sector["timbre"] in _unlocked_timbres)
-		var is_chapter_timbre := (sector["timbre"] == _current_chapter_timbre)
+		var is_unlocked: bool = (sector["timbre"] in _unlocked_timbres)
+		var is_chapter_timbre: bool = (sector["timbre"] == _current_chapter_timbre)
 		var detail_pos := _center + Vector2(0, WHEEL_RADIUS * scale + 35)
 		
 		# 背景

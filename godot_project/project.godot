@@ -29,6 +29,7 @@ MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
 CodexManager="*res://scripts/autoload/codex_manager.gd"
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
+ChapterManager="*res://scripts/systems/chapter_manager.gd"
 
 [display]
 
