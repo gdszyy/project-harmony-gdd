@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://main_game"]
+[gd_scene load_steps=32 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -6,7 +6,7 @@
 [ext_resource type="Script" path="res://scripts/systems/projectile_manager.gd" id="4_projectile"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5_hud"]
 [ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="6_sequencer"]
-[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="7_upgrade"]
+[ext_resource type="Script" path="res://scripts/ui/circle_of_fifths_upgrade.gd" id="7_upgrade"]
 [ext_resource type="PackedScene" uid="uid://pause_menu_001" path="res://scenes/pause_menu.tscn" id="8_pause"]
 [ext_resource type="Script" path="res://scripts/ui/game_mechanics_panel.gd" id="9_mechanics"]
 [ext_resource type="Script" path="res://scripts/ui/note_inventory_ui.gd" id="10_note_inv"]
@@ -14,7 +14,6 @@
 [ext_resource type="Script" path="res://scripts/ui/chord_alchemy_panel.gd" id="12_alchemy"]
 [ext_resource type="Script" path="res://scripts/ui/timbre_wheel_ui.gd" id="13_timbre"]
 [ext_resource type="Script" path="res://scripts/ui/manual_slot_config.gd" id="14_manual_slot"]
-[ext_resource type="Script" path="res://scripts/systems/chapter_manager.gd" id="15_chapter"]
 [ext_resource type="Script" path="res://scripts/systems/boss_spawner.gd" id="16_boss_spawner"]
 [ext_resource type="Script" path="res://scripts/systems/spell_visual_manager.gd" id="17_spell_visual"]
 [ext_resource type="Script" path="res://scripts/systems/vfx_manager.gd" id="18_vfx"]
@@ -24,6 +23,13 @@
 [ext_resource type="Script" path="res://scripts/entities/player_visual_enhanced.gd" id="22_player_visual"]
 [ext_resource type="Script" path="res://scripts/ui/boss_hp_bar_ui.gd" id="23_boss_hp"]
 [ext_resource type="Script" path="res://scripts/systems/render_bridge_3d.gd" id="24_render_bridge"]
+[ext_resource type="Script" path="res://scripts/ui/fatigue_meter.gd" id="25_fatigue_meter"]
+[ext_resource type="Script" path="res://scripts/ui/ammo_ring_hud.gd" id="26_ammo_ring"]
+[ext_resource type="Script" path="res://scripts/ui/rhythm_indicator.gd" id="27_rhythm"]
+[ext_resource type="Script" path="res://scripts/ui/summon_hud.gd" id="28_summon_hud"]
+[ext_resource type="Script" path="res://scripts/ui/codex_unlock_popup.gd" id="29_codex_popup"]
+[ext_resource type="Script" path="res://scripts/ui/performance_monitor.gd" id="30_perf_monitor"]
+[ext_resource type="Script" path="res://scripts/visual/ui_theme_manager.gd" id="31_ui_theme"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -69,8 +75,6 @@ script = ExtResource("4_projectile")
 
 [node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
 
-[node name="ChapterManager" type="Node" parent="."]
-script = ExtResource("15_chapter")
 
 [node name="BossSpawner" type="Node" parent="."]
 script = ExtResource("16_boss_spawner")
@@ -235,7 +239,7 @@ offset_right = 300.0
 offset_bottom = -10.0
 script = ExtResource("6_sequencer")
 
-[node name="UpgradePanel" type="Control" parent="HUD"]
+[node name="CircleOfFifthsUpgrade" type="Control" parent="HUD"]
 visible = false
 anchors_preset = 15
 anchor_right = 1.0
@@ -261,5 +265,58 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
+[node name="FatigueMeter" type="Control" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 155.0
+offset_right = -10.0
+offset_bottom = 195.0
+script = ExtResource("25_fatigue_meter")
+
+[node name="AmmoRingHud" type="Node2D" parent="HUD"]
+script = ExtResource("26_ammo_ring")
+
+[node name="RhythmIndicator" type="Control" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -180.0
+offset_right = 150.0
+offset_bottom = -155.0
+script = ExtResource("27_rhythm")
+
+[node name="SummonHud" type="Control" parent="HUD"]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 150.0
+offset_right = 280.0
+offset_bottom = 250.0
+script = ExtResource("28_summon_hud")
+
+[node name="CodexUnlockPopup" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = 100.0
+script = ExtResource("29_codex_popup")
+
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false
+
+[node name="PerformanceMonitor" type="CanvasLayer" parent="."]
+layer = 20
+script = ExtResource("30_perf_monitor")
+
+[node name="UIThemeManager" type="Node" parent="."]
+script = ExtResource("31_ui_theme")

@@ -26,7 +26,7 @@ extends Node2D
 # ============================================================
 # 节点引用 — 系统管理器
 # ============================================================
-@onready var _chapter_manager: Node = $ChapterManager
+var _chapter_manager: Node = null  # P0 Fix #46: 使用 Autoload 单例
 @onready var _boss_spawner: Node = $BossSpawner
 @onready var _spell_visual_manager: Node2D = $SpellVisualManager
 @onready var _death_vfx_manager: Node2D = $DeathVfxManager
@@ -70,6 +70,8 @@ const GAME_OVER_DELAY: float = 2.0
 # ============================================================
 
 func _ready() -> void:
+	# P0 Fix #46: 从 Autoload 获取 ChapterManager 单例
+	_chapter_manager = get_node_or_null("/root/ChapterManager")
 	_setup_scene()
 	_setup_render_bridge()
 	_connect_system_signals()

@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://scripts/ui/dps_overlay.gd" id="7_dps"]
 [ext_resource type="Script" path="res://scripts/entities/player_visual_enhanced.gd" id="8_player_visual"]
 [ext_resource type="Script" path="res://scripts/systems/render_bridge_3d.gd" id="9_render_bridge"]
-[ext_resource type="Script" path="res://scripts/systems/chapter_manager.gd" id="10_chapter"]
 [ext_resource type="Script" path="res://scripts/systems/spell_visual_manager.gd" id="11_spell_visual"]
 [ext_resource type="Script" path="res://scripts/systems/death_vfx_manager.gd" id="12_death_vfx"]
 [ext_resource type="Script" path="res://scripts/systems/damage_number_manager.gd" id="13_dmg_num"]
@@ -54,8 +53,6 @@ script = ExtResource("3_projectile")
 
 [node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
 
-[node name="ChapterManager" type="Node" parent="."]
-script = ExtResource("10_chapter")
 
 [node name="SpellVisualManager" type="Node2D" parent="."]
 script = ExtResource("11_spell_visual")
