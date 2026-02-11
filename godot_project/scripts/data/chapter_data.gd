@@ -1358,8 +1358,12 @@ static func get_chapter_timbre(chapter: int) -> Dictionary:
 	return CHAPTER_TIMBRES.get(chapter, {})
 
 ## 获取章节专属词条池
-static func get_chapter_inscriptions(chapter: int) -> Array:
-	return CHAPTER_INSCRIPTIONS.get(chapter, [])
+static func get_chapter_inscriptions(chapter: int) -> Array[Dictionary]:
+	var raw: Array = CHAPTER_INSCRIPTIONS.get(chapter, [])
+	var result: Array[Dictionary] = []
+	for item in raw:
+		result.append(item)
+	return result
 
 ## 根据词条 ID 获取词条数据
 static func get_inscription_by_id(inscription_id: String) -> Dictionary:

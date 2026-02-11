@@ -111,6 +111,13 @@ func _build_3d_scene() -> void:
 	_viewport_container.self_modulate = Color(1, 1, 1, 1)
 	# 启用透明混合模式，确保 3D SubViewport 的透明背景能正确透过
 	_viewport_container.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# ★ 修复弹体不可见：使用 Premultiplied Alpha 混合模式
+	# Godot Issue #28141: Glow 后处理会污染透明通道，导致 SubViewportContainer
+	# 在默认 Mix 混合模式下遮挡下层 2D 内容（包括弹体 MultiMesh）
+	# 使用 CanvasItemMaterial + BLEND_MODE_PREMULT_ALPHA 确保透明区域不遮挡
+	var overlay_material := CanvasItemMaterial.new()
+	overlay_material.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
+	_viewport_container.material = overlay_material
 
 	# --- SubViewport ---
 	_sub_viewport = SubViewport.new()

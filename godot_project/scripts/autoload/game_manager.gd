@@ -13,7 +13,7 @@ signal game_state_changed(new_state: GameState)
 signal player_hp_changed(current_hp: float, max_hp: float)
 signal player_damaged(damage: float, source_position: Vector2)
 signal player_died()
-signal enemy_killed(enemy_position: Vector2)
+signal enemy_killed(enemy_position: Vector2, enemy_type: String)
 signal xp_gained(amount: int)
 signal level_up(new_level: int)
 signal upgrade_selected(upgrade: Dictionary)
@@ -120,7 +120,7 @@ func _ready() -> void:
 	_update_beat_interval()
 	_init_note_bonuses()
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	enemy_killed.connect(func(_pos): session_kills += 1)
+	enemy_killed.connect(func(_pos, _type): session_kills += 1)
 
 func _process(delta: float) -> void:
 	if current_state != GameState.PLAYING:

@@ -80,6 +80,6 @@ func _get_from_pool() -> Node2D:
 # 信号回调
 # ============================================================
 
-func _on_enemy_killed(enemy_position: Vector2) -> void:
+func _on_enemy_killed(enemy_position: Vector2, enemy_type: String = "static") -> void:
 	# 敌人死亡时可以显示经验值获得等信息
 	pass

@@ -426,7 +426,7 @@ func _toggle_3d_layer() -> void:
 # v2.0: 敌人击杀特效
 # ============================================================
 
-func _on_enemy_killed_vfx(pos: Vector2, _xp: int, enemy_type: String) -> void:
+func _on_enemy_killed_vfx(pos: Vector2, enemy_type: String = "static") -> void:
 	# 在 3D 层生成死亡爆发粒子
 	if _render_bridge and _render_bridge.has_method("spawn_burst_particles"):
 		var color: Color = ENEMY_COLORS.get(enemy_type, Color(0.9, 0.3, 0.6))

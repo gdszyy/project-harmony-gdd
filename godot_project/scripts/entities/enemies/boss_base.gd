@@ -574,7 +574,7 @@ func _boss_die() -> void:
 	# 通知 GameManager
 	var type_name := _get_type_name()
 	enemy_died.emit(global_position, xp_value, type_name)
-	GameManager.enemy_killed.emit(global_position)
+	GameManager.enemy_killed.emit(global_position, type_name)
 
 func _drop_resonance_fragments() -> void:
 	# 在 Boss 位置周围散落共鸣碎片

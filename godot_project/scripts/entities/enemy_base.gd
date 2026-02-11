@@ -434,7 +434,7 @@ func _die() -> void:
 	# 发出死亡信号（携带敌人类型信息）
 	var type_name := _get_type_name()
 	enemy_died.emit(global_position, xp_value, type_name)
-	GameManager.enemy_killed.emit(global_position)
+	GameManager.enemy_killed.emit(global_position, type_name)
 
 	# 子类的死亡效果（如 Screech 的不和谐爆发）
 	_on_death_effect()

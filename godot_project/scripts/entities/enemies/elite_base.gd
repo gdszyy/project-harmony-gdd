@@ -304,7 +304,7 @@ func _elite_die() -> void:
 	
 	# 通知系统
 	enemy_died.emit(global_position, xp_value, _get_type_name())
-	GameManager.enemy_killed.emit(global_position)
+	GameManager.enemy_killed.emit(global_position, _get_type_name())
 	
 	# 华丽死亡动画
 	_play_elite_death_animation()

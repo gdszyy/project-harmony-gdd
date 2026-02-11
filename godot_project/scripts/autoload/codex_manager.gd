@@ -295,11 +295,9 @@ func _rebuild_completion_cache() -> void:
 # ============================================================
 
 ## 敌人被击杀时
-func _on_enemy_killed(enemy_position: Vector2) -> void:
-	# 注意：GameManager.enemy_killed 信号只传递位置
-	# 实际的敌人类型需要通过其他方式获取
-	# 这里我们通过 enemy_base.gd 的 enemy_died 信号来处理
-	pass
+func _on_enemy_killed(enemy_position: Vector2, enemy_type: String = "static") -> void:
+	# GameManager.enemy_killed 信号现在传递位置和敌人类型
+	record_kill(enemy_type)
 
 ## 法术施放时
 func _on_spell_cast(spell_data: Dictionary) -> void:
