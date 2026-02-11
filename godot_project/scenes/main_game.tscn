@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://main_game"]
+[gd_scene load_steps=32 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -29,6 +29,7 @@
 [ext_resource type="Script" path="res://scripts/ui/summon_hud.gd" id="28_summon_hud"]
 [ext_resource type="Script" path="res://scripts/ui/codex_unlock_popup.gd" id="29_codex_popup"]
 [ext_resource type="Script" path="res://scripts/ui/performance_monitor.gd" id="30_perf_monitor"]
+[ext_resource type="Script" path="res://scripts/visual/ui_theme_manager.gd" id="31_ui_theme"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -316,3 +317,6 @@ visible = false
 [node name="PerformanceMonitor" type="CanvasLayer" parent="."]
 layer = 20
 script = ExtResource("30_perf_monitor")
+
+[node name="UIThemeManager" type="Node" parent="."]
+script = ExtResource("31_ui_theme")
