@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://main_game"]
+[gd_scene load_steps=26 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://scripts/systems/summon_manager.gd" id="21_summon"]
 [ext_resource type="Script" path="res://scripts/entities/player_visual_enhanced.gd" id="22_player_visual"]
 [ext_resource type="Script" path="res://scripts/ui/boss_hp_bar_ui.gd" id="23_boss_hp"]
+[ext_resource type="Script" path="res://scripts/systems/render_bridge_3d.gd" id="24_render_bridge"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -87,6 +88,9 @@ script = ExtResource("21_summon")
 [node name="VfxManager" type="CanvasLayer" parent="."]
 layer = 15
 script = ExtResource("18_vfx")
+
+[node name="RenderBridge3D" type="Node" parent="."]
+script = ExtResource("24_render_bridge")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 10
