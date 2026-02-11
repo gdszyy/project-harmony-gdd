@@ -34,6 +34,20 @@ var _progression_label: Label = null
 var _mode_label: Label = null
 ## 暴击率标签（布鲁斯调式）
 var _crit_label: Label = null
+## 经验条容器
+var _xp_bar_container: Control = null
+## 经验条背景
+var _xp_bar_bg: ColorRect = null
+## 经验条填充
+var _xp_bar_fill: ColorRect = null
+## 经验条文字
+var _xp_bar_label: Label = null
+## 经验条闪光效果
+var _xp_flash_timer: float = 0.0
+## 经验条当前显示比例（用于平滑动画）
+var _xp_display_ratio: float = 0.0
+## 升级闪光计时器
+var _levelup_flash_timer: float = 0.0
 
 # ============================================================
 # 状态
@@ -55,6 +69,8 @@ func _ready() -> void:
 	# 连接信号
 	GameManager.player_hp_changed.connect(_on_hp_changed)
 	GameManager.beat_tick.connect(_on_beat_tick)
+	GameManager.xp_gained.connect(_on_xp_gained)
+	GameManager.level_up.connect(_on_level_up)
 	FatigueManager.fatigue_updated.connect(_on_fatigue_updated)
 	FatigueManager.recovery_suggestion.connect(_on_recovery_suggestion)
 
@@ -84,6 +100,7 @@ func _process(delta: float) -> void:
 	_update_damage_numbers(delta)
 	_update_manual_slot_cooldowns()
 	_update_silence_indicators()
+	_update_xp_bar(delta)
 
 	# 从 FatigueManager 读取最新 AFI
 	_current_fatigue = FatigueManager.current_afi
@@ -123,6 +140,7 @@ func _setup_dynamic_ui() -> void:
 	_setup_progression_label()
 	_setup_mode_label()
 	_setup_crit_label()
+	_setup_xp_bar()
 
 ## 手动施法槽冷却覆盖层
 func _setup_slot_cooldown_overlays() -> void:
@@ -489,3 +507,135 @@ func _on_rest_cleanse(rest_count: int) -> void:
 				if mat:
 					mat.set_shader_parameter("fatigue_level", _current_fatigue)
 			)
+
+# ============================================================
+# 经验条 UI (Issue #37)
+# ============================================================
+
+## 初始化经验条 UI 组件
+func _setup_xp_bar() -> void:
+	# 容器：屏幕底部中央
+	_xp_bar_container = Control.new()
+	_xp_bar_container.name = "XPBarContainer"
+	_xp_bar_container.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_xp_bar_container.offset_top = -28.0
+	_xp_bar_container.offset_bottom = 0.0
+	_xp_bar_container.offset_left = 0.0
+	_xp_bar_container.offset_right = 0.0
+	_xp_bar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_xp_bar_container)
+
+	# 背景条：深色半透明
+	_xp_bar_bg = ColorRect.new()
+	_xp_bar_bg.name = "XPBarBG"
+	_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7)
+	_xp_bar_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_xp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_xp_bar_container.add_child(_xp_bar_bg)
+
+	# 填充条：青色渐变
+	_xp_bar_fill = ColorRect.new()
+	_xp_bar_fill.name = "XPBarFill"
+	_xp_bar_fill.color = Color(0.0, 0.9, 0.8, 0.85)
+	_xp_bar_fill.anchor_top = 0.0
+	_xp_bar_fill.anchor_bottom = 1.0
+	_xp_bar_fill.anchor_left = 0.0
+	_xp_bar_fill.anchor_right = 0.0
+	_xp_bar_fill.offset_top = 2.0
+	_xp_bar_fill.offset_bottom = -2.0
+	_xp_bar_fill.offset_left = 2.0
+	_xp_bar_fill.offset_right = 0.0
+	_xp_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_xp_bar_container.add_child(_xp_bar_fill)
+
+	# 经验值文字标签
+	_xp_bar_label = Label.new()
+	_xp_bar_label.name = "XPBarLabel"
+	_xp_bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_xp_bar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_xp_bar_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_xp_bar_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
+	_xp_bar_label.add_theme_font_size_override("font_size", 13)
+	_xp_bar_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	_xp_bar_label.add_theme_constant_override("shadow_offset_x", 1)
+	_xp_bar_label.add_theme_constant_override("shadow_offset_y", 1)
+	_xp_bar_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_xp_bar_container.add_child(_xp_bar_label)
+
+	# 初始化显示
+	_xp_display_ratio = 0.0
+	_update_xp_bar_text()
+
+## 每帧更新经验条
+func _update_xp_bar(delta: float) -> void:
+	if _xp_bar_fill == null or _xp_bar_container == null:
+		return
+
+	# 计算目标比例
+	var target_ratio: float = 0.0
+	if GameManager.xp_to_next_level > 0:
+		target_ratio = float(GameManager.player_xp) / float(GameManager.xp_to_next_level)
+	target_ratio = clamp(target_ratio, 0.0, 1.0)
+
+	# 平滑插值
+	_xp_display_ratio = lerp(_xp_display_ratio, target_ratio, delta * 10.0)
+
+	# 更新填充条宽度（使用 anchor_right 控制比例）
+	_xp_bar_fill.anchor_right = _xp_display_ratio
+	_xp_bar_fill.offset_right = -2.0
+
+	# 经验条颜色随等级渐变：青色 → 金色
+	var level_color_t: float = clamp(float(GameManager.player_level - 1) / 20.0, 0.0, 1.0)
+	var base_color := Color(0.0, 0.9, 0.8).lerp(Color(1.0, 0.85, 0.2), level_color_t)
+
+	# 获取经验闪光效果
+	if _xp_flash_timer > 0.0:
+		_xp_flash_timer -= delta
+		var flash_intensity := clamp(_xp_flash_timer / 0.3, 0.0, 1.0)
+		base_color = base_color.lerp(Color.WHITE, flash_intensity * 0.5)
+
+	# 升级闪光效果
+	if _levelup_flash_timer > 0.0:
+		_levelup_flash_timer -= delta
+		var flash_intensity := clamp(_levelup_flash_timer / 0.5, 0.0, 1.0)
+		base_color = base_color.lerp(Color(1.0, 1.0, 0.5), flash_intensity * 0.8)
+		# 背景也闪光
+		if _xp_bar_bg:
+			_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7).lerp(
+				Color(0.2, 0.2, 0.1, 0.9), flash_intensity * 0.5
+			)
+	else:
+		if _xp_bar_bg:
+			_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7)
+
+	_xp_bar_fill.color = base_color
+
+	# 更新文字
+	_update_xp_bar_text()
+
+## 更新经验条文字
+func _update_xp_bar_text() -> void:
+	if _xp_bar_label == null:
+		return
+	_xp_bar_label.text = "Lv.%d   %d / %d XP" % [
+		GameManager.player_level,
+		GameManager.player_xp,
+		GameManager.xp_to_next_level,
+	]
+
+## 经验获取回调
+func _on_xp_gained(_amount: int) -> void:
+	_xp_flash_timer = 0.3
+
+## 升级回调
+func _on_level_up(_new_level: int) -> void:
+	_levelup_flash_timer = 0.5
+	# 重置经验条显示比例（升级后经验重置）
+	_xp_display_ratio = 0.0
+	# 更新等级标签
+	if _level_label:
+		_level_label.text = "Lv.%d" % _new_level
+		# 等级数字跳动效果
+		var tween := create_tween()
+		tween.tween_property(_level_label, "scale", Vector2(1.3, 1.3), 0.1)
+		tween.tween_property(_level_label, "scale", Vector2(1.0, 1.0), 0.2)

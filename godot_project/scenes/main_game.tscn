@@ -51,6 +51,8 @@ shape = SubResource("CircleShape2D_player")
 one_shot = true
 
 [node name="PickupArea" type="Area2D" parent="Player"]
+collision_layer = 0
+collision_mask = 4
 
 [node name="PickupCollision" type="CollisionShape2D" parent="Player/PickupArea"]
 shape = SubResource("CircleShape2D_pickup")

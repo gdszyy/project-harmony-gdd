@@ -308,6 +308,8 @@ func apply_dissonance_damage(dissonance: float) -> void:
 # ============================================================
 
 func add_xp(amount: int) -> void:
+	if amount <= 0:
+		return
 	player_xp += amount
 	xp_gained.emit(amount)
 
@@ -315,6 +317,7 @@ func add_xp(amount: int) -> void:
 		player_xp -= xp_to_next_level
 		player_level += 1
 		xp_to_next_level = int(xp_to_next_level * XP_SCALE_FACTOR)
+		print("[GameManager] Level Up! Now Lv.%d | Next: %d XP" % [player_level, xp_to_next_level])
 		level_up.emit(player_level)
 		enter_upgrade_select()
 
