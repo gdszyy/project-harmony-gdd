@@ -461,8 +461,8 @@ func _on_boss_spawned(_boss_node: Node) -> void:
 		_transition_overlay.visible = false
 	)
 
-	# 通知 GlobalVisualEnvironment 进入 Boss 模式
-	var gve := get_node_or_null("/root/GlobalVisualEnvironment")
+	# 通知 GlobalVisualEnvironment3D 进入 Boss 模式
+	var gve := get_node_or_null("/root/GlobalVisualEnvironment3D")
 	if gve and gve.has_method("enter_boss_mode"):
 		gve.enter_boss_mode()
 

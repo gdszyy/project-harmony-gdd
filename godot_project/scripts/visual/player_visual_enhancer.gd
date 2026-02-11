@@ -249,7 +249,7 @@ func _transition_phase_visual(_old_phase: int, new_phase: int) -> void:
 	var phase_color: Color = PHASE_COLORS.get(new_phase, Color(1.0, 1.0, 1.0, 0.0))
 	
 	# 通知全局视觉环境
-	var gve = get_node_or_null("/root/GlobalVisualEnvironment")
+	var gve = get_node_or_null("/root/GlobalVisualEnvironment3D")
 	if gve and gve.has_method("set_glow_override"):
 		# 切换瞬间 Glow 闪烁
 		gve.set_glow_override(1.5, 0.1)

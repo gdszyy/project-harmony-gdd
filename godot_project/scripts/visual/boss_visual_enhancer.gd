@@ -136,7 +136,7 @@ func _on_boss_phase_changed(new_phase: int) -> void:
 		tween.tween_property(_visual_node, "modulate", Color.WHITE, phase_transition_duration)
 	
 	# 通知全局视觉环境
-	var gve = get_node_or_null("/root/GlobalVisualEnvironment")
+	var gve = get_node_or_null("/root/GlobalVisualEnvironment3D")
 	if gve and gve.has_method("set_glow_override"):
 		gve.set_glow_override(2.0, 0.2)
 		get_tree().create_timer(0.5).timeout.connect(func():
@@ -174,7 +174,7 @@ func _enter_enrage_visual() -> void:
 	beat_pulse_scale = boss_beat_scale * 1.5
 	
 	# 通知全局进入 Boss 狂暴模式
-	var gve = get_node_or_null("/root/GlobalVisualEnvironment")
+	var gve = get_node_or_null("/root/GlobalVisualEnvironment3D")
 	if gve and gve.has_method("enter_boss_mode"):
 		gve.enter_boss_mode()
 

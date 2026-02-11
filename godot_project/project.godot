@@ -28,7 +28,6 @@ ModeSystem="*res://scripts/autoload/mode_system.gd"
 MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
 CodexManager="*res://scripts/autoload/codex_manager.gd"
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
-GlobalVisualEnvironment="*res://scripts/systems/global_visual_environment.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
 
 [display]

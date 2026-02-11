@@ -1,10 +1,15 @@
 ## main_game.gd
-## 主游戏场景 v2.0 — 全系统集成版
+## 主游戏场景 v3.0 — 2.5D 混合渲染集成版
 ## 管理游戏循环、碰撞检测、场景组件协调
 ## 集成：ChapterManager、BossSpawner、SpellVisualManager、VfxManager、
-##       DeathVfxManager、DamageNumberManager、SummonManager
+##       DeathVfxManager、DamageNumberManager、SummonManager、RenderBridge3D
 ##       以及所有UI面板（NoteInventoryUI、SpellbookUI、ChordAlchemyPanel、
 ##       TimbreWheelUI、ManualSlotConfig、BossHPBar）
+##
+## v3.0 变更：
+## - 集成 RenderBridge3D 实现 2D 逻辑 + 3D 渲染的 2.5D 混合方案
+## - 2D 物理和碰撞系统完全保留
+## - 3D 层提供 Glow/Bloom、真实光照、3D 粒子等视觉增强
 extends Node2D
 
 # ============================================================
@@ -19,7 +24,7 @@ extends Node2D
 @onready var _event_horizon: Node2D = $EventHorizon
 
 # ============================================================
-# 节点引用 — 系统管理器（审计报告 2.4 / 2.5 修复）
+# 节点引用 — 系统管理器
 # ============================================================
 @onready var _chapter_manager: Node = $ChapterManager
 @onready var _boss_spawner: Node = $BossSpawner
@@ -30,7 +35,12 @@ extends Node2D
 @onready var _vfx_manager: CanvasLayer = $VfxManager
 
 # ============================================================
-# 节点引用 — UI 面板（审计报告 2.1 / 2.2 修复）
+# 节点引用 — 2.5D 渲染桥接层 (v3.0 新增)
+# ============================================================
+@onready var _render_bridge: Node = $RenderBridge3D
+
+# ============================================================
+# 节点引用 — UI 面板
 # ============================================================
 @onready var _note_inventory_ui: Control = $HUD/NoteInventoryUI
 @onready var _spellbook_ui: Control = $HUD/SpellbookUI
@@ -61,6 +71,7 @@ const GAME_OVER_DELAY: float = 2.0
 
 func _ready() -> void:
 	_setup_scene()
+	_setup_render_bridge()
 	_connect_system_signals()
 	_start_chapter_system()
 	GameManager.start_game()
@@ -99,6 +110,9 @@ func _process(delta: float) -> void:
 	# 更新事件视界
 	_update_event_horizon()
 
+	# v3.0: 同步弹幕数据到 3D 渲染层
+	_sync_projectiles_to_3d()
+
 # ============================================================
 # 场景设置
 # ============================================================
@@ -117,7 +131,45 @@ func _setup_scene() -> void:
 	_setup_event_horizon()
 
 # ============================================================
-# 系统信号连接（审计报告修复核心）
+# 2.5D 渲染桥接层设置 (v3.0 新增)
+# ============================================================
+
+func _setup_render_bridge() -> void:
+	if not _render_bridge:
+		return
+
+	# 设置摄像机跟随玩家
+	if _player and _render_bridge.has_method("set_follow_target"):
+		_render_bridge.set_follow_target(_player)
+
+	# 为玩家创建 3D 渲染代理
+	if _player and _render_bridge.has_method("create_player_proxy"):
+		_render_bridge.create_player_proxy(_player)
+
+	# 连接敌人生成信号，自动创建 3D 代理
+	if _enemy_spawner and _enemy_spawner.has_signal("elite_spawned"):
+		_enemy_spawner.elite_spawned.connect(_on_elite_spawned_3d)
+
+## 将弹幕数据同步到 3D 渲染层
+func _sync_projectiles_to_3d() -> void:
+	if not _render_bridge or not _projectile_manager:
+		return
+	if not _render_bridge.has_method("sync_projectiles"):
+		return
+	if not _projectile_manager.has_method("get_projectile_render_data"):
+		return
+
+	var render_data = _projectile_manager.get_projectile_render_data()
+	_render_bridge.sync_projectiles(render_data)
+
+## 精英敌人生成时创建 3D 代理
+func _on_elite_spawned_3d(enemy_type: String, position: Vector2) -> void:
+	# 精英敌人获得额外的 3D 光源效果
+	# 普通敌人由于数量太多，不创建独立的 3D 代理
+	pass
+
+# ============================================================
+# 系统信号连接
 # ============================================================
 
 func _connect_system_signals() -> void:
@@ -126,6 +178,11 @@ func _connect_system_signals() -> void:
 		GameManager.player_died.connect(_on_player_died)
 	if not GameManager.game_state_changed.is_connected(_on_game_state_changed):
 		GameManager.game_state_changed.connect(_on_game_state_changed)
+
+	# --- 节拍信号 → 3D 渲染层脉冲 (v3.0) ---
+	if GameManager.has_signal("beat_tick"):
+		if not GameManager.beat_tick.is_connected(_on_beat_tick_3d):
+			GameManager.beat_tick.connect(_on_beat_tick_3d)
 
 	# --- 章节管理器信号 ---
 	if _chapter_manager:
@@ -154,7 +211,7 @@ func _connect_system_signals() -> void:
 		_chord_alchemy_panel.alchemy_completed.connect(_on_alchemy_completed)
 
 # ============================================================
-# 章节系统启动（审计报告 2.4 修复）
+# 章节系统启动
 # ============================================================
 
 func _start_chapter_system() -> void:
@@ -166,13 +223,11 @@ func _start_chapter_system() -> void:
 # ============================================================
 
 func _on_player_died() -> void:
-	# 启动游戏结束延迟跳转
 	_game_over_timer = 0.0
 
 func _on_game_state_changed(new_state: GameManager.GameState) -> void:
 	match new_state:
 		GameManager.GameState.GAME_OVER:
-			# 游戏结束处理（跳转由 _game_over_timer 控制）
 			pass
 		GameManager.GameState.PAUSED:
 			pass
@@ -184,7 +239,7 @@ func _on_game_state_changed(new_state: GameManager.GameState) -> void:
 # ============================================================
 
 func _on_chapter_started(_chapter_index: int, _chapter_name: String) -> void:
-	# 章节开始的全屏特效（使用 play_screen_flash + play_mode_switch）
+	# 章节开始的全屏特效
 	if _vfx_manager:
 		if _vfx_manager.has_method("play_screen_flash"):
 			_vfx_manager.play_screen_flash(Color(0.2, 0.8, 1.0, 0.5), 0.3)
@@ -192,16 +247,28 @@ func _on_chapter_started(_chapter_index: int, _chapter_name: String) -> void:
 			var mode_name: String = ModeSystem.current_mode_id if ModeSystem else "ionian"
 			_vfx_manager.play_mode_switch(mode_name)
 
+	# v3.0: 更新 3D 渲染层的玩家光源颜色
+	if _render_bridge and _render_bridge.has_method("update_player_light_color"):
+		var chapter_colors = [
+			Color(0.0, 1.0, 0.83),  # Ch0 毕达哥拉斯
+			Color(0.6, 0.3, 0.8),   # Ch1 中世纪
+			Color(1.0, 0.8, 0.3),   # Ch2 巴洛克
+			Color(1.0, 0.4, 0.6),   # Ch3 洛可可
+			Color(0.8, 0.2, 0.2),   # Ch4 浪漫主义
+			Color(0.2, 0.6, 1.0),   # Ch5 爵士
+			Color(0.0, 1.0, 0.3),   # Ch6 数字
+		]
+		if _chapter_index < chapter_colors.size():
+			_render_bridge.update_player_light_color(chapter_colors[_chapter_index])
+
 func _on_chapter_completed(_chapter_index: int) -> void:
 	pass
 
 func _on_chapter_boss_triggered(_chapter_index: int, _boss_key: String) -> void:
-	# Boss 战开始时显示 Boss 血条
 	if _boss_hp_bar:
 		_boss_hp_bar.visible = true
 
 func _on_game_completed() -> void:
-	# 全部章节通关
 	_game_over_timer = 0.0
 
 # ============================================================
@@ -214,11 +281,27 @@ func _on_boss_fight_started(_boss_name: String) -> void:
 	if _vfx_manager and _vfx_manager.has_method("play_boss_phase_transition"):
 		_vfx_manager.play_boss_phase_transition()
 
+	# v3.0: 3D 渲染层进入 Boss 模式
+	if _render_bridge and _render_bridge.has_method("enter_boss_mode"):
+		_render_bridge.enter_boss_mode()
+
 func _on_boss_fight_ended(_boss_name: String, _victory: bool) -> void:
 	if _boss_hp_bar:
 		_boss_hp_bar.visible = false
 	if _vfx_manager and _vfx_manager.has_method("play_screen_flash"):
 		_vfx_manager.play_screen_flash(Color(1.0, 0.9, 0.3, 0.6), 0.5)
+
+	# v3.0: 3D 渲染层退出 Boss 模式
+	if _render_bridge and _render_bridge.has_method("exit_boss_mode"):
+		_render_bridge.exit_boss_mode()
+
+# ============================================================
+# 信号回调 — 节拍 (v3.0 新增)
+# ============================================================
+
+func _on_beat_tick_3d(beat_index: int) -> void:
+	if _render_bridge and _render_bridge.has_method("on_beat_pulse"):
+		_render_bridge.on_beat_pulse(beat_index)
 
 # ============================================================
 # 信号回调 — 视觉特效
@@ -227,16 +310,19 @@ func _on_boss_fight_ended(_boss_name: String, _victory: bool) -> void:
 func _on_enemy_killed_vfx(enemy_position: Vector2, enemy_type: String = "static") -> void:
 	if _death_vfx_manager and _death_vfx_manager.has_method("play_death_effect"):
 		_death_vfx_manager.play_death_effect(enemy_position, enemy_type)
-	# 同时显示击杀伤害数字
 	if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
-		_damage_number_manager.show_damage(0.0, enemy_position)  # 0 = 击杀标记
+		_damage_number_manager.show_damage(0.0, enemy_position)
+
+	# v3.0: 在 3D 层也产生爆发粒子
+	if _render_bridge and _render_bridge.has_method("spawn_burst_particles"):
+		var kill_color := Color(1.0, 0.3, 0.1)  # 默认橙红色
+		_render_bridge.spawn_burst_particles(enemy_position, kill_color, 16)
 
 # ============================================================
 # 信号回调 — 和弦炼成
 # ============================================================
 
 func _on_alchemy_completed(_chord_spell: Dictionary) -> void:
-	# 炼成完成后自动打开法术书
 	if _spellbook_ui and _spellbook_ui.has_method("open_panel"):
 		_spellbook_ui.open_panel()
 
@@ -249,13 +335,11 @@ func _setup_ground() -> void:
 		_ground = Node2D.new()
 		_ground.name = "Ground"
 		add_child(_ground)
-		move_child(_ground, 0)  # 放到最底层
+		move_child(_ground, 0)
 
-	# 创建大型地面精灵
 	var ground_sprite := Sprite2D.new()
 	ground_sprite.name = "GroundSprite"
 
-	# 使用程序化纹理 + Shader
 	var texture := GradientTexture2D.new()
 	texture.width = 4096
 	texture.height = 4096
@@ -266,7 +350,6 @@ func _setup_ground() -> void:
 	texture.gradient = gradient
 	ground_sprite.texture = texture
 
-	# 应用脉冲网格 Shader
 	var shader := load("res://shaders/pulsing_grid.gdshader")
 	if shader:
 		var mat := ShaderMaterial.new()
@@ -285,7 +368,6 @@ func _setup_event_horizon() -> void:
 		_event_horizon.name = "EventHorizon"
 		add_child(_event_horizon)
 
-	# 创建环形边界视觉效果
 	var segments := 64
 	for i in range(segments):
 		var angle := (TAU / segments) * i
@@ -331,34 +413,28 @@ func _check_collisions() -> void:
 	if _projectile_manager == null or _enemy_spawner == null:
 		return
 
-	# 获取敌人碰撞数据
 	var enemy_data = _enemy_spawner.get_enemy_collision_data()
-
-	# 检测弹体-敌人碰撞
 	var hits = _projectile_manager.check_collisions(enemy_data)
 
-	# 处理命中
 	for hit in hits:
 		var enemy_node = hit["enemy"].get("node")
 		if not enemy_node or not is_instance_valid(enemy_node):
 			continue
 		if not enemy_node.has_method("take_damage"):
 			continue
-		
+
 		var knockback_dir := Vector2.ZERO
 		var proj = hit["projectile"]
 		if proj.get("velocity", Vector2.ZERO) != Vector2.ZERO:
 			knockback_dir = proj["velocity"].normalized()
-		
+
 		enemy_node.take_damage(hit["damage"], knockback_dir)
-		
-		# 显示伤害数字（优先使用 DamageNumberManager）
+
 		if _damage_number_manager and _damage_number_manager.has_method("show_damage"):
 			_damage_number_manager.show_damage(hit["damage"], hit["position"])
 		elif _hud and _hud.has_method("show_damage_number"):
 			_hud.show_damage_number(hit["position"], hit["damage"])
-		
-		# 命中视觉特效
+
 		if _spell_visual_manager and _spell_visual_manager.has_method("on_projectile_hit"):
 			_spell_visual_manager.on_projectile_hit(hit["position"], proj)
 
@@ -389,7 +465,6 @@ func _update_ground_shader() -> void:
 		mat.set_shader_parameter("beat_energy", GlobalMusicManager.get_beat_energy())
 		mat.set_shader_parameter("player_position", _player.global_position)
 
-		# 根据疲劳度调整网格颜色
 		var fatigue := FatigueManager.current_afi
 		var grid_color := Color(0.0, 0.6, 0.8).lerp(Color(0.8, 0.0, 0.2), fatigue)
 		mat.set_shader_parameter("grid_color", grid_color)

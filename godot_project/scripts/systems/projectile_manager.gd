@@ -1317,3 +1317,19 @@ func get_active_count() -> int:
 		if p["active"]:
 			count += 1
 	return count
+
+## 获取活跃弹体的渲染数据（供 RenderBridge3D 同步到 3D 渲染层）
+## 返回 Array[Dictionary]，每个元素包含 position, rotation, color, custom_data
+func get_projectile_render_data() -> Array:
+	var render_data: Array = []
+	for p in _projectiles:
+		if not p.get("active", false):
+			continue
+		var vel: Vector2 = p.get("velocity", Vector2.ZERO)
+		render_data.append({
+			"position": p.get("position", Vector2.ZERO),
+			"rotation": vel.angle() if vel != Vector2.ZERO else 0.0,
+			"color": p.get("color", Color.WHITE),
+			"custom_data": Color(0, 0, 0, 0),
+		})
+	return render_data
