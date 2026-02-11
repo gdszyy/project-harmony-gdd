@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://test_chamber_001"]
+[gd_scene load_steps=14 format=3 uid="uid://test_chamber_001"]
 
 [ext_resource type="Script" path="res://scripts/scenes/test_chamber.gd" id="1_test_chamber"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -7,6 +7,12 @@
 [ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="5_sequencer"]
 [ext_resource type="Script" path="res://scripts/ui/debug_panel.gd" id="6_debug"]
 [ext_resource type="Script" path="res://scripts/ui/dps_overlay.gd" id="7_dps"]
+[ext_resource type="Script" path="res://scripts/entities/player_visual_enhanced.gd" id="8_player_visual"]
+[ext_resource type="Script" path="res://scripts/systems/render_bridge_3d.gd" id="9_render_bridge"]
+[ext_resource type="Script" path="res://scripts/systems/chapter_manager.gd" id="10_chapter"]
+[ext_resource type="Script" path="res://scripts/systems/spell_visual_manager.gd" id="11_spell_visual"]
+[ext_resource type="Script" path="res://scripts/systems/death_vfx_manager.gd" id="12_death_vfx"]
+[ext_resource type="Script" path="res://scripts/systems/damage_number_manager.gd" id="13_dmg_num"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -23,9 +29,8 @@ script = ExtResource("1_test_chamber")
 position = Vector2(1500, 1500)
 script = ExtResource("2_player")
 
-[node name="PlayerVisual" type="Polygon2D" parent="Player"]
-color = Color(0, 0.9, 0.7, 1)
-polygon = PackedVector2Array(-12, 0, -6, -10, 6, -10, 12, 0, 6, 10, -6, 10)
+[node name="PlayerVisualEnhanced" type="Node2D" parent="Player"]
+script = ExtResource("8_player_visual")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("CircleShape2D_player")
@@ -48,6 +53,21 @@ position_smoothing_speed = 5.0
 script = ExtResource("3_projectile")
 
 [node name="MultiMeshInstance2D" type="MultiMeshInstance2D" parent="ProjectileManager"]
+
+[node name="ChapterManager" type="Node" parent="."]
+script = ExtResource("10_chapter")
+
+[node name="SpellVisualManager" type="Node2D" parent="."]
+script = ExtResource("11_spell_visual")
+
+[node name="DeathVfxManager" type="Node2D" parent="."]
+script = ExtResource("12_death_vfx")
+
+[node name="DamageNumberManager" type="Node2D" parent="."]
+script = ExtResource("13_dmg_num")
+
+[node name="RenderBridge3D" type="Node" parent="."]
+script = ExtResource("9_render_bridge")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 10
