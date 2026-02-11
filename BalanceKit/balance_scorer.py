@@ -20,8 +20,8 @@ Project Harmony — 平衡性跑分系统 (Balance Scoring System)
         S_risk     = 风险评分（不和谐扣血 + 密度过载 + 单调锁定的期望损失）
 
 作者：Manus AI
-版本：v2.2 (新增局外成长系统接口)
-日期：2026年2月7日
+版本：v2.3 (新增局外成长系统接口 + v2.2音符数值重设计)
+日期：2026年2月11日
 =============================================================================
 """
 
@@ -42,8 +42,8 @@ from enum import Enum
 # ---- 参数转换比率 ----
 DMG_PER_POINT = 10      # 每点伤害参数 = 10基础伤害
 SPD_PER_POINT = 200     # 每点速度参数 = 200像素/秒
-DUR_PER_POINT = 0.5     # 每点持续参数 = 0.5秒
-SIZE_PER_POINT = 8      # 每点大小参数 = 8像素碰撞半径
+DUR_PER_POINT = 0.7     # 每点持续参数 = 0.7秒 (v2.2: 从0.5提升至0.7)
+SIZE_PER_POINT = 12     # 每点大小参数 = 12像素碰撞半径 (v2.2: 从8提升至12)
 
 # ---- 全局节奏参数 ----
 DEFAULT_BPM = 120
@@ -127,9 +127,9 @@ def create_base_notes() -> dict[str, NoteStats]:
     return {
         "C": NoteStats("C", 3, 3, 3, 3),
         "D": NoteStats("D", 2, 5, 3, 2),
-        "E": NoteStats("E", 2, 2, 4, 4),
-        "F": NoteStats("F", 2, 1, 5, 4),
-        "G": NoteStats("G", 5, 3, 2, 2),
+        "E": NoteStats("E", 1, 1, 4, 6),  # v2.2: 巨型缓行
+        "F": NoteStats("F", 2, 1, 6, 3),  # v2.2: 超持久缓行
+        "G": NoteStats("G", 6, 3, 1, 2),  # v2.2: 高伤快消
         "A": NoteStats("A", 4, 2, 4, 2),
         "B": NoteStats("B", 4, 4, 2, 2),
     }
@@ -644,9 +644,9 @@ class StrategySimulator:
     DELAY_EXPOSURE_RISK = 2.0   # 延迟空窗期每秒风险值
     
     # v2.1 新增：距离风险参数
-    REFERENCE_RANGE = 900.0     # 参考射程（C音符的射程，像素）
+    REFERENCE_RANGE = 1260.0    # 参考射程（v2.2: C音符的射程 = 3×200×3×0.7 = 1260像素）
     SIZE_COMP_FACTOR = 0.1      # SIZE补偿因子（每点超出基准SIZE补偿10%）
-    SIZE_COMP_CAP = 0.3         # SIZE补偿上限（30%）
+    SIZE_COMP_CAP = 0.4         # SIZE补偿上限（v2.2: 从30%提升至40%，配合E音符SIZE=6的极化设计）
     SIZE_BASELINE = 2.0         # SIZE基准值（大多数音符的SIZE）
     PROXIMITY_RISK_WEIGHT = 1.0 # 近身风险权重（每拍）
 
