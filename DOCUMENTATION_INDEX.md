@@ -90,3 +90,11 @@ graph TD
 - 已被取代的设计 (`Numerical_Design_Documentation_v1.md`)
 
 归档目录的内容不应再被引用，仅供历史追溯。
+
+## 5. 知识库
+
+`docs/knowledge-base/` 目录存放开发过程中沉淀的技术解决方案和最佳实践。
+
+| 文档 | 简介 |
+| :--- | :--- |
+| **[知识库索引](docs/knowledge-base/INDEX.md)** | 包含所有疑难问题解决方案、代码技巧和引擎特性分析。 |
