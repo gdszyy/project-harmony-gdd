@@ -150,6 +150,10 @@ func _setup_render_bridge() -> void:
 	if _enemy_spawner and _enemy_spawner.has_signal("elite_spawned"):
 		_enemy_spawner.elite_spawned.connect(_on_elite_spawned_3d)
 
+	# Issue #35 修复：连接普通敌人生成信号，注册到 MultiMesh 批量渲染
+	if _enemy_spawner and _enemy_spawner.has_signal("spawn_count_changed"):
+		_enemy_spawner.spawn_count_changed.connect(_on_enemy_count_changed_3d)
+
 ## 将弹幕数据同步到 3D 渲染层
 func _sync_projectiles_to_3d() -> void:
 	if not _render_bridge or not _projectile_manager:
@@ -162,11 +166,59 @@ func _sync_projectiles_to_3d() -> void:
 	var render_data = _projectile_manager.get_projectile_render_data()
 	_render_bridge.sync_projectiles(render_data)
 
-## 精英敌人生成时创建 3D 代理
+## 精英敌人生成时创建 3D 代理——修复 Issue #35
 func _on_elite_spawned_3d(enemy_type: String, position: Vector2) -> void:
-	# 精英敌人获得额外的 3D 光源效果
-	# 普通敌人由于数量太多，不创建独立的 3D 代理
-	pass
+	if not _render_bridge or not _render_bridge.has_method("register_enemy_proxy"):
+		return
+
+	# 查找刚生成的精英敌人节点
+	var elite_node: Node2D = null
+	if _enemy_spawner:
+		for child in _enemy_spawner.get_children():
+			if child is CharacterBody2D and child.global_position.distance_to(position) < 50.0:
+				elite_node = child
+				break
+
+	if elite_node == null:
+		return
+
+	# 根据敌人类型选择颜色
+	var elite_color := _get_enemy_color(enemy_type)
+	_render_bridge.register_enemy_proxy(elite_node, elite_color, true)
+
+## 普通敌人数量变化时，将新敌人注册到 MultiMesh 批量渲染——修复 Issue #35
+func _on_enemy_count_changed_3d(_active: int, _total_spawned: int) -> void:
+	if not _render_bridge or not _render_bridge.has_method("register_normal_enemy"):
+		return
+	if not _enemy_spawner:
+		return
+
+	# 遍历 EnemySpawner 的子节点，找到未注册的普通敌人
+	for child in _enemy_spawner.get_children():
+		if child is CharacterBody2D and not child.has_meta("registered_3d"):
+			var enemy_type_str: String = ""
+			if child.has_method("get_enemy_type"):
+				enemy_type_str = child.get_enemy_type()
+			var color := _get_enemy_color(enemy_type_str)
+			_render_bridge.register_normal_enemy(child, color)
+			child.set_meta("registered_3d", true)
+
+## 根据敌人类型返回对应的 3D 代理颜色
+func _get_enemy_color(enemy_type: String) -> Color:
+	match enemy_type:
+		"static":
+			return Color(0.7, 0.3, 0.3)   # 红色
+		"silence":
+			return Color(0.2, 0.1, 0.4)   # 深紫
+		"screech":
+			return Color(1.0, 0.8, 0.0)   # 黄色
+		"pulse":
+			return Color(0.0, 0.5, 1.0)   # 蓝色
+		"wall":
+			return Color(0.5, 0.5, 0.5)   # 灰色
+		_:
+			# 章节特色敌人 / 精英
+			return Color(0.9, 0.3, 0.6)   # 品红
 
 # ============================================================
 # 系统信号连接
