@@ -6,7 +6,7 @@
 [ext_resource type="Script" path="res://scripts/systems/projectile_manager.gd" id="4_projectile"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5_hud"]
 [ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="6_sequencer"]
-[ext_resource type="Script" path="res://scripts/ui/upgrade_panel.gd" id="7_upgrade"]
+[ext_resource type="Script" path="res://scripts/ui/circle_of_fifths_upgrade.gd" id="7_upgrade"]
 [ext_resource type="PackedScene" uid="uid://pause_menu_001" path="res://scenes/pause_menu.tscn" id="8_pause"]
 [ext_resource type="Script" path="res://scripts/ui/game_mechanics_panel.gd" id="9_mechanics"]
 [ext_resource type="Script" path="res://scripts/ui/note_inventory_ui.gd" id="10_note_inv"]
@@ -235,7 +235,7 @@ offset_right = 300.0
 offset_bottom = -10.0
 script = ExtResource("6_sequencer")
 
-[node name="UpgradePanel" type="Control" parent="HUD"]
+[node name="CircleOfFifthsUpgrade" type="Control" parent="HUD"]
 visible = false
 anchors_preset = 15
 anchor_right = 1.0
