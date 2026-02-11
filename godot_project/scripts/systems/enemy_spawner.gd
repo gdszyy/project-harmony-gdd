@@ -1083,7 +1083,10 @@ func _start_pickup_attraction(pickup: Area2D, value: int) -> void:
 		speed_mult = clamp(speed_mult, 1.0, 3.0)
 		pickup.global_position += dir * attract_speed * speed_mult * get_process_delta_time()
 		if dist < collect_distance:
-				# 经验值由 player 的 area_entered 处理
+				# 直接添加经验值，确保不丢失
+				var xp_val: int = pickup.get_meta("xp_value", 0)
+				if xp_val > 0:
+					GameManager.add_xp(xp_val)
 				pickup.queue_free()
 	
 	get_tree().process_frame.connect(callable)

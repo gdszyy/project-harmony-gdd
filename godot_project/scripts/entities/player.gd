@@ -158,11 +158,12 @@ func _on_player_died() -> void:
 
 func _on_pickup_area_entered(area: Area2D) -> void:
 	if area.is_in_group("xp_pickup"):
-		# 兼容 xp_pickup.gd 的属性和 enemy_spawner 的 set_meta 两种方式
+		# 如果是 xp_pickup.gd 实例（有 _collect 方法），由其自身处理经验收集
+		if area.has_method("_collect"):
+			return  # xp_pickup.gd 的 _collect() 已经处理了 add_xp
+		# enemy_spawner 生成的简易 xp_pickup：读取经验值并添加
 		var xp_val: int = 5
-		if "xp_value" in area:
-			xp_val = area.xp_value
-		elif area.has_meta("xp_value"):
+		if area.has_meta("xp_value"):
 			xp_val = area.get_meta("xp_value")
 		GameManager.add_xp(xp_val)
 		area.queue_free()
