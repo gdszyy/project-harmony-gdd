@@ -28,6 +28,7 @@ ModeSystem="*res://scripts/autoload/mode_system.gd"
 MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
 CodexManager="*res://scripts/autoload/codex_manager.gd"
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
+GlobalVisualEnvironment="*res://scripts/systems/global_visual_environment.gd"
 
 [display]
 
@@ -88,6 +89,13 @@ pause_game={
 2d_physics/layer_4="enemy_projectiles"
 2d_physics/layer_5="pickups"
 
+[shader_globals]
+
+global_time={ "type": "float", "value": 0.0 }
+beat_phase={ "type": "float", "value": 0.0 }
+chapter_color={ "type": "vec3", "value": "Vector3(0, 1, 0.8)" }
+beat_glow_extra={ "type": "float", "value": 0.0 }
+
 [audio]
 
 bus/default_bus_layout="res://audio_bus_layout.tres"
@@ -97,3 +105,7 @@ bus/default_bus_layout="res://audio_bus_layout.tres"
 renderer/rendering_method="forward_plus"
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
 anti_aliasing/quality/msaa_2d=2
+
+[gui]
+
+theme/custom="res://themes/GlobalTheme.tres"
