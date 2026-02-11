@@ -556,9 +556,9 @@ func spawn_burst_particles(pos_2d: Vector2, color: Color, amount: int = 32) -> v
 	mat.color_ramp = color_ramp
 
 	particles.process_material = mat
-	particles.global_position = to_3d(pos_2d)
 
 	_vfx_layer.add_child(particles)
+	particles.global_position = to_3d(pos_2d)
 	particles.emitting = true
 
 	# 自动清理

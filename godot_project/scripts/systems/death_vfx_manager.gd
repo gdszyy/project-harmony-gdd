@@ -183,8 +183,8 @@ func play_boss_death_effect(boss: Node2D, phase_count: int = 3) -> void:
 		boss.queue_free()
 	)
 
-func _on_enemy_killed_global(_pos: Vector2) -> void:
-	# 全局信号不携带类型信息，使用默认特效
+func _on_enemy_killed_global(_pos: Vector2, _enemy_type: String = "static") -> void:
+	# 全局信号携带位置和类型信息
 	# 实际的类型特效由 enemy_base._die() → _on_death_effect() 触发
 	pass
 
