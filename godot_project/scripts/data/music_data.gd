@@ -93,13 +93,47 @@ enum FatigueLevel {
 	CRITICAL,
 }
 
-## 音色系别
+## 章节音色武器枚举 (v2.0 — 替代原 TimbreType)
+## 每个章节拥有一种专属音色武器，与章节主题深度绑定
+enum ChapterTimbre {
+	NONE,              # 默认/无音色
+	LYRE,              # Ch1 里拉琴 (古希腊)
+	ORGAN,             # Ch2 管风琴 (中世纪)
+	HARPSICHORD,       # Ch3 羽管键琴 (巴洛克)
+	FORTEPIANO,        # Ch4 钢琴 (古典主义)
+	TUTTI,             # Ch5 管弦全奏 (浪漫主义)
+	SAXOPHONE,         # Ch6 萨克斯 (爵士)
+	SYNTHESIZER,       # Ch7 合成主脑 (现代/电子)
+}
+
+## 电子乐变体枚举
+## 每种章节音色武器都有对应的电子乐变体
+enum ElectronicVariant {
+	NONE,
+	SINE_WAVE_SYNTH,     # Ch1 正弦波合成 (里拉琴变体)
+	DRONE_SYNTH,         # Ch2 无人机音合成 (管风琴变体)
+	ARPEGGIATOR_SYNTH,   # Ch3 琶音器合成 (羽管键琴变体)
+	VELOCITY_PAD,        # Ch4 力度感应垫 (钢琴变体)
+	SUPERSAW_SYNTH,      # Ch5 超级锯齿波 (管弦全奏变体)
+	FM_SYNTH,            # Ch6 FM合成器 (萨克斯变体)
+	GLITCH_ENGINE,       # Ch7 故障引擎 (合成主脑变体)
+}
+
+## 章节词条稀有度
+enum InscriptionRarity {
+	COMMON,    # 普通
+	RARE,      # 稀有
+	EPIC,      # 史诗
+}
+
+## 向后兼容：保留旧版 TimbreType 枚举作为别名
+## 新代码应使用 ChapterTimbre
 enum TimbreType {
 	NONE,           # 默认/无音色 (基础合成器)
-	PLUCKED,        # 弹拨系 (古筝、琵琶)
-	BOWED,          # 拉弦系 (二胡、大提琴)
-	WIND,           # 吹奏系 (笛子、长笛)
-	PERCUSSIVE,     # 打击系 (钢琴、贝斯)
+	PLUCKED,        # 弹拨系 → 映射到 LYRE/HARPSICHORD
+	BOWED,          # 拉弦系 → 映射到 ORGAN/TUTTI
+	WIND,           # 吹奏系 → 映射到 SAXOPHONE
+	PERCUSSIVE,     # 打击系 → 映射到 FORTEPIANO/SYNTHESIZER
 }
 
 # ============================================================
@@ -259,63 +293,254 @@ const COMPLETENESS_BONUS: Dictionary = {
 }
 
 # ============================================================
-# 音色系统数据
+# 章节音色武器系统数据 (v2.0)
 # ============================================================
 
-## 音色切换疲劳代价
-const TIMBRE_SWITCH_FATIGUE_COST: float = 0.05
+## 跨章节音色疲劳代价（使用非当前章节的音色武器时）
+const CROSS_CHAPTER_TIMBRE_FATIGUE: float = 0.03
+
+## 电子乐变体疲劳减免倍率
+const ELECTRONIC_VARIANT_FATIGUE_MULT: float = 0.5
 
 ## 疲劳对音色效能的影响倍率
 const TIMBRE_FATIGUE_PENALTY: Dictionary = {
 	FatigueLevel.NONE: 1.0,       # 无衰减
 	FatigueLevel.MILD: 1.0,       # 无衰减
 	FatigueLevel.MODERATE: 0.8,   # 效能降低20%
-	FatigueLevel.SEVERE: 0.5,     # 效能降低50%，神韵失效
-	FatigueLevel.CRITICAL: 0.2,   # 效能降低80%，神韵失效
+	FatigueLevel.SEVERE: 0.5,     # 效能降低50%，词条协同失效
+	FatigueLevel.CRITICAL: 0.2,   # 效能降低80%，词条协同失效
 }
 
-## 音色系别 ADSR 包络参数
-## attack_time: 起音时间(秒), decay_time: 衰减时间(秒),
-## sustain_level: 持续电平(0-1), release_time: 释放时间(秒)
-## harmonics: 泛音结构 [基频倍率, 振幅] 列表
-## wave_shape: 波形类型 ("sine", "triangle", "sawtooth", "square")
-const TIMBRE_ADSR: Dictionary = {
-	TimbreType.NONE: {
-		"attack_time": 0.01, "decay_time": 0.1,
-		"sustain_level": 0.6, "release_time": 0.05,
+## 章节词条出现概率（替代普通升级选项）
+const INSCRIPTION_APPEAR_CHANCE: float = 0.15
+
+## 章节音色武器 ADSR 包络参数
+## attack: 起音时间(秒), decay: 衰减时间(秒),
+## sustain: 持续电平(0-1), release: 释放时间(秒)
+const CHAPTER_TIMBRE_ADSR: Dictionary = {
+	ChapterTimbre.NONE: {
+		"attack": 0.01, "decay": 0.1,
+		"sustain": 0.6, "release": 0.05,
 		"wave_shape": "sine",
 		"harmonics": [[1.0, 1.0], [2.0, 0.3], [3.0, 0.1]],
-		"name": "合成器", "desc": "基础合成器音色",
+		"name": "默认", "desc": "无音色武器激活",
 	},
-	TimbreType.PLUCKED: {
-		"attack_time": 0.005, "decay_time": 0.15,
-		"sustain_level": 0.2, "release_time": 0.0,
+	ChapterTimbre.LYRE: {
+		"attack": 0.08, "decay": 0.20,
+		"sustain": 0.60, "release": 0.15,
 		"wave_shape": "triangle",
-		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.35], [4.0, 0.2], [5.0, 0.1], [6.0, 0.05]],
-		"name": "弹拨", "desc": "颗粒感、快速衰减的瞬态爆发",
+		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.35], [4.0, 0.2], [5.0, 0.1]],
+		"name": "里拉琴", "name_en": "Lyre",
+		"desc": "纯净的泛音共鸣，基于数学比例的伤害加成",
+		"core_mechanic": "harmonic_resonance",
+		"chord_interaction": ChordType.DOMINANT_7,
 	},
-	TimbreType.BOWED: {
-		"attack_time": 0.08, "decay_time": 0.0,
-		"sustain_level": 0.85, "release_time": 0.15,
+	ChapterTimbre.ORGAN: {
+		"attack": 0.15, "decay": 0.0,
+		"sustain": 0.90, "release": 0.40,
 		"wave_shape": "sawtooth",
 		"harmonics": [[1.0, 1.0], [2.0, 0.4], [3.0, 0.25], [4.0, 0.15], [5.0, 0.08]],
-		"name": "拉弦", "desc": "持续性、连绵共振的拉弓质感",
+		"name": "管风琴", "name_en": "Organ",
+		"desc": "持续的和声层叠，多声部叠加攻击",
+		"core_mechanic": "harmonic_stacking",
+		"chord_interaction": ChordType.MINOR,
 	},
-	TimbreType.WIND: {
-		"attack_time": 0.04, "decay_time": 0.08,
-		"sustain_level": 0.65, "release_time": 0.06,
-		"wave_shape": "sine",
-		"harmonics": [[1.0, 1.0], [2.0, 0.15], [3.0, 0.4], [4.0, 0.05], [5.0, 0.15]],
-		"name": "吹奏", "desc": "穿透性、气息聚焦的管乐质感",
+	ChapterTimbre.HARPSICHORD: {
+		"attack": 0.03, "decay": 0.15,
+		"sustain": 0.45, "release": 0.0,
+		"wave_shape": "triangle",
+		"harmonics": [[1.0, 1.0], [2.0, 0.6], [3.0, 0.4], [4.0, 0.25], [5.0, 0.15], [6.0, 0.08]],
+		"name": "羽管键琴", "name_en": "Harpsichord",
+		"desc": "精密的对位攻击，多弹道交织",
+		"core_mechanic": "counterpoint_weave",
+		"chord_interaction": ChordType.AUGMENTED,
 	},
-	TimbreType.PERCUSSIVE: {
-		"attack_time": 0.001, "decay_time": 0.08,
-		"sustain_level": 0.0, "release_time": 0.02,
+	ChapterTimbre.FORTEPIANO: {
+		"attack": 0.02, "decay": 0.10,
+		"sustain": 0.80, "release": 0.08,
 		"wave_shape": "sine",
-		"harmonics": [[1.0, 1.0], [1.5, 0.3], [2.0, 0.15]],
-		"name": "打击", "desc": "Techno风格电子鼓组，瞬态冲击感强",
+		"harmonics": [[1.0, 1.0], [2.0, 0.3], [3.0, 0.15], [4.0, 0.08]],
+		"name": "钢琴", "name_en": "Fortepiano",
+		"desc": "力度动态控制，强弱拍伤害差异化",
+		"core_mechanic": "velocity_dynamics",
+		"chord_interaction": ChordType.MINOR_7,
+	},
+	ChapterTimbre.TUTTI: {
+		"attack": 0.10, "decay": 0.05,
+		"sustain": 0.85, "release": 0.20,
+		"wave_shape": "sawtooth",
+		"harmonics": [[1.0, 1.0], [2.0, 0.5], [3.0, 0.35], [4.0, 0.25], [5.0, 0.15], [6.0, 0.1]],
+		"name": "管弦全奏", "name_en": "Tutti",
+		"desc": "情感爆发式攻击，渐强渐弱的伤害曲线",
+		"core_mechanic": "emotional_crescendo",
+		"chord_interaction": ChordType.DIMINISHED,
+	},
+	ChapterTimbre.SAXOPHONE: {
+		"attack": 0.06, "decay": 0.10,
+		"sustain": 0.70, "release": 0.12,
+		"wave_shape": "sine",
+		"harmonics": [[1.0, 1.0], [2.0, 0.2], [3.0, 0.45], [4.0, 0.1], [5.0, 0.2]],
+		"name": "萨克斯", "name_en": "Saxophone",
+		"desc": "摇摆节奏攻击，反拍强化",
+		"core_mechanic": "swing_attack",
+		"chord_interaction": ChordType.MAJOR_7,
+	},
+	ChapterTimbre.SYNTHESIZER: {
+		"attack": 0.01, "decay": 0.05,
+		"sustain": 0.75, "release": 0.03,
+		"wave_shape": "square",
+		"harmonics": [[1.0, 1.0], [3.0, 0.33], [5.0, 0.2], [7.0, 0.14]],
+		"name": "合成主脑", "name_en": "Synthesizer",
+		"desc": "波形变换攻击，频率操控",
+		"core_mechanic": "waveform_morph",
+		"chord_interaction": ChordType.DIMINISHED_7,
 	},
 }
+
+## 电子乐变体 ADSR 参数（继承原音色参数，仅覆盖视觉/听觉相关字段）
+const ELECTRONIC_VARIANT_DATA: Dictionary = {
+	ElectronicVariant.NONE: {
+		"name": "无", "desc": "未激活电子乐变体",
+	},
+	ElectronicVariant.SINE_WAVE_SYNTH: {
+		"base_timbre": ChapterTimbre.LYRE,
+		"name": "Sine Wave Synth", "name_cn": "正弦波合成",
+		"desc": "弹体变为纯净的正弦波形",
+		"visual": "sine_wave", "audio": "pure_sine",
+	},
+	ElectronicVariant.DRONE_SYNTH: {
+		"base_timbre": ChapterTimbre.ORGAN,
+		"name": "Drone Synth", "name_cn": "无人机音合成",
+		"desc": "弹体变为低频脉冲波",
+		"visual": "low_freq_pulse", "audio": "deep_drone",
+	},
+	ElectronicVariant.ARPEGGIATOR_SYNTH: {
+		"base_timbre": ChapterTimbre.HARPSICHORD,
+		"name": "Arpeggiator Synth", "name_cn": "琶音器合成",
+		"desc": "弹体变为快速闪烁的像素点阵",
+		"visual": "pixel_matrix", "audio": "electronic_arpeggio",
+	},
+	ElectronicVariant.VELOCITY_PAD: {
+		"base_timbre": ChapterTimbre.FORTEPIANO,
+		"name": "Velocity Pad", "name_cn": "力度感应垫",
+		"desc": "弹体变为压力感应的光块",
+		"visual": "pressure_block", "audio": "synth_pad",
+	},
+	ElectronicVariant.SUPERSAW_SYNTH: {
+		"base_timbre": ChapterTimbre.TUTTI,
+		"name": "Supersaw Synth", "name_cn": "超级锯齿波",
+		"desc": "弹体变为锯齿波形的能量束",
+		"visual": "sawtooth_beam", "audio": "thick_supersaw",
+	},
+	ElectronicVariant.FM_SYNTH: {
+		"base_timbre": ChapterTimbre.SAXOPHONE,
+		"name": "FM Synth", "name_cn": "FM合成器",
+		"desc": "弹体变为频率调制的波形",
+		"visual": "fm_waveform", "audio": "metallic_fm",
+	},
+	ElectronicVariant.GLITCH_ENGINE: {
+		"base_timbre": ChapterTimbre.SYNTHESIZER,
+		"name": "Glitch Engine", "name_cn": "故障引擎",
+		"desc": "弹体变为数据碎片/故障方块",
+		"visual": "data_fragment", "audio": "glitch_noise",
+	},
+}
+
+## 章节音色武器 → 电子乐变体映射
+const TIMBRE_TO_VARIANT: Dictionary = {
+	ChapterTimbre.LYRE: ElectronicVariant.SINE_WAVE_SYNTH,
+	ChapterTimbre.ORGAN: ElectronicVariant.DRONE_SYNTH,
+	ChapterTimbre.HARPSICHORD: ElectronicVariant.ARPEGGIATOR_SYNTH,
+	ChapterTimbre.FORTEPIANO: ElectronicVariant.VELOCITY_PAD,
+	ChapterTimbre.TUTTI: ElectronicVariant.SUPERSAW_SYNTH,
+	ChapterTimbre.SAXOPHONE: ElectronicVariant.FM_SYNTH,
+	ChapterTimbre.SYNTHESIZER: ElectronicVariant.GLITCH_ENGINE,
+}
+
+## 章节音色武器核心机制参数
+const TIMBRE_MECHANIC_PARAMS: Dictionary = {
+	# Ch1 里拉琴 — 泛音共鸣
+	ChapterTimbre.LYRE: {
+		"resonance_radius": 60.0,        # 共鸣伤害半径 (px)
+		"resonance_damage_ratio": 0.15,  # 共鸣伤害比例
+		"ratio_bonus_2_1": 0.30,         # 2:1 比例伤害加成
+		"ratio_bonus_3_2": 0.20,         # 3:2 比例伤害加成
+		"ratio_bonus_4_3": 0.10,         # 4:3 比例伤害加成
+	},
+	# Ch2 管风琴 — 和声层叠
+	ChapterTimbre.ORGAN: {
+		"max_voice_layers": 4,           # 最大声部层数
+		"size_per_layer": 0.10,          # 每层碰撞范围加成
+		"damage_per_layer": 0.08,        # 每层伤害加成
+		"layer_decay_time": 3.0,         # 声部层消退时间 (秒)
+		"chant_duration": 2.0,           # 圣咏区域持续时间 (秒)
+	},
+	# Ch3 羽管键琴 — 对位交织
+	ChapterTimbre.HARPSICHORD: {
+		"counterpoint_delay": 0.2,       # 对位弹体生成延迟 (秒)
+		"counterpoint_damage_ratio": 0.5, # 对位弹体伤害比例
+		"resonance_bonus": 0.30,         # 对位共鸣额外伤害
+	},
+	# Ch4 钢琴 — 力度动态
+	ChapterTimbre.FORTEPIANO: {
+		"forte_multiplier": 1.5,         # forte 伤害倍率
+		"mezzo_multiplier": 1.0,         # mezzo 伤害倍率
+		"piano_multiplier": 0.7,         # piano 伤害倍率
+		"forte_timing_window": 0.05,     # forte 判定窗口 (秒, ±50ms)
+		"forte_knockback": true,         # forte 是否附带击退
+	},
+	# Ch5 管弦全奏 — 情感爆发
+	ChapterTimbre.TUTTI: {
+		"emotion_gain_per_attack": 2,    # 每次攻击情感增量
+		"emotion_gain_per_hit": 15,      # 每次受伤情感增量
+		"emotion_decay_per_sec": 3,      # 情感衰减速度 (/秒)
+		"pianissimo_threshold": 30,      # pianissimo 阈值
+		"forte_threshold": 70,           # forte 阈值
+		"fortissimo_damage_mult": 1.5,   # fortissimo 伤害倍率
+		"fortissimo_size_mult": 1.3,     # fortissimo 范围倍率
+		"climax_damage_mult": 2.0,       # 高潮爆发伤害倍率
+		"climax_duration": 3.0,          # 高潮爆发持续时间 (秒)
+	},
+	# Ch6 萨克斯 — 摇摆攻击
+	ChapterTimbre.SAXOPHONE: {
+		"swing_delay_ratio": 0.33,       # 摇摆延迟比例
+		"offbeat_damage_bonus": 0.25,    # 反拍伤害加成
+		"improvisation_threshold": 3,    # 触发即兴独奏的连续反拍次数
+		"improvisation_duration": 5.0,   # 即兴独奏持续时间 (秒)
+		"improvisation_speed_bonus": 0.30, # 即兴独奏施法速度加成
+	},
+	# Ch7 合成主脑 — 波形变换
+	ChapterTimbre.SYNTHESIZER: {
+		"waveform_bonus": 0.30,          # 对应属性加成
+		"waveform_penalty": 0.10,        # 其他属性惩罚
+		"morph_transition_time": 0.5,    # 变形过渡时间 (秒)
+		"morph_blend_ratio": 0.5,        # 过渡期混合比例
+		"sine_bonus_attr": "pierce",     # 正弦波加成属性
+		"square_bonus_attr": "damage",   # 方波加成属性
+		"sawtooth_bonus_attr": "size",   # 锯齿波加成属性
+		"triangle_bonus_attr": "speed",  # 三角波加成属性
+	},
+}
+
+# ============================================================
+# 向后兼容：保留旧版 ADSR 数据（映射到新系统）
+# ============================================================
+
+## 旧版音色切换疲劳代价（已弃用，保留向后兼容）
+const TIMBRE_SWITCH_FATIGUE_COST: float = 0.05
+
+## 旧版 ADSR 数据（映射到新的章节音色武器）
+const TIMBRE_ADSR: Dictionary = {
+	TimbreType.NONE: CHAPTER_TIMBRE_ADSR[ChapterTimbre.NONE],
+	TimbreType.PLUCKED: CHAPTER_TIMBRE_ADSR[ChapterTimbre.LYRE],
+	TimbreType.BOWED: CHAPTER_TIMBRE_ADSR[ChapterTimbre.ORGAN],
+	TimbreType.WIND: CHAPTER_TIMBRE_ADSR[ChapterTimbre.SAXOPHONE],
+	TimbreType.PERCUSSIVE: CHAPTER_TIMBRE_ADSR[ChapterTimbre.FORTEPIANO],
+}
+
+# ============================================================
+# 音频合成数据
+# ============================================================
 
 ## 12 半音的标准频率 (C4 = 中央C, A4 = 440Hz)
 const NOTE_FREQUENCIES: Dictionary = {

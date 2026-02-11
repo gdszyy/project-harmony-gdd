@@ -249,6 +249,9 @@ func _start_chapter(chapter_index: int) -> void:
 	# 激活章节特殊机制
 	_activate_special_mechanics()
 	
+	# === 激活章节专属音色武器 (v2.0 — Issue #38) ===
+	GameManager.activate_chapter_timbre(chapter_index)
+	
 	var chapter_name: String = _chapter_config.get("name", "未知章节")
 	chapter_started.emit(_current_chapter, chapter_name)
 	

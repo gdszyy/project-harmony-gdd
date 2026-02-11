@@ -1,484 +1,537 @@
-# Project Harmony — 音色系统设计文档
+# Project Harmony — 音色武器系统设计文档
 
-**版本:** 1.1
+**版本:** 2.0
 **最后更新:** 2026-02-11
 **状态:** 设计稿
 **作者：** Manus AI
+**关联 Issue:** #38 — 音色系统重新设计：章节专属音色武器 + 词条系统 + 电子乐变体
 
 ---
 
 ## 1. 设计概述
 
-### 1.1. 系统定位：法术的第五维度
+### 1.1. 系统重新定位：音色即武器，章节即流派
 
-在 Project Harmony 现有的法术构建体系中，玩家通过**白键音符**（四维参数 DMG/SPD/DUR/SIZE）定义弹体的基础属性，通过**黑键修饰符**（穿透/追踪/分裂/回响/散射）赋予一次性的特殊效果，通过**和弦**（15种和弦类型 → 15种法术形态）触发强力的组合法术，通过**节奏型**（6种模式）修饰弹体的发射行为。这四个维度构成了一套完整的"作曲"系统。
+在 v1.0 的音色系统中，音色按声学发声原理被划分为四大系别（弹拨/拉弦/吹奏/打击），作为法术系统的"第五维度"存在。然而，这一设计存在以下核心问题：
 
-**音色 (Timbre)** 作为第五个维度被引入，它不直接改变法术的基础数值，而是定义弹体的**"攻击质感"**与**"物理行为模式"**。如果说前四个维度解决的是"演奏什么"的问题，那么音色解决的是"用什么乐器来演奏"的问题——它将玩家的体验从"作曲"深化到了"配器"的层面。所有音色系的攻击质感与物理行为模式，其最终的视觉呈现效果，均遵循 [《法术系统视觉增强设计文档》](./Spell_Visual_Enhancement_Design.md) 中定义的规范的统一规范。
+1. **音色与章节脱节**：四大系别与七大章节的音乐史主题（古希腊→中世纪→巴洛克→古典→浪漫→爵士→电子）没有对应关系，玩家缺乏"章节专属感"。
+2. **缺少电子乐音色**：游戏的美术风格是科幻/故障艺术（Glitch Art），BGM 是 Minimal Techno / Glitch Techno，但音色系统中没有任何电子乐相关的音色。
+3. **缺少章节专属词条**：当前音色的"神韵效果"是固定的，不随章节变化，缺少类似肉鸽游戏中"章节专属词条/遗物"的机制。
+4. **武器感不足**：当前音色更像是"弹体行为修饰器"，缺乏"武器"的直观感受。
+
+v2.0 将音色系统重新定位为**武器系统**，每种音色对应一种"乐器武器"，其攻击方式、视觉风格和特殊效果都与所属章节的音乐时代主题紧密关联。核心理念为：
+
+> **音色即武器，章节即流派。**
 
 ### 1.2. 设计原则
 
-**叠加而非替代。** 音色系统是对现有法术系统的补充和扩展。它作为一层"行为滤镜"叠加在音符、和弦和节奏构成的基础法术之上。一个 G 音符（高伤害）的弹体，无论使用何种音色，其基础 50 点伤害不会改变；但弹拨系音色会让它在命中瞬间产生额外的冲击波，而拉弦系音色则会让它在敌人身上留下持续的共振标记。
+**章节绑定。** 每个章节拥有一种专属音色武器，该武器的设计灵感、攻击质感、视觉风格和听觉效果均来源于该章节所代表的音乐时代。玩家进入新章节时自动获得该章节的专属音色武器。
 
-**声学特性抽象化。** 系统不按具体乐器硬编码，而是将音色划分为基于声学发声原理的四大系别（弹拨、拉弦、吹奏、打击）。每个系别定义了一套核心机制和 ADSR 行为模板，具体乐器则作为系别下的"变体"存在，在共享核心机制的基础上拥有独特的"神韵"效果。这种架构保证了系统的可扩展性——新增一种乐器只需创建一个新的 `TimbreData` 资源文件，而无需修改核心代码。
+**武器化表达。** 音色不再是抽象的"弹体行为修饰器"，而是具象化的"乐器武器"。每种乐器武器拥有明确的攻击方式和视觉辨识度，玩家能直观地将其理解为一种"武器"。
 
-**ADSR 驱动行为。** 经典的 ADSR 包络（Attack, Decay, Sustain, Release）被映射为弹体在整个生命周期中的物理行为与视觉表现。Attack 定义弹体从生成到达峰值效果的时间；Decay 定义峰值后的衰减速率；Sustain 定义弹体在稳态阶段的效能比例；Release 定义弹体消失后的残留效果时长。这使得"攻击质感"成为一个可被量化设计和精确调优的参数。
+**词条深度。** 每个章节拥有专属的词条池（3 个词条：普通/稀有/史诗），词条与章节音色武器有协同效果，鼓励玩家在当前章节使用专属武器以最大化收益。
 
-**系统性整合。** 音色系统不是一个孤立的模块，它将与和弦形态、节奏型、听感疲劳（AFI）以及局外成长系统（和谐殿堂）产生深度交互，成为影响整体策略的关键一环。
+**电子乐变体。** 每种章节音色武器都有一个对应的电子乐变体，保留原音色的核心机制，但将视觉和听觉风格替换为电子乐美学，契合游戏的科幻/故障艺术整体风格。
+
+**ADSR 驱动行为。** 延续 v1.0 的 ADSR 包络设计，每种乐器武器的弹体行为仍由 Attack/Decay/Sustain/Release 参数驱动。
 
 ---
 
-## 2. 四大音色系别
+## 2. 章节音色武器
 
-### 2.1. 系别总览
+### 2.1. 总览
 
-| 音色系别 | 核心机制 | ADSR 特征 | 攻击质感 | 代表乐器 |
+| 章节 | 时代主题 | 专属音色武器 | 攻击质感 | 电子乐变体 |
 | :--- | :--- | :--- | :--- | :--- |
-| **弹拨系 (Plucked)** | [瞬态爆发] | 极短A, 快D, 低S, 无R | 颗粒感、快速衰减 | 古筝, 琵琶 |
-| **拉弦系 (Bowed)** | [连绵共振] | 慢A, 无D, 极高S, 长R | 持续性、连接感 | 二胡, 大提琴 |
-| **吹奏系 (Wind)** | [气息聚焦] | 均A, 均D, 变化S, 短R | 穿透性、形态变化 | 笛子, 长笛 |
-| **打击系 (Percussive)** | [重音冲击] | 瞬A, 无D, 极高S, 短R | 节奏感、物理冲击 | 钢琴, 贝斯 |
+| Ch1 数之和谐 | 古希腊 | **里拉琴 (Lyre)** | 纯净的泛音共鸣，基于数学比例的伤害加成 | Sine Wave Synth（纯正弦波合成） |
+| Ch2 记谱之光 | 中世纪 | **管风琴 (Organ)** | 持续的和声层叠，多声部叠加攻击 | Drone Synth（持续低频无人机音） |
+| Ch3 复调迷宫 | 巴洛克 | **羽管键琴 (Harpsichord)** | 精密的对位攻击，多弹道交织 | Arpeggiator Synth（琶音器合成） |
+| Ch4 完美形式 | 古典主义 | **钢琴 (Fortepiano)** | 力度动态控制，强弱拍伤害差异化 | Velocity Pad（力度感应垫） |
+| Ch5 命运之力 | 浪漫主义 | **管弦全奏 (Tutti)** | 情感爆发式攻击，渐强渐弱的伤害曲线 | Supersaw Synth（超级锯齿波） |
+| Ch6 切分行者 | 爵士 | **萨克斯 (Saxophone)** | 摇摆节奏攻击，反拍强化 | FM Synth（FM 合成器） |
+| Ch7 数字虚空 | 现代/电子 | **合成主脑 (Synthesizer)** | 波形变换攻击，频率操控 | Bitcrusher / Glitch Engine |
 
-### 2.2. 弹拨系 (Plucked) — 瞬态爆发
+### 2.2. Ch1 — 里拉琴 (Lyre)
 
-> **核心机制 [瞬态爆发 / Transient Burst]**：弹体在生成后的极短时间内（Attack 阶段，约 0.05 秒）获得一次性的伤害与范围加成，随后迅速衰减（Decay）。这模拟了拨弦瞬间声音最大、然后快速减弱的物理特性。弹体在生成时会触发一个短暂（0.1 秒）的小范围冲击波，造成基础伤害的 20%。弹体的飞行伤害在存活期间会以指数曲线轻微衰减。
+> **核心机制 [泛音共鸣 / Harmonic Resonance]**：弹体基于数学比例产生伤害加成。弹体飞行距离与基础距离的比值越接近简单整数比（如 2:1、3:2、4:3），伤害加成越高。弹体命中时释放纯净的泛音波纹，对周围半径 60px 内的敌人造成基础伤害 15% 的共鸣伤害。
 
-**古筝 (Guzheng) — 基础乐器**
+**攻击质感**：弹体呈现为金色的弦振波形，飞行时留下数学螺旋线拖尾。命中时产生同心圆泛音波纹扩散效果。
 
-古筝是弹拨系的基础乐器，其设计围绕"流水"的意象，强调连续的、流动的攻击感。
+**ADSR 参数**：Attack 0.08s, Decay 0.2s, Sustain 60%, Release 0.15s
 
-神韵效果 **[流水 / Cascading]**：弹体命中敌人或自然消失时，会沿其移动方向的延长线上，额外分裂出 1-2 个衍生弹体。衍生弹体继承原弹体 50% 的伤害和 60% 的碰撞范围，飞行方向带有微小的随机偏移（±15°），形成"刮奏"般的视觉效果。若衍生弹体击杀了敌人，则不会再次触发分裂，以防止无限链式反应。
+**和弦交互**：使用里拉琴施放**区域型 (Field / 属七和弦)** 法术时，法术区域内的伤害按毕达哥拉斯音程比例分布——区域中心伤害最高，向外按 2:1、3:2、4:3 的比例衰减，形成"天球和谐"的视觉效果。
 
-和弦交互：使用古筝音色施放**区域型 (Field / 属七和弦)** 法术时，法术区域内会每 0.5 秒生成一圈水墨波纹扩散效果，对范围内的敌人造成每秒 5 点持续伤害并施加 15% 的减速效果。
+### 2.3. Ch2 — 管风琴 (Organ)
 
-视觉与听觉：弹体呈现为水墨风格的波纹形态，拖尾效果如同墨滴在水中扩散。命中音效为清亮的拨弦声，衍生弹体的音效为更轻柔的泛音。
+> **核心机制 [和声层叠 / Harmonic Stacking]**：每次施法会在弹体上叠加一个"声部层"（最多 4 层）。每层声部使弹体的碰撞范围 +10%，伤害 +8%。声部层在 3 秒内未施法时逐层消退。当声部层达到 4 层时，弹体获得"圣咏"状态：命中敌人时产生持续 2 秒的伤害区域。
 
-**琵琶 (Pipa) — 进阶乐器（局内稀有级升级获取）**
+**攻击质感**：弹体呈现为多层叠加的光环形态，层数越多光环越厚重。命中时产生教堂回响般的扩散效果。
 
-琵琶的设计围绕"轮指"技法，强调极高的攻击频率和破盾能力，以"大珠小珠落玉盘"为核心意象。
+**ADSR 参数**：Attack 0.15s, Decay 0.0s, Sustain 90%, Release 0.4s
 
-神韵效果 **[轮指 / Tremolo]**：激活此音色时，玩家的有效施法频率提升 10%（等效于 BPM 提升 10%），但每发弹体的基础伤害降低 15%。作为补偿，所有弹体获得"破盾"属性——对拥有护盾的敌人（如音墙 Wall 敌人）造成 1.5 倍伤害。该效果与黑键修饰符的穿透（C#）效果可叠加，穿透弹体同样享受破盾加成。
+**和弦交互**：使用管风琴施放**持续伤害型 (DOT / 小三和弦)** 法术时，DOT 的每一跳都会叠加一层声部，使 DOT 伤害逐跳递增（每跳 +8%，最多 +32%）。
 
-和弦交互：使用琵琶音色施放**爆炸型 (Explosive / 增三和弦)** 法术时，爆炸会触发两次——第一次为正常爆炸，第二次在 0.15 秒后触发，范围和伤害均为第一次的 50%，产生"大珠小珠落玉盘"的连环爆破感。
+### 2.4. Ch3 — 羽管键琴 (Harpsichord)
 
-视觉与听觉：弹体呈现为金色的小型光珠，密集排列。命中音效为铿锵有力的弹拨声，连环爆炸时伴随快速的琶音音效。
+> **核心机制 [对位交织 / Counterpoint Weave]**：每发弹体在生成 0.2 秒后，会在其镜像位置（以玩家为对称中心）生成一个"对位弹体"，伤害为原弹体的 50%。对位弹体与原弹体同时命中同一敌人时，触发"对位共鸣"，造成额外 30% 的爆发伤害。
 
-### 2.3. 拉弦系 (Bowed) — 连绵共振
+**攻击质感**：弹体呈现为精密的机械齿轮形态，对位弹体为镜像的半透明版本。两者同时命中时产生巴洛克花纹的爆发效果。
 
-> **核心机制 [连绵共振 / Sustained Resonance]**：被此系别弹体击中的敌人会被施加"共振"标记（持续 3 秒，可刷新）。当一个带有"共振"标记的敌人再次被拉弦系弹体击中时，会以自身为中心，向半径 120px 内所有其他带有"共振"标记的敌人发射连锁能量弧，造成触发弹体伤害 30% 的传导伤害。连锁弧最多同时连接 3 个目标。弹体在命中后不会立即消失，而是会继续存在一小段时间（Release 阶段，约 0.3 秒），期间弹体变为半透明的光轨，仍可对触碰的敌人造成 50% 伤害。
+**ADSR 参数**：Attack 0.03s, Decay 0.15s, Sustain 45%, Release 0.0s
 
-**二胡 (Erhu) — 基础乐器**
+**和弦交互**：使用羽管键琴施放**爆炸型 (Explosive / 增三和弦)** 法术时，爆炸会产生两次——原始爆炸和 0.2 秒后的对位爆炸，第二次爆炸位于第一次的镜像位置，伤害为 50%。
 
-二胡的设计围绕"如泣如诉"的情感表达，将连锁伤害转化为控制效果，强调对敌群的束缚能力。
+### 2.5. Ch4 — 钢琴 (Fortepiano)
 
-神韵效果 **[连营 / Soul Bind]**：[连绵共振]的连锁能量弧不再造成直接伤害，而是将被连接的敌人用可视的"琴弦"束缚在一起，持续 2 秒。期间所有被束缚的敌人移动速度降低 30%，且若其中一个被束缚的敌人受到来自任何来源的伤害，其他被束缚的敌人也会受到该伤害 25% 的传导伤害。这使得二胡在面对分散的敌群时具有极高的战术价值。
+> **核心机制 [力度动态 / Velocity Dynamics]**：弹体的伤害根据施法时的"力度"动态变化。系统引入一个"力度条"（0%~100%），玩家通过节奏精准度控制力度——完美节拍（±50ms 内）为 forte（强，伤害 x1.5），普通节拍为 mezzo（中，伤害 x1.0），失误节拍为 piano（弱，伤害 x0.7）。强拍上的 forte 弹体额外获得击退效果。
 
-和弦交互：使用二胡音色施放**持续伤害型 (DOT / 小三和弦)** 法术时，DOT 效果的每一跳都有 25% 的几率将被影响的敌人短暂定身 0.2 秒。若目标同时带有"共振"标记，定身几率提升至 40%。
+**攻击质感**：弹体呈现为黑白琴键交替的光球，forte 弹体体积更大且带有冲击波纹，piano 弹体体积更小且半透明。
 
-视觉与听觉：弹体呈现为两根缠绕的丝线形态（模拟二胡的两根弦），飞行时拖拽细长的光轨。束缚效果以暗红色的丝线连接敌人。命中音效为哀怨的拉弦声。
+**ADSR 参数**：Attack 0.02s, Decay 0.1s, Sustain 80%, Release 0.08s
 
-**大提琴 (Cello) — 进阶乐器（局内稀有级升级获取）**
+**和弦交互**：使用钢琴施放**召唤/构造型 (Summon / 小七和弦)** 法术时，召唤物的攻击也遵循力度动态机制，且召唤物的持续时间延长 20%。
 
-大提琴的设计围绕"共鸣"的厚重感，将连锁效果转化为区域控制，强调持续的场地压制能力。
+### 2.6. Ch5 — 管弦全奏 (Tutti)
 
-神韵效果 **[共鸣场 / Resonance Field]**：[连绵共振]的连锁能量弧在传导路径上会留下短暂的（1.5 秒）低频伤害区域（半径 40px），对进入的敌人每秒造成弹体基础伤害 20% 的持续伤害并施加 10% 减速。该效果取代了直接的传导伤害，但提供了更强的区域控制能力。
+> **核心机制 [情感爆发 / Emotional Crescendo]**：引入"情感强度"计量条（0~100）。持续攻击使情感强度递增（+2/次），受伤使情感强度大幅递增（+15/次），不攻击时情感强度缓慢衰减（-3/秒）。情感强度影响弹体属性：0~30 为 pianissimo（伤害 x0.8，范围 x0.8），30~70 为 forte（伤害 x1.0，范围 x1.0），70~100 为 fortissimo（伤害 x1.5，范围 x1.3）。达到 100 时触发"高潮爆发"：3 秒内所有弹体伤害 x2.0，之后情感强度重置为 0。
 
-和弦交互：使用大提琴音色施放**护盾/治疗型 (Shield/Heal / 大七和弦)** 法术时，法阵的持续时间增加 25%，且法阵会以玩家移动速度的 50% 缓慢地跟随玩家移动，而非固定在原地。
+**攻击质感**：弹体呈现为多种乐器音符交织的能量团，随情感强度变化颜色从冷蓝渐变到炽红。高潮爆发时全屏产生交响乐视觉效果。
 
-视觉与听觉：弹体呈现为宽厚的扇形声波，飞行时有明显的低频震动视觉效果。共鸣场区域以深蓝色的同心圆波纹呈现。命中音效为厚重的低音弦乐声。
+**ADSR 参数**：Attack 0.1s, Decay 0.05s, Sustain 85%, Release 0.2s
 
-### 2.4. 吹奏系 (Wind) — 气息聚焦
+**和弦交互**：使用管弦全奏施放**冲击波型 (Shockwave / 减三和弦)** 法术时，冲击波的伤害随情感强度线性增长（最高 +50%），且在 fortissimo 状态下冲击波范围扩大 30%。
 
-> **核心机制 [气息聚焦 / Breath Focus]**：弹体在飞行过程中，其物理形态会发生动态变化——弹体越飞越远，其碰撞体积 (SIZE) 会逐渐缩小，但飞行速度 (SPD) 和穿透能力会随之提升。具体而言：飞行 0.5 秒后，碰撞半径缩小 30%，速度提升 20%，获得 +1 穿透次数；飞行 1.0 秒后，碰撞半径缩小 50%，速度提升 40%，穿透次数再 +2。这模拟了气息从宽广到聚焦的过程。
+### 2.7. Ch6 — 萨克斯 (Saxophone)
 
-**笛子 (Dizi) — 基础乐器**
+> **核心机制 [摇摆攻击 / Swing Attack]**：弹体的发射时机自动偏移至最近的"摇摆拍位"（将标准八分音符的后半拍延迟约 33%）。在反拍（弱拍）上发射的弹体获得"摇摆加成"：伤害 +25%，弹道呈现 S 型曲线。连续 3 次在反拍上施法，触发"即兴独奏"状态（5 秒）：施法速度 +30%，弹体自动追踪最近敌人。
 
-笛子的设计围绕"颤音"和"穿透"的意象，强调在直线上清理敌人的能力，是吹奏系中最具攻击性的选择。
+**攻击质感**：弹体呈现为流动的金色音符形态，飞行时带有爵士乐特有的摇摆弧度。即兴独奏期间弹体变为蓝紫色。
 
-神韵效果 **[颤音 / Vibrato]**：弹体在飞行时会呈现微小的正弦波轨迹（振幅 8px，频率 3Hz），增加了视觉表现力的同时也略微扩大了有效扫掠范围。当[气息聚焦]效果触发、弹体获得穿透加成后，每次成功穿透一个敌人，弹体的伤害会提升 10%（最多叠加 5 次，即最高 +50%）。这使得笛子在面对成排的敌人时，后排敌人反而会受到更高的伤害。
+**ADSR 参数**：Attack 0.06s, Decay 0.1s, Sustain 70%, Release 0.12s
 
-和弦交互：使用笛子音色施放**冲击波型 (Shockwave / 减三和弦)** 法术时，冲击波的最远端（外圈 20% 的范围）会获得额外 30% 的伤害加成，体现了气息在远端聚焦后的爆发力。
+**和弦交互**：使用萨克斯施放**护盾/治疗型 (Shield/Heal / 大七和弦)** 法术时，护盾在反拍上吸收伤害时会将吸收量的 20% 转化为对最近敌人的反击伤害。
 
-视觉与听觉：弹体呈现为半透明的气流形态，随着飞行距离增加逐渐变细变亮。穿透敌人时会留下竹叶飘落的粒子效果。命中音效为清脆的笛声，穿透时音调逐渐升高。
+### 2.8. Ch7 — 合成主脑 (Synthesizer)
 
-**长笛 (Flute) — 进阶乐器（局内稀有级升级获取）**
+> **核心机制 [波形变换 / Waveform Morph]**：玩家可在四种基础波形之间切换——正弦波（Sine，高穿透）、方波（Square，高伤害）、锯齿波（Sawtooth，高范围）、三角波（Triangle，高速度）。每种波形赋予弹体不同的属性加成（对应属性 +30%，其他属性 -10%）。切换波形无冷却但有 0.5 秒的"变形过渡"期，过渡期内弹体同时拥有两种波形的 50% 效果。
 
-长笛的设计围绕"气旋"的控制力，将穿透能力转化为聚怪能力，是吹奏系中偏向辅助/控制的选择。
+**攻击质感**：弹体呈现为对应波形的能量脉冲，正弦波为圆润的光球，方波为棱角分明的方块，锯齿波为锐利的三角形，三角波为快速的光点。
 
-神韵效果 **[气旋 / Vortex]**：弹体在飞行过程中，会对半径 60px 内的敌人施加微弱的牵引力，将其朝弹道中心靠拢（牵引速度约 30px/s）。该效果在弹体因[气息聚焦]变细后逐渐减弱（牵引力与碰撞半径成正比）。这使得长笛非常适合与区域型法术配合使用——先用长笛弹体聚拢敌人，再用区域法术一网打尽。
+**ADSR 参数**：Attack 0.01s, Decay 0.05s, Sustain 75%, Release 0.03s
 
-和弦交互：使用长笛音色施放**天降打击型 (Divine Strike / 减七和弦)** 法术时，法术的延迟时间缩短 30%（从标准的 1.0 秒缩短至 0.7 秒），但影响范围也相应缩小 20%，体现了"聚焦"的特性。
-
-视觉与听觉：弹体呈现为圆润的长条状气流，周围有可见的气旋纹理。聚怪效果以螺旋状的风纹呈现。命中音效为深沉圆润的长笛声。
-
-### 2.5. 打击系 (Percussive) — 重音冲击
-
-> **核心机制 [重音冲击 / Accent Impact]**：此系别弹体的效果与节奏系统深度绑定。当弹体在小节的**强拍**（4/4 拍的第 1、3 拍，即序列器位置 pos % 2 == 0）上生成时，会获得显著的击退 (Knockback) 和眩晕 (Stun) 效果加成：击退距离 x2.0，50% 几率造成 0.5 秒眩晕。在弱拍上生成的弹体则无此加成。这直接奖励玩家在序列器的强拍位置放置核心法术，强化了游戏与音乐节奏的互动。
-
-**钢琴 (Grand Piano) — 基础乐器**
-
-钢琴是打击系的基础乐器，也是整个音色系统中最"均衡"的选择，其设计围绕"延音踏板"的概念，强调击杀后的能量延续。
-
-神韵效果 **[踏板 / Sustain Pedal]**：在强拍上生成的弹体，如果成功击杀敌人，会在击杀位置留下一个持续 2 秒的"延音标记"（视觉上为一个缓慢扩散的金色光环，半径 30px）。后续任何弹体经过该标记的范围时，会吸收其能量，获得 15% 的伤害加成和 10% 的碰撞范围加成。每个延音标记只能被吸收一次。
-
-和弦交互：使用钢琴音色施放**召唤/构造型 (Summon / 小七和弦)** 法术时，召唤物的持续时间延长 20%，且召唤物的攻击也会遵循强弱拍机制——在强拍时攻击力提升 30%。
-
-视觉与听觉：弹体呈现为纯净的白色/金色光球，形态规整。强拍弹体体积略大，带有明显的冲击波纹。命中音效为清晰的钢琴音，强拍命中时音量更大、音色更饱满。
-
-**贝斯 (Bass) — 进阶乐器（局内稀有级升级获取）**
-
-贝斯的设计围绕"根音"的低频震动，将打击系的击退效果推向极致，同时引入"易伤"的团队增益概念。
-
-神韵效果 **[根音 / Root Note]**：弹体本身的基础伤害降低 20%，但[重音冲击]的击退距离和眩晕效果翻倍（即强拍击退 x4.0，眩晕几率 100%，眩晕时长 0.5 秒）。被强拍弹体击中的敌人会获得"低频共振"Debuff，持续 2 秒，期间受到的所有来源的伤害增加 10%。此外，贝斯弹体命中地面时会留下短暂的（1.0 秒）"低频陷阱"区域（半径 40px），经过的敌人移动速度降低 25%。
-
-和弦交互：使用贝斯音色施放**爆炸型 (Explosive / 增三和弦)** 法术时，若在强拍触发，爆炸范围扩大 30%，并将范围内所有敌人向外推开，同时施加"低频共振"易伤效果。
-
-视觉与听觉：弹体呈现为深色的、带有可见震动波纹的低频脉冲。低频陷阱区域以地面震荡波呈现。命中音效为低沉的贝斯拨弦声，强拍命中时伴随明显的低频震动。
+**和弦交互**：使用合成主脑施放**天降打击型 (Divine Strike / 减七和弦)** 法术时，天降打击的视觉效果变为"数据崩溃"——打击区域内的敌人受到额外的"故障"效果：2 秒内移动变为低帧率（每 0.2 秒更新一次位置）。
 
 ---
 
-## 3. ADSR 包络数值表
+## 3. 章节专属词条系统
 
-下表列出了每种乐器的 ADSR 参数默认值，这些参数定义了弹体在生命周期各阶段的行为特征。
+### 3.1. 系统概述
 
-| 乐器 | 系别 | Attack (s) | Decay (s) | Sustain (%) | Release (s) | 稀有度 |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| 古筝 | 弹拨 | 0.05 | 0.3 | 40% | 0.0 | 基础 |
-| 琵琶 | 弹拨 | 0.03 | 0.2 | 30% | 0.0 | 稀有 |
-| 二胡 | 拉弦 | 0.2 | 0.0 | 90% | 0.3 | 基础 |
-| 大提琴 | 拉弦 | 0.3 | 0.0 | 95% | 0.5 | 稀有 |
-| 笛子 | 吹奏 | 0.1 | 0.15 | 70% | 0.1 | 基础 |
-| 长笛 | 吹奏 | 0.15 | 0.1 | 75% | 0.15 | 稀有 |
-| 钢琴 | 打击 | 0.02 | 0.0 | 85% | 0.05 | 基础 |
-| 贝斯 | 打击 | 0.02 | 0.0 | 90% | 0.1 | 稀有 |
+每个章节在进入时，会解锁该章节的**专属词条池**。玩家在升级时有几率从当前章节的词条池中获得专属词条。词条与章节音色武器有协同效果——使用当前章节的专属音色武器时，词条效果增强。
 
-> **ADSR 对弹体的具体影响**：在 Attack 阶段，弹体的视觉尺寸和伤害效能从 0 线性增长到 100%（峰值）；在 Decay 阶段，效能从 100% 衰减到 Sustain 百分比；在 Sustain 阶段，效能保持在 Sustain 百分比不变；弹体消失后进入 Release 阶段，残留视觉效果（光轨、冲击波等）持续 Release 时长，期间仍可造成 Sustain 百分比 × 50% 的伤害。
+**词条规则**：
+- 每个章节有 3 个专属词条（普通 / 稀有 / 史诗各 1 个）
+- 词条在升级面板中以 15% 的概率替代普通升级选项出现
+- 使用当前章节专属音色武器时，词条效果获得额外的"协同加成"
+- 离开章节后已获得的词条效果保留，但不再获得新词条
+- 跨章节词条组合可触发隐藏的"音乐史彩蛋"效果
+
+### 3.2. Ch1 — 数之和谐 · 毕达哥拉斯词条
+
+| 词条名 | 稀有度 | 效果 | 与里拉琴的协同 |
+| :--- | :--- | :--- | :--- |
+| 黄金比例 | 普通 | 弹体飞行距离为黄金比例（约 1.618 倍基础距离）时，伤害 +25% | 里拉琴弹体自动调整飞行距离至黄金比例 |
+| 毕达哥拉斯音程 | 稀有 | 同时存在的弹体数量为 2 的幂次时（2/4/8），全体弹体伤害 +15% | 里拉琴的泛音共鸣自动生成 2^n 个衍生弹体 |
+| 天球之乐 | 史诗 | 每 30 秒触发一次"天球共鸣"，对全屏敌人造成当前 DPS 50% 的伤害 | 里拉琴使用期间天球共鸣冷却时间 -10s |
+
+### 3.3. Ch2 — 记谱之光 · 圭多词条
+
+| 词条名 | 稀有度 | 效果 | 与管风琴的协同 |
+| :--- | :--- | :--- | :--- |
+| 四线谱 | 普通 | 弹体飞行轨迹上留下持续 1s 的"谱线"，敌人经过时受到 10% 额外伤害 | 管风琴的持续音自动生成四条平行谱线 |
+| 唱名法 | 稀有 | 连续使用不同音符施法（Do-Re-Mi...），每个不同音符 +8% 伤害（最多 +56%） | 管风琴的多声部自动计入不同音符数 |
+| 圣咏回响 | 史诗 | 法术命中敌人后，在命中位置生成持续 3s 的"圣咏区域"，区域内敌人受到的所有伤害 +20% | 管风琴的持续音延长圣咏区域至 5s |
+
+### 3.4. Ch3 — 复调迷宫 · 巴赫词条
+
+| 词条名 | 稀有度 | 效果 | 与羽管键琴的协同 |
+| :--- | :--- | :--- | :--- |
+| 卡农 | 普通 | 每发弹体在 0.3s 后生成一个延迟复制体，沿相同轨迹飞行，伤害为 60% | 羽管键琴的对位弹体也会触发卡农 |
+| 赋格主题 | 稀有 | 标记第一个命中的敌人为"主题"，后续弹体命中其他敌人时，"主题"敌人也受到 30% 传导伤害 | 羽管键琴的多弹道使"主题"传导更频繁 |
+| 哥德堡变奏 | 史诗 | 每 30 次施法后，下一次施法的效果翻倍（伤害、范围、持续时间均 x2） | 羽管键琴的快速施法加速触发变奏 |
+
+### 3.5. Ch4 — 完美形式 · 莫扎特词条
+
+| 词条名 | 稀有度 | 效果 | 与钢琴的协同 |
+| :--- | :--- | :--- | :--- |
+| 奏鸣曲式 | 普通 | 战斗分为"呈示-展开-再现"三阶段，每阶段切换时获得 3s 全属性 +15% | 钢琴的力度控制在阶段切换时自动最大化 |
+| 完美终止 | 稀有 | 击杀敌人时，若使用的是 V-I（属-主）和弦进行，额外获得 2 倍经验 | 钢琴自动将终止式的力度提升至 fortissimo |
+| 莫扎特效应 | 史诗 | 保持 15s 不受伤，获得"灵感"状态：施法速度 +30%，持续 10s | 钢琴在"灵感"状态下解锁隐藏的装饰音弹体 |
+
+### 3.6. Ch5 — 命运之力 · 贝多芬词条
+
+| 词条名 | 稀有度 | 效果 | 与管弦全奏的协同 |
+| :--- | :--- | :--- | :--- |
+| 命运动机 | 普通 | 每 4 次攻击的第 4 次（da-da-da-DUM）伤害 +40% | 管弦全奏的第 4 拍自动触发全体乐器齐奏 |
+| 英雄交响 | 稀有 | 生命值低于 30% 时，攻击力 +50%，移动速度 +20% | 管弦全奏在低血量时自动切换为"暴风雨"模式 |
+| 欢乐颂 | 史诗 | 击杀 100 个敌人后触发"欢乐颂"：15s 内所有法术无消耗、无疲劳 | 管弦全奏在欢乐颂期间解锁"合唱终章"超级弹幕 |
+
+### 3.7. Ch6 — 切分行者 · 爵士词条
+
+| 词条名 | 稀有度 | 效果 | 与萨克斯的协同 |
+| :--- | :--- | :--- | :--- |
+| 蓝调音阶 | 普通 | 使用降音（b3, b5, b7）时，弹体获得"忧郁穿透"：无视 20% 护甲 | 萨克斯的摇摆攻击自动附带蓝调音阶效果 |
+| 即兴独奏 | 稀有 | 连续 5s 不重复使用同一音符，触发"即兴独奏"：下一次施法伤害 x3 | 萨克斯在即兴独奏期间攻击速度翻倍 |
+| 切分反击 | 史诗 | 在敌人攻击的反拍（弱拍）施法，该法术伤害 +100% 且附带 1s 眩晕 | 萨克斯自动将施法时机偏移至最近的反拍 |
+
+### 3.8. Ch7 — 数字虚空 · 电子词条
+
+| 词条名 | 稀有度 | 效果 | 与合成主脑的协同 |
+| :--- | :--- | :--- | :--- |
+| 降采样 (Bitcrush) | 普通 | 弹体命中敌人后，敌人的移动变为"低帧率"（每 0.2s 才更新一次位置），持续 2s | 合成主脑的 Bitcrusher 模式使降采样效果范围扩大至 AOE |
+| 频率调制 (FM) | 稀有 | 弹体的伤害随飞行时间呈正弦波动（±30%），波峰时命中可触发额外的谐波爆炸 | 合成主脑可调节 FM 的调制频率和深度 |
+| 故障溢出 (Glitch Overflow) | 史诗 | 每次击杀敌人有 10% 几率触发"故障溢出"：敌人死亡动画变为数据崩溃效果，对周围敌人造成 200% 伤害 | 合成主脑使故障溢出几率提升至 25% |
 
 ---
 
-## 4. 系统整合
+## 4. 电子乐音色变体系统
 
-### 4.1. 与和弦系统的交互
+### 4.1. 概述
 
-音色对和弦法术的影响已在第 2 节各乐器的"和弦交互"中详细描述。总体设计思路是：音色不改变和弦法术的基础类型和伤害，而是为其附加额外的行为特征或数值修正。下表汇总了所有音色-和弦交互效果：
+每种章节音色武器都有一个对应的**电子乐变体**，保留原音色的核心机制，但将视觉和听觉风格替换为电子乐美学。电子乐变体的设计契合游戏整体的科幻/故障艺术风格。
 
-| 乐器 | 受影响的和弦形态 | 交互效果 |
+### 4.2. 获取方式
+
+1. **局内升级**：稀有级升级选项，将当前章节音色武器切换为电子乐变体
+2. **章节完成奖励**：通关某章节后，永久解锁该章节音色的电子乐变体
+3. **局外成长**：在"和谐殿堂"中消耗共鸣碎片解锁
+
+### 4.3. 变体详情
+
+| 原音色 | 电子乐变体 | 视觉变化 | 听觉变化 |
+| :--- | :--- | :--- | :--- |
+| 里拉琴 | Sine Wave Synth | 弹体变为纯净的正弦波形 | 音效变为纯正弦波音 |
+| 管风琴 | Drone Synth | 弹体变为低频脉冲波 | 音效变为深沉的无人机音 |
+| 羽管键琴 | Arpeggiator Synth | 弹体变为快速闪烁的像素点阵 | 音效变为电子琶音 |
+| 钢琴 | Velocity Pad | 弹体变为压力感应的光块 | 音效变为合成垫音 |
+| 管弦全奏 | Supersaw Synth | 弹体变为锯齿波形的能量束 | 音效变为厚重的超级锯齿波 |
+| 萨克斯 | FM Synth | 弹体变为频率调制的波形 | 音效变为金属质感的 FM 音色 |
+| 合成主脑 | Glitch Engine | 弹体变为数据碎片/故障方块 | 音效变为故障噪音 |
+
+### 4.4. 电子乐变体的特殊属性
+
+- 电子乐变体保留原音色的核心机制和 ADSR 参数
+- 电子乐变体的疲劳产生量 -50%（电子乐与游戏整体风格更契合）
+- 电子乐变体与章节词条的协同效果保持不变
+- 电子乐变体在 Ch7（数字虚空）中获得额外 +10% 全属性加成
+
+---
+
+## 5. ADSR 包络数值表
+
+下表列出了每种章节音色武器的 ADSR 参数默认值：
+
+| 乐器武器 | 章节 | Attack (s) | Decay (s) | Sustain (%) | Release (s) |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| 里拉琴 (Lyre) | Ch1 | 0.08 | 0.20 | 60% | 0.15 |
+| 管风琴 (Organ) | Ch2 | 0.15 | 0.00 | 90% | 0.40 |
+| 羽管键琴 (Harpsichord) | Ch3 | 0.03 | 0.15 | 45% | 0.00 |
+| 钢琴 (Fortepiano) | Ch4 | 0.02 | 0.10 | 80% | 0.08 |
+| 管弦全奏 (Tutti) | Ch5 | 0.10 | 0.05 | 85% | 0.20 |
+| 萨克斯 (Saxophone) | Ch6 | 0.06 | 0.10 | 70% | 0.12 |
+| 合成主脑 (Synthesizer) | Ch7 | 0.01 | 0.05 | 75% | 0.03 |
+
+> **ADSR 对弹体的具体影响**：在 Attack 阶段，弹体的视觉尺寸和伤害效能从 0 线性增长到 100%（峰值）；在 Decay 阶段，效能从 100% 衰减到 Sustain 百分比；在 Sustain 阶段，效能保持在 Sustain 百分比不变；弹体消失后进入 Release 阶段，残留视觉效果持续 Release 时长，期间仍可造成 Sustain × 50% 的伤害。
+
+---
+
+## 6. 系统整合
+
+### 6.1. 与和弦系统的交互
+
+音色武器对和弦法术的影响已在第 2 节各武器的"和弦交互"中详细描述。总体设计思路是：音色武器不改变和弦法术的基础类型和伤害，而是为其附加额外的行为特征或数值修正。
+
+| 乐器武器 | 受影响的和弦形态 | 交互效果 |
 | :--- | :--- | :--- |
-| 古筝 | 区域型 (属七) | 区域内生成水墨波纹，附加 5 DPS + 15% 减速 |
-| 琵琶 | 爆炸型 (增三) | 爆炸触发两次，第二次为 50% 效果 |
-| 二胡 | DOT型 (小三) | 每跳 25% 几率定身 0.2s（共振目标 40%） |
-| 大提琴 | 护盾/治疗型 (大七) | 持续时间 +25%，法阵跟随玩家移动 |
-| 笛子 | 冲击波型 (减三) | 外圈 20% 范围伤害 +30% |
-| 长笛 | 天降打击型 (减七) | 延迟 -30%，范围 -20% |
-| 钢琴 | 召唤/构造型 (小七) | 持续时间 +20%，召唤物强拍攻击力 +30% |
-| 贝斯 | 爆炸型 (增三) | 强拍时范围 +30%，附加推开 + 易伤 |
+| 里拉琴 | 区域型 (属七) | 区域伤害按毕达哥拉斯音程比例分布 |
+| 管风琴 | DOT型 (小三) | DOT 每跳叠加声部层，伤害逐跳递增 +8% |
+| 羽管键琴 | 爆炸型 (增三) | 产生两次爆炸：原始 + 对位镜像（50% 伤害） |
+| 钢琴 | 召唤/构造型 (小七) | 召唤物遵循力度动态，持续时间 +20% |
+| 管弦全奏 | 冲击波型 (减三) | 伤害随情感强度增长，fortissimo 范围 +30% |
+| 萨克斯 | 护盾/治疗型 (大七) | 反拍吸收伤害的 20% 转化为反击 |
+| 合成主脑 | 天降打击型 (减七) | 打击区域附加"故障"效果（低帧率移动） |
 
-### 4.2. 与黑键修饰符的叠加
+### 6.2. 与疲劳系统的交互
 
-音色提供的是持续性的行为修饰，黑键修饰符提供的是一次性的特殊效果，两者可以自由叠加。以下是一些值得注意的组合：
+音色武器系统与疲劳系统的交互经过重新设计：
 
-| 音色 | 修饰符 | 组合效果 |
+**章节专属减免。** 使用**当前章节的专属音色武器**不产生额外疲劳。这鼓励玩家在每个章节中使用对应的专属武器。
+
+**跨章节惩罚。** 使用**其他章节的音色武器**产生 0.03/次 的额外疲劳（低于 v1.0 的 0.05/次切换成本）。这允许玩家跨章节使用武器，但有一定代价。
+
+**电子乐变体减免。** 使用**电子乐变体**的疲劳产生量 -50%。电子乐与游戏整体的科幻/故障艺术风格更契合，因此在疲劳系统中获得优待。
+
+**疲劳对效能的影响。** 延续 v1.0 的设计：中度疲劳（AFI > 0.5）时音色核心机制效能 -20%；严重疲劳（AFI > 0.8）时效能 -50% 且词条协同效果失效。
+
+### 6.3. 与升级系统的交互
+
+章节专属词条作为新的升级池加入 `circle_of_fifths_upgrade.gd`：
+
+- 词条在升级面板中以 15% 的概率替代普通升级选项出现
+- 词条与当前章节绑定，离开章节后词条效果保留但不再获得新词条
+- 跨章节词条组合可触发隐藏的"音乐史彩蛋"效果
+
+**音乐史彩蛋示例**：
+
+| 组合 | 触发条件 | 效果 |
 | :--- | :--- | :--- |
-| 笛子 [颤音] | C# 穿透 | 穿透次数叠加（聚焦穿透 + 修饰符穿透），每次穿透伤害 +10% |
-| 古筝 [流水] | F# 分裂 | 弹体先分裂为 3 个，每个分裂弹体消失时再触发流水衍生 |
-| 二胡 [连营] | D# 追踪 | 追踪弹体自动寻找未标记的敌人，快速建立共振网络 |
-| 贝斯 [根音] | A# 散射 | 散射的多个弹体均享受强拍加成，大范围击退 + 易伤 |
-| 琵琶 [轮指] | G# 回响 | 高频弹体 + 回响延迟弹体，形成密集的弹幕覆盖 |
+| 古今交响 | 同时持有 Ch1 和 Ch5 的史诗词条 | 天球共鸣和欢乐颂可同时触发 |
+| 对位与即兴 | 同时持有 Ch3 和 Ch6 的稀有词条 | 赋格主题的传导伤害可触发即兴独奏 |
+| 数字毕达哥拉斯 | 同时持有 Ch1 和 Ch7 的任意词条 | 黄金比例的距离判定精度放宽 20% |
 
-### 4.3. 与听感疲劳系统的交互
+### 6.4. 与局外成长系统的整合
 
-音色系统与疲劳系统的交互体现在两个方面：
+音色武器系统将被整合到"和谐殿堂"的成长体系中：
 
-**切换成本。** 每次玩家在局内切换当前激活的音色时，都会立即增加 0.05 的听感疲劳指数（AFI）。这相当于一次轻微的"不和谐"行为。频繁切换（例如在 10 秒内切换 3-4 次）足以将玩家的疲劳等级推高一级，从而触发惩罚效果。该数值（`TIMBRE_SWITCH_FATIGUE_COST = 0.05`）经过与现有疲劳阈值的对照设计：轻度疲劳阈值为 0.3，中度为 0.5，因此玩家在一局游戏中有约 6 次"免费"切换的空间。
+**模块 B（乐理研习）扩展 — "音色武器图鉴"**：玩家通关每个章节后，自动解锁该章节的音色武器图鉴条目。图鉴中记录了武器的核心机制、ADSR 参数和词条效果。
 
-**疲劳对音色效果的影响。** 当玩家的疲劳等级达到"中度"（AFI > 0.5）时，音色的核心机制效能会降低 20%（例如，弹拨系的冲击波伤害从 20% 降至 16%，拉弦系的传导伤害从 30% 降至 24%）。当疲劳等级达到"严重"（AFI > 0.8）时，音色的核心机制效能降低 50%，且神韵效果完全失效。这鼓励玩家在高疲劳状态下优先处理疲劳问题，而非依赖音色效果。
+**电子乐变体解锁**：通关章节后，可在和谐殿堂中消耗共鸣碎片永久解锁该章节音色的电子乐变体。解锁后，该变体在后续所有局中可用。
 
-### 4.4. 与局外成长系统的整合
-
-音色系统将被整合到"和谐殿堂"的成长体系中，具体方案如下：
-
-**模块 B（乐理研习）扩展 — "音色图鉴"**：作为一个新的解锁分支，玩家可以消耗"共鸣碎片"来解锁不同的音色系别。解锁顺序建议为：打击系（初始解锁）→ 弹拨系 → 吹奏系 → 拉弦系。一旦系别解锁，该系别下的基础乐器（古筝、二胡、笛子、钢琴）将自动获得。
-
-**局内获取**：进阶乐器（琵琶、大提琴、长笛、贝斯）将作为稀有级的局内升级选项出现在升级面板中。玩家需要先在局外解锁对应的音色系别，才能在局内的升级池中刷出该系别的进阶乐器。
-
-**音色强化升级**：可以设计专门的局内升级项，用于强化当前激活音色的核心机制或神韵效果。例如：
+**音色武器强化**：可以设计专门的局内升级项，用于强化当前激活音色武器的核心机制：
 
 | 升级名称 | 稀有度 | 效果 |
 | :--- | :--- | :--- |
-| 弦振共鸣 | 普通 | [连绵共振] 传导伤害 +15% |
-| 气息延长 | 普通 | [气息聚焦] 形态变化延迟 +0.2s（更晚变细） |
-| 瞬态过载 | 稀有 | [瞬态爆发] 冲击波范围 +30%，伤害 +10% |
-| 节拍大师 | 稀有 | [重音冲击] 弱拍也获得 50% 的强拍效果 |
-| 双音色共存 | 史诗 | 可同时激活两种音色，弹体交替使用 |
+| 泛音增幅 | 普通 | 里拉琴共鸣伤害 +10% |
+| 声部扩展 | 普通 | 管风琴最大声部层 +1（5 层） |
+| 对位精度 | 稀有 | 羽管键琴对位弹体伤害 60% → 70% |
+| 力度大师 | 稀有 | 钢琴 forte 伤害倍率 1.5 → 1.8 |
+| 情感共鸣 | 稀有 | 管弦全奏情感强度递增速度 +50% |
+| 摇摆大师 | 稀有 | 萨克斯反拍伤害加成 25% → 40% |
+| 波形融合 | 史诗 | 合成主脑可同时激活两种波形 |
 
 ---
 
-## 5. 玩家策略与 Build 构建
+## 7. 代码实现方案
 
-音色系统的引入为玩家提供了更丰富的 Build 构建空间。以下是几种典型的策略流派分析：
+### 7.1. 数据结构扩展 — `music_data.gd`
 
-| 流派名称 | 核心音色 | 核心音符 | 核心和弦 | 策略描述 |
-| :--- | :--- | :--- | :--- | :--- |
-| **穿透割草** | 笛子 | D (极速) / B (高速高伤) | 减三 (冲击波) | 利用笛子的穿透递增伤害，配合高速弹体清理直线敌群 |
-| **控场大师** | 二胡 | E (大范围) / F (区域控制) | 小三 (DOT) | 利用二胡的束缚和传导伤害，控制大量分散敌人 |
-| **爆发一击** | 古筝/琵琶 | G (爆发伤害) | 增三 (爆炸) | 利用瞬态爆发的高初始伤害，配合爆炸和弦一击清场 |
-| **节奏坦克** | 贝斯 | C (均衡) / A (持久高伤) | 增三 (爆炸) | 利用贝斯的超强击退和易伤效果，在强拍上创造安全空间 |
-| **持续压制** | 大提琴 | F (区域控制) / E (大范围) | 大七 (护盾/治疗) | 利用共鸣场的区域控制，配合跟随护盾法阵持续压制 |
-
----
-
-## 6. 代码实现方案
-
-### 6.1. 数据结构扩展 — `music_data.gd`
-
-在现有的 `MusicData` 类中新增音色系别枚举和相关常量：
+在现有的 `MusicData` 类中重新定义音色系别枚举，从四大声学系别改为七个章节音色武器：
 
 ```gdscript
 # scripts/data/music_data.gd
 
-# ============================================================
-# 音色系统枚举与数据
-# ============================================================
-
-## 音色系别枚举
-enum TimbreType {
-    NONE,           # 默认/无音色
-    PLUCKED,        # 弹拨系
-    BOWED,          # 拉弦系
-    WIND,           # 吹奏系
-    PERCUSSIVE,     # 打击系
+## 章节音色武器枚举
+enum ChapterTimbre {
+    NONE,              # 默认/无音色
+    LYRE,              # Ch1 里拉琴
+    ORGAN,             # Ch2 管风琴
+    HARPSICHORD,       # Ch3 羽管键琴
+    FORTEPIANO,        # Ch4 钢琴
+    TUTTI,             # Ch5 管弦全奏
+    SAXOPHONE,         # Ch6 萨克斯
+    SYNTHESIZER,       # Ch7 合成主脑
 }
 
-## 音色切换疲劳代价
-const TIMBRE_SWITCH_FATIGUE_COST: float = 0.05
+## 电子乐变体枚举
+enum ElectronicVariant {
+    NONE,
+    SINE_WAVE_SYNTH,     # Ch1 正弦波合成
+    DRONE_SYNTH,         # Ch2 无人机音合成
+    ARPEGGIATOR_SYNTH,   # Ch3 琶音器合成
+    VELOCITY_PAD,        # Ch4 力度感应垫
+    SUPERSAW_SYNTH,      # Ch5 超级锯齿波
+    FM_SYNTH,            # Ch6 FM合成器
+    GLITCH_ENGINE,       # Ch7 故障引擎
+}
 
-## 疲劳对音色效能的影响
-const TIMBRE_FATIGUE_PENALTY: Dictionary = {
-    FatigueLevel.NONE: 1.0,       # 无衰减
-    FatigueLevel.MILD: 1.0,       # 无衰减
-    FatigueLevel.MODERATE: 0.8,   # 效能降低20%
-    FatigueLevel.SEVERE: 0.5,     # 效能降低50%，神韵失效
-    FatigueLevel.CRITICAL: 0.2,   # 效能降低80%，神韵失效
+## 章节词条稀有度
+enum InscriptionRarity {
+    COMMON,    # 普通
+    RARE,      # 稀有
+    EPIC,      # 史诗
+}
+
+## 跨章节音色疲劳代价（使用非当前章节的音色武器时）
+const CROSS_CHAPTER_TIMBRE_FATIGUE: float = 0.03
+
+## 电子乐变体疲劳减免倍率
+const ELECTRONIC_VARIANT_FATIGUE_MULT: float = 0.5
+```
+
+### 7.2. 章节音色武器数据 — `chapter_data.gd`
+
+在 `ChapterData` 中为每个章节添加专属音色武器和词条配置：
+
+```gdscript
+# scripts/data/chapter_data.gd
+
+## 章节专属音色武器配置
+const CHAPTER_TIMBRES: Dictionary = {
+    Chapter.CH1_PYTHAGORAS: {
+        "timbre": MusicData.ChapterTimbre.LYRE,
+        "name": "里拉琴",
+        "name_en": "Lyre",
+        "electronic_variant": MusicData.ElectronicVariant.SINE_WAVE_SYNTH,
+        "electronic_name": "Sine Wave Synth",
+        "adsr": { "attack": 0.08, "decay": 0.20, "sustain": 0.60, "release": 0.15 },
+        "core_mechanic": "harmonic_resonance",
+        "chord_interaction": MusicData.ChordType.DOMINANT_7,
+    },
+    # ... (其他章节类似)
+}
+
+## 章节专属词条配置
+const CHAPTER_INSCRIPTIONS: Dictionary = {
+    Chapter.CH1_PYTHAGORAS: [
+        {
+            "id": "ch1_golden_ratio",
+            "name": "黄金比例",
+            "rarity": MusicData.InscriptionRarity.COMMON,
+            "effect": "弹体飞行距离为黄金比例时，伤害 +25%",
+            "synergy": "里拉琴弹体自动调整飞行距离至黄金比例",
+            "params": { "distance_ratio": 1.618, "damage_bonus": 0.25 },
+        },
+        # ... (其他词条)
+    ],
+    # ... (其他章节)
 }
 ```
 
-### 6.2. 新增资源类型 — `timbre_data.gd`
+### 7.3. 音色武器管理 — `game_manager.gd`
 
-创建一个新的 `Resource` 类型，用于定义每一种具体的音色（乐器）：
-
-```gdscript
-# scripts/resources/timbre_data.gd
-class_name TimbreData
-extends Resource
-
-@export_group("Identity")
-## 乐器名称
-@export var timbre_name: String = "Grand Piano"
-## 所属音色系别
-@export var timbre_type: MusicData.TimbreType = MusicData.TimbreType.PERCUSSIVE
-## 乐器图标 (用于UI显示)
-@export var icon: Texture2D
-## 乐器描述
-@export_multiline var description: String = "富有节奏感的冲击力。"
-## 稀有度 (0=基础, 1=稀有, 2=史诗)
-@export var rarity: int = 0
-
-@export_group("ADSR Envelope")
-## Attack: 弹体从生成到最大效果的时间 (秒)
-@export var attack_time: float = 0.05
-## Decay: 达到峰值后衰减到Sustain的时间 (秒)
-@export var decay_time: float = 0.2
-## Sustain: 持续阶段的效能百分比 (0.0 ~ 1.0)
-@export var sustain_level: float = 0.8
-## Release: 弹体消失后视觉/效果残留的时间 (秒)
-@export var release_time: float = 0.1
-
-@export_group("Unique Mechanic Parameters")
-## 神韵效果的主要数值参数
-## 古筝: 衍生弹体数量 | 琵琶: 射速加成比例
-## 二胡: 束缚减速比例 | 大提琴: 共鸣场持续时间
-## 笛子: 穿透伤害递增比例 | 长笛: 牵引力强度
-## 钢琴: 延音标记持续时间 | 贝斯: 易伤比例
-@export var unique_param_1: float = 0.0
-## 神韵效果的次要数值参数
-@export var unique_param_2: float = 0.0
-
-@export_group("Visual & Audio")
-## (可选) 覆盖默认弹体Shader
-@export var projectile_shader_override: Shader
-## 命中音效
-@export var hit_sfx: AudioStream
-## 施法音效
-@export var cast_sfx: AudioStream
-
-## 计算当前疲劳等级下的效能倍率
-func get_efficacy_multiplier(fatigue_level: MusicData.FatigueLevel) -> float:
-    return MusicData.TIMBRE_FATIGUE_PENALTY.get(fatigue_level, 1.0)
-
-## 判断神韵效果是否因疲劳而失效
-func is_unique_disabled(fatigue_level: MusicData.FatigueLevel) -> bool:
-    return fatigue_level >= MusicData.FatigueLevel.SEVERE
-```
-
-### 6.3. 法术系统注入 — `spellcraft_system.gd`
-
-在生成法术数据时，注入当前激活的音色信息：
-
-```gdscript
-# scripts/autoload/spellcraft_system.gd
-
-## 当前激活的音色
-var current_timbre: TimbreData = null
-
-func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
-    var white_key: MusicData.WhiteKey = slot["note"]
-    var stats := GameManager.get_note_effective_stats(white_key)
-
-    # ... (原有的节奏修饰和疲劳惩罚逻辑)
-
-    var spell_data := {
-        # ... (原有数据字段)
-        "note": white_key,
-        "damage": stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult,
-        "speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
-        "duration": stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"],
-        "size": stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"],
-        "color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
-        "modifier": _consume_modifier(),
-        "rhythm_pattern": rhythm,
-        # === 音色系统新增字段 ===
-        "timbre_type": current_timbre.timbre_type if current_timbre else MusicData.TimbreType.NONE,
-        "timbre_data": current_timbre,
-        "is_strong_beat": (pos % 2 == 0),  # 偶数拍位为强拍
-    }
-
-    spell_cast.emit(spell_data)
-```
-
-### 6.4. 弹体行为处理 — `projectile_manager.gd`
-
-在弹体更新逻辑中，根据音色类型应用不同的行为修饰：
-
-```gdscript
-# scripts/systems/projectile_manager.gd
-
-func _update_projectiles(delta: float) -> void:
-    for proj in _projectiles:
-        if not proj["active"]:
-            continue
-
-        # ... (原有生命周期和位置更新逻辑)
-
-        # === 音色系统逻辑 ===
-        _apply_timbre_behavior(proj, delta)
-
-        # ... (原有碰撞检测逻辑)
-
-func _apply_timbre_behavior(proj: Dictionary, delta: float) -> void:
-    var timbre_type = proj.get("timbre_type", MusicData.TimbreType.NONE)
-    if timbre_type == MusicData.TimbreType.NONE:
-        return
-
-    match timbre_type:
-        MusicData.TimbreType.PLUCKED:
-            _process_plucked(proj, delta)
-        MusicData.TimbreType.BOWED:
-            _process_bowed(proj, delta)
-        MusicData.TimbreType.WIND:
-            _process_wind(proj, delta)
-        MusicData.TimbreType.PERCUSSIVE:
-            _process_percussive(proj, delta)
-
-func _process_plucked(proj: Dictionary, _delta: float) -> void:
-    # 瞬态爆发：生成时触发冲击波 (仅在首帧)
-    if not proj.get("_plucked_init", false):
-        proj["_plucked_init"] = true
-        _trigger_transient_burst(proj)
-    # 飞行伤害衰减
-    var adsr = proj.get("timbre_data")
-    if adsr:
-        var decay_rate = 1.0 - (proj["time_alive"] / max(proj["duration"], 0.1))
-        proj["damage"] = proj.get("base_damage", proj["damage"]) * max(adsr.sustain_level, decay_rate)
-
-func _process_bowed(proj: Dictionary, _delta: float) -> void:
-    # 拉弦系弹体在Release阶段继续存在
-    if proj["time_alive"] >= proj["duration"]:
-        var adsr = proj.get("timbre_data")
-        if adsr and proj["time_alive"] < proj["duration"] + adsr.release_time:
-            proj["active"] = true  # 延长存活
-            proj["damage"] = proj.get("base_damage", proj["damage"]) * adsr.sustain_level * 0.5
-
-func _process_wind(proj: Dictionary, _delta: float) -> void:
-    # 气息聚焦：根据飞行时间调整大小和速度
-    var life_ratio = clamp(proj["time_alive"] / max(proj["duration"], 0.1), 0.0, 1.0)
-    var base_size = proj.get("base_size", proj["size"])
-    var base_speed = proj.get("base_speed", proj["velocity"].length())
-    proj["size"] = lerp(base_size, base_size * 0.5, life_ratio)
-    var new_speed = lerp(base_speed, base_speed * 1.4, life_ratio)
-    proj["velocity"] = proj["velocity"].normalized() * new_speed
-    # 穿透次数随飞行时间增加
-    if proj["time_alive"] > 0.5 and not proj.get("_wind_pierce_1", false):
-        proj["_wind_pierce_1"] = true
-        proj["pierce"] = true
-        proj["max_pierce"] = proj.get("max_pierce", 0) + 1
-    if proj["time_alive"] > 1.0 and not proj.get("_wind_pierce_2", false):
-        proj["_wind_pierce_2"] = true
-        proj["max_pierce"] = proj.get("max_pierce", 1) + 2
-
-func _process_percussive(proj: Dictionary, _delta: float) -> void:
-    # 重音冲击：强拍加成
-    if proj.get("is_strong_beat", false) and not proj.get("_perc_init", false):
-        proj["_perc_init"] = true
-        proj["knockback"] = true
-        proj["knockback_scale"] = 2.0
-        proj["stun_chance"] = 0.5
-        proj["stun_duration"] = 0.5
-```
-
-### 6.5. 音色管理 — `game_manager.gd`
-
-在 GameManager 中管理音色的获取、切换，并与疲劳系统联动：
+在 GameManager 中管理章节音色武器的获取、切换和词条管理：
 
 ```gdscript
 # scripts/autoload/game_manager.gd
 
-# ============================================================
-# 音色系统
-# ============================================================
-signal timbre_changed(new_timbre: TimbreData)
+signal chapter_timbre_changed(new_timbre: int)
+signal inscription_acquired(inscription: Dictionary)
 
-var active_timbre: TimbreData = null
-var available_timbres: Array[TimbreData] = []
+var active_chapter_timbre: int = MusicData.ChapterTimbre.NONE
+var is_electronic_variant: bool = false
+var available_timbres: Array[int] = []
+var active_inscriptions: Array[Dictionary] = []
+var current_chapter_inscription_pool: Array[Dictionary] = []
 
-## 切换音色
-func switch_timbre(new_timbre: TimbreData) -> void:
-    if new_timbre == active_timbre:
+## 进入新章节时激活对应音色武器
+func activate_chapter_timbre(chapter: int) -> void:
+    var config = ChapterData.CHAPTER_TIMBRES.get(chapter, {})
+    if config.is_empty():
         return
-    active_timbre = new_timbre
-    SpellcraftSystem.current_timbre = new_timbre
-    # 应用切换疲劳代价
-    FatigueManager.apply_manual_fatigue(MusicData.TIMBRE_SWITCH_FATIGUE_COST)
-    timbre_changed.emit(active_timbre)
+    active_chapter_timbre = config["timbre"]
+    if active_chapter_timbre not in available_timbres:
+        available_timbres.append(active_chapter_timbre)
+    # 加载章节词条池
+    current_chapter_inscription_pool = ChapterData.CHAPTER_INSCRIPTIONS.get(chapter, [])
+    chapter_timbre_changed.emit(active_chapter_timbre)
 
-## 添加可用音色 (通过升级获取)
-func unlock_timbre(timbre: TimbreData) -> void:
-    if timbre not in available_timbres:
-        available_timbres.append(timbre)
-    # 如果是第一个音色，自动激活
-    if active_timbre == null:
-        active_timbre = timbre
-        SpellcraftSystem.current_timbre = timbre
+## 切换音色武器
+func switch_timbre(timbre: int) -> void:
+    if timbre == active_chapter_timbre:
+        return
+    var current_chapter = ChapterManager.current_chapter
+    var chapter_config = ChapterData.CHAPTER_TIMBRES.get(current_chapter, {})
+    # 如果切换到非当前章节的音色，产生额外疲劳
+    if chapter_config.get("timbre", -1) != timbre:
+        FatigueManager.apply_manual_fatigue(MusicData.CROSS_CHAPTER_TIMBRE_FATIGUE)
+    active_chapter_timbre = timbre
+    chapter_timbre_changed.emit(active_chapter_timbre)
+
+## 获取词条
+func acquire_inscription(inscription: Dictionary) -> void:
+    active_inscriptions.append(inscription)
+    inscription_acquired.emit(inscription)
+    _check_music_history_easter_eggs()
+```
+
+### 7.4. 章节切换 — `chapter_manager.gd`
+
+在章节切换时激活对应音色武器和词条池：
+
+```gdscript
+# scripts/systems/chapter_manager.gd
+
+func _transition_to_chapter(new_chapter: int) -> void:
+    # ... (原有的章节切换逻辑)
+    
+    # 激活章节专属音色武器
+    GameManager.activate_chapter_timbre(new_chapter)
+    
+    # 重置词条池
+    GameManager.current_chapter_inscription_pool = \
+        ChapterData.CHAPTER_INSCRIPTIONS.get(new_chapter, [])
+```
+
+### 7.5. 升级面板 — `upgrade_panel.gd`
+
+在升级面板中加入章节词条选项：
+
+```gdscript
+# scripts/ui/upgrade_panel.gd
+
+func _generate_upgrade_options() -> Array:
+    var options = _get_base_upgrade_options()
+    
+    # 15% 概率替换一个选项为章节词条
+    if randf() < 0.15 and not GameManager.current_chapter_inscription_pool.is_empty():
+        var available = _get_unacquired_inscriptions()
+        if not available.is_empty():
+            var inscription = available[randi() % available.size()]
+            options[randi() % options.size()] = _create_inscription_option(inscription)
+    
+    return options
+```
+
+### 7.6. 音色切换 UI — `timbre_wheel_ui.gd`
+
+重新设计音色切换 UI，按章节分组显示：
+
+```gdscript
+# scripts/ui/timbre_wheel_ui.gd
+
+func _build_timbre_list() -> void:
+    timbre_list.clear()
+    for timbre in GameManager.available_timbres:
+        var config = _get_timbre_config(timbre)
+        var item = {
+            "timbre": timbre,
+            "name": config.get("name", "未知"),
+            "chapter": config.get("chapter", -1),
+            "is_current_chapter": _is_current_chapter_timbre(timbre),
+            "has_electronic": _has_electronic_variant(timbre),
+        }
+        timbre_list.append(item)
 ```
 
 ---
 
-## 7. 总结与展望
+## 8. 玩家策略与 Build 构建
 
-本设计方案将"音色"作为法术系统的一个全新层次化模块。它与现有的四维参数、和弦、节奏等系统并行运作，通过独特的系别核心机制、ADSR 行为模型和乐器神韵效果，极大地丰富了战斗的策略深度和视觉表现力。
+音色武器系统的引入为玩家提供了更丰富的 Build 构建空间。以下是几种典型的策略流派分析：
 
-通过将音色抽象为声学特性系别，我们为未来扩展留下了充足的空间。新的乐器可以作为新的 `TimbreData` 资源被轻松添加——只需创建一个 `.tres` 资源文件并填写参数，而无需修改核心代码逻辑。未来可以考虑的扩展方向包括：
+| 流派名称 | 核心武器 | 核心词条 | 核心和弦 | 策略描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **数学精准** | 里拉琴 | 黄金比例 + 毕达哥拉斯音程 | 属七 (区域) | 利用数学比例最大化泛音共鸣伤害 |
+| **圣咏压制** | 管风琴 | 圣咏回响 + 唱名法 | 小三 (DOT) | 通过声部叠加和圣咏区域持续压制 |
+| **对位大师** | 羽管键琴 | 赋格主题 + 卡农 | 增三 (爆炸) | 利用对位弹体和卡农复制体制造密集弹幕 |
+| **力度控制** | 钢琴 | 莫扎特效应 + 奏鸣曲式 | 小七 (召唤) | 精准节拍控制力度，灵感状态下爆发 |
+| **情感风暴** | 管弦全奏 | 欢乐颂 + 命运动机 | 减三 (冲击波) | 积累情感强度触发高潮爆发 |
+| **摇摆反击** | 萨克斯 | 切分反击 + 即兴独奏 | 大七 (护盾) | 利用反拍机制实现高伤害反击 |
+| **波形操控** | 合成主脑 | 故障溢出 + 频率调制 | 减七 (天降打击) | 灵活切换波形，利用故障效果清场 |
 
-- **合奏系统**：允许玩家同时激活两种不同系别的音色，弹体交替使用两种音色的行为模式，形成"二重奏"效果。
-- **音色进化**：在局内通过特定条件（如使用同一音色击杀 100 个敌人），触发音色的"进化"，解锁更强力的神韵效果变体。
-- **Boss 专属音色**：击败特定 Boss 后获得其专属音色，拥有独特的核心机制（如"不和谐系"音色，以自伤换取极高伤害）。
+---
 
-这套系统将使玩家的"编曲"过程不仅停留在"作曲"层面，更深入到了"配器"的维度，完美契合了《Project Harmony》的核心设计哲学。
+## 9. 总结与展望
+
+v2.0 的音色武器系统将音色从抽象的"弹体行为修饰器"重新定位为具象化的"章节专属乐器武器"，实现了以下核心目标：
+
+1. **章节绑定**：每个章节拥有独特的音色武器，攻击质感和视觉风格与章节主题深度关联。
+2. **词条深度**：21 个章节专属词条（7 章 × 3 个）为玩家提供了丰富的构建选择和跨章节组合可能。
+3. **电子乐融合**：7 种电子乐变体将游戏的科幻/故障艺术美学融入核心战斗系统。
+4. **武器化表达**：每种乐器武器都有明确的攻击方式和视觉辨识度，玩家能直观地将其理解为"武器"。
+
+未来可以考虑的扩展方向包括：
+
+- **Boss 专属音色**：击败特定 Boss 后获得其专属音色变体，拥有独特的核心机制。
+- **音色融合**：允许玩家在特定条件下将两种章节音色武器融合，创造全新的混合武器。
+- **赛季限定音色**：随赛季更新引入限定的电子乐变体皮肤，增加收集要素。
