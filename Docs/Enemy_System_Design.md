@@ -1,7 +1,9 @@
-# Project Harmony — 敌人系统设计方案 v2.0
+# 敌人系统设计文档
 
-> **文档状态**: 已实现（Godot 4.6）  
-> **最后更新**: 2026-02-07  
+**版本:** 1.0
+**最后更新:** 2026-02-11
+**状态:** 已实现
+
 > **关联代码**: `godot_project/scripts/entities/enemy_base.gd` 及 `enemies/` 子目录
 
 ---

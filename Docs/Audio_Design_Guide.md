@@ -1,9 +1,11 @@
 # Project Harmony: 音频设计与实现指南
 
+**版本:** 1.1
+**最后更新:** 2026-02-11
+**状态:** 已实现
 **作者：** Manus AI (根据 gdszyy 的设计方案实现)
-**版本：** 1.0
-**最后更新：** 2026年2月7日
-**关联代码：** `scripts/autoload/audio_manager.gd`, `scripts/autoload/bgm_manager.gd`, `audio_bus_layout.tres`
+
+> **关联代码**: `scripts/autoload/audio_manager.gd`, `scripts/autoload/bgm_manager.gd`, `audio_bus_layout.tres`
 
 ---
 
