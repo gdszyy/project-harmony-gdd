@@ -46,36 +46,37 @@ const CLOSE_BUTTON_COLOR := Color(0.8, 0.2, 0.2, 0.8)
 # 和弦类型识别表（音程集合 → 和弦类型）
 # ============================================================
 ## 音程模式 → { "name": 显示名, "spell_form": 法术形态, "desc": 效果描述 }
+## ★ 映射已与 GDD 4.3 节及 Spell_Visual_Enhancement_Design.md 同步
 const CHORD_PATTERNS := {
 	# 三和弦（3音）
-	"0,4,7": { "name": "大三和弦", "spell_form": "radial_burst", "desc": "强化弹体：伤害+40%，范围扩大" },
-	"0,3,7": { "name": "小三和弦", "spell_form": "shield_aura", "desc": "防护法阵：生成护盾，持续吸收伤害" },
-	"0,3,6": { "name": "减三和弦", "spell_form": "debuff_zone", "desc": "衰弱领域：降低范围内敌人移速和攻击" },
-	"0,4,8": { "name": "增三和弦", "spell_form": "chain_lightning", "desc": "连锁闪电：弹体命中后连锁跳跃至附近敌人" },
+	"0,4,7": { "name": "大三和弦", "spell_form": "enhanced_projectile", "desc": "强化弹体：弹体体积+50%，伤害+40%，圣光金色" },
+	"0,3,7": { "name": "小三和弦", "spell_form": "dot_projectile", "desc": "DOT弹体：命中后持续伤害，暗蓝色液态质感" },
+	"0,3,6": { "name": "减三和弦", "spell_form": "shockwave", "desc": "冲击波：环形扩散后内爆，深紫色能量刀刃" },
+	"0,4,8": { "name": "增三和弦", "spell_form": "explosive_projectile", "desc": "爆炸弹体：命中时范围爆炸，烈焰橙不稳定能量球" },
 	# 七和弦（4音）
-	"0,4,7,11": { "name": "大七和弦", "spell_form": "healing_wave", "desc": "治愈波：恢复生命值，清除负面状态" },
-	"0,4,7,10": { "name": "属七和弦", "spell_form": "empowered_burst", "desc": "蓄能爆发：下一小节所有法术伤害×2" },
-	"0,3,7,10": { "name": "小七和弦", "spell_form": "homing_swarm", "desc": "追踪蜂群：释放多个追踪弹体" },
-	"0,3,6,9": { "name": "减七和弦", "spell_form": "gravity_well", "desc": "重力井：将范围内敌人吸向中心" },
+	"0,4,7,11": { "name": "大七和弦", "spell_form": "shield_heal", "desc": "护盾/治疗法阵：治愈绿半球护盾，恢复生命值" },
+	"0,4,7,10": { "name": "属七和弦", "spell_form": "magic_circle", "desc": "法阵/区域：Dominant黄旋转法阵，持续存在" },
+	"0,3,7,10": { "name": "小七和弦", "spell_form": "summon_construct", "desc": "召唤/构造：深蓝色水晶构造体从地面生长" },
+	"0,3,6,9": { "name": "减七和弦", "spell_form": "celestial_strike", "desc": "天降打击：延迟后毁灭性打击，血红预警区域" },
 	"0,3,6,10": { "name": "半减七和弦", "spell_form": "slow_field", "desc": "迟缓领域：大范围减速效果" },
 	# 挂留和弦（3音）
-	"0,5,7": { "name": "挂四和弦", "spell_form": "barrier_wall", "desc": "屏障之墙：在前方生成阻挡弹幕的屏障" },
-	"0,2,7": { "name": "挂二和弦", "spell_form": "speed_boost", "desc": "疾风步：短时间内移速大幅提升" },
+	"0,5,7": { "name": "挂四和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放，银白色蓄能球体" },
+	"0,2,7": { "name": "挂二和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放，银白色蓄能球体" },
 }
 
-## 法术形态颜色
+## 法术形态颜色（与 Spell_Visual_Enhancement_Design.md 视觉规范同步）
 const SPELL_FORM_COLORS := {
-	"radial_burst": Color(1.0, 0.4, 0.2),
-	"shield_aura": Color(0.2, 0.6, 1.0),
-	"debuff_zone": Color(0.6, 0.2, 0.8),
-	"chain_lightning": Color(1.0, 1.0, 0.3),
-	"healing_wave": Color(0.2, 1.0, 0.5),
-	"empowered_burst": Color(1.0, 0.6, 0.0),
-	"homing_swarm": Color(0.4, 0.8, 1.0),
-	"gravity_well": Color(0.5, 0.0, 0.8),
-	"slow_field": Color(0.3, 0.3, 0.7),
-	"barrier_wall": Color(0.8, 0.8, 0.3),
-	"speed_boost": Color(0.0, 1.0, 0.8),
+	"enhanced_projectile": Color(1.0, 0.85, 0.3),   # 圣光金 — 大三和弦
+	"dot_projectile": Color(0.2, 0.3, 0.8),          # 暗蓝色 — 小三和弦
+	"explosive_projectile": Color(1.0, 0.4, 0.2),    # 烈焰橙 — 增三和弦
+	"shockwave": Color(0.5, 0.1, 0.7),               # 深紫色 — 减三和弦
+	"magic_circle": Color(1.0, 0.8, 0.0),             # Dominant黄 — 属七和弦
+	"celestial_strike": Color(0.8, 0.1, 0.1),         # 血红色 — 减七和弦
+	"shield_heal": Color(0.2, 0.9, 0.4),              # 治愈绿 — 大七和弦
+	"summon_construct": Color(0.15, 0.2, 0.7),        # 深蓝色 — 小七和弦
+	"charged_projectile": Color(0.85, 0.85, 0.95),    # 银白色 — 挂留和弦
+	"slow_field": Color(0.3, 0.3, 0.7),               # 紫蓝色 — 半减七和弦
+	"generic_blast": Color(0.5, 0.5, 0.5),            # 灰色 — 未识别和弦
 }
 
 # ============================================================

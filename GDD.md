@@ -71,7 +71,7 @@ Project Harmony 的音频设计是游戏体验的核心支柱之一，它将“�
 
 音符在其生命周期中存在三种状态：**装备**（从库存放入法术槽，库存数量减一）、**卸下**（从法术槽移除，安全返回库存）、以及**永久消耗**（仅在和弦炼成时发生，作为原材料被不可逆地消耗）。
 
-详细设计请参阅 **[核心机制迭代设计提案](Docs/Design_Update_Proposal_v1.md)**。
+音符经济系统的完整实现包含以下核心组件：**音符库存** (`NoteInventory`) 管理所有音符的持有与消耗；**和弦炼成台** (`ChordAlchemyPanel`) 提供合成和弦法术的专用界面；**法术书** (`SpellbookUI`) 存放所有已合成的和弦法术。初始设计提案已归档至 **[Archive/Design_Update_Proposal_v1.md](Docs/Archive/Design_Update_Proposal_v1.md)**。
 
 ### 3.4. 双模施法系统
 
@@ -209,7 +209,7 @@ Project Harmony 的音频设计是游戏体验的核心支柱之一，它将“�
 
 每次升级时，玩家还将自动获得一个随机音符加入库存，确保音符资源的稳定增长。
 
-详细设计请参阅 **[核心机制迭代设计提案](Docs/Design_Update_Proposal_v1.md)**。
+五度圈罗盘升级系统的完整实现由 `CircleOfFifthsUpgrade` 组件驱动，其核心逻辑包括：罗盘指针追踪、方向性升级池筛选、以及每次升级自动赠送随机音符。初始设计提案已归档至 **[Archive/Design_Update_Proposal_v1.md](Docs/Archive/Design_Update_Proposal_v1.md)**。
 
 ---
 
