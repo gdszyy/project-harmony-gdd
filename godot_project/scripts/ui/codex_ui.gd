@@ -187,12 +187,9 @@ func _ready() -> void:
 	_select_volume(0)
 
 func _process(delta: float) -> void:
-	# 更新演示区域的弹体
-	if _demo_active and is_instance_valid(_demo_projectile_manager):
-		if _demo_projectile_manager.has_method("update_projectiles"):
-			_demo_projectile_manager.update_projectiles(delta)
+	# v5.1: 演示定时器（自动清理超过 5 秒的演示）
+	if _demo_active:
 		_demo_timer += delta
-		# 自动清理超过 5 秒的演示
 		if _demo_timer > 5.0:
 			_clear_demo()
 
@@ -876,36 +873,189 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 	preview_panel.add_child(_enemy_preview_container)
 	_detail_container.add_child(preview_panel)
 
-## 根据敌人类型创建 3D 模型（与 RenderBridge3D 的代理风格一致）
+## v5.1: 根据敌人类型创建差异化 3D 模型（不同敌人类型使用不同几何形态）
 func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 	var model := Node3D.new()
 	model.name = "EnemyPreviewModel"
 
-	# 获取敌人类型和颜色
-	var enemy_type: String = entry.get("enemy_type", "")
-	var enemy_color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color(0.9, 0.3, 0.6))
-	var is_elite: bool = entry.has("phases") or entry.get("is_elite", false)
+	# 判断敌人类别：Boss > 精英 > 章节敌人 > 基础敌人
 	var is_boss: bool = entry.has("phases")
+	var is_elite: bool = CodexData.VOL3_ELITES.has(entry_id)
+	var is_chapter: bool = CodexData.VOL3_CHAPTER_ENEMIES.has(entry_id)
 
-	# 核心几何体
+	# 获取敌人颜色：优先使用数据中的 color 字段，其次根据 entry_id 推断类型
+	var enemy_color: Color = entry.get("color", Color(0.9, 0.3, 0.6))
+	if not entry.has("color"):
+		# 根据 entry_id 推断敌人类型颜色
+		if "static" in entry_id:
+			enemy_color = ENEMY_TYPE_COLORS["static"]
+		elif "silence" in entry_id:
+			enemy_color = ENEMY_TYPE_COLORS["silence"]
+		elif "screech" in entry_id:
+			enemy_color = ENEMY_TYPE_COLORS["screech"]
+		elif "pulse" in entry_id or "metronome" in entry_id:
+			enemy_color = ENEMY_TYPE_COLORS["pulse"]
+		elif "wall" in entry_id:
+			enemy_color = ENEMY_TYPE_COLORS["wall"]
+		elif is_boss:
+			# Boss 根据章节分配颜色
+			var chapter: int = entry.get("chapter", 1)
+			match chapter:
+				1: enemy_color = Color(0.8, 0.7, 1.0)   # 毕达哥拉斯 - 淡紫
+				2: enemy_color = Color(1.0, 0.85, 0.4)  # 圭多 - 金色
+				3: enemy_color = Color(0.4, 0.6, 1.0)   # 巴赫 - 蓝色
+				4: enemy_color = Color(1.0, 0.6, 0.8)   # 莫扎特 - 粉色
+				5: enemy_color = Color(1.0, 0.3, 0.2)   # 贝多芬 - 红色
+				_: enemy_color = Color(0.9, 0.3, 0.6)
+		elif is_elite:
+			var chapter: int = entry.get("chapter", 1)
+			match chapter:
+				1: enemy_color = Color(0.6, 0.5, 1.0)
+				2: enemy_color = Color(0.9, 0.75, 0.3)
+				3: enemy_color = Color(0.3, 0.5, 0.9)
+				4: enemy_color = Color(0.9, 0.5, 0.7)
+				5: enemy_color = Color(0.9, 0.2, 0.15)
+				_: enemy_color = Color(0.7, 0.3, 0.8)
+		elif is_chapter:
+			var chapter: int = entry.get("chapter", 1)
+			match chapter:
+				1: enemy_color = Color(0.5, 0.4, 0.8)
+				2: enemy_color = Color(0.8, 0.65, 0.2)
+				3: enemy_color = Color(0.2, 0.4, 0.8)
+				4: enemy_color = Color(0.8, 0.4, 0.6)
+				5: enemy_color = Color(0.8, 0.15, 0.1)
+				_: enemy_color = Color(0.6, 0.3, 0.7)
+
+	# ---- 核心几何体：根据敌人类型创建不同形态 ----
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "EnemyCoreMesh"
 
 	if is_boss:
-		# Boss：大型多面体
-		var prism := PrismMesh.new()
-		prism.size = Vector3(0.8, 0.8, 0.8)
-		mesh_instance.mesh = prism
+		# Boss：大型多层旋转光环体
+		var chapter: int = entry.get("chapter", 1)
+		match chapter:
+			1:  # 毕达哥拉斯：多层旋转光环（几何体）
+				var sphere := SphereMesh.new()
+				sphere.radius = 0.4
+				sphere.height = 0.8
+				sphere.radial_segments = 16
+				sphere.rings = 8
+				mesh_instance.mesh = sphere
+			2:  # 圭多：五线谱架构师
+				var cylinder := CylinderMesh.new()
+				cylinder.top_radius = 0.3
+				cylinder.bottom_radius = 0.5
+				cylinder.height = 0.8
+				cylinder.radial_segments = 8
+				mesh_instance.mesh = cylinder
+			3:  # 巴赫：赋格大师
+				var prism := PrismMesh.new()
+				prism.size = Vector3(0.8, 0.9, 0.8)
+				mesh_instance.mesh = prism
+			4:  # 莫扎特：古典完形
+				var sphere := SphereMesh.new()
+				sphere.radius = 0.35
+				sphere.height = 0.7
+				sphere.radial_segments = 32
+				sphere.rings = 16
+				mesh_instance.mesh = sphere
+			5:  # 贝多芬：狂想者
+				var prism := PrismMesh.new()
+				prism.size = Vector3(0.9, 1.0, 0.9)
+				mesh_instance.mesh = prism
+			_:
+				var prism := PrismMesh.new()
+				prism.size = Vector3(0.8, 0.8, 0.8)
+				mesh_instance.mesh = prism
 	elif is_elite:
-		# 精英：菱形体
+		# 精英：菱形体 + 光晕环，根据章节微调
 		var prism := PrismMesh.new()
-		prism.size = Vector3(0.5, 0.5, 0.5)
+		prism.size = Vector3(0.5, 0.6, 0.5)
 		mesh_instance.mesh = prism
+	elif is_chapter:
+		# 章节敌人：根据描述创建不同形态
+		var chapter: int = entry.get("chapter", 1)
+		if "grid" in entry_id or "metronome" in entry_id:
+			# 网格/节拍：立方体
+			var box := BoxMesh.new()
+			box.size = Vector3(0.35, 0.35, 0.35)
+			mesh_instance.mesh = box
+		elif "scribe" in entry_id:
+			# 抄谱员：细长圆柱
+			var cylinder := CylinderMesh.new()
+			cylinder.top_radius = 0.1
+			cylinder.bottom_radius = 0.15
+			cylinder.height = 0.5
+			cylinder.radial_segments = 6
+			mesh_instance.mesh = cylinder
+		elif "choir" in entry_id:
+			# 唱诗班：球体群
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.15
+			sphere.height = 0.3
+			mesh_instance.mesh = sphere
+		elif "counterpoint" in entry_id:
+			# 对位爬虫：双棱柱
+			var prism := PrismMesh.new()
+			prism.size = Vector3(0.3, 0.4, 0.3)
+			mesh_instance.mesh = prism
+		elif "dancer" in entry_id or "minuet" in entry_id:
+			# 小步舞者：球体
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.2
+			sphere.height = 0.4
+			sphere.radial_segments = 12
+			sphere.rings = 6
+			mesh_instance.mesh = sphere
+		elif "crescendo" in entry_id or "surge" in entry_id:
+			# 渐强浪潮：大型球体
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.3
+			sphere.height = 0.6
+			mesh_instance.mesh = sphere
+		elif "fate" in entry_id or "knocker" in entry_id:
+			# 命运叩门者：棱柱体
+			var prism := PrismMesh.new()
+			prism.size = Vector3(0.35, 0.5, 0.35)
+			mesh_instance.mesh = prism
+		else:
+			var box := BoxMesh.new()
+			box.size = Vector3(0.35, 0.35, 0.35)
+			mesh_instance.mesh = box
 	else:
-		# 普通敌人：立方体
-		var box := BoxMesh.new()
-		box.size = Vector3(0.3, 0.3, 0.3)
-		mesh_instance.mesh = box
+		# 基础敌人：根据敌人类型创建不同几何形态
+		if "static" in entry_id:
+			# 底噪：小型锯齿立方体（红色）
+			var box := BoxMesh.new()
+			box.size = Vector3(0.25, 0.25, 0.25)
+			mesh_instance.mesh = box
+		elif "silence" in entry_id:
+			# 寂静：深色旋涡球体（黑洞感）
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.3
+			sphere.height = 0.6
+			sphere.radial_segments = 16
+			sphere.rings = 8
+			mesh_instance.mesh = sphere
+		elif "screech" in entry_id:
+			# 尖啸：尖锐三棱柱（黄白色）
+			var prism := PrismMesh.new()
+			prism.size = Vector3(0.2, 0.45, 0.2)
+			mesh_instance.mesh = prism
+		elif "pulse" in entry_id:
+			# 脉冲：菱形体（电蓝色）
+			var prism := PrismMesh.new()
+			prism.size = Vector3(0.3, 0.35, 0.3)
+			mesh_instance.mesh = prism
+		elif "wall" in entry_id:
+			# 音墙：巨大扁平方块（灰紫色）
+			var box := BoxMesh.new()
+			box.size = Vector3(0.5, 0.3, 0.5)
+			mesh_instance.mesh = box
+		else:
+			var box := BoxMesh.new()
+			box.size = Vector3(0.3, 0.3, 0.3)
+			mesh_instance.mesh = box
 
 	# 自发光材质
 	var mat := StandardMaterial3D.new()
@@ -946,7 +1096,67 @@ func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 		halo.material_override = halo_mat
 		model.add_child(halo)
 
-	# 粒子效果
+	# Boss：额外的装饰元素（旋转光环）
+	if is_boss:
+		var ring1 := MeshInstance3D.new()
+		var torus1 := TorusMesh.new()
+		torus1.inner_radius = 0.55
+		torus1.outer_radius = 0.6
+		torus1.rings = 24
+		torus1.ring_segments = 16
+		ring1.mesh = torus1
+		ring1.rotation_degrees = Vector3(45, 0, 0)
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.3)
+		ring_mat.emission_enabled = true
+		ring_mat.emission = enemy_color
+		ring_mat.emission_energy_multiplier = 1.5
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring1.material_override = ring_mat
+		model.add_child(ring1)
+
+		var ring2 := MeshInstance3D.new()
+		var torus2 := TorusMesh.new()
+		torus2.inner_radius = 0.65
+		torus2.outer_radius = 0.7
+		torus2.rings = 24
+		torus2.ring_segments = 16
+		ring2.mesh = torus2
+		ring2.rotation_degrees = Vector3(0, 0, 45)
+		ring2.material_override = ring_mat
+		model.add_child(ring2)
+
+	# 寂静敌人：额外的吸收粒子（黑洞效果）
+	if "silence" in entry_id and not is_boss and not is_elite:
+		var absorb := GPUParticles3D.new()
+		absorb.amount = 12
+		absorb.lifetime = 1.5
+		absorb.emitting = true
+
+		var absorb_mat := ParticleProcessMaterial.new()
+		absorb_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		absorb_mat.emission_sphere_radius = 0.5
+		absorb_mat.direction = Vector3(0, 0, 0)
+		absorb_mat.spread = 180.0
+		absorb_mat.initial_velocity_min = -0.3
+		absorb_mat.initial_velocity_max = -0.1
+		absorb_mat.gravity = Vector3(0, 0, 0)
+		absorb_mat.attractor_interaction_enabled = true
+		absorb_mat.scale_min = 0.01
+		absorb_mat.scale_max = 0.04
+
+		var absorb_gradient := Gradient.new()
+		absorb_gradient.set_color(0, Color(0.3, 0.1, 0.5, 0.6))
+		absorb_gradient.set_color(1, Color(0.1, 0.05, 0.2, 0.0))
+		var absorb_ramp := GradientTexture1D.new()
+		absorb_ramp.gradient = absorb_gradient
+		absorb_mat.color_ramp = absorb_ramp
+
+		absorb.process_material = absorb_mat
+		model.add_child(absorb)
+
+	# 通用粒子效果
 	var particles := GPUParticles3D.new()
 	particles.amount = 16 if is_boss else (12 if is_elite else 8)
 	particles.lifetime = 1.0
@@ -986,7 +1196,7 @@ func _cleanup_enemy_preview() -> void:
 # ★ v5.0: 法术演示区域 (2.5D 升级版)
 # ============================================================
 
-## 构建 2.5D 法术演示区域
+## 构建纯 3D 法术演示区域（v5.1: 移除旧 2D 层，统一为 3D 渲染）
 func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	var demo_config := CodexData.get_demo_config(entry_id)
 	if demo_config.is_empty():
@@ -996,7 +1206,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 
 	# 演示区域标题
 	var demo_title := Label.new()
-	demo_title.text = "▶ 法术演示 (2.5D)"
+	demo_title.text = "▶ 法术演示"
 	demo_title.add_theme_font_size_override("font_size", 14)
 	demo_title.add_theme_color_override("font_color", GOLD)
 	_detail_container.add_child(demo_title)
@@ -1013,57 +1223,23 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	var demo_panel := PanelContainer.new()
 	demo_panel.custom_minimum_size = Vector2(0, 240)
 
-	# ---- 2D 弹体层（保留原有逻辑） ----
-	_demo_viewport_container = SubViewportContainer.new()
-	_demo_viewport_container.custom_minimum_size = Vector2(0, 220)
-	_demo_viewport_container.stretch = true
-	_demo_viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	_demo_viewport = SubViewport.new()
-	_demo_viewport.size = Vector2i(600, 220)
-	_demo_viewport.transparent_bg = true
-	_demo_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-
-	# 在 SubViewport 中创建 ProjectileManager 实例
-	var pm_script = load("res://scripts/systems/projectile_manager.gd")
-	if pm_script:
-		_demo_projectile_manager = Node2D.new()
-		_demo_projectile_manager.set_script(pm_script)
-		_demo_projectile_manager.set("_demo_mode", true)
-		_demo_projectile_manager.set_process(false)
-		_demo_viewport.add_child(_demo_projectile_manager)
-
-		# 深色背景
-		var bg := ColorRect.new()
-		bg.color = DEMO_BG
-		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		bg.z_index = -1
-		_demo_viewport.add_child(bg)
-
-		# 网格线
-		var grid := _create_demo_grid()
-		_demo_viewport.add_child(grid)
-
-	_demo_viewport_container.add_child(_demo_viewport)
-
-	# ---- v5.0: 3D 渲染叠加层（Glow/Bloom + 3D 粒子） ----
+	# ---- v5.1: 纯 3D 渲染层（移除旧 2D 弹体层，避免 2D/3D 重叠） ----
 	_demo_3d_viewport_container = SubViewportContainer.new()
-	_demo_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_demo_3d_viewport_container.custom_minimum_size = Vector2(0, 220)
 	_demo_3d_viewport_container.stretch = true
-	_demo_3d_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_demo_3d_viewport_container.self_modulate = Color(1, 1, 1, 1)
+	_demo_3d_viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	_demo_3d_viewport = SubViewport.new()
 	_demo_3d_viewport.size = Vector2i(600, 220)
-	_demo_3d_viewport.transparent_bg = true
+	_demo_3d_viewport.transparent_bg = false
 	_demo_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_demo_3d_viewport.own_world_3d = true
 
-	# 3D 正交摄像机（俯视）
+	# 3D 正交摄像机（俯视，居中对准演示区域）
 	_demo_3d_camera = Camera3D.new()
 	_demo_3d_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_demo_3d_camera.size = 8.0
-	_demo_3d_camera.position = Vector3(3, 10, 1.5)
+	_demo_3d_camera.size = 5.0
+	_demo_3d_camera.position = Vector3(2.5, 10, 1.1)
 	_demo_3d_camera.rotation_degrees = Vector3(-90, 0, 0)
 	_demo_3d_viewport.add_child(_demo_3d_camera)
 
@@ -1071,7 +1247,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_3d_env = WorldEnvironment.new()
 	var demo_env := Environment.new()
 	demo_env.background_mode = Environment.BG_COLOR
-	demo_env.background_color = Color(0, 0, 0, 0)
+	demo_env.background_color = DEMO_BG
 	demo_env.glow_enabled = true
 	demo_env.set_glow_level(1, 1.0)
 	demo_env.set_glow_level(3, 0.8)
@@ -1095,25 +1271,19 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_3d_light.rotation_degrees = Vector3(-45, 45, 0)
 	_demo_3d_viewport.add_child(_demo_3d_light)
 
-	# 3D 实体层（用于放置弹体的 3D 代理）
+	# 3D 实体层（用于放置弹体和敌人的 3D 代理）
 	_demo_3d_entity_layer = Node3D.new()
 	_demo_3d_entity_layer.name = "DemoEntityLayer3D"
 	_demo_3d_viewport.add_child(_demo_3d_entity_layer)
 
+	# ★ v5.1: 在演示区域添加敌人目标
+	_spawn_demo_enemies()
+
+	# 3D 地面网格（替代旧 2D 网格）
+	_create_demo_3d_ground()
+
 	_demo_3d_viewport_container.add_child(_demo_3d_viewport)
-
-	# 使用层叠布局：2D 层在底，3D 层叠加在上
-	var layered_container := Control.new()
-	layered_container.custom_minimum_size = Vector2(0, 220)
-	layered_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	_demo_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_demo_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	layered_container.add_child(_demo_viewport_container)
-	layered_container.add_child(_demo_3d_viewport_container)
-
-	demo_panel.add_child(layered_container)
+	demo_panel.add_child(_demo_3d_viewport_container)
 	_detail_container.add_child(demo_panel)
 
 	# 控制按钮栏
@@ -1155,12 +1325,8 @@ func _on_demo_cast(entry_id: String) -> void:
 	if demo_config.is_empty():
 		return
 
-	# 清除之前的弹体
-	if _demo_projectile_manager and _demo_projectile_manager.has_method("clear_all"):
-		_demo_projectile_manager.clear_all()
-
-	# v5.0: 清除 3D 层的旧弹体代理
-	_clear_demo_3d_entities()
+	# v5.1: 清除 3D 层的旧弹体代理（保留敌人和地面）
+	_clear_demo_3d_projectiles()
 
 	_demo_active = true
 	_demo_timer = 0.0
@@ -1178,7 +1344,7 @@ func _on_demo_cast(entry_id: String) -> void:
 		_:
 			_update_demo_status("未知演示类型: %s" % demo_type)
 
-## ★ 演示施放音符（通过 SpellcraftSystem 信号链 + 本地 ProjectileManager）
+## ★ 演示施放音符（v5.1: 统一使用 3D 渲染）
 func _demo_cast_note(config: Dictionary) -> void:
 	var white_key: int = config.get("demo_note", 0)
 	var spell_data := _build_demo_spell_data(white_key, -1)
@@ -1187,10 +1353,7 @@ func _demo_cast_note(config: Dictionary) -> void:
 	spell_data["_demo_origin"] = Vector2(50, 110)  # 从左侧发射
 	spell_data["_demo_direction"] = Vector2.RIGHT
 
-	# 通过 ProjectileManager 的实际接口生成弹体
-	_spawn_demo_projectile(spell_data)
-
-	# v5.0: 在 3D 层生成对应的发光弹体代理
+	# v5.1: 仅在 3D 层生成发光弹体
 	_spawn_demo_3d_projectile(spell_data)
 
 	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
@@ -1199,7 +1362,7 @@ func _demo_cast_note(config: Dictionary) -> void:
 		spell_data["duration"], spell_data["size"]
 	])
 
-## ★ 演示施放带修饰符的音符
+## ★ 演示施放带修饰符的音符（v5.1: 统一 3D）
 func _demo_cast_note_modifier(config: Dictionary) -> void:
 	var white_key: int = config.get("demo_note", 0)
 	var modifier: int = config.get("demo_modifier", -1)
@@ -1208,7 +1371,7 @@ func _demo_cast_note_modifier(config: Dictionary) -> void:
 	spell_data["_demo_origin"] = Vector2(50, 110)
 	spell_data["_demo_direction"] = Vector2.RIGHT
 
-	_spawn_demo_projectile(spell_data)
+	# v5.1: 仅在 3D 层生成发光弹体
 	_spawn_demo_3d_projectile(spell_data)
 
 	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
@@ -1241,13 +1404,7 @@ func _demo_cast_chord(config: Dictionary) -> void:
 		"accuracy_offset": 0.0,
 	}
 
-	# 通过 ProjectileManager 的和弦施法接口生成弹体
-	if _demo_projectile_manager and _demo_projectile_manager.has_method("spawn_chord_projectiles"):
-		_demo_projectile_manager.spawn_chord_projectiles(chord_data, Vector2(300, 110), Vector2.RIGHT)
-	else:
-		SpellcraftSystem.chord_cast.emit(chord_data)
-
-	# v5.0: 在 3D 层生成和弦爆发粒子
+	# v5.1: 仅在 3D 层生成和弦爆发粒子
 	_spawn_demo_3d_chord_burst(chord_data)
 
 	_update_demo_status("施放和弦: %s | DMG=%.0f | 不和谐度=%.1f" % [
@@ -1270,7 +1427,7 @@ func _demo_cast_rhythm(config: Dictionary) -> void:
 
 		# 应用节奏型效果到弹体（与 ProjectileManager._apply_rhythm_to_projectile 一致）
 		_apply_demo_rhythm_effect(spell_data, pattern_type)
-		_spawn_demo_projectile(spell_data)
+		# v5.1: 仅在 3D 层生成弹体
 		_spawn_demo_3d_projectile(spell_data)
 
 	_update_demo_status("节奏型演示: %s (4 个弹体)" % pattern_type)
@@ -1460,11 +1617,100 @@ func _spawn_demo_3d_chord_burst(chord_data: Dictionary) -> void:
 	# 自动清理
 	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
 
-## 清除 3D 演示层的所有实体
-func _clear_demo_3d_entities() -> void:
+## v5.1: 清除 3D 演示层的弹体（保留敌人和地面）
+func _clear_demo_3d_projectiles() -> void:
 	if _demo_3d_entity_layer:
 		for child in _demo_3d_entity_layer.get_children():
+			# 保留敌人目标和地面网格
+			if child.name.begins_with("DemoEnemy") or child.name == "DemoGround3D":
+				continue
 			child.queue_free()
+
+## v5.1: 在演示区域生成敌人目标（供弹体打击）
+func _spawn_demo_enemies() -> void:
+	if not _demo_3d_entity_layer:
+		return
+
+	# 在演示区域右侧放置 3 个敌人目标
+	var enemy_configs := [
+		{"pos": Vector3(3.5, 0, 0.6), "color": Color(0.7, 0.3, 0.3), "type": "static"},
+		{"pos": Vector3(3.5, 0, 1.1), "color": Color(0.2, 0.5, 1.0), "type": "pulse"},
+		{"pos": Vector3(3.5, 0, 1.6), "color": Color(1.0, 0.95, 0.5), "type": "screech"},
+	]
+
+	for i in range(enemy_configs.size()):
+		var cfg: Dictionary = enemy_configs[i]
+		var enemy := Node3D.new()
+		enemy.name = "DemoEnemy_%d" % i
+		enemy.position = cfg["pos"]
+
+		# 根据敌人类型创建不同几何体
+		var mesh_inst := MeshInstance3D.new()
+		var enemy_mesh: Mesh
+		match cfg["type"]:
+			"static":
+				var box := BoxMesh.new()
+				box.size = Vector3(0.2, 0.2, 0.2)
+				enemy_mesh = box
+			"pulse":
+				var prism := PrismMesh.new()
+				prism.size = Vector3(0.25, 0.25, 0.25)
+				enemy_mesh = prism
+			"screech":
+				var prism := PrismMesh.new()
+				prism.size = Vector3(0.2, 0.3, 0.2)
+				enemy_mesh = prism
+			_:
+				var box := BoxMesh.new()
+				box.size = Vector3(0.2, 0.2, 0.2)
+				enemy_mesh = box
+		mesh_inst.mesh = enemy_mesh
+
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = cfg["color"]
+		mat.emission_enabled = true
+		mat.emission = cfg["color"]
+		mat.emission_energy_multiplier = 1.5
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color.a = 0.85
+		mesh_inst.material_override = mat
+		enemy.add_child(mesh_inst)
+
+		# 敌人发光
+		var light := OmniLight3D.new()
+		light.light_energy = 0.5
+		light.light_color = cfg["color"]
+		light.omni_range = 1.5
+		light.omni_attenuation = 2.0
+		enemy.add_child(light)
+
+		_demo_3d_entity_layer.add_child(enemy)
+
+## v5.1: 创建 3D 地面网格（替代旧 2D 网格）
+func _create_demo_3d_ground() -> void:
+	if not _demo_3d_entity_layer:
+		return
+
+	var ground := Node3D.new()
+	ground.name = "DemoGround3D"
+
+	# 半透明地面平面
+	var plane_mesh := PlaneMesh.new()
+	plane_mesh.size = Vector2(6, 3)
+	var plane_inst := MeshInstance3D.new()
+	plane_inst.mesh = plane_mesh
+	plane_inst.position = Vector3(2.5, -0.01, 1.1)
+
+	var ground_mat := StandardMaterial3D.new()
+	ground_mat.albedo_color = Color(0.1, 0.08, 0.15, 0.3)
+	ground_mat.emission_enabled = true
+	ground_mat.emission = Color(0.15, 0.1, 0.25)
+	ground_mat.emission_energy_multiplier = 0.3
+	ground_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	plane_inst.material_override = ground_mat
+	ground.add_child(plane_inst)
+
+	_demo_3d_entity_layer.add_child(ground)
 
 ## 应用演示用的节奏型效果
 func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> void:
@@ -1497,12 +1743,10 @@ func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> 
 func _clear_demo() -> void:
 	_demo_active = false
 	_demo_timer = 0.0
-	if is_instance_valid(_demo_projectile_manager) and _demo_projectile_manager.has_method("clear_all"):
-		_demo_projectile_manager.clear_all()
 	if _demo_status_label:
 		_demo_status_label.text = ""
-	# v5.0: 清除 3D 层
-	_clear_demo_3d_entities()
+	# v5.1: 清除 3D 层弹体（保留敌人和地面）
+	_clear_demo_3d_projectiles()
 
 ## 更新演示状态文字
 func _update_demo_status(text: String) -> void:
