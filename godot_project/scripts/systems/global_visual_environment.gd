@@ -173,9 +173,9 @@ func _on_color_theme_changed(from_color: Color, to_color: Color, _progress: floa
 		_current_chapter_color = from_color
 		_color_transition_progress = 0.0
 
-func _on_beat_tick() -> void:
-	_beat_glow_extra = BEAT_GLOW_BOOST
-	_beat_phase = 0.0
+	func _on_beat_tick(beat_index: int) -> void:
+		_beat_glow_extra = BEAT_GLOW_BOOST
+		_beat_phase = 0.0
 
 # ============================================================
 # 公共接口
