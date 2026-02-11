@@ -591,13 +591,13 @@ func _update_xp_bar(delta: float) -> void:
 	# 获取经验闪光效果
 	if _xp_flash_timer > 0.0:
 		_xp_flash_timer -= delta
-		var flash_intensity := clamp(_xp_flash_timer / 0.3, 0.0, 1.0)
+		var flash_intensity: float = clamp(_xp_flash_timer / 0.3, 0.0, 1.0)
 		base_color = base_color.lerp(Color.WHITE, flash_intensity * 0.5)
 
 	# 升级闪光效果
 	if _levelup_flash_timer > 0.0:
 		_levelup_flash_timer -= delta
-		var flash_intensity := clamp(_levelup_flash_timer / 0.5, 0.0, 1.0)
+		var flash_intensity: float = clamp(_levelup_flash_timer / 0.5, 0.0, 1.0)
 		base_color = base_color.lerp(Color(1.0, 1.0, 0.5), flash_intensity * 0.8)
 		# 背景也闪光
 		if _xp_bar_bg:
