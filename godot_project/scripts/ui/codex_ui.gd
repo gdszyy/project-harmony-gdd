@@ -1,8 +1,19 @@
-## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 - v4.0 Full Interactive + Demo
+## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 - v5.0 2.5D 渲染迁移版
 ##
 ## 视觉风格：充满神秘感的魔法书，背景为羊皮纸/星图纹理。
 ## 布局：顶部标题栏 + 左侧卷标签页/条目列表 + 右侧条目详情页（含法术演示区域）
 ## 功能：四卷完整数据浏览、条目解锁状态、搜索过滤、详情展示、法术演示
+##
+## ★ v5.0 变更 (Issue #36 — 2.5D 渲染迁移)：
+##   - 法术演示区域升级为 2.5D 混合渲染：
+##     · SubViewport 内嵌独立 3D 渲染管线（WorldEnvironment + Glow/Bloom）
+##     · 弹体在 3D 空间渲染，带真实光照和发光效果
+##     · 与主游戏 (main_game) 的视觉风格完全一致
+##   - 敌人条目详情页新增 3D 预览：
+##     · 使用独立 SubViewport 渲染敌人的 3D 代理模型
+##     · 展示敌人的发光颜色、几何形态和粒子效果
+##   - 背景增加微妙的 3D 粒子氛围效果
+##   - 全局 Glow/Bloom 后处理，提升视觉一致性
 ##
 ## ★ v4.0 新增：法术演示区域
 ##   - 在条目详情页底部新增演示区域
@@ -97,6 +108,17 @@ const DATA_SOURCES: Dictionary = {
 }
 
 # ============================================================
+# 敌人类型颜色映射（与 main_game / render_bridge_3d 一致）
+# ============================================================
+const ENEMY_TYPE_COLORS: Dictionary = {
+	"static":  Color(0.7, 0.3, 0.3),
+	"silence": Color(0.2, 0.1, 0.4),
+	"screech": Color(1.0, 0.8, 0.0),
+	"pulse":   Color(0.0, 0.5, 1.0),
+	"wall":    Color(0.5, 0.5, 0.5),
+}
+
+# ============================================================
 # 节点引用
 # ============================================================
 var _background: ColorRect = null
@@ -111,7 +133,7 @@ var _title_label: Label = null
 var _progress_label: Label = null
 var _subcat_bar: HBoxContainer = null
 
-# ★ 法术演示区域节点
+# ★ 法术演示区域节点 (v5.0: 2.5D 升级)
 var _demo_viewport: SubViewport = null
 var _demo_viewport_container: SubViewportContainer = null
 var _demo_projectile_manager: Node2D = null
@@ -120,6 +142,24 @@ var _demo_cast_btn: Button = null
 var _demo_clear_btn: Button = null
 var _demo_info_label: Label = null
 var _demo_status_label: Label = null
+
+# ★ v5.0: 演示区域 3D 渲染节点
+var _demo_3d_viewport: SubViewport = null
+var _demo_3d_viewport_container: SubViewportContainer = null
+var _demo_3d_camera: Camera3D = null
+var _demo_3d_env: WorldEnvironment = null
+var _demo_3d_entity_layer: Node3D = null
+var _demo_3d_light: DirectionalLight3D = null
+
+# ★ v5.0: 敌人 3D 预览节点
+var _enemy_preview_viewport: SubViewport = null
+var _enemy_preview_container: SubViewportContainer = null
+var _enemy_preview_camera: Camera3D = null
+var _enemy_preview_model: Node3D = null
+
+# ★ v5.0: 背景 3D 氛围效果
+var _bg_3d_viewport: SubViewport = null
+var _bg_3d_viewport_container: SubViewportContainer = null
 
 # ============================================================
 # 状态
@@ -143,6 +183,7 @@ func _ready() -> void:
 	_codex_manager = get_node_or_null("/root/CodexManager")
 	_load_unlock_state()
 	_build_ui()
+	_build_bg_3d_atmosphere()
 	_select_volume(0)
 
 func _process(delta: float) -> void:
@@ -154,6 +195,10 @@ func _process(delta: float) -> void:
 		# 自动清理超过 5 秒的演示
 		if _demo_timer > 5.0:
 			_clear_demo()
+
+	# v5.0: 旋转敌人 3D 预览模型
+	if _enemy_preview_model and is_instance_valid(_enemy_preview_model):
+		_enemy_preview_model.rotation.y += delta * 1.5
 
 func _load_unlock_state() -> void:
 	if _codex_manager and _codex_manager.has_method("get_unlocked_entries"):
@@ -306,7 +351,97 @@ func _build_right_panel() -> Control:
 	_detail_container.add_child(hint)
 
 	_detail_scroll.add_child(_detail_container)
+
 	return _detail_scroll
+
+# ============================================================
+# v5.0: 背景 3D 氛围效果
+# ============================================================
+
+## 在 UI 背景层叠加微妙的 3D 粒子氛围效果
+func _build_bg_3d_atmosphere() -> void:
+	# 创建背景 3D 视口
+	_bg_3d_viewport_container = SubViewportContainer.new()
+	_bg_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_bg_3d_viewport_container.stretch = true
+	_bg_3d_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg_3d_viewport_container.self_modulate = Color(1, 1, 1, 0.3)  # 半透明叠加
+
+	_bg_3d_viewport = SubViewport.new()
+	_bg_3d_viewport.size = Vector2i(1280, 720)
+	_bg_3d_viewport.transparent_bg = true
+	_bg_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_bg_3d_viewport.own_world_3d = true
+
+	# 3D 摄像机
+	var bg_camera := Camera3D.new()
+	bg_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	bg_camera.size = 10.0
+	bg_camera.position = Vector3(0, 10, 0)
+	bg_camera.rotation_degrees = Vector3(-90, 0, 0)
+	_bg_3d_viewport.add_child(bg_camera)
+
+	# 环境（Glow/Bloom）
+	var bg_env_node := WorldEnvironment.new()
+	var bg_env := Environment.new()
+	bg_env.background_mode = Environment.BG_COLOR
+	bg_env.background_color = Color(0, 0, 0, 0)
+	bg_env.glow_enabled = true
+	bg_env.set_glow_level(1, 0.8)
+	bg_env.set_glow_level(3, 0.5)
+	bg_env.glow_intensity = 0.6
+	bg_env.glow_bloom = 0.3
+	bg_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	bg_env.glow_hdr_threshold = 0.5
+	bg_env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	bg_env_node.environment = bg_env
+	_bg_3d_viewport.add_child(bg_env_node)
+
+	# 漂浮粒子（星尘效果）
+	var stardust := GPUParticles3D.new()
+	stardust.name = "StardustParticles"
+	stardust.amount = 64
+	stardust.lifetime = 4.0
+	stardust.emitting = true
+
+	var stardust_mat := ParticleProcessMaterial.new()
+	stardust_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	stardust_mat.emission_box_extents = Vector3(5, 0.5, 5)
+	stardust_mat.direction = Vector3(0, 1, 0)
+	stardust_mat.spread = 30.0
+	stardust_mat.initial_velocity_min = 0.1
+	stardust_mat.initial_velocity_max = 0.3
+	stardust_mat.gravity = Vector3(0, 0, 0)
+	stardust_mat.damping_min = 0.5
+	stardust_mat.damping_max = 1.0
+	stardust_mat.scale_min = 0.02
+	stardust_mat.scale_max = 0.06
+
+	var stardust_gradient := Gradient.new()
+	stardust_gradient.set_color(0, Color(0.6, 0.4, 1.0, 0.0))
+	stardust_gradient.add_point(0.2, Color(0.6, 0.4, 1.0, 0.6))
+	stardust_gradient.add_point(0.8, Color(1.0, 0.85, 0.0, 0.4))
+	stardust_gradient.set_color(1, Color(1.0, 0.85, 0.0, 0.0))
+	var stardust_ramp := GradientTexture1D.new()
+	stardust_ramp.gradient = stardust_gradient
+	stardust_mat.color_ramp = stardust_ramp
+
+	stardust.process_material = stardust_mat
+	_bg_3d_viewport.add_child(stardust)
+
+	# 缓慢旋转的光源（营造氛围）
+	var ambient_light := OmniLight3D.new()
+	ambient_light.light_energy = 0.8
+	ambient_light.light_color = Color(0.6, 0.4, 1.0)
+	ambient_light.omni_range = 8.0
+	ambient_light.position = Vector3(0, 2, 0)
+	_bg_3d_viewport.add_child(ambient_light)
+
+	_bg_3d_viewport_container.add_child(_bg_3d_viewport)
+
+	# 插入到背景之后、主布局之前
+	add_child(_bg_3d_viewport_container)
+	move_child(_bg_3d_viewport_container, 1)  # 在 _background 之后
 
 # ============================================================
 # 数据获取
@@ -442,6 +577,9 @@ func _show_entry_detail(entry_id: String) -> void:
 	# 停止当前演示
 	_clear_demo()
 
+	# 清理敌人 3D 预览
+	_cleanup_enemy_preview()
+
 	# 清除旧详情
 	for child in _detail_container.get_children():
 		child.queue_free()
@@ -487,6 +625,10 @@ func _show_entry_detail(entry_id: String) -> void:
 	# 分隔线
 	_detail_container.add_child(HSeparator.new())
 
+	# ---- v5.0: 敌人 3D 预览（第三卷条目） ----
+	if _is_enemy_entry(entry_id, entry):
+		_build_enemy_3d_preview(entry_id, entry)
+
 	# ---- 描述 ----
 	var desc_label := Label.new()
 	desc_label.text = entry.get("description", "无描述")
@@ -498,9 +640,9 @@ func _show_entry_detail(entry_id: String) -> void:
 	# ---- 属性表格 (根据条目类型显示不同信息) ----
 	_build_detail_stats(entry_id, entry)
 
-	# ---- ★ 法术演示区域 ----
+	# ---- ★ 法术演示区域 (v5.0: 2.5D 升级) ----
 	if CodexData.has_demo(entry_id):
-		_build_demo_section(entry_id, entry)
+		_build_demo_section_25d(entry_id, entry)
 
 	# 重建条目列表以更新选中状态
 	_rebuild_entry_list()
@@ -660,11 +802,192 @@ func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) 
 	grid.add_child(value)
 
 # ============================================================
-# ★ 法术演示区域
+# v5.0: 敌人 3D 预览
 # ============================================================
 
-## 构建法术演示区域
-func _build_demo_section(entry_id: String, entry: Dictionary) -> void:
+## 判断条目是否为敌人类型
+func _is_enemy_entry(entry_id: String, entry: Dictionary) -> bool:
+	# 第三卷的所有条目都是敌人
+	var vol := VOLUME_CONFIG[_current_volume_idx] as Dictionary
+	return vol.get("volume", -1) == CodexData.Volume.BESTIARY
+
+## 构建敌人 3D 预览区域
+func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
+	# 预览区域标题
+	var preview_title := Label.new()
+	preview_title.text = "◆ 3D 预览"
+	preview_title.add_theme_font_size_override("font_size", 12)
+	preview_title.add_theme_color_override("font_color", ACCENT)
+	_detail_container.add_child(preview_title)
+
+	# 创建预览面板
+	var preview_panel := PanelContainer.new()
+	preview_panel.custom_minimum_size = Vector2(0, 180)
+
+	# SubViewportContainer
+	_enemy_preview_container = SubViewportContainer.new()
+	_enemy_preview_container.custom_minimum_size = Vector2(0, 160)
+	_enemy_preview_container.stretch = true
+	_enemy_preview_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# SubViewport
+	_enemy_preview_viewport = SubViewport.new()
+	_enemy_preview_viewport.size = Vector2i(400, 160)
+	_enemy_preview_viewport.transparent_bg = true
+	_enemy_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_enemy_preview_viewport.own_world_3d = true
+
+	# 3D 摄像机（正面视角）
+	_enemy_preview_camera = Camera3D.new()
+	_enemy_preview_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_enemy_preview_camera.size = 3.0
+	_enemy_preview_camera.position = Vector3(0, 1, 3)
+	_enemy_preview_camera.rotation_degrees = Vector3(-15, 0, 0)
+	_enemy_preview_viewport.add_child(_enemy_preview_camera)
+
+	# 环境（Glow/Bloom）
+	var preview_env_node := WorldEnvironment.new()
+	var preview_env := Environment.new()
+	preview_env.background_mode = Environment.BG_COLOR
+	preview_env.background_color = Color(0, 0, 0, 0)
+	preview_env.glow_enabled = true
+	preview_env.set_glow_level(1, 1.0)
+	preview_env.set_glow_level(3, 0.6)
+	preview_env.glow_intensity = 1.0
+	preview_env.glow_bloom = 0.3
+	preview_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	preview_env.glow_hdr_threshold = 0.6
+	preview_env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	preview_env_node.environment = preview_env
+	_enemy_preview_viewport.add_child(preview_env_node)
+
+	# 光源
+	var preview_light := DirectionalLight3D.new()
+	preview_light.light_energy = 0.5
+	preview_light.light_color = Color(0.8, 0.9, 1.0)
+	preview_light.rotation_degrees = Vector3(-45, 45, 0)
+	_enemy_preview_viewport.add_child(preview_light)
+
+	# 创建敌人 3D 模型
+	_enemy_preview_model = _create_enemy_3d_model(entry_id, entry)
+	_enemy_preview_viewport.add_child(_enemy_preview_model)
+
+	_enemy_preview_container.add_child(_enemy_preview_viewport)
+	preview_panel.add_child(_enemy_preview_container)
+	_detail_container.add_child(preview_panel)
+
+## 根据敌人类型创建 3D 模型（与 RenderBridge3D 的代理风格一致）
+func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
+	var model := Node3D.new()
+	model.name = "EnemyPreviewModel"
+
+	# 获取敌人类型和颜色
+	var enemy_type: String = entry.get("enemy_type", "")
+	var enemy_color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color(0.9, 0.3, 0.6))
+	var is_elite: bool = entry.has("phases") or entry.get("is_elite", false)
+	var is_boss: bool = entry.has("phases")
+
+	# 核心几何体
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "EnemyCoreMesh"
+
+	if is_boss:
+		# Boss：大型多面体
+		var prism := PrismMesh.new()
+		prism.size = Vector3(0.8, 0.8, 0.8)
+		mesh_instance.mesh = prism
+	elif is_elite:
+		# 精英：菱形体
+		var prism := PrismMesh.new()
+		prism.size = Vector3(0.5, 0.5, 0.5)
+		mesh_instance.mesh = prism
+	else:
+		# 普通敌人：立方体
+		var box := BoxMesh.new()
+		box.size = Vector3(0.3, 0.3, 0.3)
+		mesh_instance.mesh = box
+
+	# 自发光材质
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = enemy_color
+	mat.emission_enabled = true
+	mat.emission = enemy_color
+	mat.emission_energy_multiplier = 3.0 if is_boss else (2.5 if is_elite else 1.5)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color.a = 0.9
+	mesh_instance.material_override = mat
+	model.add_child(mesh_instance)
+
+	# 核心光源
+	var point_light := OmniLight3D.new()
+	point_light.light_energy = 2.0 if is_boss else (1.5 if is_elite else 0.8)
+	point_light.light_color = enemy_color
+	point_light.omni_range = 4.0 if is_boss else (3.0 if is_elite else 2.0)
+	point_light.omni_attenuation = 1.5
+	model.add_child(point_light)
+
+	# Boss 和精英：外层光晕环
+	if is_elite or is_boss:
+		var halo := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.4 if is_boss else 0.3
+		torus.outer_radius = 0.5 if is_boss else 0.4
+		torus.rings = 16
+		torus.ring_segments = 12
+		halo.mesh = torus
+		halo.rotation_degrees = Vector3(90, 0, 0)
+
+		var halo_mat := StandardMaterial3D.new()
+		halo_mat.albedo_color = Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.5)
+		halo_mat.emission_enabled = true
+		halo_mat.emission = enemy_color
+		halo_mat.emission_energy_multiplier = 2.0
+		halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		halo.material_override = halo_mat
+		model.add_child(halo)
+
+	# 粒子效果
+	var particles := GPUParticles3D.new()
+	particles.amount = 16 if is_boss else (12 if is_elite else 8)
+	particles.lifetime = 1.0
+	particles.emitting = true
+
+	var p_mat := ParticleProcessMaterial.new()
+	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	p_mat.emission_sphere_radius = 0.2
+	p_mat.direction = Vector3(0, 1, 0)
+	p_mat.spread = 60.0
+	p_mat.initial_velocity_min = 0.2
+	p_mat.initial_velocity_max = 0.5
+	p_mat.gravity = Vector3(0, 0, 0)
+	p_mat.damping_min = 1.0
+	p_mat.damping_max = 2.0
+	p_mat.scale_min = 0.02
+	p_mat.scale_max = 0.06
+
+	var p_gradient := Gradient.new()
+	p_gradient.set_color(0, Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.8))
+	p_gradient.set_color(1, Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.0))
+	var p_ramp := GradientTexture1D.new()
+	p_ramp.gradient = p_gradient
+	p_mat.color_ramp = p_ramp
+
+	particles.process_material = p_mat
+	model.add_child(particles)
+
+	return model
+
+## 清理敌人 3D 预览
+func _cleanup_enemy_preview() -> void:
+	_enemy_preview_model = null
+	# SubViewport 会随 _detail_container 的子节点一起被 queue_free
+
+# ============================================================
+# ★ v5.0: 法术演示区域 (2.5D 升级版)
+# ============================================================
+
+## 构建 2.5D 法术演示区域
+func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	var demo_config := CodexData.get_demo_config(entry_id)
 	if demo_config.is_empty():
 		return
@@ -673,14 +996,14 @@ func _build_demo_section(entry_id: String, entry: Dictionary) -> void:
 
 	# 演示区域标题
 	var demo_title := Label.new()
-	demo_title.text = "▶ 法术演示"
+	demo_title.text = "▶ 法术演示 (2.5D)"
 	demo_title.add_theme_font_size_override("font_size", 14)
 	demo_title.add_theme_color_override("font_color", GOLD)
 	_detail_container.add_child(demo_title)
 
 	# 演示说明
 	_demo_info_label = Label.new()
-	_demo_info_label.text = demo_config.get("demo_desc", "点击下方按钮查看法术效果。")
+	_demo_info_label.text = demo_config.get("demo_desc", "点击下方按钮查看法术效果。弹体使用 3D 渲染管线呈现。")
 	_demo_info_label.add_theme_font_size_override("font_size", 11)
 	_demo_info_label.add_theme_color_override("font_color", TEXT_SECONDARY)
 	_demo_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -688,44 +1011,109 @@ func _build_demo_section(entry_id: String, entry: Dictionary) -> void:
 
 	# 演示视口容器（带边框背景）
 	var demo_panel := PanelContainer.new()
-	demo_panel.custom_minimum_size = Vector2(0, 220)
+	demo_panel.custom_minimum_size = Vector2(0, 240)
 
-	# 创建 SubViewport 用于渲染弹体
+	# ---- 2D 弹体层（保留原有逻辑） ----
 	_demo_viewport_container = SubViewportContainer.new()
-	_demo_viewport_container.custom_minimum_size = Vector2(0, 200)
+	_demo_viewport_container.custom_minimum_size = Vector2(0, 220)
 	_demo_viewport_container.stretch = true
 	_demo_viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	_demo_viewport = SubViewport.new()
-	_demo_viewport.size = Vector2i(600, 200)
+	_demo_viewport.size = Vector2i(600, 220)
 	_demo_viewport.transparent_bg = true
 	_demo_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	# 在 SubViewport 中创建 ProjectileManager 实例
-	# ★ 使用与游戏相同的 ProjectileManager 脚本
 	var pm_script = load("res://scripts/systems/projectile_manager.gd")
 	if pm_script:
 		_demo_projectile_manager = Node2D.new()
 		_demo_projectile_manager.set_script(pm_script)
-		# ★ 设置演示模式标志，跳过 GameManager 状态检查和全局信号连接
 		_demo_projectile_manager.set("_demo_mode", true)
-		# ★ 禁用 _process 自动更新，改由 codex_ui._process 手动调用 update_projectiles
 		_demo_projectile_manager.set_process(false)
 		_demo_viewport.add_child(_demo_projectile_manager)
 
-		# 添加深色背景
+		# 深色背景
 		var bg := ColorRect.new()
 		bg.color = DEMO_BG
 		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		bg.z_index = -1
 		_demo_viewport.add_child(bg)
 
-		# 添加网格线（帮助感知弹体运动）
+		# 网格线
 		var grid := _create_demo_grid()
 		_demo_viewport.add_child(grid)
 
 	_demo_viewport_container.add_child(_demo_viewport)
-	demo_panel.add_child(_demo_viewport_container)
+
+	# ---- v5.0: 3D 渲染叠加层（Glow/Bloom + 3D 粒子） ----
+	_demo_3d_viewport_container = SubViewportContainer.new()
+	_demo_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_demo_3d_viewport_container.stretch = true
+	_demo_3d_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_demo_3d_viewport_container.self_modulate = Color(1, 1, 1, 1)
+
+	_demo_3d_viewport = SubViewport.new()
+	_demo_3d_viewport.size = Vector2i(600, 220)
+	_demo_3d_viewport.transparent_bg = true
+	_demo_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_demo_3d_viewport.own_world_3d = true
+
+	# 3D 正交摄像机（俯视）
+	_demo_3d_camera = Camera3D.new()
+	_demo_3d_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_demo_3d_camera.size = 8.0
+	_demo_3d_camera.position = Vector3(3, 10, 1.5)
+	_demo_3d_camera.rotation_degrees = Vector3(-90, 0, 0)
+	_demo_3d_viewport.add_child(_demo_3d_camera)
+
+	# WorldEnvironment（Glow/Bloom — 与 main_game 一致）
+	_demo_3d_env = WorldEnvironment.new()
+	var demo_env := Environment.new()
+	demo_env.background_mode = Environment.BG_COLOR
+	demo_env.background_color = Color(0, 0, 0, 0)
+	demo_env.glow_enabled = true
+	demo_env.set_glow_level(1, 1.0)
+	demo_env.set_glow_level(3, 0.8)
+	demo_env.set_glow_level(5, 0.5)
+	demo_env.glow_intensity = 0.8
+	demo_env.glow_strength = 1.0
+	demo_env.glow_bloom = 0.2
+	demo_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	demo_env.glow_hdr_threshold = 0.8
+	demo_env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	demo_env.adjustment_enabled = true
+	demo_env.adjustment_contrast = 1.1
+	demo_env.adjustment_saturation = 1.2
+	_demo_3d_env.environment = demo_env
+	_demo_3d_viewport.add_child(_demo_3d_env)
+
+	# 方向光
+	_demo_3d_light = DirectionalLight3D.new()
+	_demo_3d_light.light_energy = 0.3
+	_demo_3d_light.light_color = Color(0.8, 0.9, 1.0)
+	_demo_3d_light.rotation_degrees = Vector3(-45, 45, 0)
+	_demo_3d_viewport.add_child(_demo_3d_light)
+
+	# 3D 实体层（用于放置弹体的 3D 代理）
+	_demo_3d_entity_layer = Node3D.new()
+	_demo_3d_entity_layer.name = "DemoEntityLayer3D"
+	_demo_3d_viewport.add_child(_demo_3d_entity_layer)
+
+	_demo_3d_viewport_container.add_child(_demo_3d_viewport)
+
+	# 使用层叠布局：2D 层在底，3D 层叠加在上
+	var layered_container := Control.new()
+	layered_container.custom_minimum_size = Vector2(0, 220)
+	layered_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	_demo_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_demo_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	layered_container.add_child(_demo_viewport_container)
+	layered_container.add_child(_demo_3d_viewport_container)
+
+	demo_panel.add_child(layered_container)
 	_detail_container.add_child(demo_panel)
 
 	# 控制按钮栏
@@ -771,6 +1159,9 @@ func _on_demo_cast(entry_id: String) -> void:
 	if _demo_projectile_manager and _demo_projectile_manager.has_method("clear_all"):
 		_demo_projectile_manager.clear_all()
 
+	# v5.0: 清除 3D 层的旧弹体代理
+	_clear_demo_3d_entities()
+
 	_demo_active = true
 	_demo_timer = 0.0
 
@@ -793,11 +1184,14 @@ func _demo_cast_note(config: Dictionary) -> void:
 	var spell_data := _build_demo_spell_data(white_key, -1)
 
 	# 调整弹体位置和方向以适应演示视口
-	spell_data["_demo_origin"] = Vector2(50, 100)  # 从左侧发射
+	spell_data["_demo_origin"] = Vector2(50, 110)  # 从左侧发射
 	spell_data["_demo_direction"] = Vector2.RIGHT
 
 	# 通过 ProjectileManager 的实际接口生成弹体
 	_spawn_demo_projectile(spell_data)
+
+	# v5.0: 在 3D 层生成对应的发光弹体代理
+	_spawn_demo_3d_projectile(spell_data)
 
 	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
 	_update_demo_status("施放: %s | DMG=%.0f SPD=%.0f DUR=%.1fs SIZE=%.0fpx" % [
@@ -811,10 +1205,11 @@ func _demo_cast_note_modifier(config: Dictionary) -> void:
 	var modifier: int = config.get("demo_modifier", -1)
 	var spell_data := _build_demo_spell_data(white_key, modifier)
 
-	spell_data["_demo_origin"] = Vector2(50, 100)
+	spell_data["_demo_origin"] = Vector2(50, 110)
 	spell_data["_demo_direction"] = Vector2.RIGHT
 
 	_spawn_demo_projectile(spell_data)
+	_spawn_demo_3d_projectile(spell_data)
 
 	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
 	var mod_name := _get_modifier_display_name(modifier)
@@ -848,11 +1243,12 @@ func _demo_cast_chord(config: Dictionary) -> void:
 
 	# 通过 ProjectileManager 的和弦施法接口生成弹体
 	if _demo_projectile_manager and _demo_projectile_manager.has_method("spawn_chord_projectiles"):
-		# 设置演示用的玩家位置（视口中心）
-		_demo_projectile_manager.spawn_chord_projectiles(chord_data, Vector2(300, 100), Vector2.RIGHT)
+		_demo_projectile_manager.spawn_chord_projectiles(chord_data, Vector2(300, 110), Vector2.RIGHT)
 	else:
-		# 回退：通过 SpellcraftSystem 信号链（弹体会出现在主游戏场景中）
 		SpellcraftSystem.chord_cast.emit(chord_data)
+
+	# v5.0: 在 3D 层生成和弦爆发粒子
+	_spawn_demo_3d_chord_burst(chord_data)
 
 	_update_demo_status("施放和弦: %s | DMG=%.0f | 不和谐度=%.1f" % [
 		spell_info.get("name", ""), base_dmg * chord_multiplier, dissonance
@@ -869,12 +1265,13 @@ func _demo_cast_rhythm(config: Dictionary) -> void:
 
 	for i in range(spell_count):
 		var spell_data := _build_demo_spell_data(white_key, -1)
-		spell_data["_demo_origin"] = Vector2(50, 40 + i * 40)
+		spell_data["_demo_origin"] = Vector2(50, 40 + i * 45)
 		spell_data["_demo_direction"] = Vector2.RIGHT
 
 		# 应用节奏型效果到弹体（与 ProjectileManager._apply_rhythm_to_projectile 一致）
 		_apply_demo_rhythm_effect(spell_data, pattern_type)
 		_spawn_demo_projectile(spell_data)
+		_spawn_demo_3d_projectile(spell_data)
 
 	_update_demo_status("节奏型演示: %s (4 个弹体)" % pattern_type)
 
@@ -910,14 +1307,13 @@ func _spawn_demo_projectile(spell_data: Dictionary) -> void:
 	if not _demo_projectile_manager:
 		return
 
-	var origin: Vector2 = spell_data.get("_demo_origin", Vector2(50, 100))
+	var origin: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
 	var direction: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
 
 	# 通过 ProjectileManager 的实际接口生成弹体
 	if _demo_projectile_manager.has_method("spawn_from_spell"):
 		_demo_projectile_manager.spawn_from_spell(spell_data, origin, direction)
 	elif _demo_projectile_manager.has_method("spawn_projectile"):
-		# 回退：直接调用底层生成方法
 		_demo_projectile_manager.spawn_projectile({
 			"position": origin,
 			"velocity": direction * spell_data["speed"],
@@ -927,6 +1323,148 @@ func _spawn_demo_projectile(spell_data: Dictionary) -> void:
 			"color": spell_data["color"],
 			"modifier": spell_data.get("modifier", -1),
 		})
+
+# ============================================================
+# v5.0: 3D 演示弹体代理
+# ============================================================
+
+## 在 3D 层生成弹体的发光代理
+func _spawn_demo_3d_projectile(spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+
+	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
+	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var color: Color = spell_data.get("color", Color.WHITE)
+	var speed: float = spell_data.get("speed", 200.0)
+	var size: float = spell_data.get("size", 16.0)
+	var duration: float = spell_data.get("duration", 1.0)
+
+	# 将 2D 演示坐标转换为 3D 空间（简化映射：100px = 1 unit）
+	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
+	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
+
+	# 创建 3D 弹体代理
+	var projectile_3d := Node3D.new()
+	projectile_3d.name = "DemoProjectile3D"
+	projectile_3d.position = pos_3d
+
+	# 发光球体
+	var mesh_inst := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = size / 200.0  # 缩放到 3D 空间
+	sphere.height = size / 100.0
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	mesh_inst.mesh = sphere
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 4.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color.a = 0.9
+	mesh_inst.material_override = mat
+	projectile_3d.add_child(mesh_inst)
+
+	# 点光源
+	var light := OmniLight3D.new()
+	light.light_energy = 1.5
+	light.light_color = color
+	light.omni_range = 1.5
+	light.omni_attenuation = 2.0
+	projectile_3d.add_child(light)
+
+	# 拖尾粒子
+	var trail := GPUParticles3D.new()
+	trail.amount = 8
+	trail.lifetime = 0.4
+	trail.emitting = true
+
+	var trail_mat := ParticleProcessMaterial.new()
+	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	trail_mat.emission_sphere_radius = 0.02
+	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
+	trail_mat.spread = 15.0
+	trail_mat.initial_velocity_min = 0.2
+	trail_mat.initial_velocity_max = 0.5
+	trail_mat.gravity = Vector3(0, 0, 0)
+	trail_mat.damping_min = 2.0
+	trail_mat.damping_max = 4.0
+	trail_mat.scale_min = 0.01
+	trail_mat.scale_max = 0.04
+
+	var trail_gradient := Gradient.new()
+	trail_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
+	trail_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
+	var trail_ramp := GradientTexture1D.new()
+	trail_ramp.gradient = trail_gradient
+	trail_mat.color_ramp = trail_ramp
+	trail.process_material = trail_mat
+	projectile_3d.add_child(trail)
+
+	_demo_3d_entity_layer.add_child(projectile_3d)
+
+	# 使用 Tween 驱动 3D 弹体移动
+	var target_pos := pos_3d + vel_3d * duration
+	var tween := create_tween()
+	tween.tween_property(projectile_3d, "position", target_pos, duration)
+	tween.tween_callback(projectile_3d.queue_free)
+
+## 在 3D 层生成和弦爆发粒子
+func _spawn_demo_3d_chord_burst(chord_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+
+	# 在视口中心生成爆发粒子
+	var burst := GPUParticles3D.new()
+	burst.name = "ChordBurst3D"
+	burst.one_shot = true
+	burst.amount = 32
+	burst.lifetime = 0.8
+	burst.explosiveness = 1.0
+	burst.position = Vector3(3, 0, 1.1)  # 视口中心
+
+	var burst_mat := ParticleProcessMaterial.new()
+	burst_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	burst_mat.emission_sphere_radius = 0.1
+	burst_mat.direction = Vector3(0, 0, 0)
+	burst_mat.spread = 180.0
+	burst_mat.initial_velocity_min = 1.0
+	burst_mat.initial_velocity_max = 3.0
+	burst_mat.damping_min = 2.0
+	burst_mat.damping_max = 4.0
+	burst_mat.gravity = Vector3(0, 0, 0)
+	burst_mat.scale_min = 0.02
+	burst_mat.scale_max = 0.08
+
+	var chord_color := Color(0.6, 0.4, 1.0)  # 默认紫色
+	var burst_gradient := Gradient.new()
+	burst_gradient.set_color(0, Color(chord_color.r, chord_color.g, chord_color.b, 1.0))
+	burst_gradient.set_color(1, Color(chord_color.r, chord_color.g, chord_color.b, 0.0))
+	var burst_ramp := GradientTexture1D.new()
+	burst_ramp.gradient = burst_gradient
+	burst_mat.color_ramp = burst_ramp
+	burst.process_material = burst_mat
+
+	_demo_3d_entity_layer.add_child(burst)
+	burst.emitting = true
+
+	# 同时闪烁 Glow
+	if _demo_3d_env and _demo_3d_env.environment:
+		_demo_3d_env.environment.glow_intensity = 1.5
+		var tween := create_tween()
+		tween.tween_property(_demo_3d_env.environment, "glow_intensity", 0.8, 0.5)
+
+	# 自动清理
+	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
+
+## 清除 3D 演示层的所有实体
+func _clear_demo_3d_entities() -> void:
+	if _demo_3d_entity_layer:
+		for child in _demo_3d_entity_layer.get_children():
+			child.queue_free()
 
 ## 应用演示用的节奏型效果
 func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> void:
@@ -963,6 +1501,8 @@ func _clear_demo() -> void:
 		_demo_projectile_manager.clear_all()
 	if _demo_status_label:
 		_demo_status_label.text = ""
+	# v5.0: 清除 3D 层
+	_clear_demo_3d_entities()
 
 ## 更新演示状态文字
 func _update_demo_status(text: String) -> void:
@@ -1025,6 +1565,7 @@ func _on_search_changed(new_text: String) -> void:
 
 func _on_back_pressed() -> void:
 	_clear_demo()
+	_cleanup_enemy_preview()
 	back_pressed.emit()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 

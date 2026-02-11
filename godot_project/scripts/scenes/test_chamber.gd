@@ -1,5 +1,15 @@
 ## test_chamber.gd
-## 回响试炼场 (The Echoing Chamber) — 测试场主逻辑
+## 回响试炼场 (The Echoing Chamber) — 测试场主逻辑 v2.0 (2.5D 迁移版)
+##
+## v2.0 变更：
+## - 集成 RenderBridge3D 实现 2.5D 混合渲染（与 main_game 视觉风格一致）
+## - 替换 Polygon2D 玩家视觉为 PlayerVisualEnhanced（正十二面体 + 金环）
+## - 添加 ChapterManager 支持章节视觉切换测试
+## - 添加地面 Shader（pulsing_grid.gdshader 脉冲网格）
+## - 敌人生成时自动注册 3D 代理（精英独立代理 / 普通 MultiMesh 批量渲染）
+## - 弹幕数据实时同步到 3D 渲染层
+## - 新增 F11 快捷键：切换章节视觉主题
+## - 新增 F12 快捷键：切换 3D 渲染层开关（性能调试）
 ##
 ## 功能概述：
 ##   1. 自由生成任意敌人（类型、数量、等级可调）
@@ -17,12 +27,18 @@
 ##   - 伤害计算遵循实际公式（含疲劳、调式、音色、节奏型修饰）
 ##   - 碰撞检测由 ProjectileManager.check_collisions() 统一处理
 ##
-## 场景结构：
+## 场景结构 (v2.0)：
 ##   TestChamber (Node2D)
-##     ├── Ground (背景)
+##     ├── Ground (背景 + pulsing_grid Shader)
 ##     ├── Player (玩家)
+##     │   └── PlayerVisualEnhanced (正十二面体 + 金环 + 粒子)
 ##     ├── EnemyContainer (敌人容器)
 ##     ├── ProjectileManager (弹体管理)
+##     ├── ChapterManager (章节管理 — 支持视觉切换测试)
+##     ├── SpellVisualManager (法术视觉管理)
+##     ├── DeathVfxManager (死亡特效管理)
+##     ├── DamageNumberManager (伤害数字管理)
+##     ├── RenderBridge3D (2.5D 渲染桥接层)
 ##     ├── HUD (游戏 HUD)
 ##     ├── DebugPanel (调试面板 — 左侧可折叠)
 ##     └── DPSOverlay (DPS 统计覆盖层)
@@ -54,6 +70,18 @@ const ENEMY_SCENES: Dictionary = {
 	"wall":    "res://scenes/enemies/enemy_wall.tscn",
 }
 
+# 敌人类型对应的 3D 代理颜色
+const ENEMY_COLORS: Dictionary = {
+	"static":  Color(0.7, 0.3, 0.3),   # 红色
+	"silence": Color(0.2, 0.1, 0.4),   # 深紫
+	"screech": Color(1.0, 0.8, 0.0),   # 黄色
+	"pulse":   Color(0.0, 0.5, 1.0),   # 蓝色
+	"wall":    Color(0.5, 0.5, 0.5),   # 灰色
+}
+
+# 精英敌人类型列表（用于判断是否创建独立 3D 代理）
+const ELITE_TYPES: Array = ["pulse", "wall"]
+
 # ============================================================
 # 节点引用
 # ============================================================
@@ -61,6 +89,18 @@ const ENEMY_SCENES: Dictionary = {
 @onready var _enemy_container: Node2D = $EnemyContainer
 @onready var _projectile_manager: Node2D = $ProjectileManager
 @onready var _hud: CanvasLayer = $HUD
+@onready var _ground: Node2D = $Ground
+
+# v2.0: 2.5D 渲染桥接层
+@onready var _render_bridge: Node = $RenderBridge3D
+
+# v2.0: 章节管理器
+@onready var _chapter_manager: Node = $ChapterManager
+
+# v2.0: 视觉管理器
+@onready var _spell_visual_manager: Node2D = $SpellVisualManager
+@onready var _death_vfx_manager: Node2D = $DeathVfxManager
+@onready var _damage_number_manager: Node2D = $DamageNumberManager
 
 # ============================================================
 # 调试状态
@@ -74,6 +114,10 @@ var time_scale: float = 1.0         ## 时间缩放
 var _collision_timer: float = 0.0    ## 碰撞检测计时器
 var _auto_fire_timer: float = 0.0   ## 自动施法计时器
 var _auto_fire_interval: float = 0.5 ## 自动施法间隔
+
+# v2.0: 章节视觉切换
+var _current_test_chapter: int = 0   ## 当前测试章节索引
+const MAX_CHAPTERS: int = 7          ## 最大章节数
 
 # DPS 统计
 var _dps_tracker: Dictionary = {
@@ -89,6 +133,9 @@ var _dps_tracker: Dictionary = {
 # 生成的敌人计数
 var _spawned_count: int = 0
 var _killed_count: int = 0
+
+# 地面 Shader 节点
+var _ground_sprite: Sprite2D = null
 
 # ============================================================
 # 生命周期
@@ -107,11 +154,25 @@ func _ready() -> void:
 		GameManager.is_test_mode = true
 		GameManager.current_state = GameManager.GameState.PLAYING
 
+	# v2.0: 设置地面 Shader
+	_setup_ground()
+
+	# v2.0: 初始化 2.5D 渲染桥接层
+	_setup_render_bridge()
+
+	# v2.0: 连接节拍信号到 3D 渲染层
+	_connect_beat_signal()
+
 	# ★ 连接 SpellcraftSystem 信号以追踪法术施放
 	_connect_spell_signals()
 
-	_log("回响试炼场已启动。使用左侧调试面板控制测试环境。")
+	# v2.0: 连接敌人击杀信号到死亡特效
+	if not GameManager.enemy_killed.is_connected(_on_enemy_killed_vfx):
+		GameManager.enemy_killed.connect(_on_enemy_killed_vfx)
+
+	_log("回响试炼场 v2.0 (2.5D) 已启动。使用左侧调试面板控制测试环境。")
 	_log("法术系统已同步：所有施法通过 SpellcraftSystem 执行。")
+	_log("F11: 切换章节视觉主题 | F12: 切换 3D 渲染层")
 
 func _process(delta: float) -> void:
 	# 应用时间缩放
@@ -151,6 +212,12 @@ func _process(delta: float) -> void:
 	# 绘制调试信息
 	if show_hitboxes:
 		queue_redraw()
+
+	# v2.0: 更新地面 Shader 参数
+	_update_ground_shader()
+
+	# v2.0: 同步弹幕数据到 3D 渲染层
+	_sync_projectiles_to_3d()
 
 func _draw() -> void:
 	# 绘制竞技场网格
@@ -196,8 +263,178 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F10:
 				auto_fire = !auto_fire
 				_log("自动施法: %s" % ("开启" if auto_fire else "关闭"))
+			KEY_F11:
+				# v2.0: 切换章节视觉主题
+				_cycle_chapter_visual()
+			KEY_F12:
+				# v2.0: 切换 3D 渲染层开关
+				_toggle_3d_layer()
 			KEY_ESCAPE:
 				_return_to_menu()
+
+# ============================================================
+# v2.0: 地面 Shader 设置（脉冲网格）
+# ============================================================
+
+func _setup_ground() -> void:
+	if not _ground:
+		return
+
+	# 创建大型 Sprite2D 作为地面载体
+	_ground_sprite = Sprite2D.new()
+	_ground_sprite.name = "GroundGrid"
+
+	# 使用纯白纹理，让 Shader 完全控制颜色
+	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	var tex := ImageTexture.create_from_image(img)
+	_ground_sprite.texture = tex
+	_ground_sprite.scale = ARENA_SIZE  # 覆盖整个竞技场
+
+	# 应用脉冲网格 Shader
+	var shader = load("res://shaders/pulsing_grid.gdshader")
+	if shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		mat.set_shader_parameter("grid_color", Color(0.0, 1.0, 0.8, 1.0))
+		mat.set_shader_parameter("grid_color_secondary", Color(0.0, 0.4, 0.8, 1.0))
+		mat.set_shader_parameter("cell_size", 64.0)
+		mat.set_shader_parameter("beat_energy", 0.0)
+		mat.set_shader_parameter("time", 0.0)
+		mat.set_shader_parameter("player_position", ARENA_CENTER)
+		_ground_sprite.material = mat
+
+	_ground_sprite.position = ARENA_CENTER
+	_ground.add_child(_ground_sprite)
+
+func _update_ground_shader() -> void:
+	if _ground_sprite and _ground_sprite.material is ShaderMaterial:
+		var mat: ShaderMaterial = _ground_sprite.material
+		mat.set_shader_parameter("time", Time.get_ticks_msec() / 1000.0)
+		if _player:
+			mat.set_shader_parameter("player_position", _player.position - ARENA_CENTER)
+
+# ============================================================
+# v2.0: 2.5D 渲染桥接层设置
+# ============================================================
+
+func _setup_render_bridge() -> void:
+	if not _render_bridge:
+		return
+
+	# 设置摄像机跟随玩家
+	if _player and _render_bridge.has_method("set_follow_target"):
+		_render_bridge.set_follow_target(_player)
+
+	# 为玩家创建 3D 渲染代理
+	if _player and _render_bridge.has_method("create_player_proxy"):
+		_render_bridge.create_player_proxy(_player)
+
+	_log("2.5D 渲染桥接层已初始化")
+
+## 连接节拍信号到 3D 渲染层脉冲
+func _connect_beat_signal() -> void:
+	if GameManager.has_signal("beat_tick"):
+		if not GameManager.beat_tick.is_connected(_on_beat_tick_3d):
+			GameManager.beat_tick.connect(_on_beat_tick_3d)
+
+## 节拍信号回调 → 3D 渲染层脉冲
+func _on_beat_tick_3d(beat_index: int) -> void:
+	if _render_bridge and _render_bridge.has_method("on_beat_pulse"):
+		_render_bridge.on_beat_pulse(beat_index)
+
+## 将弹幕数据同步到 3D 渲染层
+func _sync_projectiles_to_3d() -> void:
+	if not _render_bridge or not _projectile_manager:
+		return
+	if not _render_bridge.has_method("sync_projectiles"):
+		return
+	if not _projectile_manager.has_method("get_projectile_render_data"):
+		return
+
+	var render_data = _projectile_manager.get_projectile_render_data()
+	_render_bridge.sync_projectiles(render_data)
+
+## 为敌人注册 3D 渲染代理
+func _register_enemy_3d(enemy: Node2D, enemy_type: String) -> void:
+	if not _render_bridge:
+		return
+
+	var color: Color = ENEMY_COLORS.get(enemy_type, Color(0.9, 0.3, 0.6))
+	var is_elite: bool = enemy_type in ELITE_TYPES
+
+	if is_elite:
+		# 精英敌人：创建独立的 3D 代理（带光源 + 几何体）
+		if _render_bridge.has_method("register_enemy_proxy"):
+			_render_bridge.register_enemy_proxy(enemy, color, true)
+	else:
+		# 普通敌人：注册到 MultiMesh 批量渲染
+		if _render_bridge.has_method("register_normal_enemy"):
+			_render_bridge.register_normal_enemy(enemy, color)
+
+	enemy.set_meta("registered_3d", true)
+
+## 移除敌人 3D 代理
+func _unregister_enemy_3d(enemy: Node2D) -> void:
+	if not _render_bridge:
+		return
+	if _render_bridge.has_method("unregister_enemy_proxy"):
+		_render_bridge.unregister_enemy_proxy(enemy)
+
+# ============================================================
+# v2.0: 章节视觉切换（测试用）
+# ============================================================
+
+## 循环切换章节视觉主题
+func _cycle_chapter_visual() -> void:
+	_current_test_chapter = (_current_test_chapter + 1) % MAX_CHAPTERS
+	var chapter_names := [
+		"毕达哥拉斯学派", "中世纪教堂", "巴洛克宫廷",
+		"洛可可沙龙", "浪漫主义音乐厅", "爵士俱乐部", "数字空间"
+	]
+	var chapter_name: String = chapter_names[_current_test_chapter] if _current_test_chapter < chapter_names.size() else "未知"
+
+	# 通知 ChapterManager 切换章节（如果可用）
+	if _chapter_manager and _chapter_manager.has_method("force_chapter"):
+		_chapter_manager.force_chapter(_current_test_chapter)
+	elif _chapter_manager and _chapter_manager.has_signal("chapter_started"):
+		_chapter_manager.chapter_started.emit(_current_test_chapter, chapter_name)
+
+	# 更新 3D 渲染层的章节视觉
+	if _render_bridge and _render_bridge.has_method("update_player_light_color"):
+		var chapter_colors := [
+			Color(0.0, 1.0, 0.8),   # Ch1: 青色
+			Color(0.8, 0.6, 1.0),   # Ch2: 紫色
+			Color(1.0, 0.85, 0.0),  # Ch3: 金色
+			Color(1.0, 0.6, 0.8),   # Ch4: 粉色
+			Color(0.9, 0.3, 0.3),   # Ch5: 红色
+			Color(0.0, 0.5, 1.0),   # Ch6: 蓝色
+			Color(0.0, 1.0, 0.5),   # Ch7: 绿色
+		]
+		if _current_test_chapter < chapter_colors.size():
+			_render_bridge.update_player_light_color(chapter_colors[_current_test_chapter])
+
+	_log("章节视觉切换: 第 %d 章 — %s" % [_current_test_chapter + 1, chapter_name])
+
+## 切换 3D 渲染层开关
+func _toggle_3d_layer() -> void:
+	if _render_bridge and "enable_3d_layer" in _render_bridge:
+		_render_bridge.enable_3d_layer = !_render_bridge.enable_3d_layer
+		_log("3D 渲染层: %s" % ("开启" if _render_bridge.enable_3d_layer else "关闭"))
+
+# ============================================================
+# v2.0: 敌人击杀特效
+# ============================================================
+
+func _on_enemy_killed_vfx(pos: Vector2, _xp: int, enemy_type: String) -> void:
+	# 在 3D 层生成死亡爆发粒子
+	if _render_bridge and _render_bridge.has_method("spawn_burst_particles"):
+		var color: Color = ENEMY_COLORS.get(enemy_type, Color(0.9, 0.3, 0.6))
+		_render_bridge.spawn_burst_particles(pos, color, 24)
+
+	# 2D 死亡特效
+	if _death_vfx_manager and _death_vfx_manager.has_method("spawn_death_vfx"):
+		_death_vfx_manager.spawn_death_vfx(pos, enemy_type)
 
 # ============================================================
 # ★ SpellcraftSystem 信号连接与法术追踪
@@ -588,6 +825,9 @@ func spawn_enemy(enemy_type: String, count: int = 1, position_mode: String = "ra
 		_enemy_container.add_child(enemy)
 		_spawned_count += 1
 
+		# v2.0: 注册敌人 3D 渲染代理
+		_register_enemy_3d(enemy, enemy_type)
+
 	_log("已生成 %d 个 [%s]，位置模式: %s" % [count, enemy_type, position_mode])
 
 ## 获取生成位置
@@ -655,6 +895,8 @@ func _spawn_wave_preset(preset_name: String) -> void:
 func _clear_all_enemies() -> void:
 	var count := _enemy_container.get_child_count()
 	for child in _enemy_container.get_children():
+		# v2.0: 移除 3D 代理
+		_unregister_enemy_3d(child)
 		child.queue_free()
 	_log("已清除 %d 个敌人" % count)
 
@@ -695,6 +937,10 @@ func _check_collisions() -> void:
 			# 显示伤害数字
 			if _hud and _hud.has_method("show_damage_number"):
 				_hud.show_damage_number(hit["position"], hit["damage"])
+
+			# v2.0: 显示伤害数字（通过 DamageNumberManager）
+			if _damage_number_manager and _damage_number_manager.has_method("spawn_damage_number"):
+				_damage_number_manager.spawn_damage_number(hit["position"], hit["damage"])
 
 func _get_enemy_collision_data() -> Array:
 	var data: Array = []
@@ -938,6 +1184,8 @@ func get_stats_summary() -> Dictionary:
 		"time_scale": time_scale,
 		"active_projectiles": proj_stats.get("active_projectiles", 0),
 		"auto_fire": auto_fire,
+		"current_chapter": _current_test_chapter,
+		"render_3d_enabled": _render_bridge.enable_3d_layer if _render_bridge and "enable_3d_layer" in _render_bridge else false,
 	}
 
 # ============================================================
@@ -962,6 +1210,13 @@ func _return_to_menu() -> void:
 			SpellcraftSystem.progression_resolved.disconnect(_on_progression_resolved)
 		if SpellcraftSystem.timbre_changed.is_connected(_on_timbre_changed):
 			SpellcraftSystem.timbre_changed.disconnect(_on_timbre_changed)
+	# 断开节拍信号
+	if GameManager.has_signal("beat_tick"):
+		if GameManager.beat_tick.is_connected(_on_beat_tick_3d):
+			GameManager.beat_tick.disconnect(_on_beat_tick_3d)
+	# 断开敌人击杀信号
+	if GameManager.enemy_killed.is_connected(_on_enemy_killed_vfx):
+		GameManager.enemy_killed.disconnect(_on_enemy_killed_vfx)
 	# 重置测试模式标记
 	if GameManager:
 		GameManager.is_test_mode = false
