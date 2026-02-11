@@ -1,13 +1,15 @@
 ## debug_panel.gd
-## 测试场调试面板 — 左侧可折叠的控制面板
+## 调试控制台 v4.0 — 纯遥控器架构
+## 不包含任何游戏逻辑，所有操作通过 main_game.gd 暴露的 debug_* 接口执行
 ##
 ## 功能区域：
 ##   1. 调试开关（无敌/无限疲劳/冻结/碰撞箱）
 ##   2. 敌人生成（类型选择、数量、位置模式、预设波次）
-##   3. 玩家属性（HP/移速/伤害倍率/等级）
-##   4. 法术配置（BPM/调式/音色）
-##   5. DPS 统计面板
-##   6. 操作日志
+##   3. 章节控制（启动/暂停章节系统、敌人波次系统）
+##   4. 玩家属性（HP/移速/伤害倍率/等级）
+##   5. 法术配置（BPM/调式/音色）
+##   6. DPS 统计面板
+##   7. 操作日志
 extends CanvasLayer
 
 # ============================================================
@@ -57,11 +59,13 @@ func _ready() -> void:
 	layer = 20  # 确保在最上层
 	_build_ui()
 
-	# 查找 TestChamber 节点
+	# 查找宿主场景（main_game.gd 在测试模式下会加入 test_chamber 组）
 	await get_tree().process_frame
 	_test_chamber = get_tree().get_first_node_in_group("test_chamber")
 	if not _test_chamber:
 		_test_chamber = get_parent()
+		while _test_chamber and not _test_chamber.has_method("debug_spawn_enemy"):
+			_test_chamber = _test_chamber.get_parent()
 
 	# 连接日志信号
 	if _test_chamber and _test_chamber.has_signal("debug_message"):
@@ -111,6 +115,7 @@ func _build_ui() -> void:
 	_build_header()
 	_build_debug_toggles()
 	_build_enemy_spawner()
+	_build_chapter_control()
 	_build_player_config()
 	_build_spell_config()
 	_build_spell_quick_test()
@@ -144,14 +149,14 @@ func _build_header() -> void:
 	vbox.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "回响试炼场 · 调试面板"
+	subtitle.text = "回响试炼场 · 调试控制台 v4.0"
 	subtitle.add_theme_font_size_override("font_size", 10)
 	subtitle.add_theme_color_override("font_color", DIM_COLOR)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(subtitle)
 
 	var hotkeys := Label.new()
-	hotkeys.text = "F1:无敌 F2:疲劳 F3:冻结 F4:碰撞箱 F5:清敌\nF6:重置DPS F7:慢放 F8:波次 F9:全图鉴  Esc:返回"
+	hotkeys.text = "F1:无敌 F2:疲劳 F3:冻结 F4:碰撞箱 F5:清敌\nF6:重置DPS F7:慢放 F8:波次 F9:全图鉴\nF10:自动施法 F11:章节 F12:3D层 Esc:返回"
 	hotkeys.add_theme_font_size_override("font_size", 9)
 	hotkeys.add_theme_color_override("font_color", DIM_COLOR)
 	hotkeys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -300,7 +305,7 @@ func _build_enemy_spawner() -> void:
 		var type_idx: int = type_option.selected
 		var count: int = int(count_spin.value)
 		var pos_idx: int = pos_option.selected
-		_test_chamber.spawn_enemy(types[type_idx], count, positions[pos_idx])
+		_test_chamber.debug_spawn_enemy(types[type_idx], count, positions[pos_idx])
 	)
 	_content.add_child(spawn_btn)
 
@@ -326,7 +331,7 @@ func _build_enemy_spawner() -> void:
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_style_action_button(btn, ACCENT)
 		var preset_name: String = preset[1]
-		btn.pressed.connect(func(): if _test_chamber: _test_chamber.spawn_wave_preset(preset_name))
+		btn.pressed.connect(func(): if _test_chamber: _test_chamber.debug_spawn_wave_preset(preset_name))
 		preset_grid.add_child(btn)
 
 	_content.add_child(preset_grid)
@@ -336,8 +341,87 @@ func _build_enemy_spawner() -> void:
 	clear_btn.text = "清除所有敌人 (F5)"
 	clear_btn.custom_minimum_size.y = 28
 	_style_action_button(clear_btn, DANGER_COLOR)
-	clear_btn.pressed.connect(func(): if _test_chamber: _test_chamber._clear_all_enemies())
+	clear_btn.pressed.connect(func(): if _test_chamber: _test_chamber.debug_clear_all_enemies())
 	_content.add_child(clear_btn)
+
+# ---- 章节控制区 ----
+func _build_chapter_control() -> void:
+	_add_section_header("章节与波次控制")
+
+	var chapter_grid := GridContainer.new()
+	chapter_grid.columns = 2
+	chapter_grid.add_theme_constant_override("h_separation", 4)
+	chapter_grid.add_theme_constant_override("v_separation", 4)
+
+	var start_chapter_btn := Button.new()
+	start_chapter_btn.text = "启动章节系统"
+	start_chapter_btn.custom_minimum_size = Vector2(0, 28)
+	start_chapter_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(start_chapter_btn, SUCCESS_COLOR)
+	start_chapter_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber.debug_start_chapter_system()
+	)
+	chapter_grid.add_child(start_chapter_btn)
+
+	var pause_chapter_btn := Button.new()
+	pause_chapter_btn.text = "暂停章节系统"
+	pause_chapter_btn.custom_minimum_size = Vector2(0, 28)
+	pause_chapter_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(pause_chapter_btn, WARNING_COLOR)
+	pause_chapter_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber.debug_pause_chapter_system()
+	)
+	chapter_grid.add_child(pause_chapter_btn)
+
+	var start_spawner_btn := Button.new()
+	start_spawner_btn.text = "启动敌人波次"
+	start_spawner_btn.custom_minimum_size = Vector2(0, 28)
+	start_spawner_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(start_spawner_btn, SUCCESS_COLOR)
+	start_spawner_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber.debug_start_enemy_spawner()
+	)
+	chapter_grid.add_child(start_spawner_btn)
+
+	var pause_spawner_btn := Button.new()
+	pause_spawner_btn.text = "暂停敌人波次"
+	pause_spawner_btn.custom_minimum_size = Vector2(0, 28)
+	pause_spawner_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(pause_spawner_btn, WARNING_COLOR)
+	pause_spawner_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber.debug_pause_enemy_spawner()
+	)
+	chapter_grid.add_child(pause_spawner_btn)
+
+	_content.add_child(chapter_grid)
+
+	# 章节视觉切换和 3D 层切换
+	var visual_grid := GridContainer.new()
+	visual_grid.columns = 2
+	visual_grid.add_theme_constant_override("h_separation", 4)
+	visual_grid.add_theme_constant_override("v_separation", 4)
+
+	var cycle_visual_btn := Button.new()
+	cycle_visual_btn.text = "切换章节视觉 (F11)"
+	cycle_visual_btn.custom_minimum_size = Vector2(0, 28)
+	cycle_visual_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(cycle_visual_btn, ACCENT)
+	cycle_visual_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber._cycle_chapter_visual()
+	)
+	visual_grid.add_child(cycle_visual_btn)
+
+	var toggle_3d_btn := Button.new()
+	toggle_3d_btn.text = "切换 3D 层 (F12)"
+	toggle_3d_btn.custom_minimum_size = Vector2(0, 28)
+	toggle_3d_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(toggle_3d_btn, ACCENT)
+	toggle_3d_btn.pressed.connect(func():
+		if _test_chamber: _test_chamber._toggle_3d_layer()
+	)
+	visual_grid.add_child(toggle_3d_btn)
+
+	_content.add_child(visual_grid)
 
 # ---- 玩家配置区 ----
 func _build_player_config() -> void:
@@ -453,7 +537,7 @@ func _build_spell_config() -> void:
 	_style_action_button(unlock_all_btn, WARNING_COLOR)
 	unlock_all_btn.pressed.connect(func():
 		if CodexManager: CodexManager.unlock_all()
-		if _test_chamber: _test_chamber._log("已解锁全部图鉴条目")
+		if _test_chamber: _test_chamber._debug_log("已解锁全部图鉴条目")
 	)
 	codex_grid.add_child(unlock_all_btn)
 
@@ -463,7 +547,7 @@ func _build_spell_config() -> void:
 	_style_action_button(reset_codex_btn, DANGER_COLOR)
 	reset_codex_btn.pressed.connect(func():
 		if CodexManager: CodexManager.reset_all()
-		if _test_chamber: _test_chamber._log("图鉴已重置")
+		if _test_chamber: _test_chamber._debug_log("图鉴已重置")
 	)
 	codex_grid.add_child(reset_codex_btn)
 
@@ -715,7 +799,7 @@ func _build_sequencer_editor() -> void:
 					Color(0.9, 0.3, 0.9),
 				]
 				_style_action_button(btn, colors[selected])
-			if _test_chamber: _test_chamber._log("序列器 [%d] 已设置" % (beat_idx + 1))
+				if _test_chamber: _test_chamber._debug_log("序列器 [%d] 已设置" % (beat_idx + 1))
 		)
 		seq_grid.add_child(btn)
 	_content.add_child(seq_grid)
@@ -728,7 +812,7 @@ func _build_sequencer_editor() -> void:
 	clear_seq_btn.pressed.connect(func():
 		if SpellcraftSystem:
 			SpellcraftSystem.clear_sequencer()
-			if _test_chamber: _test_chamber._log("序列器已清空")
+			if _test_chamber: _test_chamber._debug_log("序列器已清空")
 			# 重置按钮文本
 			var idx := 0
 			for child in seq_grid.get_children():
@@ -1016,9 +1100,12 @@ func _style_toggle_button() -> void:
 # ============================================================
 
 func _on_back_to_menu() -> void:
-	# 恢复时间缩放
-	Engine.time_scale = 1.0
-	# 重置测试模式标记
-	if GameManager:
-		GameManager.is_test_mode = false
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	# 委托给宿主场景处理返回逻辑（包括信号断开、时间恢复等）
+	if _test_chamber and _test_chamber.has_method("_return_to_menu"):
+		_test_chamber._return_to_menu()
+	else:
+		# 回退方案
+		Engine.time_scale = 1.0
+		if GameManager:
+			GameManager.is_test_mode = false
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

@@ -52,6 +52,8 @@ func _ready() -> void:
 	_test_chamber = get_tree().get_first_node_in_group("test_chamber")
 	if not _test_chamber:
 		_test_chamber = get_parent()
+		while _test_chamber and not _test_chamber.has_method("get_dps_stats"):
+			_test_chamber = _test_chamber.get_parent()
 
 func _process(delta: float) -> void:
 	_sample_timer += delta

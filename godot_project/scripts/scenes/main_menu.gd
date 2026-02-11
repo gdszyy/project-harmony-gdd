@@ -274,7 +274,9 @@ func _on_codex_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/codex.tscn")
 
 func _on_test_chamber_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/test_chamber.tscn")
+	# v4.0: 测试场不再是独立场景，而是以测试模式启动正式游戏
+	GameManager.is_test_mode = true
+	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
 
 func _on_hall_pressed() -> void:
 	# 打开和谐殿堂（局外成长系统）—— 审计报告 建议3 修复
