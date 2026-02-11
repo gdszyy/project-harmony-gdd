@@ -70,9 +70,9 @@ func _setup_3d_environment() -> void:
 	
 	# 核心：Glow (3D 管线原生支持)
 	main_env.glow_enabled = true
-	main_env.glow_levels_1 = 1.0
-	main_env.glow_levels_3 = 1.0
-	main_env.glow_levels_5 = 1.0
+	main_env.set_glow_level(1, 1.0)
+	main_env.set_glow_level(3, 1.0)
+	main_env.set_glow_level(5, 1.0)
 	main_env.glow_intensity = 0.8
 	main_env.glow_strength = 1.0
 	main_env.glow_bloom = 0.2
