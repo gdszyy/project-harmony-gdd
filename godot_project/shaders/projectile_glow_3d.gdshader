@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, blend_add, depth_test_disabled;
+render_mode unshaded, blend_add, depth_test_disabled, cull_disabled;
 
 // === 全局参数 ===
 global uniform float global_time;
