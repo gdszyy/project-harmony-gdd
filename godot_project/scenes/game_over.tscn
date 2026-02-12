@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://game_over"]
+[gd_scene load_steps=3 format=3 uid="uid://game_over"]
 
 [ext_resource type="Script" path="res://scripts/scenes/game_over.gd" id="1_game_over"]
+[ext_resource type="Script" path="res://scripts/ui/run_results_screen.gd" id="2_run_results"]
 
 [node name="GameOver" type="Control"]
 layout_mode = 3
@@ -71,3 +72,21 @@ offset_top = 190.0
 offset_right = 100.0
 offset_bottom = 235.0
 text = "MAIN MENU"
+
+[node name="HallButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = 250.0
+offset_right = 100.0
+offset_bottom = 295.0
+text = "HALL OF HARMONY"
+
+[node name="RunResultsScreen" type="CanvasLayer" parent="."]
+layer = 10
+script = ExtResource("2_run_results")
+visible = false

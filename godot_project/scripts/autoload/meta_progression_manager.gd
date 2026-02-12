@@ -797,3 +797,99 @@ func debug_reset_all() -> void:
 ## 添加测试用碎片
 func debug_add_fragments(amount: int) -> void:
 	add_resonance_fragments(amount)
+
+# ============================================================
+# 供 Visualizer / SkillNode 使用的统一接口
+# ============================================================
+
+## 获取所有已解锁的升级 ID 列表（统一接口）
+func get_unlocked_upgrades() -> Array:
+	var result: Array = []
+	# 乐器调优：等级 > 0 视为已解锁
+	for uid in instrument_levels:
+		if instrument_levels[uid] > 0:
+			result.append(uid)
+	# 乐理研习
+	for tid in unlocked_theories:
+		if unlocked_theories[tid]:
+			result.append(tid)
+	# 调式风格
+	for mid in unlocked_modes:
+		if unlocked_modes[mid]:
+			result.append(mid)
+	# 声学降噪：等级 > 0 视为已解锁
+	for aid in acoustic_levels:
+		if acoustic_levels[aid] > 0:
+			result.append(aid)
+	return result
+
+## 通用解锁接口（供 visualizer 技能树节点使用）
+func unlock_upgrade(node_id: String, cost: int) -> bool:
+	if INSTRUMENT_UPGRADES.has(node_id):
+		return purchase_instrument_upgrade(node_id)
+	elif THEORY_UNLOCKS.has(node_id):
+		return purchase_theory_unlock(node_id)
+	elif MODE_CONFIGS.has(node_id):
+		return purchase_mode_unlock(node_id)
+	elif ACOUSTIC_UPGRADES.has(node_id):
+		return purchase_acoustic_upgrade(node_id)
+	# 通用：直接扣费
+	if spend_resonance_fragments(cost):
+		return true
+	return false
+
+## 获取乐理突破日志
+func get_breakthrough_log() -> Array:
+	var log_data: Array = []
+	var raw: Array = _save_data.get_value("meta", "breakthrough_log", []) if _save_data else []
+	for entry in raw:
+		if entry is Dictionary:
+			log_data.append(entry)
+	return log_data
+
+## 保存乐理突破日志
+func save_breakthrough_log(log_data: Array) -> void:
+	_save_data.set_value("meta", "breakthrough_log", log_data)
+	save_meta_data()
+
+## 获取某个模块的总解锁进度百分比
+func get_module_progress(module: String) -> float:
+	match module:
+		"instrument":
+			var total_max := 0
+			var total_cur := 0
+			for uid in INSTRUMENT_UPGRADES:
+				total_max += INSTRUMENT_UPGRADES[uid].get("max_level", 10)
+				total_cur += instrument_levels.get(uid, 0)
+			return float(total_cur) / float(max(total_max, 1))
+		"theory":
+			var total := THEORY_UNLOCKS.size()
+			var unlocked := 0
+			for tid in unlocked_theories:
+				if unlocked_theories[tid]:
+					unlocked += 1
+			return float(unlocked) / float(max(total, 1))
+		"modes":
+			var total := MODE_CONFIGS.size()
+			var unlocked := 0
+			for mid in unlocked_modes:
+				if unlocked_modes[mid]:
+					unlocked += 1
+			return float(unlocked) / float(max(total, 1))
+		"acoustic":
+			var total_max := 0
+			var total_cur := 0
+			for aid in ACOUSTIC_UPGRADES:
+				total_max += ACOUSTIC_UPGRADES[aid].get("max_level", 3)
+				total_cur += acoustic_levels.get(aid, 0)
+			return float(total_cur) / float(max(total_max, 1))
+	return 0.0
+
+## 获取总体解锁进度
+func get_total_progress() -> float:
+	var p := 0.0
+	p += get_module_progress("instrument")
+	p += get_module_progress("theory")
+	p += get_module_progress("modes")
+	p += get_module_progress("acoustic")
+	return p / 4.0

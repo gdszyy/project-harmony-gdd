@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://run_results_screen"]
+
+[ext_resource type="Script" path="res://scripts/ui/run_results_screen.gd" id="1_results"]
+
+[node name="RunResultsScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_results")
