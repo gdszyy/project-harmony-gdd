@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://ch5_chromatic_wanderer_001"]
+[ext_resource type="Script" path="res://scripts/entities/enemies/chapter_enemies/ch5_chromatic_wanderer.gd" id="1_script"]
+[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_shader"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 12.0
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 16.0
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
+shader = ExtResource("2_shader")
+shader_parameter/glitch_intensity = 0.08
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_stunned = 0.0
+shader_parameter/base_tint = Color(0.8, 0.4, 0.9, 1)
+shader_parameter/scanline_density = 50.0
+shader_parameter/scanline_strength = 0.2
+shader_parameter/chromatic_offset = 3.0
+shader_parameter/noise_speed = 4.0
+shader_parameter/pixel_size = 1.0
+[node name="ChromaticWanderer" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_script")
+max_hp = 75.0
+move_speed = 70.0
+contact_damage = 8.0
+xp_value = 12
+quantized_fps = 12.0
+collision_radius = 12.0
+knockback_resistance = 0.2
+base_color = Color(0.8, 0.4, 0.9, 1)
+base_glitch_intensity = 0.08
+max_glitch_intensity = 0.6
+chromatic_step_angle = 0.524
+direction_change_interval = 0.4
+attack_interval = 2.0
+chromatic_damage = 10.0
+chromatic_speed = 150.0
+chromatic_aura_radius = 100.0
+color_cycle_speed = 1.5
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.8, 0.4, 0.9, 1)
+polygon = PackedVector2Array(-8, -12, 0, -16, 8, -12, 12, 0, 8, 12, 0, 16, -8, 12, -12, 0)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")

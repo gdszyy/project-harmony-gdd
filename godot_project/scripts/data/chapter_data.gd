@@ -366,9 +366,10 @@ const CHAPTERS: Dictionary = {
 			"static":                    { "weight": 1.0, "min_wave": 1 },
 			"ch3_counterpoint_crawler":  { "weight": 1.5, "min_wave": 1 },
 			"ch4_minuet_dancer":         { "weight": 3.0, "min_wave": 2 },
+			"ch4_sonata_form":           { "weight": 2.0, "min_wave": 4 },
+			"ch2_choir":                 { "weight": 1.0, "min_wave": 3 },
 			"pulse":                     { "weight": 1.5, "min_wave": 2 },
 			"screech":                   { "weight": 1.0, "min_wave": 1 },
-			"ch2_choir":                 { "weight": 1.0, "min_wave": 3 },
 		},
 		
 		"elite_pool": {
@@ -405,14 +406,14 @@ const CHAPTERS: Dictionary = {
 				"waves": [4, 5],
 				"type": "chapter_intro",
 				"enemy_count_base": 12,
-				"enemy_types": ["ch4_minuet_dancer", "pulse", "ch3_counterpoint_crawler"],
+				"enemy_types": ["ch4_minuet_dancer", "ch4_sonata_form", "pulse", "ch3_counterpoint_crawler"],
 				"spawn_interval": 1.5,
 			},
 			{
 				"waves": [6, 6],
 				"type": "elite",
 				"enemy_count_base": 6,
-				"enemy_types": ["ch4_minuet_dancer", "pulse"],
+				"enemy_types": ["ch4_minuet_dancer", "ch4_sonata_form", "pulse"],
 				"elite_type": "ch4_court_kapellmeister",
 				"spawn_interval": 1.3,
 			},
@@ -420,7 +421,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [7, 9],
 				"type": "swarm",
 				"enemy_count_base": 22,
-				"enemy_types": ["ch4_minuet_dancer", "pulse", "ch3_counterpoint_crawler", "ch2_choir"],
+				"enemy_types": ["ch4_minuet_dancer", "ch4_sonata_form", "pulse", "ch3_counterpoint_crawler", "ch2_choir"],
 				"spawn_interval": 1.0,
 			},
 			{
@@ -466,6 +467,7 @@ const CHAPTERS: Dictionary = {
 			"ch5_fate_knocker":          { "weight": 3.0, "min_wave": 2 },
 			"ch5_crescendo_surge":       { "weight": 2.5, "min_wave": 3 },
 			"ch5_fury_spirit":           { "weight": 2.0, "min_wave": 4 },
+			"ch5_chromatic_wanderer":    { "weight": 2.0, "min_wave": 3 },
 			"pulse":                     { "weight": 1.5, "min_wave": 1 },
 			"ch3_counterpoint_crawler":  { "weight": 1.0, "min_wave": 2 },
 			"wall":                      { "weight": 1.5, "min_wave": 5 },
@@ -505,7 +507,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [4, 5],
 				"type": "chapter_intro",
 				"enemy_count_base": 14,
-				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "pulse"],
+				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch5_chromatic_wanderer", "pulse"],
 				"spawn_interval": 1.4,
 			},
 			{
@@ -520,7 +522,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [7, 9],
 				"type": "swarm",
 				"enemy_count_base": 25,
-				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch5_fury_spirit", "ch4_minuet_dancer", "wall"],
+				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch5_chromatic_wanderer", "ch5_fury_spirit", "ch4_minuet_dancer", "wall"],
 				"spawn_interval": 0.9,
 			},
 			{
@@ -576,6 +578,7 @@ const CHAPTERS: Dictionary = {
 			"ch5_fury_spirit":           { "weight": 0.8, "min_wave": 3 },
 			"ch6_walking_bass":          { "weight": 3.0, "min_wave": 2 },
 			"ch6_scat_singer":           { "weight": 2.5, "min_wave": 3 },
+			"ch6_atonal_shifter":        { "weight": 2.0, "min_wave": 4 },
 			"pulse":                     { "weight": 1.5, "min_wave": 1 },
 			"screech":                   { "weight": 1.0, "min_wave": 2 },
 			"wall":                      { "weight": 1.0, "min_wave": 5 },
@@ -617,7 +620,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [4, 5],
 				"type": "chapter_intro",
 				"enemy_count_base": 14,
-				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "pulse"],
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "ch6_atonal_shifter", "pulse"],
 				"spawn_interval": 1.3,
 			},
 			# 阶段3：首次精英
@@ -634,7 +637,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [7, 9],
 				"type": "swarm",
 				"enemy_count_base": 28,
-				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "ch5_crescendo_surge", "screech"],
+				"enemy_types": ["ch6_walking_bass", "ch6_scat_singer", "ch6_atonal_shifter", "ch5_crescendo_surge", "screech"],
 				"spawn_interval": 0.8,
 			},
 			# 阶段5：第二精英
@@ -820,15 +823,18 @@ const ENEMY_SCRIPT_PATHS: Dictionary = {
 	
 	# 第四章特色
 	"ch4_minuet_dancer":     "res://scripts/entities/enemies/chapter_enemies/ch4_minuet_dancer.gd",
+	"ch4_sonata_form":       "res://scripts/entities/enemies/chapter_enemies/ch4_sonata_form.gd",
 	
 	# 第五章特色
 	"ch5_fate_knocker":      "res://scripts/entities/enemies/chapter_enemies/ch5_fate_knocker.gd",
 	"ch5_crescendo_surge":   "res://scripts/entities/enemies/chapter_enemies/ch5_crescendo_surge.gd",
 	"ch5_fury_spirit":       "res://scripts/entities/enemies/chapter_enemies/ch5_fury_spirit.gd",
+	"ch5_chromatic_wanderer": "res://scripts/entities/enemies/chapter_enemies/ch5_chromatic_wanderer.gd",
 	
 	# 第六章特色
 	"ch6_walking_bass":      "res://scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd",
 	"ch6_scat_singer":       "res://scripts/entities/enemies/chapter_enemies/ch6_scat_singer.gd",
+	"ch6_atonal_shifter":    "res://scripts/entities/enemies/chapter_enemies/ch6_atonal_shifter.gd",
 	
 	# 第七章特色
 	"ch7_bitcrusher_worm":   "res://scripts/entities/enemies/chapter_enemies/ch7_bitcrusher_worm.gd",
@@ -850,17 +856,20 @@ const ENEMY_SCENE_PATHS: Dictionary = {
 	# 第三章特色
 	"ch3_counterpoint_crawler": "res://scenes/enemies/ch3_counterpoint_crawler.tscn",
 	
-	# 第四章特色（已有）
+	# 第四章特色
 	"ch4_minuet_dancer":     "res://scenes/enemies/ch4_minuet_dancer.tscn",
+	"ch4_sonata_form":       "res://scenes/enemies/ch4_sonata_form.tscn",
 	
 	# 第五章特色
 	"ch5_fate_knocker":      "res://scenes/enemies/ch5_fate_knocker.tscn",
 	"ch5_crescendo_surge":   "res://scenes/enemies/ch5_crescendo_surge.tscn",
 	"ch5_fury_spirit":       "res://scenes/enemies/ch5_fury_spirit.tscn",
+	"ch5_chromatic_wanderer": "res://scenes/enemies/ch5_chromatic_wanderer.tscn",
 	
 	# 第六章特色
 	"ch6_walking_bass":      "res://scenes/enemies/ch6_walking_bass.tscn",
 	"ch6_scat_singer":       "res://scenes/enemies/ch6_scat_singer.tscn",
+	"ch6_atonal_shifter":    "res://scenes/enemies/ch6_atonal_shifter.tscn",
 	
 	# 第七章特色
 	"ch7_bitcrusher_worm":   "res://scenes/enemies/ch7_bitcrusher_worm.tscn",
@@ -937,6 +946,9 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 	"ch4_minuet_dancer": {
 		"hp": 35.0, "speed": 90.0, "damage": 10.0, "xp": 6,
 	},
+	"ch4_sonata_form": {
+		"hp": 120.0, "speed": 55.0, "damage": 12.0, "xp": 15,
+	},
 	"ch5_fate_knocker": {
 		"hp": 90.0, "speed": 40.0, "damage": 15.0, "xp": 10,
 	},
@@ -946,12 +958,18 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 	"ch5_fury_spirit": {
 		"hp": 120.0, "speed": 90.0, "damage": 12.0, "xp": 18,
 	},
+	"ch5_chromatic_wanderer": {
+		"hp": 75.0, "speed": 70.0, "damage": 10.0, "xp": 12,
+	},
 	# 第六章
 	"ch6_walking_bass": {
 		"hp": 80.0, "speed": 35.0, "damage": 12.0, "xp": 11,
 	},
 	"ch6_scat_singer": {
 		"hp": 40.0, "speed": 100.0, "damage": 9.0, "xp": 9,
+	},
+	"ch6_atonal_shifter": {
+		"hp": 100.0, "speed": 60.0, "damage": 10.0, "xp": 14,
 	},
 	# 第七章
 	"ch7_bitcrusher_worm": {
