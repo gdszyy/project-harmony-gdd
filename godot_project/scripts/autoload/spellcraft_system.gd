@@ -821,6 +821,8 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		ModeSystem.on_dissonance_applied(dissonance)
 		# ★ 关键交互：不和谐法术缓解单调值（因为引入了变化）
 		FatigueManager.reduce_monotony_from_dissonance(dissonance)
+		# ★ 发射不和谐腐蚀信号（供视觉特效管理器监听）
+		dissonance_corrosion_triggered.emit({"dissonance": dissonance})
 
 	# 扩展和弦额外疲劳
 	var extra_fatigue: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)

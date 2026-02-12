@@ -179,6 +179,9 @@ func _update_spatial_params() -> void:
 
 	# 5. 计算声相值（基于屏幕相对位置）
 	_current_pan = _calculate_pan(enemy_pos, player_pos)
+	
+	# 6. 发射空间参数变化信号（供调试面板和外部系统使用）
+	spatial_params_changed.emit(get_spatial_snapshot())
 
 ## 确定敌人所处的距离区间
 func _calculate_zone(distance: float) -> DistanceZone:
