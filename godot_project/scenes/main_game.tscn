@@ -22,7 +22,7 @@
 [ext_resource type="Script" path="res://scripts/systems/render_bridge_3d.gd" id="24_render_bridge"]
 [ext_resource type="Script" path="res://scripts/ui/fatigue_meter.gd" id="25_fatigue_meter"]
 [ext_resource type="Script" path="res://scripts/ui/ammo_ring_hud.gd" id="26_ammo_ring"]
-[ext_resource type="Script" path="res://scripts/ui/rhythm_indicator.gd" id="27_rhythm"]
+[ext_resource type="PackedScene" uid="uid://rhythm_indicator_001" path="res://scenes/ui/rhythm_indicator.tscn" id="27_rhythm"]
 [ext_resource type="Script" path="res://scripts/ui/summon_hud.gd" id="28_summon_hud"]
 [ext_resource type="Script" path="res://scripts/ui/codex_unlock_popup.gd" id="29_codex_popup"]
 [ext_resource type="Script" path="res://scripts/ui/performance_monitor.gd" id="30_perf_monitor"]
@@ -32,7 +32,7 @@
 [ext_resource type="Script" path="res://scripts/ui/hp_bar.gd" id="34_hp_bar"]
 [ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
 [ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
-[ext_resource type="Script" path="res://scripts/ui/tutorial_hint_manager.gd" id="37_tutorial"]
+[ext_resource type="PackedScene" uid="uid://tutorial_hint_001" path="res://scenes/ui/tutorial_hint.tscn" id="37_tutorial"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -262,17 +262,7 @@ script = ExtResource("25_fatigue_meter")
 [node name="AmmoRingHud" type="Node2D" parent="HUD"]
 script = ExtResource("26_ammo_ring")
 
-[node name="RhythmIndicator" type="Control" parent="HUD"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -180.0
-offset_right = 150.0
-offset_bottom = -155.0
-script = ExtResource("27_rhythm")
+[node name="RhythmIndicator" parent="HUD" instance=ExtResource("27_rhythm")]
 
 [node name="SummonHud" type="Control" parent="HUD"]
 anchors_preset = 0
@@ -298,9 +288,7 @@ script = ExtResource("29_codex_popup")
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false
 
-[node name="TutorialHintManager" type="CanvasLayer" parent="HUD"]
-layer = 100
-script = ExtResource("37_tutorial")
+[node name="TutorialHintManager" parent="HUD" instance=ExtResource("37_tutorial")]
 
 [node name="PerformanceMonitor" type="CanvasLayer" parent="."]
 layer = 20
