@@ -105,7 +105,8 @@ var _hihat_pattern: Array[bool] = []
 var _ghost_pattern: Array[bool] = []
 var _bass_pattern: Array[int] = []  ## 音高索引，-1 = 静音
 
-## Bass 音符频率表 (A小调五声音阶的低八度，适合 Techno)
+## @deprecated OPT01: 固定 Bass 音符频率表，已由和声指挥官的 _regenerate_dynamic_bass_sample() 替代
+## 保留作为回退方案 (A小调五声音阶的低八度)
 const BASS_NOTES: Array[float] = [
 	55.0,   ## A1
 	61.74,  ## B1
@@ -114,7 +115,8 @@ const BASS_NOTES: Array[float] = [
 	82.41,  ## E2
 ]
 
-## Pad 和弦频率组 (Am 和弦的不同转位)
+## @deprecated OPT01: 固定 Pad 和弦频率组，已由和声指挥官的 _regenerate_dynamic_pad_sample() 替代
+## 保留作为回退方案 (Am 和弦的不同转位)
 const PAD_CHORDS: Array = [
 	[110.0, 130.81, 164.81],  ## Am: A2, C3, E3
 	[98.0,  123.47, 146.83],  ## G:  G2, B2, D3
@@ -233,7 +235,7 @@ func _init_default_patterns() -> void:
 	]
 
 	## Bass 默认模式：每拍一个音符 (十六分音符索引 0, 4, 8, 12)
-	## -1 = 静音，0-4 = BASS_NOTES 索引
+	## -1 = 静音，0-4 = 和弦音符索引 (OPT01: 0=根音, 1=五音, 2=三音, 3=八度根音, 4=七音)
 	_bass_pattern = [
 		0,  -1, -1, -1,   # 拍 1: A1
 		-1, -1,  2, -1,   # 拍 2: . . C2 .
@@ -255,11 +257,9 @@ func _generate_all_samples() -> void:
 	_samples["ghost_tap"] = _gen_ghost_tap()
 	_samples["ghost_rim"] = _gen_ghost_rim()
 
-	# Bass 音符：为每个音高预生成采样
+	# OPT01: 固定 Bass/Pad 采样保留作为回退方案，实际播放时优先使用动态采样 (bass_dynamic_*, pad_dynamic)
 	for i in range(BASS_NOTES.size()):
 		_samples["bass_%d" % i] = _gen_bass_note(BASS_NOTES[i])
-
-	# Pad 和弦：为每个和弦预生成循环采样
 	for i in range(PAD_CHORDS.size()):
 		_samples["pad_%d" % i] = _gen_pad_chord(PAD_CHORDS[i])
 
@@ -764,11 +764,12 @@ func _tick_sixteenth() -> void:
 	if step < _bass_pattern.size() and _bass_pattern[step] >= 0:
 		if _layer_config["bass"]["enabled"]:
 			var note_idx: int = _bass_pattern[step]
-			# OPT01: 优先使用动态和弦音符采样
+			# OPT01: 优先使用动态和弦音符采样，回退到旧的固定采样
 			var bass_key := "bass_dynamic_%d" % note_idx
 			if _samples.has(bass_key):
 				_trigger_sample("bass", bass_key)
 			elif note_idx < BASS_NOTES.size():
+				# @deprecated 回退: 使用旧的固定 BASS_NOTES 采样
 				_trigger_sample("bass", "bass_%d" % note_idx)
 
 	# ---- 更新计数器 ----
@@ -811,6 +812,7 @@ func _trigger_sample(layer_name: String, sample_name: String,
 # Pad 循环管理
 # ============================================================
 
+## @deprecated OPT01: 以下变量仅供回退使用，新逻辑由和声指挥官接管
 var _current_pad_index: int = 0
 
 func _start_pad_loop() -> void:
@@ -828,10 +830,11 @@ func _start_pad_loop() -> void:
 		player.stream = stream
 		player.play()
 
+## @deprecated OPT01: 旧的固定和弦循环切换逻辑，已由 _on_harmony_measure_synced() + _crossfade_pad_to_dynamic() 替代
+## 保留以便在和声指挥官完全失效时作为回退
 func _update_pad_chord() -> void:
 	if not _layer_config["pad"]["enabled"]:
 		return
-	# 每 4 小节循环切换和弦
 	if _current_measure % 4 != 0:
 		return
 	_current_pad_index = (_current_pad_index + 1) % PAD_CHORDS.size()
@@ -840,7 +843,6 @@ func _update_pad_chord() -> void:
 		return
 	var stream: AudioStreamWAV = _samples.get("pad_%d" % _current_pad_index)
 	if stream:
-		# 交叉淡入新和弦
 		var tween := create_tween()
 		var target_vol: float = _layer_config["pad"]["volume_db"]
 		tween.tween_property(player, "volume_db", -40.0, 0.5)

@@ -820,8 +820,9 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	if extra_fatigue > 0.0:
 		FatigueManager.add_external_fatigue(extra_fatigue)
 
-	# 记录和弦进行
-	var progression = MusicTheoryEngine.record_chord(chord_type)
+	# 记录和弦进行 (OPT01: 传入根音以供和声指挥官使用)
+	var chord_root: int = chord_result.get("root", 0) % 12
+	var progression = MusicTheoryEngine.record_chord(chord_type, chord_root)
 	if not progression.is_empty():
 		chord_data["progression"] = progression
 		# 触发和弦进行效果

@@ -666,10 +666,14 @@ func test_cast_chord(chord_type: int) -> void:
 	# 记录疲劳事件
 	FatigueManager.record_spell({
 		"time": GameManager.game_time,
-		"note": 0,  # C 根音
+		"note": chord_result.get("root", 0),
 		"is_chord": true,
 		"chord_type": chord_type,
 	})
+
+	# OPT01: 记录和弦进行并通知和声指挥官
+	var chord_root_pc: int = chord_result.get("root", 0) % 12
+	MusicTheoryEngine.record_chord(chord_type, chord_root_pc)
 
 	# 通过 SpellcraftSystem 的信号链发射
 	SpellcraftSystem.chord_cast.emit(chord_data)

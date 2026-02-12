@@ -122,19 +122,22 @@ func get_chord_function(chord_type: MusicData.ChordType) -> MusicData.ChordFunct
 # ============================================================
 
 ## 记录一个和弦并分析进行效果
-func record_chord(chord_type: MusicData.ChordType) -> Dictionary:
+## root_note: 和弦根音 (0-11 音高类)，默认 -1 表示未知
+func record_chord(chord_type: MusicData.ChordType, root_note: int = -1) -> Dictionary:
 	var chord_func := get_chord_function(chord_type)
 	var entry := {
 		"type": chord_type,
 		"function": chord_func,
 		"time": GameManager.game_time,
+		"root": root_note,  ## OPT01: 记录根音以供和声指挥官使用
 	}
 
 	_chord_history.append(entry)
 	if _chord_history.size() > MAX_CHORD_HISTORY:
 		_chord_history.pop_front()
 
-	chord_identified.emit(chord_type, 0)
+	## OPT01: 传递实际根音而非硬编码 0
+	chord_identified.emit(chord_type, root_note)
 
 	# 分析进行效果
 	return _analyze_progression()
