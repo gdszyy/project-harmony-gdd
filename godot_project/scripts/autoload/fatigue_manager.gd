@@ -683,8 +683,9 @@ func _generate_suggestions() -> Array[String]:
 		var note_names: Array[String] = []
 		for s in silenced:
 			var wk: int = s["note"]
-			if wk >= 0 and wk < MusicData.WHITE_KEY_STATS.size():
-				var stats = MusicData.WHITE_KEY_STATS.values()[wk]
+			# ★ Issue #100: 改进 WHITE_KEY_STATS 访问方式，使用 get() 更安全
+			var stats = MusicData.WHITE_KEY_STATS.get(wk, {})
+			if not stats.is_empty():
 				note_names.append(stats.get("name", "?"))
 		if not note_names.is_empty():
 			suggestions.append("音符 %s 已进入寂静！使用其他音符来恢复多样性" % ", ".join(note_names))

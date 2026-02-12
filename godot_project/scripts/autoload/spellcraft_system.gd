@@ -364,8 +364,18 @@ func trigger_manual_cast(slot_index: int) -> void:
 	enhanced_slot["is_manual"] = true
 	enhanced_slot["is_silenced"] = is_silenced
 	enhanced_slot["silence_damage_mult"] = FatigueManager.get_note_silence_damage_multiplier(note) if note >= 0 else 1.0
+	# ★ Issue #100: 添加密度过载惩罚
+	enhanced_slot["density_damage_multiplier"] = FatigueManager.get_density_damage_multiplier()
 
 	_execute_spell(enhanced_slot)
+	
+	# ★ Issue #100: 记录疲劳事件
+	FatigueManager.record_spell({
+		"time": GameManager.game_time,
+		"note": note,
+		"is_chord": slot.get("type", "empty") == "chord",
+	})
+	
 	# 设置冷却（PD→D 效果可能已缩减冷却）
 	_manual_slot_cooldowns[slot_index] = MANUAL_SLOT_BASE_COOLDOWN
 
@@ -778,6 +788,10 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	# 检查和弦是否已通过局外成长解锁
 	if not SaveManager.is_chord_type_available(chord_type):
 		return
+	
+	# ★ Issue #100: 和弦施法设计意图说明
+	# 和弦不受单音寂静影响，因为和弦是多个音符的组合，不应被单一音符的寂静状态阻挡。
+	# 这是有意设计的机制：鼓励玩家在单音被寂静时使用和弦来维持输出。
 
 	# 检查扩展和弦是否已在局内解锁
 	if MusicTheoryEngine.is_extended_chord(chord_type) and not GameManager.extended_chords_unlocked:
@@ -1077,13 +1091,18 @@ func _midi_to_black_key(note: int) -> int:
 		10: return MusicData.BlackKey.AS
 		_: return -1
 
-func _execute_spell(spell_data: Dictionary) -> void:
-	# 应用手动施法的时机奖励
-	var timing_bonus: float = spell_data.get("timing_bonus", 1.0)
-	if timing_bonus != 1.0:
-		spell_data["damage"] = spell_data.get("damage", 0.0) * timing_bonus
+	func _execute_spell(spell_data: Dictionary) -> void:
+		# 应用手动施法的时机奖励
+		var timing_bonus: float = spell_data.get("timing_bonus", 1.0)
+		if timing_bonus != 1.0:
+			spell_data["damage"] = spell_data.get("damage", 0.0) * timing_bonus
+		
+		# ★ Issue #100: 应用寂静惩罚和密度过载惩罚
+		var silence_damage_mult: float = spell_data.get("silence_damage_mult", 1.0)
+		var density_damage_multiplier: float = spell_data.get("density_damage_multiplier", 1.0)
+		spell_data["damage"] = spell_data.get("damage", 0.0) * silence_damage_mult * density_damage_multiplier
 
-	spell_cast.emit(spell_data)
+		spell_cast.emit(spell_data)
 
 ## 获取序列器当前位置
 func get_sequencer_position() -> int:
