@@ -30,6 +30,8 @@ const COMPLEXITY_CHECK_INTERVAL: float = 5.0
 
 ## 镜面反射弹幕
 const MIRROR_REFLECT_SPEED: float = 200.0
+const MIRROR_LIFETIME: float = 4.0  # 镜面弹幕存活时间
+const MIRROR_BOUNDARY_SIZE: float = 400.0  # 镜面边界大小
 
 # ============================================================
 # 内部状态
@@ -57,6 +59,10 @@ var _cadenza_active: bool = false
 
 ## 节拍计数
 var _mozart_beat_counter: int = 0
+
+## 镜面反射系统
+var _mirror_active: bool = false
+var _mirror_boundaries: Array[Vector2] = []  # 镜面边界位置
 
 # ============================================================
 # Boss 初始化
@@ -468,6 +474,85 @@ func _spawn_boss_projectile(pos: Vector2, angle: float, speed: float, damage: fl
 # ============================================================
 # 阶段进入回调
 # ============================================================
+
+## 生成镜面反射弹幕（参考 Issue #127）
+func _spawn_mirror_projectile(pos: Vector2, angle: float, speed: float, damage: float) -> void:
+	var proj := Area2D.new()
+	proj.add_to_group("boss_projectiles")
+	
+	# 镜面弹幕视觉（菱形）
+	var visual := Polygon2D.new()
+	visual.polygon = PackedVector2Array([
+		Vector2(0, -6), Vector2(6, 0), Vector2(0, 6), Vector2(-6, 0)
+	])
+	visual.color = Color(0.8, 0.9, 1.0, 0.9)
+	proj.add_child(visual)
+	
+	var col := CollisionShape2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = 6.0
+	col.shape = shape
+	proj.add_child(col)
+	
+	proj.global_position = pos
+	
+	if _projectile_container and is_instance_valid(_projectile_container):
+		_projectile_container.add_child(proj)
+	else:
+		get_parent().add_child(proj)
+	
+	var vel := Vector2.from_angle(angle) * speed
+	var lifetime := MIRROR_LIFETIME
+	var reflect_count := 0  # 反射次数
+	var max_reflects := 2  # 最多反射2次
+	
+	var move_fn := func():
+		if not is_instance_valid(proj):
+			return
+		
+		var delta := get_process_delta_time()
+		proj.global_position += vel * delta
+		
+		# 检测镜面边界反射
+		if _mirror_active and reflect_count < max_reflects:
+			for i in range(_mirror_boundaries.size()):
+				var boundary := _mirror_boundaries[i]
+				var dist := proj.global_position.distance_to(boundary)
+				
+				if dist < 30.0:  # 接近边界
+					# 根据边界方向反射速度
+					if i < 2:  # 左右边界
+						vel.x = -vel.x
+					else:  # 上下边界
+						vel.y = -vel.y
+					
+					reflect_count += 1
+					
+					# 反射视觉效果
+					if is_instance_valid(visual):
+						var flash := visual.create_tween()
+						flash.tween_property(visual, "modulate", Color(1.0, 1.0, 1.0), 0.1)
+						flash.tween_property(visual, "modulate", Color(0.8, 0.9, 1.0), 0.1)
+					break
+		
+		# 碰撞检测
+		if _target and is_instance_valid(_target):
+			if proj.global_position.distance_to(_target.global_position) < 16.0:
+				if _target.has_method("take_damage"):
+					_target.take_damage(damage)
+				proj.queue_free()
+	
+	get_tree().process_frame.connect(move_fn)
+	proj.tree_exiting.connect(func():
+		if get_tree().process_frame.is_connected(move_fn):
+			get_tree().process_frame.disconnect(move_fn)
+	)
+	
+	get_tree().create_timer(lifetime).timeout.connect(func():
+		if is_instance_valid(proj):
+			proj.queue_free()
+	)
+
 
 func _on_phase_entered(phase_index: int, _config: Dictionary) -> void:
 	match phase_index:

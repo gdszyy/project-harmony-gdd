@@ -32,6 +32,9 @@ const CHANT_WALL_WIDTH: float = 500.0
 ## 声部孤立参数
 const ISOLATION_DAMAGE: float = 10.0
 const ISOLATION_FATIGUE: float = 0.15
+const ISOLATION_THRESHOLD: int = 4  # 连续使用单一音色次数阈值
+const ISOLATION_IMMUNITY_DURATION: float = 3.5  # 免疫持续时间
+const ISOLATION_DAMAGE_REDUCTION: float = 0.7  # 免疫时伤害减免
 
 ## 升华阶段参数
 const ASCENSION_BEAM_DAMAGE: float = 30.0
@@ -58,6 +61,13 @@ var _chant_beat_counter: int = 0
 
 ## 升华光柱
 var _ascension_beams: Array[Dictionary] = []
+
+## 声部孤立追踪（参考 boss_noise.gd 的单一诅咒机制）
+var _last_player_timbre: String = ""
+var _same_timbre_count: int = 0
+var _isolation_immune: bool = false
+var _isolation_immune_timer: float = 0.0
+var _immune_timbre: String = ""
 
 # ============================================================
 # Boss 初始化
@@ -249,6 +259,13 @@ func _setup_staff_lines() -> void:
 func _on_boss_process(delta: float) -> void:
 	# 更新升华光柱
 	_update_ascension_beams(delta)
+	
+	# 声部孤立免疫计时
+	if _isolation_immune:
+		_isolation_immune_timer -= delta
+		if _isolation_immune_timer <= 0.0:
+			_isolation_immune = false
+			_immune_timbre = ""
 
 # ============================================================
 # 攻击实现
@@ -594,6 +611,44 @@ func _calculate_movement_direction() -> Vector2:
 	elif dist < 150.0:
 		return -to_player.normalized()
 	return Vector2.ZERO
+
+# ============================================================
+# 声部孤立机制（参考 Issue #127）
+# ============================================================
+
+## 外部调用：记录玩家使用的音色（参考 boss_noise.gd）
+## 供玩家攻击系统调用，用于追踪单一音色使用
+func register_player_timbre(timbre: String) -> void:
+	if timbre == _last_player_timbre:
+		_same_timbre_count += 1
+	else:
+		_same_timbre_count = 1
+		_last_player_timbre = timbre
+	
+	if _same_timbre_count >= ISOLATION_THRESHOLD:
+		_trigger_isolation_immunity(timbre)
+
+func _trigger_isolation_immunity(timbre: String) -> void:
+	_isolation_immune = true
+	_isolation_immune_timer = ISOLATION_IMMUNITY_DURATION
+	_immune_timbre = timbre
+	_same_timbre_count = 0
+	
+	# 视觉：获得免疫效果（金色护盾）
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "modulate", Color(1.0, 0.9, 0.4), 0.3)
+		tween.tween_property(_sprite, "modulate", base_color, ISOLATION_IMMUNITY_DURATION)
+
+## 重写伤害处理：声部孤立免疫
+func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
+	# 如果玩家使用单一音色且触发免疫，大幅减伤
+	var final_damage := amount
+	if _isolation_immune:
+		final_damage *= (1.0 - ISOLATION_DAMAGE_REDUCTION)
+	
+	# 调用父类伤害处理
+	super.take_damage(final_damage, knockback_dir, is_perfect_beat)
 
 func _get_type_name() -> String:
 	return "boss_guido"

@@ -49,6 +49,12 @@ const ODE_BEAM_ROTATION_SPEED: float = 0.8
 const SYMPHONY_WAVE_DAMAGE: float = 20.0
 const SYMPHONY_WAVE_RADIUS: float = 200.0
 
+## 重复惩罚参数（贝多芬追求突破与创新）
+const REPETITION_THRESHOLD: int = 3  # 连续重复攻击次数阈值
+const REPETITION_PENALTY_DAMAGE: float = 15.0  # 惩罚伤害
+const REPETITION_PENALTY_DURATION: float = 5.0  # 惩罚持续时间
+const REPETITION_DAMAGE_BOOST: float = 1.3  # Boss伤害提升倍率
+
 # ============================================================
 # 内部状态
 # ============================================================
@@ -312,9 +318,12 @@ func _on_boss_process(delta: float) -> void:
 	# 情感视觉
 	_update_emotion_visual(delta)
 	
-	# 重复惩罚
+	# 重复惩罚计时
 	if _repetition_penalty_timer > 0.0:
 		_repetition_penalty_timer -= delta
+		if _repetition_penalty_timer <= 0.0:
+			# 惩罚结束，清空历史
+			_player_attack_history.clear()
 
 ## 力度系统：在pp和ff之间动态变化
 func _update_dynamic_system(delta: float) -> void:
@@ -923,6 +932,65 @@ func _on_boss_beat(_beat_index: int) -> void:
 # ============================================================
 # 狂暴
 # ============================================================
+
+
+# ============================================================
+# 重复惩罚机制（参考 Issue #127）
+# ============================================================
+
+## 外部调用：记录玩家攻击模式
+## 供玩家攻击系统调用，用于追踪重复攻击
+func register_player_attack_pattern(pattern: String) -> void:
+	# pattern: 攻击模式标识（如 "single_note_C", "chord_Cmaj", "rhythm_quarter" 等）
+	_player_attack_history.append(pattern)
+	
+	# 保留最近5次攻击
+	if _player_attack_history.size() > 5:
+		_player_attack_history.pop_front()
+	
+	# 检测重复模式
+	_check_repetition_penalty()
+
+func _check_repetition_penalty() -> void:
+	if _player_attack_history.size() < REPETITION_THRESHOLD:
+		return
+	
+	# 检查最近N次攻击是否完全相同
+	var recent_attacks := _player_attack_history.slice(-REPETITION_THRESHOLD)
+	var is_repetitive := true
+	var first_pattern := recent_attacks[0]
+	
+	for pattern in recent_attacks:
+		if pattern != first_pattern:
+			is_repetitive = false
+			break
+	
+	if is_repetitive:
+		_trigger_repetition_penalty()
+
+func _trigger_repetition_penalty() -> void:
+	# 激活惩罚状态
+	_repetition_penalty_timer = REPETITION_PENALTY_DURATION
+	
+	# 惩罚1：对玩家造成伤害
+	if _target and is_instance_valid(_target):
+		if _target.has_method("take_damage"):
+			_target.take_damage(REPETITION_PENALTY_DAMAGE)
+	
+	# 惩罚2：Boss伤害提升
+	for phase in _phase_configs:
+		for attack in phase.get("attacks", []):
+			attack["damage"] = attack.get("damage", 10.0) * REPETITION_DAMAGE_BOOST
+	
+	# 视觉：愤怒效果（贝多芬不喜欢重复）
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "modulate", Color(1.0, 0.2, 0.2), 0.3)
+		tween.tween_property(_sprite, "modulate", base_color, REPETITION_PENALTY_DURATION)
+	
+	# 清空历史，避免连续触发
+	_player_attack_history.clear()
+
 
 func _on_enrage(level: int) -> void:
 	if level == 1:

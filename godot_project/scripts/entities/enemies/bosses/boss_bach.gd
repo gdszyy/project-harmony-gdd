@@ -37,6 +37,11 @@ const ABSORB_SHIELD_RECOVERY: float = 30.0
 const CHACONNE_WAVE_COUNT: int = 8
 const CHACONNE_INTERVAL: float = 0.8
 
+## 单音惩罚参数（体现巴赫复调理念）
+const MONOPHONIC_THRESHOLD: int = 3  # 连续单音攻击次数阈值
+const MONOPHONIC_SHIELD_RECOVERY: float = 50.0  # 单音攻击时护盾恢复量
+const MONOPHONIC_REFLECT_DAMAGE: float = 8.0  # 反弹伤害
+
 # ============================================================
 # 内部状态
 # ============================================================
@@ -58,6 +63,10 @@ var _chaconne_bass_angle: float = 0.0
 
 ## 节拍计数
 var _bach_beat_counter: int = 0
+
+## 单音惩罚追踪（参考 Issue #127）
+var _player_attack_type_history: Array[String] = []
+var _monophonic_count: int = 0
 
 # ============================================================
 # Boss 初始化
@@ -505,6 +514,54 @@ func _calculate_movement_direction() -> Vector2:
 	elif dist < 120.0:
 		return -to_player.normalized()
 	return to_player.normalized().rotated(PI / 3.0) * 0.4
+
+
+# ============================================================
+# 单音惩罚机制（参考 Issue #127）
+# ============================================================
+
+## 外部调用：记录玩家攻击类型
+## 供玩家攻击系统调用，用于追踪单音/和弦攻击
+func register_player_attack_type(attack_type: String) -> void:
+	# attack_type: "monophonic" (单音) 或 "polyphonic" (和弦/多声部)
+	if attack_type == "monophonic":
+		_monophonic_count += 1
+	else:
+		_monophonic_count = 0  # 使用和弦则重置计数
+	
+	# 记录历史（保留最近5次）
+	_player_attack_type_history.append(attack_type)
+	if _player_attack_type_history.size() > 5:
+		_player_attack_type_history.pop_front()
+
+## 重写伤害处理：单音惩罚
+func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
+	# 检测是否连续使用单音攻击
+	if _monophonic_count >= MONOPHONIC_THRESHOLD:
+		# 惩罚1：护盾恢复（音墙吸收）
+		if _current_shield_hp < _max_shield_hp:
+			_current_shield_hp = min(_current_shield_hp + MONOPHONIC_SHIELD_RECOVERY, _max_shield_hp)
+			
+			# 视觉：护盾恢复效果
+			if _sprite:
+				var tween := create_tween()
+				tween.tween_property(_sprite, "modulate", Color(0.8, 0.6, 0.3), 0.2)
+				tween.tween_property(_sprite, "modulate", base_color, 0.4)
+		
+		# 惩罚2：反弹伤害
+		if _target and is_instance_valid(_target):
+			if _target.has_method("take_damage"):
+				_target.take_damage(MONOPHONIC_REFLECT_DAMAGE)
+		
+		# 减少实际伤害
+		amount *= 0.5
+		
+		# 重置计数（避免连续触发）
+		_monophonic_count = 0
+	
+	# 调用父类伤害处理
+	super.take_damage(amount, knockback_dir, is_perfect_beat)
+
 
 func _get_type_name() -> String:
 	return "boss_bach"
