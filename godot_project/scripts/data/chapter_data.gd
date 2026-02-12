@@ -185,6 +185,18 @@ const CHAPTERS: Dictionary = {
 			"script_path": "res://scripts/entities/enemies/bosses/boss_guido.gd",
 		},
 		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch2/wave_2_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch2/wave_2_2.gd",
+			},
+		],
+		
 		"wave_templates": [
 			{
 				"waves": [1, 3],
@@ -271,6 +283,18 @@ const CHAPTERS: Dictionary = {
 			"script_path": "res://scripts/entities/enemies/bosses/boss_bach.gd",
 		},
 		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch3/wave_3_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch3/wave_3_2.gd",
+			},
+		],
+		
 		"wave_templates": [
 			{
 				"waves": [1, 3],
@@ -356,6 +380,18 @@ const CHAPTERS: Dictionary = {
 			"key": "boss_mozart",
 			"script_path": "res://scripts/entities/enemies/bosses/boss_mozart.gd",
 		},
+		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch4/wave_4_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch4/wave_4_2.gd",
+			},
+		],
 		
 		"wave_templates": [
 			{
@@ -444,6 +480,18 @@ const CHAPTERS: Dictionary = {
 			"key": "boss_beethoven",
 			"script_path": "res://scripts/entities/enemies/bosses/boss_beethoven.gd",
 		},
+		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch5/wave_5_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch5/wave_5_2.gd",
+			},
+		],
 		
 		"wave_templates": [
 			{
@@ -542,6 +590,18 @@ const CHAPTERS: Dictionary = {
 			"key": "boss_jazz",
 			"script_path": "res://scripts/entities/enemies/bosses/boss_jazz.gd",
 		},
+		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch6/wave_6_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch6/wave_6_2.gd",
+			},
+		],
 		
 		"wave_templates": [
 			# 阶段1：入门 — 引入摇摆节奏感
@@ -654,6 +714,18 @@ const CHAPTERS: Dictionary = {
 			"key": "boss_noise",
 			"script_path": "res://scripts/entities/enemies/bosses/boss_noise.gd",
 		},
+		
+		# ---- 剧本波次调度表 ----
+		"scripted_waves": [
+			{
+				"trigger": "chapter_start",
+				"wave_data": "res://data/waves/ch7/wave_7_1.gd",
+			},
+			{
+				"trigger": "before_boss",
+				"wave_data": "res://data/waves/ch7/wave_7_2.gd",
+			},
+		],
 		
 		"wave_templates": [
 			# 阶段1：入门 — 数字虚空初探
