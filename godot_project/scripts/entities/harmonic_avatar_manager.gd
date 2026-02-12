@@ -259,6 +259,10 @@ func _connect_game_signals() -> void:
 	if ccm and ccm.has_signal("class_applied"):
 		ccm.class_applied.connect(_on_class_applied)
 
+## 节拍脉冲（由 RenderBridge3D 转发）
+func on_beat_pulse(beat_index: int = 0) -> void:
+	_on_beat_tick(beat_index)
+
 ## 节拍回调
 func _on_beat_tick(_beat_index: int = 0) -> void:
 	if _current_mode_node and _current_mode_node.has_method("trigger_beat"):
