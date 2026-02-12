@@ -47,30 +47,69 @@ const PREVIEW_VALID_COLOR := Color("00FFD4")
 const PREVIEW_INVALID_COLOR := Color("FF4444")
 const SECTION_TITLE_COLOR := Color("9D8FBF")
 
-## 音符颜色
+## 音符颜色（白键）
 const NOTE_COLORS := {
 	0: Color("00FFD4"), 1: Color("0088FF"), 2: Color("66FF66"),
 	3: Color("8844FF"), 4: Color("FF4444"), 5: Color("FF8800"),
 	6: Color("FF44AA"),
 }
 
+## 黑键音符颜色（用于和弦构成音模式）
+const BLACK_KEY_COLORS := {
+	7: Color("00BBAA"),   # C#/Db
+	8: Color("0066CC"),   # D#/Eb
+	9: Color("44BB44"),   # F#/Gb
+	10: Color("6622CC"),  # G#/Ab
+	11: Color("CC6600"),  # A#/Bb
+}
+
+## 黑键音符名称
+const BLACK_KEY_NAMES := {
+	7: "C#",
+	8: "Eb",
+	9: "F#",
+	10: "Ab",
+	11: "Bb",
+}
+
+## 黑键索引到半音的映射（索引 7-11 对应 5 个黑键）
+const BLACK_KEY_SEMITONE_MAP := {
+	7: 1,   # C#/Db
+	8: 3,   # D#/Eb
+	9: 6,   # F#/Gb
+	10: 8,  # G#/Ab
+	11: 10, # A#/Bb
+}
+
 ## 和弦类型识别表（半音音程模式 → 和弦信息）
+## 包含基础和弦（3-4音）和扩展和弦（5-7音）
 const CHORD_PATTERNS := {
+	# === 基础三和弦 (3音) ===
 	"0,4,7": { "name": "大三和弦", "spell_form": "enhanced_projectile", "desc": "强化弹体：弹体体积+50%，伤害+40%", "icon": "▲" },
 	"0,3,7": { "name": "小三和弦", "spell_form": "dot_projectile", "desc": "DOT弹体：命中后持续伤害", "icon": "💧" },
 	"0,3,6": { "name": "减三和弦", "spell_form": "shockwave", "desc": "冲击波：环形扩散后内爆", "icon": "◎" },
 	"0,4,8": { "name": "增三和弦", "spell_form": "explosive_projectile", "desc": "爆炸弹体：命中时范围爆炸", "icon": "✦" },
+	"0,5,7": { "name": "挂四和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放", "icon": "⌛" },
+	"0,2,7": { "name": "挂二和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放", "icon": "⌛" },
+	# === 七和弦 (4音) ===
 	"0,4,7,11": { "name": "大七和弦", "spell_form": "shield_heal", "desc": "护盾/治疗法阵：恢复生命值", "icon": "✚" },
 	"0,4,7,10": { "name": "属七和弦", "spell_form": "magic_circle", "desc": "法阵/区域：旋转法阵持续存在", "icon": "◉" },
 	"0,3,7,10": { "name": "小七和弦", "spell_form": "summon_construct", "desc": "召唤/构造：水晶构造体", "icon": "▣" },
 	"0,3,6,9": { "name": "减七和弦", "spell_form": "celestial_strike", "desc": "天降打击：延迟后毁灭性打击", "icon": "⚡" },
 	"0,3,6,10": { "name": "半减七和弦", "spell_form": "slow_field", "desc": "迟缓领域：大范围减速", "icon": "◐" },
-	"0,5,7": { "name": "挂四和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放", "icon": "⌛" },
-	"0,2,7": { "name": "挂二和弦", "spell_form": "charged_projectile", "desc": "蓄力弹体：延迟释放", "icon": "⌛" },
+	"0,4,8,11": { "name": "增大七和弦", "spell_form": "augmented_burst", "desc": "增幅爆发：爆炸弹体+护盾效果，2.2x伤害", "icon": "☆" },
+	# === 扩展和弦 (5-7音) — 需要传说级升级解锁 ===
+	"0,2,4,7,10": { "name": "属九和弦", "spell_form": "storm_field", "desc": "风暴区域：区域内敌人减速30%，持续AOE", "icon": "🌀", "extended": true },
+	"0,2,4,7,11": { "name": "大九和弦", "spell_form": "holy_domain", "desc": "圣光领域：领域内持续回血(2/秒)，净化负面", "icon": "✦", "extended": true },
+	"0,1,3,6,9": { "name": "减九和弦", "spell_form": "annihilation_ray", "desc": "湮灭射线：直线贯穿，无视防御，4.0x伤害", "icon": "⚔", "extended": true },
+	"0,2,4,5,7,10": { "name": "属十一和弦", "spell_form": "time_rift", "desc": "时空裂隙：区域内时间减速50%", "icon": "⏳", "extended": true },
+	"0,2,4,5,7,9,10": { "name": "属十三和弦", "spell_form": "symphony_storm", "desc": "交响风暴：全屏持续AOE，附加随机元素效果", "icon": "🎵", "extended": true },
+	"0,1,3,4,6,9": { "name": "减十三和弦", "spell_form": "finale", "desc": "终焉乐章：延迟后全屏毁灭打击，自损20%HP", "icon": "💀", "extended": true },
 }
 
 ## 法术形态颜色
 const SPELL_FORM_COLORS := {
+	# 基础和弦法术形态
 	"enhanced_projectile": Color("FFD94D"),
 	"dot_projectile": Color("3366CC"),
 	"explosive_projectile": Color("FF6633"),
@@ -81,11 +120,46 @@ const SPELL_FORM_COLORS := {
 	"summon_construct": Color("2233BB"),
 	"charged_projectile": Color("D9D9F2"),
 	"slow_field": Color("4D4DBB"),
+	"augmented_burst": Color("FF9933"),
 	"generic_blast": Color("808080"),
+	# 扩展和弦法术形态
+	"storm_field": Color("4488FF"),
+	"holy_domain": Color("FFE066"),
+	"annihilation_ray": Color("FF0044"),
+	"time_rift": Color("AA00FF"),
+	"symphony_storm": Color("00CCFF"),
+	"finale": Color("FF2200"),
 }
 
 ## 白键到半音的映射
 const SEMITONE_MAP := [0, 2, 4, 5, 7, 9, 11]  # C D E F G A B
+
+## 统一的音符索引到半音映射（支持白键 0-6 和黑键 7-11）
+static func note_index_to_semitone(note_idx: int) -> int:
+	if note_idx >= 0 and note_idx < SEMITONE_MAP.size():
+		return SEMITONE_MAP[note_idx]  # 白键
+	elif BLACK_KEY_SEMITONE_MAP.has(note_idx):
+		return BLACK_KEY_SEMITONE_MAP[note_idx]  # 黑键
+	else:
+		return note_idx  # 回退
+
+## 获取音符名称（白键或黑键）
+static func get_note_display_name(note_idx: int) -> String:
+	if note_idx >= 0 and note_idx < 7:
+		return MusicData.WHITE_KEY_STATS.get(note_idx, {}).get("name", "?")
+	elif BLACK_KEY_NAMES.has(note_idx):
+		return BLACK_KEY_NAMES[note_idx]
+	else:
+		return "?"
+
+## 获取音符颜色（白键或黑键）
+static func get_note_color(note_idx: int) -> Color:
+	if NOTE_COLORS.has(note_idx):
+		return NOTE_COLORS[note_idx]
+	elif BLACK_KEY_COLORS.has(note_idx):
+		return BLACK_KEY_COLORS[note_idx]
+	else:
+		return Color(0.5, 0.5, 0.5)
 
 # ============================================================
 # 状态
@@ -198,7 +272,7 @@ func _draw() -> void:
 		## 边框
 		var border := SLOT_BORDER
 		if is_filled:
-			var note_color: Color = NOTE_COLORS.get(_slots[i], Color(0.5, 0.5, 0.5))
+			var note_color: Color = get_note_color(_slots[i])
 			border = Color(note_color.r, note_color.g, note_color.b, 0.7)
 		if is_drop_hover:
 			border = Color("00FFD4CC")
@@ -207,11 +281,11 @@ func _draw() -> void:
 		## 内容
 		if is_filled:
 			var note_key := _slots[i]
-			var note_color: Color = NOTE_COLORS.get(note_key, Color(0.5, 0.5, 0.5))
+			var note_color: Color = get_note_color(note_key)
 			## 色块背景
 			draw_rect(rect.grow(-3), Color(note_color.r, note_color.g, note_color.b, 0.25))
-			## 音符名称
-			var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
+			## 音符名称（支持白键和黑键）
+			var name_str: String = get_note_display_name(note_key)
 			draw_string(font,
 				rect.position + Vector2(rect.size.x / 2.0 - 6, rect.size.y / 2.0 + 5),
 				name_str, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, note_color)
@@ -283,10 +357,11 @@ func _update_hover(pos: Vector2) -> void:
 func _emit_slot_info(idx: int) -> void:
 	if _slots[idx] >= 0:
 		var note_key := _slots[idx]
-		var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
-		var color: Color = NOTE_COLORS.get(note_key, Color.WHITE)
+		var name_str: String = get_note_display_name(note_key)
+		var color: Color = get_note_color(note_key)
+		var key_type := "黑键" if note_key >= 7 else "白键"
 		info_hover.emit(
-			"%s 音符（炼成槽 %d）" % [name_str, idx + 1],
+			"%s %s音符（炼成槽 %d）" % [name_str, key_type, idx + 1],
 			"右键移除 | 可拖出到其他位置",
 			color
 		)
@@ -307,8 +382,8 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	for i in range(_slot_rects.size()):
 		if _slot_rects[i].has_point(at_position) and _slots[i] >= 0:
 			var note_key := _slots[i]
-			var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
-			var color: Color = NOTE_COLORS.get(note_key, Color(0.5, 0.5, 0.5))
+			var name_str: String = get_note_display_name(note_key)
+			var color: Color = get_note_color(note_key)
 
 			## 从炼成槽移除并归还库存
 			NoteInventory.unequip_note(note_key)
@@ -329,13 +404,15 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	return null
 
 ## 判断是否可以接受拖拽放置
+## 支持白键音符和黑键音符
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if data == null or not data is Dictionary:
 		_drop_hover_slot = -1
 		return false
 
 	var drag_type: String = data.get("type", "")
-	if drag_type != "note":
+	# 支持白键 "note" 和黑键 "black_key_note" 两种拖拽类型
+	if drag_type != "note" and drag_type != "black_key_note":
 		_drop_hover_slot = -1
 		return false
 
@@ -350,6 +427,7 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	return false
 
 ## 处理拖拽放置
+## 支持白键音符和黑键音符
 func _drop_data(at_position: Vector2, data) -> void:
 	_drop_hover_slot = -1
 
@@ -357,7 +435,8 @@ func _drop_data(at_position: Vector2, data) -> void:
 		return
 
 	var drag_type: String = data.get("type", "")
-	if drag_type != "note":
+	# 支持白键 "note" 和黑键 "black_key_note" 两种拖拽类型
+	if drag_type != "note" and drag_type != "black_key_note":
 		return
 
 	var note_key: int = data.get("note_key", -1)
@@ -398,6 +477,7 @@ func _remove_from_slot(slot_idx: int) -> void:
 		queue_redraw()
 
 ## 更新和弦预览
+## 支持白键（0-6）和黑键（7-11）的统一音程计算
 func _update_preview() -> void:
 	var notes: Array[int] = []
 	for slot in _slots:
@@ -411,13 +491,10 @@ func _update_preview() -> void:
 		queue_redraw()
 		return
 
-	## 计算半音音程模式
+	## 计算半音音程模式（支持白键和黑键）
 	var midi_notes: Array[int] = []
 	for n in notes:
-		if n >= 0 and n < SEMITONE_MAP.size():
-			midi_notes.append(SEMITONE_MAP[n])
-		else:
-			midi_notes.append(n)
+		midi_notes.append(note_index_to_semitone(n))
 	midi_notes.sort()
 
 	## 去重
@@ -430,16 +507,36 @@ func _update_preview() -> void:
 		queue_redraw()
 		return
 
-	var root := unique_notes[0]
-	var intervals: Array[int] = []
-	for n in unique_notes:
-		intervals.append(n - root)
+	## 尝试每个音作为根音，匹配最佳和弦模式
+	var best_pattern: Dictionary = {}
+	var best_note_count: int = 0
 
-	var pattern_key := ",".join(intervals.map(func(val): return str(val)))
+	for root_idx in range(unique_notes.size()):
+		var root := unique_notes[root_idx]
+		var intervals: Array[int] = []
+		for i in range(unique_notes.size()):
+			var interval: int = (unique_notes[(root_idx + i) % unique_notes.size()] - root + 12) % 12
+			intervals.append(interval)
+		intervals.sort()
 
-	if CHORD_PATTERNS.has(pattern_key):
-		_preview = CHORD_PATTERNS[pattern_key].duplicate()
-		_can_craft = true
+		var pattern_key := ",".join(intervals.map(func(val): return str(val)))
+
+		if CHORD_PATTERNS.has(pattern_key):
+			var pattern_data: Dictionary = CHORD_PATTERNS[pattern_key]
+			## 优先匹配音数更多的和弦（扩展和弦优先）
+			var note_count: int = intervals.size()
+			if note_count > best_note_count:
+				best_note_count = note_count
+				best_pattern = pattern_data.duplicate()
+
+	if not best_pattern.is_empty():
+		## 检查扩展和弦是否已解锁
+		if best_pattern.get("extended", false) and not GameManager.extended_chords_unlocked:
+			_preview = { "name": best_pattern["name"] + " (未解锁)", "desc": "需要传说级升级“扩展和弦解锁”", "icon": "🔒" }
+			_can_craft = false
+		else:
+			_preview = best_pattern
+			_can_craft = true
 
 	queue_redraw()
 
@@ -460,8 +557,9 @@ func _execute_alchemy() -> void:
 	## 确定根音和法术信息
 	var root_note: int = notes_to_consume[0]
 	var spell_form: String = _preview.get("spell_form", "generic_blast")
+	var root_name: String = get_note_display_name(root_note)
 	var spell_name: String = "%s %s" % [
-		MusicData.WHITE_KEY_STATS.get(root_note, {}).get("name", "?"),
+		root_name,
 		_preview.get("name", "Unknown")
 	]
 

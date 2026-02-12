@@ -30,6 +30,8 @@ enum ChordType {
 	MAJOR_7,         # 大七和弦
 	MINOR_7,         # 小七和弦
 	SUSPENDED,       # 挂留和弦
+	HALF_DIMINISHED_7,  # 半减七和弦
+	AUGMENTED_MAJOR_7,  # 增大七和弦
 	# 扩展和弦 (需要传说级升级解锁)
 	DOMINANT_9,      # 属九和弦
 	MAJOR_9,         # 大九和弦
@@ -50,6 +52,8 @@ enum SpellForm {
 	SHIELD_HEAL,          # 护盾/治疗 (大七)
 	SUMMON,               # 召唤/构造 (小七)
 	CHARGED,              # 蓄力弹体 (挂留)
+	SLOW_FIELD,           # 迟缓领域 (半减七)
+	AUGMENTED_BURST,      # 增幅爆发 (增大七)
 	STORM_FIELD,          # 风暴区域 (属九)
 	HOLY_DOMAIN,          # 圣光领域 (大九)
 	ANNIHILATION_RAY,     # 湮灭射线 (减九)
@@ -181,6 +185,8 @@ const CHORD_SPELL_MAP: Dictionary = {
 	ChordType.MAJOR_7:       { "form": SpellForm.SHIELD_HEAL, "name": "护盾/治疗法阵", "multiplier": 0.0 },
 	ChordType.MINOR_7:       { "form": SpellForm.SUMMON, "name": "召唤/构造", "multiplier": 0.9 },
 	ChordType.SUSPENDED:     { "form": SpellForm.CHARGED, "name": "蓄力弹体", "multiplier": 1.8 },
+	ChordType.HALF_DIMINISHED_7: { "form": SpellForm.SLOW_FIELD, "name": "迟缓领域", "multiplier": 1.4 },
+	ChordType.AUGMENTED_MAJOR_7: { "form": SpellForm.AUGMENTED_BURST, "name": "增幅爆发", "multiplier": 2.2 },
 	# 扩展和弦
 	ChordType.DOMINANT_9:    { "form": SpellForm.STORM_FIELD, "name": "风暴区域", "multiplier": 0.6 },
 	ChordType.MAJOR_9:       { "form": SpellForm.HOLY_DOMAIN, "name": "圣光领域", "multiplier": 0.0 },
@@ -201,6 +207,8 @@ const CHORD_DISSONANCE: Dictionary = {
 	ChordType.MAJOR_7: 2.0,
 	ChordType.MINOR_7: 2.5,
 	ChordType.SUSPENDED: 3.5,
+	ChordType.HALF_DIMINISHED_7: 4.5,
+	ChordType.AUGMENTED_MAJOR_7: 3.5,
 	ChordType.DOMINANT_9: 5.0,
 	ChordType.MAJOR_9: 3.5,
 	ChordType.DIMINISHED_9: 7.5,
@@ -269,6 +277,8 @@ const CHORD_INTERVALS: Dictionary = {
 	ChordType.MAJOR_7:       [0, 4, 7, 11],
 	ChordType.MINOR_7:       [0, 3, 7, 10],
 	ChordType.SUSPENDED:     [0, 5, 7],
+	ChordType.HALF_DIMINISHED_7: [0, 3, 6, 10],
+	ChordType.AUGMENTED_MAJOR_7: [0, 4, 8, 11],
 	ChordType.DOMINANT_9:    [0, 4, 7, 10, 14],
 	ChordType.MAJOR_9:       [0, 4, 7, 11, 14],
 	ChordType.DIMINISHED_9:  [0, 3, 6, 9, 13],

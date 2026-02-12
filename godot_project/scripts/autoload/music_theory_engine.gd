@@ -21,8 +21,9 @@ const MAX_CHORD_HISTORY: int = 8
 
 ## 从一组音符中识别和弦类型
 ## notes: Array[int] - MIDI音符编号或 Note 枚举值
-## 返回: { "type": ChordType, "root": int, "quality": String } 或 null
+## 返回: { "type": ChordType, "root": int, "quality": String, "notes": Array } 或 null
 ## Issue #18: 黑键双重身份 - 黑键在和弦构建窗口内参与和弦类型判定
+## 扩展和弦支持: 优先匹配音数更多的和弦类型（扩展和弦优先于基础和弦）
 func identify_chord(notes: Array) -> Variant:
 	if notes.size() < 3:
 		return null
@@ -40,6 +41,10 @@ func identify_chord(notes: Array) -> Variant:
 	if pitch_classes.size() < 3:
 		return null
 
+	# 收集所有可能的匹配结果，优先选择音数最多的和弦（扩展和弦优先）
+	var best_match: Variant = null
+	var best_note_count: int = 0
+
 	# 尝试每个音作为根音
 	for root_idx in range(pitch_classes.size()):
 		var root: int = pitch_classes[root_idx]
@@ -54,24 +59,41 @@ func identify_chord(notes: Array) -> Variant:
 		# 匹配和弦模板
 		var chord_type = _match_chord_template(intervals)
 		if chord_type != null:
-			return {
-				"type": chord_type,
-				"root": root,
-				"intervals": intervals,
-			}
+			var template: Array = MusicData.CHORD_INTERVALS.get(chord_type, [])
+			var note_count: int = template.size()
+			# 优先选择音数更多的和弦类型（扩展和弦 > 七和弦 > 三和弦）
+			if note_count > best_note_count:
+				best_note_count = note_count
+				best_match = {
+					"type": chord_type,
+					"root": root,
+					"intervals": intervals,
+					"notes": notes.duplicate(),
+				}
 
-	return null
+	return best_match
 
 ## 匹配和弦模板
+## 扩展和弦支持: 归一化模板到一个八度后进行匹配
+## 同时支持精确匹配和子集匹配（输入音符 >= 模板音符时匹配）
 func _match_chord_template(intervals: Array) -> Variant:
 	# 将 intervals 转为 Array[int] 以便比较
 	var int_arr: Array[int] = []
 	for i in intervals:
 		int_arr.append(i)
 
+	# 第一遍：精确匹配（优先匹配音数最多的模板）
+	# 按模板音数从多到少排序，确保扩展和弦优先匹配
+	var sorted_types: Array = []
 	for chord_type in MusicData.CHORD_INTERVALS:
 		var template: Array = MusicData.CHORD_INTERVALS[chord_type]
-		# 将模板也归一化到一个八度
+		sorted_types.append({"type": chord_type, "size": template.size()})
+	sorted_types.sort_custom(func(a, b): return a["size"] > b["size"])
+
+	for entry in sorted_types:
+		var chord_type = entry["type"]
+		var template: Array = MusicData.CHORD_INTERVALS[chord_type]
+		# 将模板归一化到一个八度
 		var norm_template: Array[int] = []
 		for t in template:
 			norm_template.append(t % 12)
@@ -86,6 +108,30 @@ func _match_chord_template(intervals: Array) -> Variant:
 		if int_arr == unique_template:
 			return chord_type
 
+	# 第二遍：子集匹配（输入音符包含模板所有音符时，匹配最大的模板）
+	for entry in sorted_types:
+		var chord_type = entry["type"]
+		var template: Array = MusicData.CHORD_INTERVALS[chord_type]
+		var norm_template: Array[int] = []
+		for t in template:
+			norm_template.append(t % 12)
+		norm_template.sort()
+
+		var unique_template: Array[int] = []
+		for t in norm_template:
+			if t not in unique_template:
+				unique_template.append(t)
+
+		# 检查模板是否为输入的子集
+		var is_subset := true
+		for t in unique_template:
+			if t not in int_arr:
+				is_subset = false
+				break
+
+		if is_subset and unique_template.size() >= 3:
+			return chord_type
+
 	return null
 
 # ============================================================
@@ -98,13 +144,13 @@ func get_chord_function(chord_type: MusicData.ChordType) -> MusicData.ChordFunct
 	match chord_type:
 		# 主功能 (T) - 稳定和弦
 		MusicData.ChordType.MAJOR, MusicData.ChordType.MAJOR_7, \
-		MusicData.ChordType.MAJOR_9:
+		MusicData.ChordType.MAJOR_9, MusicData.ChordType.AUGMENTED_MAJOR_7:
 			return MusicData.ChordFunction.TONIC
 
 		# 属功能 (D) - 紧张和弦
 		MusicData.ChordType.DOMINANT_7, MusicData.ChordType.DIMINISHED, \
 		MusicData.ChordType.DIMINISHED_7, MusicData.ChordType.DIMINISHED_9, \
-		MusicData.ChordType.DIMINISHED_13:
+		MusicData.ChordType.DIMINISHED_13, MusicData.ChordType.HALF_DIMINISHED_7:
 			return MusicData.ChordFunction.DOMINANT
 
 		# 下属功能 (PD) - 准备和弦

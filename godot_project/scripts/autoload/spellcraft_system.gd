@@ -636,9 +636,11 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"timbre_name": timbre_data.get("name", "合成器"),
 		# 节奏型行为标记
 		"is_rapid_fire": rhythm == MusicData.RhythmPattern.EVEN_EIGHTH,
+		"is_triplet": rhythm == MusicData.RhythmPattern.TRIPLET,
 		"rapid_fire_count": rhythm_data.get("count", 1),
 		"has_knockback": rhythm_data.get("knockback", false),
 		"dodge_back": rhythm_data.get("dodge_back", false),
+		"_wave_trajectory": rhythm_data.get("wave_trajectory", false),
 		# ★ 密度过载精准度偏移
 		"accuracy_offset": accuracy_offset,
 		# ★ 单音寂静标记（供弹体管理器灰色渲染）
@@ -689,6 +691,17 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 			rapid_data["rapid_fire_index"] = i
 			rapid_data["rapid_fire_angle_offset"] = (i - spell_data["rapid_fire_count"] / 2.0) * 0.1
 			spell_cast.emit(rapid_data)
+	# 节奏型行为：三连发（TRIPLET）发射扇形弹体
+	elif spell_data["is_triplet"] and spell_data["rapid_fire_count"] > 1:
+		var spread_angle := 0.3  # 扇形张角（约 17 度）
+		var count: int = spell_data["rapid_fire_count"]
+		for i in range(count):
+			var triplet_data := spell_data.duplicate()
+			triplet_data["rapid_fire_index"] = i
+			# 扇形分布：中心弹体无偏移，两侧弹体向外扩散
+			var angle_offset := (float(i) - float(count - 1) / 2.0) * spread_angle / float(count - 1) if count > 1 else 0.0
+			triplet_data["rapid_fire_angle_offset"] = angle_offset
+			spell_cast.emit(triplet_data)
 	else:
 		spell_cast.emit(spell_data)
 

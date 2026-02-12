@@ -138,6 +138,10 @@ func spawn_chord_projectiles(chord_data: Dictionary, origin: Vector2, direction:
 			_spawn_summon_demo(chord_data, origin)
 		MusicData.SpellForm.CHARGED:
 			_spawn_charged(chord_data, origin, aim_dir)
+		MusicData.SpellForm.SLOW_FIELD:
+			_spawn_slow_field(chord_data, origin)
+		MusicData.SpellForm.AUGMENTED_BURST:
+			_spawn_augmented_burst(chord_data, origin, aim_dir)
 		_:
 			_spawn_extended_spell(chord_data, origin, aim_dir)
 
@@ -300,6 +304,10 @@ func _create_chord_projectile(chord_data: Dictionary) -> void:
 			_spawn_summon(chord_data, player_pos)
 		MusicData.SpellForm.CHARGED:
 			_spawn_charged(chord_data, player_pos, aim_dir)
+		MusicData.SpellForm.SLOW_FIELD:
+			_spawn_slow_field(chord_data, player_pos)
+		MusicData.SpellForm.AUGMENTED_BURST:
+			_spawn_augmented_burst(chord_data, player_pos, aim_dir)
 		_:
 			# 扩展和弦形态
 			_spawn_extended_spell(chord_data, player_pos, aim_dir)
@@ -567,6 +575,74 @@ func _spawn_charged(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	proj["final_velocity"] = dir * 800.0
 	proj["color"] = Color(1.0, 1.0, 0.0)
 	_projectiles.append(proj)
+
+# ============================================================
+# 半减七和弦：迟缓领域 — 大范围减速场
+# ============================================================
+
+func _spawn_slow_field(data: Dictionary, pos: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 40.0)
+	var field := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": base_dmg * 0.3,
+		"size": 140.0,
+		"duration": 5.0,
+		"time_alive": 0.0,
+		"color": Color(0.3, 0.3, 0.7, 0.6),
+		"active": true,
+		"is_field": true,
+		"field_type": "slow",
+		"field_tick_interval": 0.5,
+		"field_tick_timer": 0.0,
+		"field_tick_count": 0,
+		"slow_factor": 0.4,
+		"rotation": 0.0,
+		"rotation_speed": 1.5,
+		"pulse_phase": 0.0,
+		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.4,
+		"field_final_burst": true,
+	}
+	_projectiles.append(field)
+
+# ============================================================
+# 增大七和弦：增幅爆发 — 爆炸弹体 + 临时护盾
+# ============================================================
+
+func _spawn_augmented_burst(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
+	var base_dmg: float = data.get("damage", 60.0)
+	# 爆炸弹体（增强版）
+	var proj := _base_projectile(data, pos, dir)
+	proj["damage"] = base_dmg * 2.2
+	proj["size"] *= 1.5
+	proj["is_explosive"] = true
+	proj["explosion_radius"] = 120.0
+	proj["color"] = Color(1.0, 0.6, 0.0)
+	proj["trail_positions"] = [] as Array[Vector2]
+	proj["trail_max"] = 10
+	_projectiles.append(proj)
+	# 临时护盾（短持续）
+	var shield := {
+		"position": pos,
+		"velocity": Vector2.ZERO,
+		"damage": 0.0,
+		"size": 50.0,
+		"duration": 2.5,
+		"time_alive": 0.0,
+		"color": Color(1.0, 0.8, 0.3, 0.5),
+		"is_shield": true,
+		"follows_player": true,
+		"shield_hp": 30.0,
+		"max_shield_hp": 30.0,
+		"pulse_phase": 0.0,
+		"active": true,
+		"modifier": -1,
+		"spawn_anim": true,
+		"spawn_duration": 0.2,
+	}
+	_projectiles.append(shield)
 
 # ============================================================
 # 扩展和弦法术形态（修复：从嵌套函数移出为顶层函数）
