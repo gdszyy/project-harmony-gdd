@@ -37,7 +37,10 @@ base_color = Color(0.7, 0.5, 0.2, 1)
 base_glitch_intensity = 0.08
 max_glitch_intensity = 0.6
 
-[node name="EnemyVisual" type="Node2D" parent="."]
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.7, 0.5, 0.2, 1)
+polygon = PackedVector2Array(0, -14, 14, 0, 0, 14, -14, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_body")
