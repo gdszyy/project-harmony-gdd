@@ -1,16 +1,10 @@
 [gd_scene load_steps=4 format=3 uid="uid://screech_enemy_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/enemy_screech.gd" id="1_screech"]
-[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_glitch"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
-radius = 8.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
-radius = 12.0
+[ext_resource type="Shader" path="res://shaders/enemy_screech_glitch.gdshader" id="2_screech_glitch"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
-shader = ExtResource("2_glitch")
+shader = ExtResource("2_screech_glitch")
 shader_parameter/glitch_intensity = 0.25
 shader_parameter/hp_ratio = 1.0
 shader_parameter/beat_energy = 0.0
@@ -21,8 +15,14 @@ shader_parameter/scanline_strength = 0.4
 shader_parameter/chromatic_offset = 3.0
 shader_parameter/noise_speed = 6.0
 shader_parameter/pixel_size = 1.0
+shader_parameter/scanline_scroll_speed = 2.0
+shader_parameter/tip_highlight_intensity = 1.5
+shader_parameter/charge_progress = 0.0
 
-[node name="EnemyScreech" type="CharacterBody2D"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 10.0
+
+[node name="EnemyScreech" type="CharacterBody2D" groups=["enemy"]]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_screech")
@@ -31,7 +31,7 @@ move_speed = 150.0
 contact_damage = 5.0
 xp_value = 4
 quantized_fps = 20.0
-collision_radius = 8.0
+collision_radius = 10.0
 knockback_resistance = 0.0
 base_color = Color(1, 0.9, 0.2, 1)
 base_glitch_intensity = 0.25
@@ -46,7 +46,7 @@ death_burst_dissonance = 0.12
 [node name="EnemyVisual" type="Polygon2D" parent="."]
 material = SubResource("ShaderMaterial_glitch")
 color = Color(1, 0.9, 0.2, 1)
-polygon = PackedVector2Array(0, -10, 7, -3, 4, 8, -4, 8, -7, -3)
+polygon = PackedVector2Array(0, -15, 10, 10, -10, 10)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_body")
@@ -56,4 +56,4 @@ collision_layer = 2
 collision_mask = 1
 
 [node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
-shape = SubResource("CircleShape2D_damage")
+shape = SubResource("CircleShape2D_body")
