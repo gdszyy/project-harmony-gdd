@@ -1092,14 +1092,27 @@ func _on_player_died() -> void:
 func _on_spell_cast(spell_data: Dictionary) -> void:
 	var is_perfect: bool = spell_data.get("is_perfect_beat", false)
 	var pos: Vector2 = spell_data.get("position", Vector2.ZERO)
-	play_spell_cast_sfx(pos, is_perfect)
+
+	# OPT02: 计算相对音高的 pitch_scale
+	var relative_pitch: float = _calculate_relative_pitch_scale(spell_data)
+
+	if is_perfect:
+		_play_2d_sound("perfect_beat_ring", pos, -4.0, relative_pitch, PLAYER_BUS_NAME)
+	else:
+		_play_2d_sound("cast_chime", pos, -8.0, relative_pitch, PLAYER_BUS_NAME)
+
 	# 布鲁斯暴击音效
 	if spell_data.get("is_crit", false):
 		play_crit_sfx(pos)
 
 func _on_chord_cast(chord_data: Dictionary) -> void:
 	var pos: Vector2 = chord_data.get("position", Vector2.ZERO)
-	play_chord_cast_sfx(pos, chord_data)
+	# OPT02: 将和弦音符量化到当前音阶
+	var resolved_data: Dictionary = chord_data.duplicate()
+	var notes: Array = resolved_data.get("notes", [])
+	if notes.size() >= 2:
+		resolved_data["notes"] = _resolve_chord_notes_relative(notes)
+	play_chord_cast_sfx(pos, resolved_data)
 
 func _on_spell_blocked_by_silence(_note: int) -> void:
 	play_note_silenced_sfx()
@@ -1316,3 +1329,44 @@ func set_ui_volume(volume: float) -> void:
 	var bus_idx := AudioServer.get_bus_index(UI_BUS_NAME)
 	if bus_idx >= 0:
 		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(ui_volume))
+
+# ============================================================
+# OPT02: 相对音高系统 (Relative Pitch System)
+# ============================================================
+
+## 根据 spell_data 中的 pitch_degree 和当前和声上下文，计算动态 pitch_scale
+## 法术的音高会根据其度数 (pitch_degree) 和当前和弦动态调整
+func _calculate_relative_pitch_scale(spell_data: Dictionary) -> float:
+	var degree: int = spell_data.get("pitch_degree", 0)
+	if degree <= 0:
+		# 无 pitch_degree 信息，回退到随机微调模式
+		return randf_range(0.95, 1.05)
+
+	# 如果有 white_key，使用它确保度数正确
+	var white_key: int = spell_data.get("white_key", -1)
+	if white_key >= 0:
+		degree = RelativePitchResolver.WHITE_KEY_DEGREE.get(white_key, 1)
+
+	# 使用 RelativePitchResolver 获取目标 MIDI 音高
+	var target_midi: int = RelativePitchResolver.resolve_chord_tone(degree, 4)
+
+	# 计算相对于基准音高 (C4 = MIDI 60) 的 pitch_scale
+	var pitch_scale: float = RelativePitchResolver.calculate_pitch_ratio(
+		60,  # C4 作为基准
+		target_midi
+	)
+
+	# 限制 pitch_scale 范围避免极端变调
+	return clampf(pitch_scale, 0.5, 2.0)
+
+## 将和弦音符量化到当前音阶，确保和弦音效与 BGM 和谐
+func _resolve_chord_notes_relative(chord_notes: Array) -> Array:
+	var bgm := get_node_or_null("/root/BGMManager")
+	if not bgm or not bgm.has_method("quantize_to_scale"):
+		return chord_notes
+
+	var resolved: Array = []
+	for note_pc in chord_notes:
+		var quantized_pc: int = bgm.quantize_to_scale(int(note_pc))
+		resolved.append(quantized_pc)
+	return resolved

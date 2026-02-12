@@ -572,6 +572,60 @@ const WHITE_KEY_TO_NOTE: Dictionary = {
 }
 
 # ============================================================
+# OPT02: 相对音高系统数据 (Relative Pitch System)
+# ============================================================
+
+## 白键音符的默认音程度数映射
+## 度数表示音符在当前音阶中的功能角色 (1=根音, 2=上主音, ..., 7=导音)
+const WHITE_KEY_PITCH_DEGREE: Dictionary = {
+	WhiteKey.C: 1,  ## 根音 (Tonic)
+	WhiteKey.D: 2,  ## 上主音 (Supertonic)
+	WhiteKey.E: 3,  ## 中音 (Mediant)
+	WhiteKey.F: 4,  ## 下属音 (Subdominant)
+	WhiteKey.G: 5,  ## 属音 (Dominant)
+	WhiteKey.A: 6,  ## 下中音 (Submediant)
+	WhiteKey.B: 7,  ## 导音 (Leading Tone)
+}
+
+## 音程度数的功能角色信息
+## tension: 紧张度 (0.0=完全和谐, 1.0=极度紧张)
+## stability: 稳定性 (0.0=不稳定, 1.0=完全稳定)
+## is_chord_priority: 是否优先吸附到和弦音
+const DEGREE_FUNCTION_ROLES: Dictionary = {
+	1: {"name": "根音", "en": "Tonic", "tension": 0.0, "stability": 1.0, "is_chord_priority": true},
+	2: {"name": "上主音", "en": "Supertonic", "tension": 0.3, "stability": 0.5, "is_chord_priority": false},
+	3: {"name": "中音", "en": "Mediant", "tension": 0.2, "stability": 0.7, "is_chord_priority": true},
+	4: {"name": "下属音", "en": "Subdominant", "tension": 0.5, "stability": 0.4, "is_chord_priority": false},
+	5: {"name": "属音", "en": "Dominant", "tension": 0.7, "stability": 0.6, "is_chord_priority": true},
+	6: {"name": "下中音", "en": "Submediant", "tension": 0.4, "stability": 0.5, "is_chord_priority": false},
+	7: {"name": "导音", "en": "Leading Tone", "tension": 0.9, "stability": 0.2, "is_chord_priority": false},
+}
+
+## 常用音阶定义 (用于章节调式系统)
+## 每个音阶是一个音高类数组 (0-11)
+const SCALE_DEFINITIONS: Dictionary = {
+	"natural_minor":  [0, 2, 3, 5, 7, 8, 10],   ## 自然小调 (Aeolian)
+	"harmonic_minor": [0, 2, 3, 5, 7, 8, 11],   ## 和声小调
+	"melodic_minor":  [0, 2, 3, 5, 7, 9, 11],   ## 旋律小调 (上行)
+	"major":          [0, 2, 4, 5, 7, 9, 11],   ## 自然大调 (Ionian)
+	"dorian":         [0, 2, 3, 5, 7, 9, 10],   ## 多利亚调式
+	"phrygian":       [0, 1, 3, 5, 7, 8, 10],   ## 弗里吉亚调式
+	"lydian":         [0, 2, 4, 6, 7, 9, 11],   ## 利底亚调式
+	"mixolydian":     [0, 2, 4, 5, 7, 9, 10],   ## 混合利底亚调式
+	"locrian":        [0, 1, 3, 5, 6, 8, 10],   ## 洛克里亚调式
+	"pentatonic_minor": [0, 3, 5, 7, 10],        ## 小调五声音阶
+	"blues":          [0, 3, 5, 6, 7, 10],       ## 布鲁斯音阶
+}
+
+## 根据根音和音阶名称生成完整音阶
+static func build_scale(root: int, scale_name: String) -> Array[int]:
+	var intervals: Array = SCALE_DEFINITIONS.get(scale_name, SCALE_DEFINITIONS["natural_minor"])
+	var scale: Array[int] = []
+	for interval in intervals:
+		scale.append((root + interval) % 12)
+	return scale
+
+# ============================================================
 # 和声指挥官 — 马尔可夫链数据 (OPT01)
 # ============================================================
 

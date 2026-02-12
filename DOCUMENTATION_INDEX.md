@@ -89,8 +89,8 @@ graph TD
 
 | 文档 | 简介 | 状态 | 目标读者 |
 | :--- | :--- | :--- | :--- |
-| **OPT01_GlobalDynamicHarmonyConductor.md** | **全局动态和声指挥家**。定义全局音乐状态管理和动态和声进行系统。 | **✅ 已实现** | 程序、音频 |
-| **OPT02_RelativePitchSystem.md** | **相对音高系统**。定义基于音程关系而非绝对音高的法术系统。 | 设计稿 | 程序、音频 |
+| **OPT01_GlobalDynamicHarmonyConductor.md** | **全局动态和声指挥家。BGMManager 升级为和声指挥官，支持玩家和弦实时响应、马尔可夫链自动演进、全局和声上下文广播。** | **✅ 已实现** | 程序、音频 |
+| **OPT02_RelativePitchSystem.md** | **相对音高系统。RelativePitchResolver 将法术音高从绝对转为相对和弦功能音，确保音效与 BGM 和谐。** | **✅ 已实现** | 程序、音频 |
 | **OPT03_EnemyMusicalInstrumentIdentity.md** | **敌人乐器身份**。为每种敌人赋予独特的乐器音色身份。 | 设计稿 | 策划、程序 |
 | **OPT04_ChapterTonalityEvolution.md** | **章节调性演化**。定义各章节的音乐调性变化和叙事弧线，从 Ionian → Chromatic 逐步演进。 | **✅ 已实现** | 策划、音频 |
 | **OPT05_RezStyleInputQuantization.md** | **Rez 式输入量化错觉**。将游戏音效自动对齐到十六分音符网格，创造“人人都是节奏大师”的错觉。 | **✅ 已实现** | 策划、程序 |

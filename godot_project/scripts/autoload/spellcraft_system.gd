@@ -577,9 +577,14 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		accuracy_offset = FatigueManager.current_accuracy_penalty
 		accuracy_penalized.emit(accuracy_offset)
 
+	# OPT02: 获取白键的音程度数（用于相对音高系统）
+	var pitch_degree: int = MusicData.WHITE_KEY_PITCH_DEGREE.get(white_key, 1)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
+		"white_key": white_key,  # OPT02: 显式传递白键枚举值
+		"pitch_degree": pitch_degree,  # OPT02: 音程度数 (1-7)
 		"stats": stats,
 		"damage": base_damage,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"] * meta_spd_mult,
@@ -688,9 +693,14 @@ func _cast_single_note(note: int) -> void:
 		accuracy_offset = FatigueManager.current_accuracy_penalty
 		accuracy_penalized.emit(accuracy_offset)
 
+	# OPT02: 获取白键的音程度数（用于相对音高系统）
+	var pitch_degree: int = MusicData.WHITE_KEY_PITCH_DEGREE.get(white_key, 1)
+
 	var spell_data := {
 		"type": "note",
 		"note": white_key,
+		"white_key": white_key,  # OPT02: 显式传递白键枚举值
+		"pitch_degree": pitch_degree,  # OPT02: 音程度数 (1-7)
 		"stats": stats,
 		"damage": base_damage,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
