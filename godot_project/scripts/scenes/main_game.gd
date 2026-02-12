@@ -1,10 +1,11 @@
 ## main_game.gd
-## 主游戏场景 v4.0 — 统一游戏与测试环境
+## 主游戏场景 v5.0 — 统一游戏与测试环境 (v3.0 交互重构)
 ## 管理游戏循环、碰撞检测、场景组件协调
 ## 集成：ChapterManager、BossSpawner、SpellVisualManager、VfxManager、
 ##       DeathVfxManager、DamageNumberManager、SummonManager、RenderBridge3D
-##       以及所有UI面板（NoteInventoryUI、SpellbookUI、ChordAlchemyPanel、
-##       TimbreWheelUI、ManualSlotConfig、BossHPBar）
+##       以及所有UI面板（NoteInventoryUI、IntegratedComposer、
+##       CircleOfFifthsUpgradeV3、MetaProgressionVisualizer、
+##       TimbreWheelUI、BossHPBar）
 ##
 ## v4.0 变更：
 ## - 统一游戏与测试环境：测试场不再是独立场景，而是主游戏 + 调试控制台叠加
@@ -47,13 +48,13 @@ var _chapter_manager: Node = null  # P0 Fix #46: 使用 Autoload 单例
 @onready var _render_bridge: Node = $RenderBridge3D
 
 # ============================================================
-# 节点引用 — UI 面板
+# 节点引用 — UI 面板 (v3.0 重构)
 # ============================================================
 @onready var _note_inventory_ui: Control = $HUD/NoteInventoryUI
-@onready var _spellbook_ui: Control = $HUD/SpellbookUI
-@onready var _chord_alchemy_panel: Control = $HUD/ChordAlchemyPanel
+@onready var _integrated_composer: Control = $HUD/IntegratedComposer  ## v3.0: 替代 SpellbookUI + ChordAlchemyPanel + ManualSlotConfig
+@onready var _circle_of_fifths_v3: Control = $HUD/CircleOfFifthsUpgradeV3  ## v3.0: 替代旧版 CircleOfFifthsUpgrade
+@onready var _meta_visualizer: Control = $HUD/MetaProgressionVisualizer  ## v3.0: 局外成长可视化
 @onready var _timbre_wheel_ui: Control = $HUD/TimbreWheelUI
-@onready var _manual_slot_config: Control = $HUD/ManualSlotConfig
 @onready var _boss_hp_bar: Control = $HUD/BossHPBar
 
 # ============================================================
@@ -486,10 +487,10 @@ func _connect_system_signals() -> void:
 	if not GameManager.enemy_killed.is_connected(_on_enemy_killed_vfx):
 		GameManager.enemy_killed.connect(_on_enemy_killed_vfx)
 
-	# --- 和弦炼成完成信号 ---
-	if _chord_alchemy_panel and _chord_alchemy_panel.has_signal("alchemy_completed"):
-		if not _chord_alchemy_panel.alchemy_completed.is_connected(_on_alchemy_completed):
-			_chord_alchemy_panel.alchemy_completed.connect(_on_alchemy_completed)
+	# --- v3.0: 一体化编曲台信号 ---
+	if _integrated_composer and _integrated_composer.has_signal("alchemy_completed"):
+		if not _integrated_composer.alchemy_completed.is_connected(_on_alchemy_completed):
+			_integrated_composer.alchemy_completed.connect(_on_alchemy_completed)
 
 # ============================================================
 # 法术系统信号连接（调试模式日志追踪）
@@ -680,8 +681,9 @@ func _on_enemy_killed_vfx(enemy_position: Vector2, enemy_type: String = "static"
 # ============================================================
 
 func _on_alchemy_completed(_chord_spell: Dictionary) -> void:
-	if _spellbook_ui and _spellbook_ui.has_method("open_panel"):
-		_spellbook_ui.open_panel()
+	# v3.0: 和弦炼成完成后在一体化编曲台内自动更新法术书区域
+	if _integrated_composer and _integrated_composer.has_method("refresh_spellbook"):
+		_integrated_composer.refresh_spellbook()
 
 # ============================================================
 # 地面设置

@@ -1,6 +1,6 @@
 ## game_over.gd
-## 游戏结束场景 v2.0 — 集成 RunResultsScreen + HallOfHarmony
-## 流程：游戏结束 → 结算界面 → 和谐殿堂（可选）→ 重试/主菜单
+## 游戏结束场景 v3.0 — 集成 RunResultsScreen + MetaProgressionVisualizer
+## 流程：游戏结束 → 结算界面 → 局外成长可视化（可选）→ 重试/主菜单
 ## 审计报告 建议3 修复：打通 主菜单→游戏→结算→成长 完整循环
 extends Control
 
@@ -16,7 +16,7 @@ extends Control
 # 动态创建的子系统
 # ============================================================
 var _run_results_screen: Node = null
-var _hall_of_harmony: Control = null
+var _hall_of_harmony: Control = null  ## 兼容保留，实际加载 MetaProgressionVisualizer
 var _showing_results: bool = false
 var _showing_hall: bool = false
 
@@ -142,21 +142,33 @@ func _show_run_results() -> void:
 # ============================================================
 
 func _show_hall_of_harmony() -> void:
+	# v3.0: 优先加载 MetaProgressionVisualizer，回退到旧版 HallOfHarmony
+	var viz_script := load("res://scripts/ui/meta_progression_visualizer.gd")
+	if viz_script:
+		_hall_of_harmony = Control.new()
+		_hall_of_harmony.set_script(viz_script)
+		_hall_of_harmony.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(_hall_of_harmony)
+		# MetaProgressionVisualizer 信号兼容
+		if _hall_of_harmony.has_signal("start_game_pressed"):
+			_hall_of_harmony.start_game_pressed.connect(_on_retry_pressed)
+		if _hall_of_harmony.has_signal("back_pressed"):
+			_hall_of_harmony.back_pressed.connect(_on_hall_back)
+		_showing_hall = true
+		return
+
+	# 回退：加载旧版 HallOfHarmony
 	var hall_script := load("res://scripts/ui/hall_of_harmony.gd")
 	if hall_script == null:
 		return
-
 	_hall_of_harmony = Control.new()
 	_hall_of_harmony.set_script(hall_script)
 	_hall_of_harmony.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_hall_of_harmony)
-
-	# 连接和谐殿堂信号
 	if _hall_of_harmony.has_signal("start_game_pressed"):
 		_hall_of_harmony.start_game_pressed.connect(_on_retry_pressed)
 	if _hall_of_harmony.has_signal("back_pressed"):
 		_hall_of_harmony.back_pressed.connect(_on_hall_back)
-
 	_showing_hall = true
 
 func _on_hall_back() -> void:

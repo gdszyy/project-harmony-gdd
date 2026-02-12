@@ -36,6 +36,7 @@ extends Control
 signal note_placed(cell_idx: int, note: int)
 signal cell_cleared(cell_idx: int)
 signal chord_crafted(chord_spell: Dictionary)
+signal alchemy_completed(chord_spell: Dictionary)  ## v3.0: 兼容别名，与 chord_crafted 同步触发
 signal manual_slot_configured(slot_index: int, spell_data: Dictionary)
 signal panel_toggled(is_open: bool)
 
@@ -282,6 +283,11 @@ func open_panel() -> void:
 	_sync_manual_slots()
 	_calculate_layout()
 	panel_toggled.emit(true)
+	queue_redraw()
+
+## v3.0: 供 main_game.gd 调用，和弦炼成完成后刷新法术书区域
+func refresh_spellbook() -> void:
+	_calculate_spellbook_layout()
 	queue_redraw()
 
 func close_panel() -> void:
@@ -1400,6 +1406,7 @@ func _execute_alchemy() -> void:
 	_alchemy_can_craft = false
 
 	chord_crafted.emit(chord_spell)
+	alchemy_completed.emit(chord_spell)  # v3.0: 同步触发兼容信号
 
 # ============================================================
 # 操作 — 手动施法槽

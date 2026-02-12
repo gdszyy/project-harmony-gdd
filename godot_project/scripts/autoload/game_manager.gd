@@ -357,7 +357,7 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 
 ## 音符获取类升级（由五度圈罗盘系统触发）
 func _apply_note_acquire_upgrade(upgrade: Dictionary) -> void:
-	# 音符获取已由 circle_of_fifths_upgrade.gd 的 _process_note_acquisition 处理
+	# v3.0: 音符获取已由 circle_of_fifths_upgrade_v3.gd 的 _process_note_acquisition 处理
 	# 此处仅作为占位，避免 match 警告
 	pass
 

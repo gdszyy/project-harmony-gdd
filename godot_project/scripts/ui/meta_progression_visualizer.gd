@@ -18,6 +18,8 @@ extends Control
 # ============================================================
 signal node_unlocked(node_id: String, category: String)
 signal breakthrough_logged(event_id: String)
+signal start_game_pressed()   ## v3.0: 兼容 game_over.gd 的 HallOfHarmony 接口
+signal back_pressed()           ## v3.0: 兼容 game_over.gd 的 HallOfHarmony 接口
 
 # ============================================================
 # 常量 — 技能树布局
@@ -145,6 +147,10 @@ var _is_open: bool = false
 ## 动画
 var _unlock_animations: Array[Dictionary] = []  # { "node_id": String, "progress": float, "particles": Array }
 
+## v3.0: 导航按钮区域
+var _back_button_rect: Rect2 = Rect2()
+var _start_button_rect: Rect2 = Rect2()
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -204,6 +210,7 @@ func open_panel() -> void:
 func close_panel() -> void:
 	_is_open = false
 	visible = false
+	back_pressed.emit()  # v3.0: 通知父场景（兼容 HallOfHarmony 接口）
 
 # ============================================================
 # 节点位置计算
@@ -282,6 +289,26 @@ func _draw() -> void:
 
 	# 悬停信息
 	_draw_hover_info(font)
+
+	# v3.0: 导航按钮
+	_draw_nav_buttons(font, vp_size)
+
+func _draw_nav_buttons(font: Font, vp_size: Vector2) -> void:
+	# 返回按钮
+	var back_rect := Rect2(Vector2(30, vp_size.y - 50), Vector2(100, 35))
+	draw_rect(back_rect, Color(0.15, 0.12, 0.22, 0.9))
+	draw_rect(back_rect, Color(0.4, 0.35, 0.55, 0.6), false, 1.0)
+	draw_string(font, back_rect.position + Vector2(20, 23),
+		"← 返回", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.7, 0.65, 0.85))
+	_back_button_rect = back_rect
+
+	# 开始渔戏按钮
+	var start_rect := Rect2(Vector2(vp_size.x - 180, vp_size.y - 50), Vector2(150, 35))
+	draw_rect(start_rect, Color(0.1, 0.2, 0.15, 0.9))
+	draw_rect(start_rect, Color(0.3, 0.8, 0.5, 0.6), false, 1.0)
+	draw_string(font, start_rect.position + Vector2(20, 23),
+		"开始演奏 ▶", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.3, 0.9, 0.5))
+	_start_button_rect = start_rect
 
 func _draw_module_headers(font: Font) -> void:
 	var vp_size := get_viewport_rect().size
@@ -451,6 +478,14 @@ func _gui_input(event: InputEvent) -> void:
 
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			var pos := event.position
+			# v3.0: 检查导航按钮
+			if _back_button_rect.has_point(pos):
+				close_panel()
+				return
+			if _start_button_rect.has_point(pos):
+				start_game_pressed.emit()
+				return
 			if not _hover_node.is_empty():
 				_try_unlock(_hover_node)
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
@@ -459,6 +494,8 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
 			close_panel()
+		elif event.keycode == KEY_ENTER:
+			start_game_pressed.emit()  # v3.0: Enter 键开始游戏
 
 # ============================================================
 # 解锁逻辑

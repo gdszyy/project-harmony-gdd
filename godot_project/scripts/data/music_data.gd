@@ -140,15 +140,16 @@ enum TimbreType {
 # 静态数据表
 # ============================================================
 
-## 白键音符四维参数 (DMG, SPD, DUR, SIZE) 总和恒定为12
+## 白键音符四维参数 (DMG, SPD, DUR, SIZE)
+## v3.0: 总和从 12 提升到 13，极化各音符特性
 const WHITE_KEY_STATS: Dictionary = {
-	WhiteKey.C: { "dmg": 3, "spd": 3, "dur": 3, "size": 3, "name": "C", "desc": "均衡型" },
-	WhiteKey.D: { "dmg": 2, "spd": 5, "dur": 3, "size": 2, "name": "D", "desc": "极速远程" },
-	WhiteKey.E: { "dmg": 2, "spd": 2, "dur": 4, "size": 4, "name": "E", "desc": "大范围持久" },
-	WhiteKey.F: { "dmg": 2, "spd": 1, "dur": 5, "size": 4, "name": "F", "desc": "区域控制" },
-	WhiteKey.G: { "dmg": 5, "spd": 3, "dur": 2, "size": 2, "name": "G", "desc": "爆发伤害" },
-	WhiteKey.A: { "dmg": 4, "spd": 2, "dur": 4, "size": 2, "name": "A", "desc": "持久高伤" },
-	WhiteKey.B: { "dmg": 4, "spd": 4, "dur": 2, "size": 2, "name": "B", "desc": "高速高伤" },
+	WhiteKey.C: { "dmg": 3, "spd": 3, "dur": 3.5, "size": 3.5, "name": "C", "desc": "均衡型" },
+	WhiteKey.D: { "dmg": 1.5, "spd": 6, "dur": 3, "size": 2.5, "name": "D", "desc": "极速远程" },
+	WhiteKey.E: { "dmg": 1.5, "spd": 2, "dur": 5, "size": 4.5, "name": "E", "desc": "大范围持久" },
+	WhiteKey.F: { "dmg": 2, "spd": 0.5, "dur": 6, "size": 4.5, "name": "F", "desc": "区域控制" },
+	WhiteKey.G: { "dmg": 6, "spd": 3, "dur": 1.5, "size": 2, "name": "G", "desc": "爆发伤害" },
+	WhiteKey.A: { "dmg": 4.5, "spd": 2, "dur": 4, "size": 2.5, "name": "A", "desc": "持久高伤" },
+	WhiteKey.B: { "dmg": 4.5, "spd": 4.5, "dur": 2, "size": 2, "name": "B", "desc": "高速高伤" },
 }
 
 ## 参数到实际值的转换比率
@@ -169,23 +170,24 @@ const BLACK_KEY_MODIFIERS: Dictionary = {
 }
 
 ## 和弦类型 → 法术形态映射
+## v3.0: 降低基础三和弦倍率，提高七和弦吸引力
 const CHORD_SPELL_MAP: Dictionary = {
-	ChordType.MAJOR:         { "form": SpellForm.ENHANCED_PROJECTILE, "name": "强化弹体", "multiplier": 1.5 },
-	ChordType.MINOR:         { "form": SpellForm.DOT_PROJECTILE, "name": "DOT弹体", "multiplier": 1.2 },
-	ChordType.AUGMENTED:     { "form": SpellForm.EXPLOSIVE, "name": "爆炸弹体", "multiplier": 1.8 },
-	ChordType.DIMINISHED:    { "form": SpellForm.SHOCKWAVE, "name": "冲击波", "multiplier": 2.0 },
-	ChordType.DOMINANT_7:    { "form": SpellForm.FIELD, "name": "法阵/区域", "multiplier": 1.0 },
-	ChordType.DIMINISHED_7:  { "form": SpellForm.DIVINE_STRIKE, "name": "天降打击", "multiplier": 3.0 },
+	ChordType.MAJOR:         { "form": SpellForm.ENHANCED_PROJECTILE, "name": "强化弹体", "multiplier": 1.3 },
+	ChordType.MINOR:         { "form": SpellForm.DOT_PROJECTILE, "name": "DOT弹体", "multiplier": 1.1 },
+	ChordType.AUGMENTED:     { "form": SpellForm.EXPLOSIVE, "name": "爆炸弹体", "multiplier": 1.6 },
+	ChordType.DIMINISHED:    { "form": SpellForm.SHOCKWAVE, "name": "冲击波", "multiplier": 1.8 },
+	ChordType.DOMINANT_7:    { "form": SpellForm.FIELD, "name": "法阵/区域", "multiplier": 1.2 },
+	ChordType.DIMINISHED_7:  { "form": SpellForm.DIVINE_STRIKE, "name": "天降打击", "multiplier": 2.8 },
 	ChordType.MAJOR_7:       { "form": SpellForm.SHIELD_HEAL, "name": "护盾/治疗法阵", "multiplier": 0.0 },
-	ChordType.MINOR_7:       { "form": SpellForm.SUMMON, "name": "召唤/构造", "multiplier": 0.8 },
-	ChordType.SUSPENDED:     { "form": SpellForm.CHARGED, "name": "蓄力弹体", "multiplier": 2.0 },
+	ChordType.MINOR_7:       { "form": SpellForm.SUMMON, "name": "召唤/构造", "multiplier": 0.9 },
+	ChordType.SUSPENDED:     { "form": SpellForm.CHARGED, "name": "蓄力弹体", "multiplier": 1.8 },
 	# 扩展和弦
-	ChordType.DOMINANT_9:    { "form": SpellForm.STORM_FIELD, "name": "风暴区域", "multiplier": 0.5 },
+	ChordType.DOMINANT_9:    { "form": SpellForm.STORM_FIELD, "name": "风暴区域", "multiplier": 0.6 },
 	ChordType.MAJOR_9:       { "form": SpellForm.HOLY_DOMAIN, "name": "圣光领域", "multiplier": 0.0 },
-	ChordType.DIMINISHED_9:  { "form": SpellForm.ANNIHILATION_RAY, "name": "湮灭射线", "multiplier": 4.0 },
-	ChordType.DOMINANT_11:   { "form": SpellForm.TIME_RIFT, "name": "时空裂隙", "multiplier": 0.6 },
-	ChordType.DOMINANT_13:   { "form": SpellForm.SYMPHONY_STORM, "name": "交响风暴", "multiplier": 1.0 },
-	ChordType.DIMINISHED_13: { "form": SpellForm.FINALE, "name": "终焉乐章", "multiplier": 5.0 },
+	ChordType.DIMINISHED_9:  { "form": SpellForm.ANNIHILATION_RAY, "name": "湮灭射线", "multiplier": 3.5 },
+	ChordType.DOMINANT_11:   { "form": SpellForm.TIME_RIFT, "name": "时空裂隙", "multiplier": 0.7 },
+	ChordType.DOMINANT_13:   { "form": SpellForm.SYMPHONY_STORM, "name": "交响风暴", "multiplier": 1.2 },
+	ChordType.DIMINISHED_13: { "form": SpellForm.FINALE, "name": "终焉乐章", "multiplier": 4.5 },
 }
 
 ## 和弦不和谐度
