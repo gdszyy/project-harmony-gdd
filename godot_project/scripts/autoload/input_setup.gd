@@ -39,6 +39,11 @@ func _register_input_actions() -> void:
 	_add_action("toggle_alchemy", [KEY_V])
 	_add_action("toggle_timbre", [KEY_Q])
 
+	# === 频谱相位切换 (Issue #50 — Resonance Slicing) ===
+	_add_action("phase_overtone", [KEY_Z])     # Z 键：切换到高通相位
+	_add_action("phase_sub_bass", [KEY_X])     # X 键：切换到低通相位
+	_add_action("phase_fundamental", [KEY_C])  # C 键：返回全频相位
+
 	# === 系统 ===
 	_add_action("pause_game", [KEY_ESCAPE])
 	_add_action("toggle_sequencer", [KEY_TAB])

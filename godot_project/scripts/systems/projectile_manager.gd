@@ -465,41 +465,14 @@ func _spawn_shield(data: Dictionary, pos: Vector2) -> void:
 	}
 	_projectiles.append(proj)
 
-func _spawn_summon(data: Dictionary, pos: Vector2) -> void:
-	## 召唤/构造 (小七和弦) — 在战场上放置自动攻击的构造体
-	## 构造体会跟随玩家移动，自动向最近敌人发射小弹体
-	## 攻击间隔 0.8 秒，射程 180px，持续 6 秒
-	## 构造体会缓慢旋转并发出光芒
-	var base_dmg: float = data.get("damage", 15.0)
-	var multiplier: float = data.get("multiplier", 0.8)
-	var spawn_offset := Vector2(randf_range(-60, 60), randf_range(-60, 60))
-	var proj := {
-		"position": pos + spawn_offset,
-		"velocity": Vector2.ZERO,
-		"damage": base_dmg * multiplier,
-		"size": 35.0,
-		"duration": 6.0,
-		"time_alive": 0.0,
-		"color": Color(0.3, 0.4, 0.9),
-		"is_summon": true,
-		"follows_player": true,
-		"follow_distance": 80.0,
-		"follow_speed": 120.0,
-		"attack_interval": 0.8,
-		"attack_timer": 0.0,
-		"attack_range": 180.0,
-		"rotation": randf() * TAU,
-		"rotation_speed": 1.5,
-		"pulse_phase": randf() * TAU,
-		"total_attacks": 0,
-		"max_attacks": 8,  # 最多攻击8次后消失
-		"active": true,
-		"modifier": -1,
-		# 入场动画
-		"spawn_anim": true,
-		"spawn_duration": 0.3,
-	}
-	_projectiles.append(proj)
+func _spawn_summon(data: Dictionary, _pos: Vector2) -> void:
+	## 召唤/构造 (小七和弦) — 委托给 SummonManager 处理 (Issue #49)
+	## 移除重复逻辑：SummonManager 已通过 chord_cast 信号自行处理 SUMMON 类型
+	## 此函数保留为空壳以保持调用链兼容性
+	## SummonManager 已在 _ready() 中连接了 SpellcraftSystem.chord_cast 信号，
+	## 当 spell_form == SUMMON 时会自动调用 create_summon()，
+	## 因此此处无需再创建简化版弹体。
+	pass
 
 func _spawn_charged(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	var proj := _base_projectile(data, pos, dir)

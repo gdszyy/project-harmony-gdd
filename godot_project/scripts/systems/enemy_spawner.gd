@@ -1016,84 +1016,11 @@ func _cleanup_dead_enemies() -> void:
 # ============================================================
 
 func _spawn_xp_pickup(pos: Vector2, value: int, _enemy_type: String) -> void:
-	var pickup := Area2D.new()
-	pickup.add_to_group("xp_pickup")
-	pickup.set_meta("xp_value", value)
-	# 设置 xp_value 作为属性，便于 player 的 area_entered 中读取
-	pickup.set("xp_value", value)
-	pickup.collision_layer = 4
-	pickup.collision_mask = 1
-	
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([
-		Vector2(0, -6), Vector2(5, 3), Vector2(-5, 3)
-	])
-	if value >= 10:
-		visual.color = Color(1.0, 0.85, 0.2, 0.9)
-	elif value >= 5:
-		visual.color = Color(0.2, 0.8, 1.0, 0.9)
-	else:
-		visual.color = Color(0.0, 1.0, 0.8, 0.8)
-	pickup.add_child(visual)
-	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 15.0
-	col.shape = shape
-	pickup.add_child(col)
-	
-	pickup.global_position = pos
-	var offset := Vector2(randf_range(-20, 20), randf_range(-20, 20))
-	pickup.global_position += offset
+	## 重构：使用 xp_pickup.gd 脚本创建经验拾取物 (Issue #51)
+	## xp_pickup.gd 已包含完整的视觉、磁吸、节拍脉冲、生命周期、颜色分级和合并机制
+	var XpPickupScript = load("res://scripts/entities/xp_pickup.gd")
+	var pickup := XpPickupScript.create(pos, value)
 	add_child(pickup)
-	
-	var attract_delay := 0.5
-	get_tree().create_timer(attract_delay).timeout.connect(func():
-		if not is_instance_valid(pickup):
-			return
-		_start_pickup_attraction(pickup, value)
-	)
-	
-	get_tree().create_timer(15.0).timeout.connect(func():
-		if is_instance_valid(pickup):
-			var vis := pickup.get_child(0) as Polygon2D
-			if vis:
-				var tween := pickup.create_tween()
-				tween.tween_property(vis, "modulate:a", 0.0, 0.5)
-				tween.tween_callback(pickup.queue_free)
-			else:
-				pickup.queue_free()
-	)
-
-func _start_pickup_attraction(pickup: Area2D, value: int) -> void:
-	var attract_speed := 300.0
-	var collect_distance := 25.0
-	pickup.set_process(true)
-	pickup.set_meta("attract_active", true)
-	
-	var callable := func():
-		if not is_instance_valid(pickup):
-			return
-		var player = get_tree().get_first_node_in_group("player")
-		if player == null or not is_instance_valid(player):
-			return
-		var dir = (player.global_position - pickup.global_position).normalized()
-		var dist := pickup.global_position.distance_to(player.global_position)
-		var speed_mult := remap(dist, 0.0, 200.0, 3.0, 1.0)
-		speed_mult = clamp(speed_mult, 1.0, 3.0)
-		pickup.global_position += dir * attract_speed * speed_mult * get_process_delta_time()
-		if dist < collect_distance:
-				# 直接添加经验值，确保不丢失
-				var xp_val: int = pickup.get_meta("xp_value", 0)
-				if xp_val > 0:
-					GameManager.add_xp(xp_val)
-				pickup.queue_free()
-	
-	get_tree().process_frame.connect(callable)
-	pickup.tree_exiting.connect(func():
-		if get_tree().process_frame.is_connected(callable):
-			get_tree().process_frame.disconnect(callable)
-	)
 
 # ============================================================
 # 公共接口

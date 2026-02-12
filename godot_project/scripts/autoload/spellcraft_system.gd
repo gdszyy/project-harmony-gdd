@@ -25,6 +25,12 @@ signal progression_resolved(progression: Dictionary)
 signal spell_blocked_by_silence(note: MusicData.WhiteKey)
 ## 新增：密度过载散射时的信号
 signal accuracy_penalized(penalty: float)
+## 新增：频谱相位切换信号 (Issue #50 — Resonance Slicing)
+signal phase_switched(phase_name: String)
+## 新增：惩罚效果信号（供 VfxManager 监听）
+signal monotone_silence_triggered(data: Dictionary)
+signal noise_overload_triggered(data: Dictionary)
+signal dissonance_corrosion_triggered(data: Dictionary)
 
 # ============================================================
 # 序列器配置
@@ -69,6 +75,18 @@ const MAX_MANUAL_SLOTS: int = 3
 ## 待生效的黑键修饰符
 var _pending_modifier: MusicData.ModifierEffect = -1
 var _has_pending_modifier: bool = false
+
+# ============================================================
+# 频谱相位系统状态 (Issue #50 — Resonance Slicing)
+# ============================================================
+## 当前相位: 0=全频(Fundamental), 1=高通(Overtone), 2=低通(Sub-Bass)
+var _current_spectral_phase: int = 0
+## 相位能量 (0~100)
+var phase_energy: float = 100.0
+const MAX_PHASE_ENERGY: float = 100.0
+const PHASE_SWITCH_COST: float = 10.0
+const PHASE_SUSTAIN_COST: float = 5.0  # 每秒消耗
+const PHASE_NAMES: Array[String] = ["fundamental", "overtone", "sub_bass"]
 
 ## 当前音色系别
 var _current_timbre: MusicData.TimbreType = MusicData.TimbreType.NONE
@@ -116,6 +134,9 @@ func _process(delta: float) -> void:
 		_chord_buffer_timeout -= delta
 		if _chord_buffer_timeout <= 0.0:
 			_flush_chord_buffer()
+
+	# 更新频谱相位能量 (Issue #50)
+	_update_phase_energy(delta)
 
 	# 更新手动施法槽冷却
 	_update_manual_slot_cooldowns(delta)
@@ -1036,6 +1057,78 @@ func reset() -> void:
 	_has_pending_modifier = false
 	_chord_buffer.clear()
 	_in_half_beat_window = false
+	# 重置频谱相位 (Issue #50)
+	_current_spectral_phase = 0
+	phase_energy = MAX_PHASE_ENERGY
+
+# ============================================================
+# 频谱相位系统 (Issue #50 — Resonance Slicing)
+# ============================================================
+
+## 切换频谱相位
+## phase: 0=全频, 1=高通, 2=低通
+func switch_spectral_phase(phase: int) -> void:
+	if phase < 0 or phase > 2:
+		return
+	if phase == _current_spectral_phase:
+		return
+	# 切换到极端相位需要能量
+	if phase != 0:
+		if phase_energy < PHASE_SWITCH_COST:
+			return  # 能量不足，无法切换
+		phase_energy -= PHASE_SWITCH_COST
+	_current_spectral_phase = phase
+	var phase_name: String = PHASE_NAMES[phase]
+	phase_switched.emit(phase_name)
+
+## 快捷切换：切换到高通相位
+func switch_to_overtone() -> void:
+	switch_spectral_phase(1)
+
+## 快捷切换：切换到低通相位
+func switch_to_sub_bass() -> void:
+	switch_spectral_phase(2)
+
+## 快捷切换：返回全频相位
+func switch_to_fundamental() -> void:
+	switch_spectral_phase(0)
+
+## 获取当前相位
+func get_current_spectral_phase() -> int:
+	return _current_spectral_phase
+
+## 获取当前相位名称
+func get_current_phase_name() -> String:
+	return PHASE_NAMES[_current_spectral_phase]
+
+## 获取相位能量比例
+func get_phase_energy_ratio() -> float:
+	return phase_energy / MAX_PHASE_ENERGY
+
+## 每帧更新相位能量（在 _process 中调用）
+func _update_phase_energy(delta: float) -> void:
+	if _current_spectral_phase == 0:
+		# 全频相位：恢复能量，恢复速度与 AFI 负相关
+		var afi: float = FatigueManager.current_afi
+		var regen_rate: float
+		if afi < 0.3:
+			regen_rate = 20.0
+		elif afi < 0.5:
+			regen_rate = 15.0
+		elif afi < 0.8:
+			regen_rate = 10.0
+		elif afi < 1.0:
+			regen_rate = 5.0
+		else:
+			regen_rate = 0.0
+		phase_energy = minf(phase_energy + regen_rate * delta, MAX_PHASE_ENERGY)
+	else:
+		# 极端相位：持续消耗能量
+		phase_energy -= PHASE_SUSTAIN_COST * delta
+		if phase_energy <= 0.0:
+			phase_energy = 0.0
+			# 能量耗尽，强制返回全频相位
+			switch_to_fundamental()
 
 # ============================================================
 # 音色系统接口

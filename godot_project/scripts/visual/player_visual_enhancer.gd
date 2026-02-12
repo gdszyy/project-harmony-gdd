@@ -137,11 +137,10 @@ func _connect_player_signals() -> void:
 	if ts and ts.has_signal("timbre_changed"):
 		ts.timbre_changed.connect(_on_timbre_changed)
 
-	# 连接频谱相位信号
-	var gm = get_node_or_null("/root/GameManager")
-	if gm:
-		if gm.has_signal("phase_changed"):
-			gm.phase_changed.connect(_on_phase_changed)
+	# 连接频谱相位信号 (Issue #52: 修复信号源，使用 SpellcraftSystem.phase_switched)
+	if ss:
+		if ss.has_signal("phase_switched"):
+			ss.phase_switched.connect(_on_phase_switched)
 
 # ============================================================
 # 信号回调
@@ -170,6 +169,16 @@ func _on_phase_changed(new_phase: int) -> void:
 	var old_phase := _current_phase
 	_current_phase = new_phase
 	_transition_phase_visual(old_phase, new_phase)
+
+## 频谱相位切换回调 (Issue #52: 从 SpellcraftSystem.phase_switched 信号)
+func _on_phase_switched(phase_name: String) -> void:
+	var phase_map: Dictionary = {
+		"fundamental": 0,
+		"overtone": 1,
+		"sub_bass": 2,
+	}
+	var new_phase: int = phase_map.get(phase_name, 0)
+	_on_phase_changed(new_phase)
 
 # ============================================================
 # 视觉效果
