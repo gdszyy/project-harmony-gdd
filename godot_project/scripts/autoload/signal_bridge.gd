@@ -59,6 +59,13 @@ func _on_player_died() -> void:
 # 升级事件信号
 # ============================================================
 func _connect_upgrade_signals() -> void:
+	# upgrade_chosen (CircleOfFifthsUpgradeV3) → GameManager.upgrade_selected 桥接
+	# 注意：v3.0 升级系统通过此信号通知外部升级已完成
+	var co5_upgrade := _find_node_in_tree("CircleOfFifthsUpgradeV3")
+	if co5_upgrade and co5_upgrade.has_signal("upgrade_chosen"):
+		if not co5_upgrade.upgrade_chosen.is_connected(_on_upgrade_chosen_v3):
+			co5_upgrade.upgrade_chosen.connect(_on_upgrade_chosen_v3)
+
 	# upgrade_selected (GameManager) → 更新 HUD、触发音效
 	if GameManager.has_signal("upgrade_selected"):
 		if not GameManager.upgrade_selected.is_connected(_on_upgrade_selected):
@@ -80,6 +87,11 @@ func _on_upgrade_selected(upgrade: Dictionary) -> void:
 	var audio_mgr := _get_audio_manager()
 	if audio_mgr and audio_mgr.has_method("play_global_sfx"):
 		audio_mgr.play_global_sfx("upgrade_confirm")
+
+func _on_upgrade_chosen_v3(upgrade: Dictionary) -> void:
+	# 桥接 v3 升级信号到 GameManager，确保全局监听者能收到通知
+	if GameManager.has_signal("upgrade_selected"):
+		GameManager.upgrade_selected.emit(upgrade)
 
 func _on_inscription_acquired(inscription: Dictionary) -> void:
 	var ins_name: String = inscription.get("name", "未知词条")

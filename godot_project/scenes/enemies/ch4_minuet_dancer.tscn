@@ -37,7 +37,7 @@ base_color = Color(0.95, 0.88, 0.92, 1)
 base_glitch_intensity = 0.03
 max_glitch_intensity = 0.4
 
-[node name="EnemyVisual" type="Node2D" parent="."]
+[node name="EnemyVisual" type="Polygon2D" parent="."]
 material = SubResource("ShaderMaterial_rococo")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
