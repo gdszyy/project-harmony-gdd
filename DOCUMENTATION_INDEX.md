@@ -87,16 +87,16 @@ graph TD
 
 优化模块是对现有系统的增强和深化设计，旨在提升音乐性体验和技术表现。
 
-| 文档 | 简介 | 状态 |
-| :--- | :--- | :--- |
-| **OPT01_GlobalDynamicHarmonyConductor.md** | 全局动态和声指挥家。定义全局音乐状态管理和动态和声进行系统。 | 设计稿 |
-| **OPT02_RelativePitchSystem.md** | 相对音高系统。定义基于音程关系而非绝对音高的法术系统。 | 设计稿 |
-| **OPT03_EnemyMusicalInstrumentIdentity.md** | 敌人乐器身份。为每种敌人赋予独特的乐器音色身份。 | 设计稿 |
-| **OPT04_ChapterTonalityEvolution.md** | 章节调性演化。定义各章节的音乐调性变化和叙事弧线。 | 设计稿 |
-| **OPT05_RezStyleInputQuantization.md** | **Rez 式输入量化错觉。将游戏音效自动对齐到十六分音符网格，创造“人人都是节奏大师”的错觉。** | **✅ 已实现** |
-| **OPT06_SpatialAudioInformationDelivery.md** | 空间音频信息传递。利用空间化音频传递游戏信息。 | 设计稿 |
-| **OPT07_SummoningSystemMusicality.md** | 召唤系统音乐性。增强召唤系统的音乐表现力。 | 设计稿 |
-| **OPT08_ProceduralTimbreSynthesis.md** | 程序化音色合成。定义实时程序化音色生成系统。 | 设计稿 |
+| 文档 | 简介 | 状态 | 目标读者 |
+| :--- | :--- | :--- | :--- |
+| **OPT01_GlobalDynamicHarmonyConductor.md** | **全局动态和声指挥家**。定义全局音乐状态管理和动态和声进行系统。 | 设计稿 | 程序、音频 |
+| **OPT02_RelativePitchSystem.md** | **相对音高系统**。定义基于音程关系而非绝对音高的法术系统。 | 设计稿 | 程序、音频 |
+| **OPT03_EnemyMusicalInstrumentIdentity.md** | **敌人乐器身份**。为每种敌人赋予独特的乐器音色身份。 | 设计稿 | 策划、程序 |
+| **OPT04_ChapterTonalityEvolution.md** | **章节调性演化**。定义各章节的音乐调性变化和叙事弧线。 | 设计稿 | 策划、音频 |
+| **OPT05_RezStyleInputQuantization.md** | **Rez 式输入量化错觉**。将游戏音效自动对齐到十六分音符网格，创造“人人都是节奏大师”的错觉。 | **✅ 已实现** | 策划、程序 |
+| **OPT06_SpatialAudioInformationDelivery.md** | **空间音频信息传递**。利用空间化音频传递游戏信息。 | 设计稿 | 程序、音频 |
+| **OPT07_SummoningSystemMusicality.md** | **召唤系统音乐性**。增强召唤系统的音乐表现力。 | 设计稿 | 策划、程序 |
+| **OPT08_ProceduralTimbreSynthesis.md** | **程序化音色合成**。为音色武器系统引入实时减法合成器引擎，实现“所听即所见”。 | **✅ 已实现** | 程序、音频 |
 
 ## 4. 归档
 
