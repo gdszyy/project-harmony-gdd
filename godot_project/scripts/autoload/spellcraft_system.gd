@@ -1160,10 +1160,15 @@ func set_timbre(timbre: MusicData.TimbreType) -> void:
 		"is_timbre_switch": true,
 	})
 
-	# 同步到 GlobalMusicManager
+	# 同步到 GlobalMusicManager（内部会级联通知 SynthManager）
 	var gmm := get_node_or_null("/root/GlobalMusicManager")
 	if gmm and gmm.has_method("set_timbre"):
 		gmm.set_timbre(timbre)
+
+	# OPT08: 直接通知 SynthManager 更新音色参数（双保险）
+	var sm := get_node_or_null("/root/SynthManager")
+	if sm and sm.has_method("update_timbre"):
+		sm.update_timbre(timbre)
 
 	timbre_changed.emit(timbre)
 
@@ -1172,5 +1177,14 @@ func get_current_timbre() -> MusicData.TimbreType:
 	return _current_timbre
 
 ## 获取音色系别信息
+## 返回合并后的音色数据（基础 ADSR + OPT08 合成器参数）
 func get_timbre_info(timbre: MusicData.TimbreType) -> Dictionary:
-	return MusicData.TIMBRE_ADSR.get(timbre, {})
+	var base_info: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
+	# OPT08: 如果 SynthManager 可用，补充合成器参数信息
+	var sm := get_node_or_null("/root/SynthManager")
+	if sm and sm.has_method("get_synth_params_for_timbre"):
+		var synth_info: Dictionary = sm.get_synth_params_for_timbre(timbre)
+		if not synth_info.is_empty():
+			base_info = base_info.duplicate()
+			base_info["synth_params"] = synth_info
+	return base_info

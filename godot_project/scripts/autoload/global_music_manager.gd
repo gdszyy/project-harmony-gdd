@@ -208,7 +208,10 @@ func set_timbre(timbre: int) -> void:
 	if timbre == _current_timbre:
 		return
 	_current_timbre = timbre
-	# 预生成该音色的常用音符以减少延迟
+	# OPT08: 同步通知 SynthManager 更新音色参数
+	if use_procedural_synthesis and _synth_manager:
+		_synth_manager.update_timbre(timbre)
+	# 预生成该音色的常用音符以减少延迟（降级方案）
 	if _synthesizer:
 		_synthesizer.pregenerate_common_notes(timbre)
 
@@ -397,6 +400,18 @@ func play_chord_sound_with_effect(
 	
 	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
 	
+	# OPT08: 优先使用程序化实时合成路径
+	# 和弦形态效果通过同时触发多个 SynthVoice 实现
+	if use_procedural_synthesis and _synth_manager:
+		var player_node := get_tree().get_first_node_in_group("player")
+		var pos = player_node.global_position if player_node else Vector2.ZERO
+		for n in notes:
+			_synth_manager.play_synth_note_from_enum(n, 4, pos)
+		chord_played.emit(notes, timbre)
+		request_chord_sfx.emit(pos)
+		return
+	
+	# 降级路径：离线合成
 	if _synthesizer == null:
 		_init_synthesizer()
 	

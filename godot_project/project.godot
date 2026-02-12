@@ -16,6 +16,7 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/autoload/game_manager.gd"
 MusicTheoryEngine="*res://scripts/autoload/music_theory_engine.gd"
+SynthManager="*res://scripts/audio/synth/synth_manager.gd"
 GlobalMusicManager="*res://scripts/autoload/global_music_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 BGMManager="*res://scripts/autoload/bgm_manager.gd"
@@ -31,7 +32,6 @@ HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
 TutorialHintManager="*res://scripts/ui/tutorial_hint_manager.gd"
-SynthManager="*res://scripts/audio/synth/synth_manager.gd"
 
 [display]
 

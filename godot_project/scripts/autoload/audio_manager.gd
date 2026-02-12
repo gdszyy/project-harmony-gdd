@@ -916,20 +916,28 @@ func play_chord_cast_sfx(position: Vector2, chord_data: Dictionary = {}) -> void
 	var timbre: int = chord_data.get("timbre", MusicData.TimbreType.NONE)
 	var spell_form = chord_data.get("spell_form", -1)
 
-	# 如果有具体音符数据，使用 NoteSynthesizer 生成和弦音效
+	# OPT08: 如果有具体音符数据，优先使用 SynthManager 实时合成
 	if notes.size() >= 2:
-		var synth := NoteSynthesizer.new()
-		var chord_wav := synth.generate_chord(notes, timbre, 4, 0.5, 0.7)
-		if chord_wav:
-			var player := _get_pooled_2d()
-			if player:
-				player.stream = chord_wav
-				player.global_position = position
-				player.volume_db = -5.0
-				player.pitch_scale = 1.0
-				player.bus = PLAYER_BUS_NAME
-				player.play()
-				sfx_played.emit("chord_synth", position)
+		var sm = get_node_or_null("/root/SynthManager")
+		if sm and sm.is_synthesis_enabled():
+			# OPT08 实时合成路径
+			for n in notes:
+				sm.play_synth_note_from_enum(n, 4, position)
+			sfx_played.emit("chord_synth", position)
+		else:
+			# 降级路径：使用 NoteSynthesizer 离线合成
+			var synth := NoteSynthesizer.new()
+			var chord_wav := synth.generate_chord(notes, timbre, 4, 0.5, 0.7)
+			if chord_wav:
+				var player := _get_pooled_2d()
+				if player:
+					player.stream = chord_wav
+					player.global_position = position
+					player.volume_db = -5.0
+					player.pitch_scale = 1.0
+					player.bus = PLAYER_BUS_NAME
+					player.play()
+					sfx_played.emit("chord_synth", position)
 
 	# 根据法术形态播放额外的法术音效
 	_play_spell_form_sfx(spell_form, position)
