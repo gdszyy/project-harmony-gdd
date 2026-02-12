@@ -570,3 +570,133 @@ const WHITE_KEY_TO_NOTE: Dictionary = {
 	WhiteKey.A: Note.A,
 	WhiteKey.B: Note.B,
 }
+
+# ============================================================
+# 和声指挥官 — 马尔可夫链数据 (OPT01)
+# ============================================================
+
+## A 自然小调 (Aeolian) 音阶
+const SCALE_A_MINOR: Array[int] = [9, 11, 0, 2, 4, 5, 7]  ## A B C D E F G
+
+## A 自然小调的自然和弦 (根音 → 和弦类型)
+## i=Am, ii°=Bdim, III=C, iv=Dm, v=Em, VI=F, VII=G
+const AEOLIAN_DIATONIC_CHORDS: Dictionary = {
+	9:  ChordType.MINOR,       ## Am  (i)
+	11: ChordType.DIMINISHED,  ## Bdim (ii°)
+	0:  ChordType.MAJOR,       ## C   (III)
+	2:  ChordType.MINOR,       ## Dm  (iv)
+	4:  ChordType.MINOR,       ## Em  (v)
+	5:  ChordType.MAJOR,       ## F   (VI)
+	7:  ChordType.MAJOR,       ## G   (VII)
+}
+
+## 马尔可夫链转移概率矩阵 (A 自然小调)
+## 外层 key = 当前和弦根音, 内层 key = 下一个和弦根音
+## 内层 value = { "probability": float, "type": ChordType }
+## 每行概率之和 = 1.0
+const MARKOV_MATRIX_A_MINOR: Dictionary = {
+	# Am (i) → 倾向于走向 Dm, Em, F
+	9: {
+		9:  { "probability": 0.05, "type": ChordType.MINOR },       # Am → Am
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },  # Am → Bdim
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },       # Am → C
+		2:  { "probability": 0.20, "type": ChordType.MINOR },       # Am → Dm
+		4:  { "probability": 0.25, "type": ChordType.MINOR },       # Am → Em
+		5:  { "probability": 0.20, "type": ChordType.MAJOR },       # Am → F
+		7:  { "probability": 0.10, "type": ChordType.MAJOR },       # Am → G
+	},
+	# Bdim (ii°) → 强烈倾向解决到 Am 或 Em
+	11: {
+		9:  { "probability": 0.30, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.25, "type": ChordType.MINOR },
+		5:  { "probability": 0.10, "type": ChordType.MAJOR },
+		7:  { "probability": 0.05, "type": ChordType.MAJOR },
+	},
+	# C (III) → 倾向于 F, G
+	0: {
+		9:  { "probability": 0.10, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.05, "type": ChordType.MAJOR },
+		2:  { "probability": 0.15, "type": ChordType.MINOR },
+		4:  { "probability": 0.10, "type": ChordType.MINOR },
+		5:  { "probability": 0.30, "type": ChordType.MAJOR },
+		7:  { "probability": 0.25, "type": ChordType.MAJOR },
+	},
+	# Dm (iv) → 倾向于 Em (v→i 准备), G
+	2: {
+		9:  { "probability": 0.15, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.10, "type": ChordType.MAJOR },
+		2:  { "probability": 0.05, "type": ChordType.MINOR },
+		4:  { "probability": 0.35, "type": ChordType.MINOR },
+		5:  { "probability": 0.10, "type": ChordType.MAJOR },
+		7:  { "probability": 0.20, "type": ChordType.MAJOR },
+	},
+	# Em (v) → 强烈倾向解决到 Am (i)
+	4: {
+		9:  { "probability": 0.40, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.05, "type": ChordType.MINOR },
+		5:  { "probability": 0.15, "type": ChordType.MAJOR },
+		7:  { "probability": 0.10, "type": ChordType.MAJOR },
+	},
+	# F (VI) → 倾向于 C, Em, G
+	5: {
+		9:  { "probability": 0.10, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.25, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.25, "type": ChordType.MINOR },
+		5:  { "probability": 0.05, "type": ChordType.MAJOR },
+		7:  { "probability": 0.20, "type": ChordType.MAJOR },
+	},
+	# G (VII) → 强烈倾向解决到 Am (i), 也常去 C
+	7: {
+		9:  { "probability": 0.35, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.20, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.10, "type": ChordType.MINOR },
+		5:  { "probability": 0.15, "type": ChordType.MAJOR },
+		7:  { "probability": 0.05, "type": ChordType.MAJOR },
+	},
+}
+
+## 音高类 (0-11) 到 C2 八度频率的映射 (用于 Bass 层)
+## C2=65.41, C#2=69.30, D2=73.42, ... B2=123.47
+const PITCH_CLASS_TO_BASS_FREQ: Dictionary = {
+	0:  65.41,   # C2
+	1:  69.30,   # C#2
+	2:  73.42,   # D2
+	3:  77.78,   # D#2
+	4:  82.41,   # E2
+	5:  87.31,   # F2
+	6:  92.50,   # F#2
+	7:  98.00,   # G2
+	8:  103.83,  # G#2
+	9:  110.00,  # A2
+	10: 116.54,  # A#2
+	11: 123.47,  # B2
+}
+
+## 音高类 (0-11) 到 C3 八度频率的映射 (用于 Pad 层)
+## C3=130.81, C#3=138.59, D3=146.83, ... B3=246.94
+const PITCH_CLASS_TO_PAD_FREQ: Dictionary = {
+	0:  130.81,  # C3
+	1:  138.59,  # C#3
+	2:  146.83,  # D3
+	3:  155.56,  # D#3
+	4:  164.81,  # E3
+	5:  174.61,  # F3
+	6:  185.00,  # F#3
+	7:  196.00,  # G3
+	8:  207.65,  # G#3
+	9:  220.00,  # A3
+	10: 233.08,  # A#3
+	11: 246.94,  # B3
+}
