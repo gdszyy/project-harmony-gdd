@@ -123,6 +123,9 @@ func _fire_crescendo_projectile() -> void:
 	if _target == null:
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var count := int(lerp(1.0, 5.0, _crescendo_progress))
 	var base_angle := (global_position.direction_to(_target.global_position)).angle()
 	var spread = lerp(0.1, 0.6, _crescendo_progress)
@@ -171,6 +174,9 @@ func _fire_crescendo_projectile() -> void:
 # ============================================================
 
 func _ff_burst() -> void:
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	_burst_count += 1
 	
 	# 大范围冲击波

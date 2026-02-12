@@ -577,6 +577,9 @@ func _waltz_attack() -> void:
 	if _target == null:
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var angle := (global_position.direction_to(_target.global_position)).angle()
 	var damage := waltz_attack_damage
 	if _is_enraged:

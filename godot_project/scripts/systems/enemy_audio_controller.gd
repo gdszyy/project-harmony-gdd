@@ -71,7 +71,7 @@ func _ready() -> void:
 	add_child(_sustained_player)
 
 	# 缓存 BgmManager 引用
-	_bgm = get_node_or_null("/root/BgmManager")
+	_bgm = get_node_or_null("/root/BGMManager")
 
 	# 连接和声变更信号（用于持续型音效的实时更新）
 	if _bgm and _bgm.has_signal("harmony_context_changed"):

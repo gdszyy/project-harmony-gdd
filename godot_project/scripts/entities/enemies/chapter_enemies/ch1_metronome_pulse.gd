@@ -151,6 +151,9 @@ func _fire_metronome_burst() -> void:
 	if _target == null:
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	# 向玩家方向发射扇形弹幕
 	var base_angle := (global_position.direction_to(_target.global_position)).angle()
 	var spread := PI / 6.0  # 30度扇形
@@ -216,6 +219,9 @@ func _spawn_metronome_projectile(angle: float) -> void:
 func _start_dash() -> void:
 	if _target == null:
 		return
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	_is_dashing = true
 	_dash_timer = dash_duration
 	_dash_direction = (_target.global_position - global_position).normalized()

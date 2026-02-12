@@ -483,6 +483,9 @@ func _turret_fire() -> void:
 	if not _turret_alive or _target == null:
 		return
 
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	for i in range(turret_projectile_count):
 		var t := float(i) / float(max(1, turret_projectile_count - 1))
 		var angle := _turret_angle - turret_spread / 2.0 + turret_spread * t

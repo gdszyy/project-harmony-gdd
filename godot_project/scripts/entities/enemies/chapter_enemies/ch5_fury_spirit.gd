@@ -461,6 +461,9 @@ func _start_charge() -> void:
 
 ## 开始冲刺
 func _start_dash() -> void:
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	_fury_state = FuryState.DASHING
 	_dash_timer = dash_duration
 	
@@ -491,6 +494,9 @@ func _fire_lightning_burst() -> void:
 	if _target == null:
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var dist := global_position.distance_to(_target.global_position)
 	if dist < lightning_range:
 		if _target.has_method("take_damage"):

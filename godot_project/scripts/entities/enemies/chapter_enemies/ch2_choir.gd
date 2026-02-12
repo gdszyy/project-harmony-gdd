@@ -324,6 +324,9 @@ func _fire_choir_chant() -> void:
 	if _target == null:
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	# 自己发射
 	_fire_chant_projectile()
 	

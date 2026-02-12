@@ -157,6 +157,10 @@ func _execute_elite_attack() -> void:
 	_elite_is_attacking = true
 	elite_ability_used.emit(attack.get("name", "unknown"))
 	
+	# OPT03: 精英攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
+	
 	# OPT06: 攻击蓄力时应用 "charging" 空间音频状态（上升滤波扫频）
 	if _spatial_audio_ctrl:
 		_spatial_audio_ctrl.apply_state_fx("charging")
@@ -291,6 +295,9 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	if final_damage > 0.0:
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
+		# OPT03: 精英受击时触发音高层
+		if _audio_controller:
+			_audio_controller.play_behavior_pitch("hit")
 		# OPT06: 检查低血量状态
 		if _spatial_audio_ctrl and current_hp > 0.0:
 			var hp_ratio := current_hp / max_hp
@@ -318,6 +325,11 @@ func _elite_die() -> void:
 	if _is_dead:
 		return
 	_is_dead = true
+	
+	# OPT03: 精英死亡时停止持续型音效并触发死亡音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("death")
+		_audio_controller.stop_sustained()
 	
 	_elite_is_attacking = false
 	elite_defeated.emit(global_position, _get_type_name())

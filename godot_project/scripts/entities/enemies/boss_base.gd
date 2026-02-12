@@ -343,6 +343,10 @@ func _execute_next_attack() -> void:
 	var attack_name: String = attack.get("name", "unknown")
 	boss_attack_started.emit(attack_name)
 	
+	# OPT03: Boss 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
+	
 	# 执行攻击（子类实现具体逻辑）
 	_perform_attack(attack)
 	
@@ -447,6 +451,9 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	if final_damage > 0.0:
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
+		# OPT03: Boss 受击时触发音高层
+		if _audio_controller:
+			_audio_controller.play_behavior_pitch("hit")
 		# OPT06: 检查是否进入低血量状态
 		if _spatial_audio_ctrl and current_hp > 0.0:
 			var hp_ratio := current_hp / max_hp
@@ -592,6 +599,11 @@ func _boss_die() -> void:
 	if _is_dead:
 		return
 	_is_dead = true
+	
+	# OPT03: Boss 死亡时停止持续型音效并触发死亡音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("death")
+		_audio_controller.stop_sustained()
 	
 	# 停止所有攻击
 	_is_attacking = false

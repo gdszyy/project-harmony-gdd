@@ -347,6 +347,9 @@ func _fire_noise_burst() -> void:
 	if _is_dead or not _target or not is_instance_valid(_target):
 		return
 
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var dir := (global_position.direction_to(_target.global_position)).angle()
 
 	# 量化噪音：不规则方向的弹幕，数量与身体段数挂钩

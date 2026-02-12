@@ -103,6 +103,9 @@ func _on_enemy_process(delta: float) -> void:
 
 ## 小冲击（短音符）
 func _fire_small_knock() -> void:
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	_create_shockwave(small_knock_radius, small_knock_damage,
 		Color(0.6, 0.2, 0.2, 0.5), knock_force * 0.5)
 	
@@ -114,6 +117,9 @@ func _fire_small_knock() -> void:
 
 ## 大冲击（长音符）
 func _fire_big_knock() -> void:
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	_create_shockwave(big_knock_radius, big_knock_damage,
 		Color(1.0, 0.3, 0.1, 0.6), knock_force)
 	

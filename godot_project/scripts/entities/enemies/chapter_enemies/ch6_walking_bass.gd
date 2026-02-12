@@ -597,6 +597,9 @@ func _on_reach_path_node() -> void:
 
 func _fire_bass_pulse() -> void:
 	# 视觉：霓虹色低频脉冲波 (Issue #69 增强)
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var ring_container := Node2D.new()
 	ring_container.global_position = global_position
 	get_parent().add_child(ring_container)

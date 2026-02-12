@@ -191,6 +191,9 @@ func _perform_scat_attack() -> void:
 	if _is_dead or not _target or not is_instance_valid(_target):
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var dir := (global_position.direction_to(_target.global_position)).angle()
 	var damage := contact_damage * 0.6
 	

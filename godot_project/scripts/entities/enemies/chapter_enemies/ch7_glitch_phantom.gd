@@ -151,6 +151,9 @@ func _phase_in() -> void:
 
 func _fire_phase_in_pulse() -> void:
 	# 出现时的脉冲波
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var ring := Polygon2D.new()
 	var points := PackedVector2Array()
 	for i in range(24):
@@ -244,6 +247,9 @@ func _fire_interference() -> void:
 	if _is_dead or not _target or not is_instance_valid(_target):
 		return
 	
+	# OPT03: 攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	var dir := (global_position.direction_to(_target.global_position)).angle()
 	var damage := interference_damage * _network_bonus
 	

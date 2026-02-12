@@ -181,6 +181,9 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
 		_damage_flash_timer = 0.15
+		# OPT03: Wall 受击时触发音高层
+		if _audio_controller:
+			_audio_controller.play_behavior_pitch("hit")
 		# OPT06: 检查是否进入低血量状态
 		if _spatial_audio_ctrl and current_hp > 0.0:
 			var hp_ratio := current_hp / max_hp
@@ -301,6 +304,9 @@ func _on_beat(_beat_index: int) -> void:
 		tween.tween_property(_sprite, "scale", Vector2(1.0, 1.0), 0.12)
 
 func _trigger_quake() -> void:
+	# OPT03: 地震攻击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 	if _target and is_instance_valid(_target):
 		var dist := global_position.distance_to(_target.global_position)
 		if dist < quake_radius:
