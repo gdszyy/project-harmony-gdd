@@ -6,6 +6,9 @@
 ## 中等帧率量化，行为呈现明显的"蓄力-释放"周期。
 extends "res://scripts/entities/enemy_base.gd"
 
+## 相位变体类型
+enum PhaseShiftType { NORMAL, HIGH_PASS, LOW_PASS }
+
 # ============================================================
 # Pulse 专属配置
 # ============================================================
@@ -13,6 +16,8 @@ extends "res://scripts/entities/enemy_base.gd"
 @export var charge_beats: int = 4
 ## 冲刺速度倍率
 @export var burst_speed_multiplier: float = 4.0
+## 相位变体类型
+@export var phase_shift_type: PhaseShiftType = PhaseShiftType.NORMAL
 ## 冲刺持续时间
 @export var burst_duration: float = 0.3
 ## 弹幕发射数量
@@ -36,6 +41,9 @@ var _burst_timer: float = 0.0
 var _burst_direction: Vector2 = Vector2.ZERO
 var _charge_visual_scale: float = 1.0
 var _next_attack_is_dash: bool = true
+var _shockwave_layer: CanvasLayer
+var _shockwave_rect: ColorRect
+var _high_pass_laser: Line2D
 
 # ============================================================
 # 初始化
@@ -55,6 +63,9 @@ func _on_enemy_ready() -> void:
 	# 中等故障基础值
 	base_glitch_intensity = 0.1
 	max_glitch_intensity = 0.8
+
+	# 根据相位变体应用不同设置
+	apply_phase_shift(phase_shift_type)
 
 # ============================================================
 # 每帧逻辑
@@ -76,8 +87,11 @@ func _update_charge_visual(delta: float) -> void:
 
 	if _is_charging:
 		# 蓄力时的脉冲膨胀效果
-		var charge_progress := float(_beat_counter) / float(charge_beats)
-		_charge_visual_scale = 1.0 + charge_progress * 0.4
+			var charge_progress := float(_beat_counter) / float(charge_beats)
+			# 更新 LED Shader
+			if _sprite.material and _sprite.material.has_param("countdown_progress"):
+				_sprite.material.set("countdown_progress", charge_progress)
+			_charge_visual_scale = 1.0 + charge_progress * 0.4
 		# 蓄力时颜色逐渐变亮
 		var charge_color := base_color.lerp(Color.WHITE, charge_progress * 0.5)
 		_sprite.modulate = charge_color
@@ -136,7 +150,9 @@ func _on_beat(_beat_index: int) -> void:
 
 func _trigger_burst() -> void:
 	_beat_counter = 0
-	_is_charging = false
+		_is_charging = false
+		if _sprite and _sprite.material and _sprite.material.has_param("countdown_progress"):
+			_sprite.material.set("countdown_progress", 0.0)
 	_is_bursting = true
 	_burst_timer = burst_duration
 
@@ -153,25 +169,9 @@ func _trigger_burst() -> void:
 	else:
 		_execute_projectile_burst()
 
-func _execute_dash_burst() -> void:
-	# 冲刺爆发视觉
-	if _sprite:
-		var tween := create_tween()
-		tween.tween_property(_sprite, "scale", Vector2(0.5, 2.5), 0.05)
-		tween.tween_property(_sprite, "modulate", Color.WHITE, 0.05)
 
-func _execute_projectile_burst() -> void:
-	# 发射环形弹幕
-	for i in range(burst_projectile_count):
-		var angle := (TAU / burst_projectile_count) * i
-		var dir := Vector2.from_angle(angle)
-		_spawn_enemy_projectile(dir)
 
-	# 爆发视觉
-	if _sprite:
-		var tween := create_tween()
-		tween.tween_property(_sprite, "scale", Vector2(2.0, 2.0), 0.05)
-		tween.tween_property(_sprite, "modulate", Color(0.5, 0.8, 1.0), 0.05)
+
 
 func _end_burst() -> void:
 	_is_bursting = false
@@ -231,6 +231,117 @@ func _spawn_enemy_projectile(direction: Vector2) -> void:
 # ============================================================
 # 死亡效果：脉冲消散
 # ============================================================
+
+func _execute_dash_burst() -> void:
+	if phase_shift_type == PhaseShiftType.HIGH_PASS:
+		_execute_laser_beam()
+		return
+		
+	# 原冲刺爆发视觉
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "scale", Vector2(0.5, 2.5), 0.05)
+		tween.tween_property(_sprite, "modulate", Color.WHITE, 0.05)
+
+func _execute_projectile_burst() -> void:
+	if phase_shift_type == PhaseShiftType.LOW_PASS:
+		_execute_shockwave_burst()
+		return
+		
+	# 原发射环形弹幕
+	for i in range(burst_projectile_count):
+		var angle := (TAU / burst_projectile_count) * i
+		var dir := Vector2.from_angle(angle)
+		_spawn_enemy_projectile(dir)
+
+	# 爆发视觉
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "scale", Vector2(2.0, 2.0), 0.05)
+		tween.tween_property(_sprite, "modulate", Color(0.5, 0.8, 1.0), 0.05)
+
+# ============================================================
+# 相位变体逻辑
+# ============================================================
+
+func apply_phase_shift(type: int) -> void:
+	phase_shift_type = type
+	match phase_shift_type:
+		PhaseShiftType.NORMAL:
+			# 普通模式，确保使用 LED Shader
+			var shader_res = load("res://shaders/enemy_pulse_led.gdshader")
+			if _sprite.material == null or _sprite.material.shader != shader_res:
+				var mat = ShaderMaterial.new()
+				mat.shader = shader_res
+				_sprite.material = mat
+			
+		PhaseShiftType.HIGH_PASS: # 高通变体 (Overtone)
+			# 冲刺攻击替换为激光
+			alternate_attacks = true
+			_next_attack_is_dash = true # 强制下次为“冲刺”（即激光）
+			if not is_instance_valid(_high_pass_laser):
+				_high_pass_laser = Line2D.new()
+				_high_pass_laser.width = 12.0
+				_high_pass_laser.default_color = Color(0.8, 0.9, 1.0, 0.9)
+				# 注意：需要一个实际的 laser_segment.png 纹理文件，这里先假设它存在
+				# _high_pass_laser.texture = load("res://assets/textures/effects/laser_segment.png")
+				# _high_pass_laser.texture_mode = Line2D.LINE_TEXTURE_TILE
+				_high_pass_laser.visible = false
+				add_child(_high_pass_laser)
+			
+		PhaseShiftType.LOW_PASS: # 低通变体 (Sub-Bass)
+			# 弹幕攻击替换为全屏冲击波
+			alternate_attacks = true
+			_next_attack_is_dash = false # 强制下次为“弹幕”（即冲击波）
+			if not is_instance_valid(_shockwave_layer):
+				_shockwave_layer = CanvasLayer.new()
+				_shockwave_layer.layer = 1 # 在敌人上层
+				_shockwave_rect = ColorRect.new()
+				var mat = ShaderMaterial.new()
+				mat.shader = load("res://shaders/pulse_shockwave.gdshader")
+				_shockwave_rect.material = mat
+				_shockwave_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				_shockwave_layer.add_child(_shockwave_rect)
+				_shockwave_layer.visible = false
+				get_tree().current_scene.add_child(_shockwave_layer)
+
+func _execute_laser_beam() -> void:
+	if not _target or not is_instance_valid(_high_pass_laser): return
+	_high_pass_laser.clear_points()
+	_high_pass_laser.add_point(to_local(global_position))
+	var target_local_pos = to_local(_target.global_position)
+	_high_pass_laser.add_point(target_local_pos.normalized() * 2000.0) # 激光画很长，穿过目标
+	_high_pass_laser.visible = true
+
+	var tween := create_tween()
+	tween.tween_property(_high_pass_laser, "width", 20.0, 0.1).from(0.0)
+	tween.tween_property(_high_pass_laser, "modulate:a", 0.0, 0.3).from(1.0).set_delay(0.2)
+	tween.tween_callback(func(): _high_pass_laser.visible = false)
+
+	# 简单的射线检测造成伤害
+	var space_state = get_world_2d().direct_space_state
+	var query = PhysicsRayQueryParameters2D.create(global_position, _target.global_position + _burst_direction * 1000)
+	query.collide_with_areas = true
+	var result = space_state.intersect_ray(query)
+	if result and result.collider.is_in_group("player"):
+		result.collider.take_damage(damage * 1.5)
+
+func _execute_shockwave_burst() -> void:
+	if not is_instance_valid(_shockwave_layer): return
+	_shockwave_layer.visible = true
+	var mat: ShaderMaterial = _shockwave_rect.material
+	var screen_center = get_viewport().get_visible_rect().size / 2.0
+	mat.set_shader_parameter("center", get_global_mouse_position() / get_viewport().get_visible_rect().size)
+
+	var tween := create_tween().set_parallel()
+	tween.tween_property(mat, "shader_parameter/progress", 1.0, 0.8).from(0.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(mat, "shader_parameter/pixel_size", 1.0, 0.8).from(32.0)
+	tween.tween_callback(func(): _shockwave_layer.visible = false)
+
+	# 全屏伤害
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("take_damage"):
+		player.take_damage(damage * 0.8)
 
 func _on_death_effect() -> void:
 	# Pulse 死亡时释放最后一波弱弹幕
