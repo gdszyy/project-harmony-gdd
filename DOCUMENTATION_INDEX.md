@@ -81,6 +81,7 @@ graph TD
 | **Art_And_VFX_Direction.md** | **美术圣经 (The "What")**。定义游戏的美学哲学、双极美学体系、全局色彩、章节风格、视觉语言等**顶层艺术方向**。 | 美术、策划、程序 |
 | **ART_IMPLEMENTATION_FRAMEWORK.md** | **技术美术蓝图 (The "How")**。将美术方向转化为**可执行的技术方案**。包含代码审计、架构决策、Shader实现、场景重构等。 | 程序、技术美术 |
 | **Spell_Visual_Enhancement_Design.md** | **法术视觉增强**。`Art_And_VFX_Direction.md` 的深化扩展，为超过60种法术效果提供细粒度的视觉设计规范。 | 美术、程序 |
+| **Harmonic_Modes_Avatar_Implementation.md** | **谐振调式化身实现**。Issue #59 的完整实现文档，定义了四种程序化角色化身的骨骼系统、几何体、着色器和集成接口。 | 程序、技术美术 |
 
 ## 4. 归档
 
