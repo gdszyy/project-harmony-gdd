@@ -436,10 +436,6 @@ func _spawn_divine_strike(data: Dictionary, _pos: Vector2, dir: Vector2) -> void
 		"has_landed": false,
 		"impact_radius": 80.0,  # 更大的爆炸范围
 		"impact_damage_ratio": 0.5,
-		"aftershock_triggered": false,  # 余震是否已触发
-		"aftershock_delay": 0.3,  # 余震延迟
-		"aftershock_timer": 0.0,
-		"crater_spawned": false,  # 灰烬区域是否已生成
 		"screen_shake": true,  # 触发屏幕震动
 		"active": true,
 		"modifier": -1,
@@ -1224,6 +1220,12 @@ func _update_projectiles(delta: float) -> void:
 						if proj.get("field_type", "") == "storm" and dist < proj.get("storm_eye_radius", 40.0):
 							if enemy is CharacterBody2D:
 								enemy.velocity *= (1.0 - proj.get("storm_eye_slow", 0.7))
+						# Issue #113: 时空裂雙攻速降低效果
+						var atk_debuff: float = proj.get("attack_speed_debuff", 0.0)
+						if atk_debuff > 0.0 and enemy.has_method("apply_attack_speed_debuff"):
+							enemy.apply_attack_speed_debuff(atk_debuff)
+						elif atk_debuff > 0.0 and enemy.has("attack_speed_mult"):
+							enemy.attack_speed_mult = 1.0 - atk_debuff
 				# 脉冲击退（每 2 次 tick 触发）
 				if proj.get("field_pulse_knockback", false) and proj.get("field_tick_count", 0) % 2 == 0:
 					for enemy in enemies:
@@ -1588,10 +1590,37 @@ func _check_collisions_bruteforce(enemies: Array) -> Array[Dictionary]:
 
 				if proj.get("pierce", false):
 					proj["pierce_count"] = proj.get("pierce_count", 0) + 1
+					# Issue #113: 穿透伤害递减（湮灭射线等）
+					var decay: float = proj.get("pierce_damage_decay", 1.0)
+					if decay < 1.0:
+						proj["damage"] *= decay
 					if proj["pierce_count"] >= proj.get("max_pierce", 3):
 						proj["active"] = false
 				elif not proj.get("is_field", false) and not proj.get("is_shockwave", false) and not proj.get("is_aoe", false):
 					proj["active"] = false
+
+				# Issue #113: 灰烧 DOT — 命中后在敌人位置生成短暂伤害区域
+				if proj.get("burn_dot", false):
+					var burn_field := {
+						"position": enemy["position"],
+						"velocity": Vector2.ZERO,
+						"damage": proj.get("burn_damage", proj["damage"] * 0.15),
+						"size": 25.0,
+						"duration": proj.get("burn_duration", 2.0),
+						"time_alive": 0.0,
+						"color": Color(0.6, 0.1, 0.6, 0.4),
+						"active": true,
+						"is_field": true,
+						"field_type": "burn",
+						"field_tick_interval": 0.5,
+						"field_tick_timer": 0.0,
+						"field_tick_count": 0,
+						"rotation": 0.0,
+						"rotation_speed": 0.0,
+						"pulse_phase": 0.0,
+						"modifier": -1,
+					}
+					_projectiles.append(burn_field)
 
 				if proj.get("split_on_hit", false):
 					_split_projectile(proj)
