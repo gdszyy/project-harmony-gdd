@@ -108,6 +108,10 @@ func _start_dash() -> void:
 	_pre_dash_speed = move_speed
 	_dash_direction = (_target.global_position - global_position).normalized()
 
+	# OPT03: 冲刺时触发攻击音高层 (经过音→解决)
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
+
 	# 设置蓄力 shader 参数
 	_charge_progress = 1.0
 	_set_shader_param("charge_progress", _charge_progress)

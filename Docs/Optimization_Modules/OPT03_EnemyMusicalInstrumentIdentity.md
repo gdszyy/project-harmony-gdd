@@ -1,11 +1,11 @@
 # 赋予敌人"乐器身份"与音高维度 (Musical Instrument Identity for Enemies)
 
-**版本:** 1.0
+**版本:** 2.0
 **最后更新:** 2026-02-12
-**状态:** 设计稿
+**状态:** 已实现
 **作者:** Manus AI
 **优先级:** P1 — 第二优先级（丰富声景）
-**前置依赖:** OPT01 — 全局动态和声指挥官
+**前置依赖:** OPT01 — 全局动态和声指挥官（已实现）
 **关联模块:** `Enemy_System_Design.md`, `Audio_Design_Guide.md`, `bgm_manager.gd`
 
 ---
@@ -66,111 +66,71 @@
 
 ---
 
-## 3. 代码实现（GDScript 接口定义）
+## 3. 实现架构
 
-### 3.1. 敌人音频配置数据
+### 3.1. 新增文件
+
+| 文件路径 | 类名 | 职责 |
+| :--- | :--- | :--- |
+| `scripts/data/enemy_audio_profile.gd` | `EnemyAudioProfile` | 敌人音频配置资源，定义乐器角色、音域、策略、ADSR 包络等 |
+| `scripts/systems/enemy_audio_controller.gd` | `EnemyAudioController` | 敌人音频控制组件，负责音高解析、合成和播放 |
+
+### 3.2. 修改文件
+
+| 文件路径 | 修改内容 |
+| :--- | :--- |
+| `scripts/entities/enemy_base.gd` | 新增 `_audio_controller` 变量、`_setup_audio_controller()` 方法，在 move/hit/death 行为中触发音高层 |
+| `scripts/entities/enemies/enemy_screech.gd` | 在 `_start_dash()` 中触发攻击音高层 |
+| `scripts/entities/enemies/enemy_pulse.gd` | 在 `_trigger_burst()` 中触发攻击音高层，修复缩进问题 |
+
+### 3.3. EnemyAudioProfile 配置参数
 
 ```gdscript
-# enemy_audio_profile.gd — 敌人音频配置资源
-
 class_name EnemyAudioProfile
 extends Resource
 
-## 乐器角色标识
 @export var instrument_role: String = "hi_hat"
-
-## 基础八度
 @export var base_octave: int = 5
-
-## 音域范围（半音数，以 base_octave 为中心）
 @export var pitch_range: int = 12
-
-## 音高选择策略
 @export_enum("random_scale", "chord_root", "chord_approach", "arpeggio", "chord_fifth")
 var pitch_strategy: String = "random_scale"
-
-## 噪音层与音高层的混合比例（0.0 = 纯音高，1.0 = 纯噪音）
 @export_range(0.0, 1.0) var noise_mix: float = 0.7
+@export_range(0, 3) var pitch_waveform: int = 0  # 0=正弦, 1=方波, 2=锯齿, 3=三角
+@export_range(-40.0, 0.0) var pitch_volume_db: float = -12.0
 
-## 基础噪音音效路径
-@export var noise_samples: Dictionary = {
-    "move": "",
-    "attack": "",
-    "hit": "",
-    "death": "",
-}
+# ADSR 包络
+@export_range(0.001, 0.5) var attack_time: float = 0.005
+@export_range(0.01, 1.0) var decay_time: float = 0.05
+@export_range(0.0, 1.0) var sustain_level: float = 0.7
+@export_range(0.01, 2.0) var release_time: float = 0.05
+
+# 持续型配置
+@export var is_sustained: bool = false
+@export_range(0.5, 4.0) var sustained_loop_duration: float = 2.0
+
+# 琶音配置 (Pulse)
+@export_range(0.05, 1.0) var arpeggio_step_interval: float = 0.15
+@export_enum("up", "down", "up_down", "random") var arpeggio_mode: String = "up"
+
+# 经过音配置 (Screech)
+@export_range(0.01, 0.5) var approach_glide_time: float = 0.08
+@export_range(-3, 3) var approach_offset: int = 1
 ```
 
-### 3.2. 敌人音频控制器
+### 3.4. EnemyAudioController 核心接口
 
 ```gdscript
-# enemy_audio_controller.gd — 挂载在敌人节点上的音频控制组件
-
 class_name EnemyAudioController
 extends Node
 
-@export var audio_profile: EnemyAudioProfile
+## 根据敌人类型自动配置
+func setup_for_enemy_type(type_name: String) -> void
 
-var _pitch_player: AudioStreamPlayer2D  ## 音高层播放器
-var _noise_player: AudioStreamPlayer2D  ## 噪音层播放器
+## 播放行为音高层 (move/attack/hit/death)
+func play_behavior_pitch(behavior: String) -> void
 
-func _ready() -> void:
-    _pitch_player = AudioStreamPlayer2D.new()
-    _noise_player = AudioStreamPlayer2D.new()
-    add_child(_pitch_player)
-    add_child(_noise_player)
-    
-    # 连接和声上下文变更信号（用于持续型敌人如 Silence/Wall）
-    BgmManager.harmony_context_changed.connect(_on_harmony_changed)
-
-## 播放敌人行为音效
-func play_behavior_sound(behavior: String) -> void:
-    # 1. 播放噪音层
-    var noise_sample = _load_noise_sample(behavior)
-    if noise_sample:
-        _noise_player.stream = noise_sample
-        _noise_player.volume_db = linear_to_db(audio_profile.noise_mix)
-        _noise_player.play()
-    
-    # 2. 计算并播放音高层
-    var target_midi = _resolve_target_pitch()
-    var frequency = 440.0 * pow(2.0, (target_midi - 69) / 12.0)
-    _play_pitched_tone(frequency, 1.0 - audio_profile.noise_mix)
-
-## 根据策略解析目标音高
-func _resolve_target_pitch() -> int:
-    var scale = BgmManager.get_current_scale()
-    var chord = BgmManager.get_current_chord()
-    var base_midi = audio_profile.base_octave * 12 + 12
-    
-    match audio_profile.pitch_strategy:
-        "random_scale":
-            var random_pc = scale[randi() % scale.size()]
-            return base_midi + random_pc
-        "chord_root":
-            return base_midi + chord.root
-        "chord_fifth":
-            var fifth = (chord.root + 7) % 12
-            var quantized = BgmManager.quantize_to_scale(fifth)
-            return base_midi + quantized
-        "arpeggio":
-            var arp_index = _get_arpeggio_step()
-            if arp_index < chord.notes.size():
-                return base_midi + chord.notes[arp_index]
-            return base_midi + chord.root
-        "chord_approach":
-            # 先返回一个经过音，下次调用时解决到和弦音
-            var approach_note = _get_approach_note(chord)
-            return base_midi + approach_note
-        _:
-            return base_midi + chord.root
-
-## 和声上下文变更时更新持续型音效
-func _on_harmony_changed(root: int, type: int, notes: Array) -> void:
-    if audio_profile.pitch_strategy in ["chord_root", "chord_fifth"]:
-        # 持续型敌人需要实时更新其音高
-        var target_midi = _resolve_target_pitch()
-        _update_sustained_pitch(target_midi)
+## 停止持续型音效 (死亡时调用)
+func stop_sustained() -> void
 ```
 
 ---
@@ -180,16 +140,23 @@ func _on_harmony_changed(root: int, type: int, notes: Array) -> void:
 ```mermaid
 graph TD
     A[敌人 AI: 触发行为] --> B{EnemyAudioController}
-    B --> C[加载噪音采样]
-    B --> D[查询 BgmManager.get_current_scale]
-    B --> E[查询 BgmManager.get_current_chord]
-    D --> F[根据 pitch_strategy 计算目标音高]
+    B --> C[根据 pitch_strategy 解析目标音高]
+    C --> D[查询 BgmManager.get_current_scale]
+    C --> E[查询 BgmManager.get_current_chord]
+    D --> F[BgmManager.quantize_to_scale 音阶锁定]
     E --> F
-    F --> G[BgmManager.quantize_to_scale]
-    G --> H[播放噪音层 + 音高层混合音效]
+    F --> G[程序化合成音高层 AudioStreamWAV]
+    G --> H[AudioStreamPlayer2D 播放]
     
-    I[BgmManager: harmony_context_changed] --> J{持续型敌人}
-    J --> K[实时更新 Drone/Pad 音高]
+    I[BgmManager: harmony_context_changed] --> J{持续型敌人 Silence/Wall}
+    J --> K[交叉淡入新音高的 drone]
+    
+    L[enemy_base._ready] --> M[_setup_audio_controller]
+    M --> N[EnemyAudioController.new]
+    N --> O[setup_for_enemy_type]
+    O --> P{is_sustained?}
+    P -->|Yes| Q[_start_sustained drone]
+    P -->|No| R[等待行为触发]
 ```
 
 ---
@@ -198,15 +165,34 @@ graph TD
 
 | 现有系统 | 集成方式 | 说明 |
 | :--- | :--- | :--- |
-| `Enemy_System_Design.md` | 数据扩展 | 为每种敌人类型添加 `EnemyAudioProfile` 资源 |
-| `bgm_manager.gd` | API 调用 | 通过 `quantize_to_scale()` 和 `get_current_chord()` 进行音阶锁定 |
-| `Audio_Design_Guide.md` | 设计扩展 | 在现有噪音音效基础上叠加音高层 |
-| 敌人场景文件 | 节点添加 | 为每个敌人场景添加 `EnemyAudioController` 节点 |
+| `enemy_base.gd` | 组件挂载 | `_ready()` 中动态创建 `EnemyAudioController` 子节点 |
+| `enemy_base.gd` | 行为触发 | `_play_quantized_step_sound()`、`take_damage()`、`_die()` 中调用 `play_behavior_pitch()` |
+| `enemy_screech.gd` | 攻击触发 | `_start_dash()` 中调用 `play_behavior_pitch("attack")` |
+| `enemy_pulse.gd` | 攻击触发 | `_trigger_burst()` 中调用 `play_behavior_pitch("attack")` |
+| `bgm_manager.gd` (OPT01) | API 调用 | 通过 `quantize_to_scale()`、`get_current_chord()`、`get_current_scale()` 进行音阶锁定 |
+| `bgm_manager.gd` (OPT01) | 信号监听 | 持续型敌人监听 `harmony_context_changed` 信号实时更新音高 |
 
 ---
 
-## 6. 引用文档
+## 6. 各敌人类型预设配置汇总
+
+| 参数 | Static | Silence | Screech | Pulse | Wall |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 乐器角色 | hi_hat | sub_bass_pad | lead_synth | arpeggiator | drone |
+| 基础八度 | 5 | 1 | 6 | 4 | 2 |
+| 音高策略 | random_scale | chord_root | chord_approach | arpeggio | chord_fifth |
+| 噪音混合 | 0.75 | 0.60 | 0.65 | 0.65 | 0.60 |
+| 波形类型 | 方波 | 正弦波 | 锯齿波 | 方波 | 三角波 |
+| 持续型 | 否 | 是 | 否 | 否 | 是 |
+| Attack | 0.002s | 0.3s | 0.001s | 0.003s | 0.4s |
+| Decay | 0.03s | 0.5s | 0.08s | 0.05s | 0.6s |
+| Sustain | 0.0 | 0.8 | 0.5 | 0.6 | 0.85 |
+| Release | 0.02s | 0.5s | 0.1s | 0.04s | 0.8s |
+
+---
+
+## 7. 引用文档
 
 - `Docs/Enemy_System_Design.md` — 敌人系统设计
 - `Docs/Audio_Design_Guide.md` — 音频设计指南
-- `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` — 前置依赖
+- `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` — 前置依赖（已实现）

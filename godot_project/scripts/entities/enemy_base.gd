@@ -102,6 +102,9 @@ var _glitch_offset: Vector2 = Vector2.ZERO  ## 故障位移偏移
 var _contact_cooldown: float = 0.0
 const CONTACT_COOLDOWN_TIME: float = 0.5
 
+## OPT03: 敌人音频控制器引用
+var _audio_controller: EnemyAudioController = null
+
 ## 眩晕状态
 var _stun_timer: float = 0.0
 var _is_stunned: bool = false
@@ -120,6 +123,7 @@ func _ready() -> void:
 	_connect_beat_signals()
 	_register_audio_signals()
 	_setup_visual_enhancer()  # Issue #52: 集成视觉增强器
+	_setup_audio_controller()  # OPT03: 集成敌人音频控制器
 	_on_enemy_ready()
 
 ## 子类重写此方法以执行额外的初始化
@@ -275,6 +279,9 @@ func _play_quantized_step_sound() -> void:
 	var audio_mgr := get_node_or_null("/root/AudioManager")
 	if audio_mgr and audio_mgr.has_method("play_enemy_move_sfx"):
 		audio_mgr.play_enemy_move_sfx(_get_type_name(), global_position)
+	# OPT03: 同时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("move")
 
 ## 子类重写此方法以实现不同的移动逻辑
 ## 默认：直线追踪玩家
@@ -379,6 +386,10 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	current_hp -= final_damage
 	enemy_damaged.emit(current_hp, max_hp, final_damage)
 
+	# OPT03: 受击时触发音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("hit")
+
 	# 击退（考虑击退抗性）
 	if knockback_dir != Vector2.ZERO:
 		var effective_knockback := final_knockback_force * (1.0 - knockback_resistance)
@@ -431,6 +442,11 @@ func _die() -> void:
 	if _is_dead:
 		return
 	_is_dead = true
+
+	# OPT03: 死亡时停止持续型音效并触发死亡音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("death")
+		_audio_controller.stop_sustained()
 
 	# 发出死亡信号（携带敌人类型信息）
 	var type_name := _get_type_name()
@@ -563,3 +579,22 @@ func _setup_visual_enhancer() -> void:
 	var enhancer := EnemyVisualEnhancer.new()
 	enhancer.name = "EnemyVisualEnhancer"
 	add_child(enhancer)
+
+# ============================================================
+# OPT03: 敌人音频控制器集成
+# ============================================================
+
+## 初始化 EnemyAudioController
+## 动态创建并挂载音频控制器，根据敌人类型自动配置音频配置
+func _setup_audio_controller() -> void:
+	# 检查是否已存在 EnemyAudioController 子节点
+	for child in get_children():
+		if child is EnemyAudioController:
+			_audio_controller = child
+			return
+	# 动态创建 EnemyAudioController 并挂载
+	_audio_controller = EnemyAudioController.new()
+	_audio_controller.name = "EnemyAudioController"
+	add_child(_audio_controller)
+	# 根据敌人类型自动设置音频配置
+	_audio_controller.setup_for_enemy_type(_get_type_name())
