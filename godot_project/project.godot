@@ -31,6 +31,7 @@ HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
 TutorialHintManager="*res://scripts/ui/tutorial_hint_manager.gd"
+SynthManager="*res://scripts/audio/synth/synth_manager.gd"
 
 [display]
 

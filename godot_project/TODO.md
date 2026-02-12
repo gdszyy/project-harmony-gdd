@@ -1,7 +1,7 @@
 # Project Harmony — 开发待办清单 (TODO)
 
 > **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
-> 最后更新时间：2026-02-12 v7.0 (Issue #56/#55/#54/#53/#32/#28 批量修复)
+> 最后更新时间：2026-02-12 v8.2 (OPT02 相对音高系统实现)
 
 ---
 
@@ -38,7 +38,7 @@
 | Boss 系统 | ✅ 脚本完成 | 70% | 七大Boss脚本+场景文件已创建，待完善战前叙事/专属BGM/环境装饰 |
 | 视觉/Shader | ✅ 核心完成 | 98% | 疲劳滤镜、弹体发光、七大层级视觉增强、修饰符VFX、音色弹体、频谱相位、惩罚效果、和弦进行VFX |
 | UI 系统 | ✅ 核心完成 | 97% | HUD全面完善 + 统一调色板 + 按钮交互增强 + 面板动画 + Boss血条主题化 + 序列器交互优化 + 和弦构建器 |
-| 音频系统 | ✅ 核心完成 | 90% | 音符合成、ADSR、音色、寂静/过载/暴击/清洗音效、BGM/SFX占位资源 |
+| 音频系统 | ✅ 核心完成 | 96% | 音符合成、ADSR、音色、寂静/过载/暴击/清洗音效、BGM/SFX占位资源、**和声指挥官+相对音高+召唤物音频** |
 | 局外成长 | ✅ 核心完成 | 90% | 乐器调优、乐理研习、声学降噪、调式选择（调式已有实际影响） |
 | 游戏流程 | ✅ 核心完成 | 85% | 完整流程 + 碰撞层配置 + 调式集成 |
 
@@ -420,11 +420,41 @@
 - [x] **暴击音效** (布鲁斯调式专用：明亮金属撞击 + 上行音阶) — *v3.0 新增*
 - [x] **留白清洗音效** (柔和"叮"声 + 上行纯音) — *v3.0 新增*
 - [x] **信号自动连接** (spell_blocked_by_silence → 寂静音效, accuracy_penalized → 过载音效, is_crit → 暴击音效) — *v3.0 新增*
+- [x] **OPT01: 全局动态和声指挥官** (Global Dynamic Harmony Conductor) — *v8.0 新增*
+  - BGMManager 升级为和声指挥官，维护全局和弦上下文
+  - 玩家和弦实时响应: MusicTheoryEngine.chord_identified → 小节边界同步切换 Pad/Bass 声部
+  - 马尔可夫链自动演进: 玩家静默 2 小节后自动生成符合调式的和弦进行
+  - 全局和声上下文广播: harmony_context_changed 信号供下游系统监听
+  - 公共查询 API: get_current_chord(), get_current_scale(), quantize_to_scale()
+  - MusicData 新增马尔可夫链转移概率矩阵、音高频率映射表
+- [x] **OPT02: 法术音效相对音高系统** (Relative Pitch System) — *v8.1 新增*
+  - 新增 RelativePitchResolver 核心解析器：度数解析、和弦音吸附、MIDI/频率转换、pitch_scale 计算
+  - AudioManager 集成：_on_spell_cast 和 _on_chord_cast 接入相对音高，确保法术音效与 BGM 和谐
+  - SpellcraftSystem 扩展：spell_data 新增 pitch_degree 和 white_key 字段
+  - MusicData 新增 WHITE_KEY_PITCH_DEGREE、DEGREE_FUNCTION_ROLES、SCALE_DEFINITIONS、build_scale()
+
+- [x] **召唤物音频配置资源** (summon_audio_profile.gd) — *OPT07 新增*
+  - 7种构造体音色配置（Pluck/Delay Echo/Gate Pulse/Sweep/Sub-Bass/Pad/Hi-hat）
+  - 触发模式枚举（PER_BEAT/PER_STRONG_BEAT/PER_SIXTEENTH/ON_EVENT/SUSTAINED）
+  - 音高策略枚举（CHORD_ROOT/CHORD_ARPEGGIO/CHORD_FIFTH/SCALE_DESCEND/CHORD_FULL/NO_PITCH）
+  - 静态工厂方法 `get_profile_for_root()` 统一映射
+- [x] **召唤物音频控制器** (summon_audio_controller.gd) — *OPT07 新增*
+  - 程序化音色合成引擎（7种音色）
+  - 节拍信号自动连接（sixteenth_tick/bgm_beat_synced）
+  - 和声上下文感知（实时音高量化）
+  - 空间化播放（AudioStreamPlayer2D）
+- [x] **BgmManager 和声指挥官 API** — *OPT07 新增*
+  - `sixteenth_tick` 和 `harmony_context_changed` 信号
+  - `get_current_chord()` / `get_current_scale()` / `quantize_to_scale()` API
+  - 和弦进行表（Am → G → F → Em 循环）
+- [x] **构造体音频集成** (summon_construct.gd) — *OPT07 新增*
+  - `_ready()` 自动初始化 SummonAudioController
+  - 行为触发/激励/淡出时同步音频事件
 
 ### 待完成 🔲
 
 - [ ] 和弦音效 (多音符同时播放)
-- [ ] BGM 与疲劳等级的动态混音
+- [ ] BGM 与笮劳等级的动态混音
 - [ ] 实际 BGM 音频文件 (.ogg)
 
 ---
@@ -497,6 +527,49 @@
 ---
 
 ## 文件变更日志
+
+### 2026-02-12 v8.1 OPT07 召唤系统音乐性深化
+
+**新增文件：**
+
+| 文件 | 说明 |
+|------|------|
+| `scripts/entities/summon_audio_profile.gd` | 召唤物音频配置资源 — 7种构造体音色/触发模式/音高策略配置 |
+| `scripts/entities/summon_audio_controller.gd` | 召唤物音频控制器 — 程序化音色合成引擎 + 节拍同步 + 和声感知 |
+
+---
+
+### 2026-02-12 v8.0 OPT01 全局动态和声指挥官实现
+
+**修改文件：**
+
+| 文件 | 变更类型 | 说明 |
+|------|----------|------|
+| `scripts/autoload/bgm_manager.gd` | 编辑 | OPT07: 新增 sixteenth_tick/harmony_context_changed 信号；新增和声指挥官 API（get_current_chord/get_current_scale/quantize_to_scale）；新增和弦进行系统 |
+| `scripts/entities/summon_construct.gd` | 编辑 | 集成 SummonAudioController；_ready() 初始化音频控制器；行为触发/激励/淡出同步音频事件 |
+| `scripts/systems/summon_manager.gd` | 编辑 | OPT07 注释；构造体信息增加 audio_info 字段 |
+
+**文档更新：**
+
+| 文档 | 变更内容 |
+|------|------|
+| `Docs/Optimization_Modules/OPT07_SummoningSystemMusicality.md` | 状态更新为“已实现”，新增实现报告章节 |
+| `DOCUMENTATION_INDEX.md` | 新增优化模块章节，OPT07 标记为“已实现” |
+
+---
+
+### 2026-02-12 v8.0 OPT01 全局动态和声指挥官实现
+
+**修改文件：**
+
+| 文件 | 变更类型 | 说明 |
+|------|----------|------|
+| `scripts/autoload/bgm_manager.gd` | 编辑 (新增~200行) | OPT01 和声指挥官核心逻辑：玩家和弦响应、马尔可夫链自动演进、动态 Pad/Bass 声部调整、全局和声上下文广播、公共查询 API |
+| `scripts/data/music_data.gd` | 编辑 (新增~130行) | 新增马尔可夫链转移概率矩阵 (A小调)、自然和弦映射、音高类到频率映射表 (Bass/Pad 八度) |
+| `scripts/autoload/game_manager.gd` | 编辑 (新增2行) | reset_game() 中添加和声指挥官重置调用 |
+| `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` | 编辑 | 状态从“设计稿”更新为“已实现” |
+
+---
 
 ### 2026-02-10 v6.0 法术系统视觉增强 — 七大层级全面实现
 

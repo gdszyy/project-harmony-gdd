@@ -2,6 +2,11 @@
 ## 全局音乐管理器 (Autoload)
 ## 职责：音乐合成（音符/和弦）、频谱分析、节拍能量提取
 ## 注意：所有非音乐类音效（SFX、UI）统一由 AudioManager 负责
+##
+## OPT08 集成：
+##   当 SynthManager 可用且程序化合成已启用时，优先使用实时合成路径。
+##   否则回退到 NoteSynthesizer 的预制采样/离线合成路径。
+##   通过 use_procedural_synthesis 标志控制切换。
 extends Node
 
 # ============================================================
@@ -54,11 +59,18 @@ var _high_energy: float = 0.0
 # 音符音频系统
 # ============================================================
 
-## 音符合成器实例
+## 音符合成器实例（离线合成 / 降级方案）
 var _synthesizer: NoteSynthesizer = null
 
 ## 当前活跃音色
 var _current_timbre: int = MusicData.TimbreType.NONE
+
+## OPT08: 是否使用程序化实时合成（优先于离线合成）
+## 当 SynthManager 可用时自动启用
+var use_procedural_synthesis: bool = false
+
+## OPT08: SynthManager 引用（缓存，避免每次查找）
+var _synth_manager: Node = null
 
 ## 音符播放器对象池 (AudioStreamPlayer)
 var _note_pool: Array[AudioStreamPlayer] = []
@@ -76,6 +88,18 @@ func _ready() -> void:
 	_init_synthesizer()
 	_init_note_pool()
 	_connect_sfx_signals()
+	# OPT08: 延迟初始化 SynthManager 集成
+	call_deferred("_init_synth_manager_integration")
+
+## OPT08: 初始化与 SynthManager 的集成
+func _init_synth_manager_integration() -> void:
+	_synth_manager = get_node_or_null("/root/SynthManager")
+	if _synth_manager:
+		use_procedural_synthesis = true
+		print("[GlobalMusicManager] OPT08: 程序化音色合成已启用 (SynthManager 就绪)")
+	else:
+		use_procedural_synthesis = false
+		print("[GlobalMusicManager] OPT08: SynthManager 未找到，使用离线合成降级方案")
 
 func _process(_delta: float) -> void:
 	_update_spectrum_analysis()
@@ -214,7 +238,16 @@ func play_note_sound(note: int, duration: float = 0.2,
 	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
 	var octave := 4 + (pitch_shift / 12)
 
-	# 通过合成器生成音效
+	# OPT08: 优先使用程序化实时合成路径
+	if use_procedural_synthesis and _synth_manager:
+		var player_node := get_tree().get_first_node_in_group("player")
+		var pos = player_node.global_position if player_node else Vector2.ZERO
+		_synth_manager.play_synth_note_from_enum(note, octave, pos)
+		note_played.emit(note, timbre)
+		request_spell_sfx.emit(pos, false)
+		return
+
+	# 降级路径：通过离线合成器生成音效
 	if _synthesizer == null:
 		_init_synthesizer()
 
@@ -256,7 +289,17 @@ func play_note_sound_with_modifier(
 	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
 	var octave := 4 + (pitch_shift / 12)
 	
-	# 生成带修饰符的音符
+	# OPT08: 优先使用程序化实时合成路径
+	# 修饰符效果在实时合成中通过参数变化实现
+	if use_procedural_synthesis and _synth_manager:
+		var player_node2 := get_tree().get_first_node_in_group("player")
+		var pos2 = player_node2.global_position if player_node2 else Vector2.ZERO
+		_synth_manager.play_synth_note_from_enum(note, octave, pos2)
+		note_played.emit(note, timbre)
+		request_spell_sfx.emit(pos2, false)
+		return
+	
+	# 降级路径：生成带修饰符的音符
 	if _synthesizer == null:
 		_init_synthesizer()
 	
@@ -301,6 +344,18 @@ func play_chord_sound(notes: Array, duration: float = 0.3,
 
 	var timbre := timbre_override if timbre_override >= 0 else _current_timbre
 
+	# OPT08: 优先使用程序化实时合成路径
+	# 和弦通过同时触发多个 SynthVoice 实现
+	if use_procedural_synthesis and _synth_manager:
+		var player_node := get_tree().get_first_node_in_group("player")
+		var pos = player_node.global_position if player_node else Vector2.ZERO
+		for n in notes:
+			_synth_manager.play_synth_note_from_enum(n, 4, pos)
+		chord_played.emit(notes, timbre)
+		request_chord_sfx.emit(pos)
+		return
+
+	# 降级路径：离线合成
 	if _synthesizer == null:
 		_init_synthesizer()
 

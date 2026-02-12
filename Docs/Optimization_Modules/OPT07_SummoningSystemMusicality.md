@@ -1,8 +1,8 @@
 # 深化召唤物系统的音乐性 (Deepen the Musicality of the Summoning System)
 
-**版本:** 1.0
+**版本:** 2.0
 **最后更新:** 2026-02-12
-**状态:** 设计稿
+**状态:** 已实现
 **作者:** Manus AI
 **优先级:** P1 — 第二优先级（丰富声景）
 **前置依赖:** OPT01 — 全局动态和声指挥官, OPT05 — Rez 式输入量化
@@ -270,3 +270,59 @@ sequenceDiagram
 - `godot_project/scripts/autoload/bgm_manager.gd` — BGM 管理器
 - `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` — 前置依赖
 - `Docs/Optimization_Modules/OPT05_RezStyleInputQuantization.md` — 前置依赖
+
+---
+
+## 7. 实现报告
+
+### 7.1. 实现概述
+
+OPT07 已于 2026-02-12 完成实现，将设计稿中的所有核心机制落地到代码中。召唤系统现已升华为一个真正的空间化音序器，每种构造体对应一个明确的音乐声部。
+
+### 7.2. 新增文件
+
+| 文件路径 | 说明 |
+| :--- | :--- |
+| `godot_project/scripts/entities/summon_audio_profile.gd` | 召唤物音频配置资源 — 定义七种构造体的音色、触发模式、音高策略等参数 |
+| `godot_project/scripts/entities/summon_audio_controller.gd` | 召唤物音频控制器 — 将构造体行为转化为与 BGM 同步的音频事件，包含程序化音色合成引擎 |
+
+### 7.3. 修改文件
+
+| 文件路径 | 修改内容 |
+| :--- | :--- |
+| `godot_project/scripts/autoload/bgm_manager.gd` | 新增 `sixteenth_tick` 和 `harmony_context_changed` 信号；新增和声指挥官 API（`get_current_chord()`、`get_current_scale()`、`quantize_to_scale()`）；新增和弦进行系统 |
+| `godot_project/scripts/entities/summon_construct.gd` | 集成 SummonAudioController；在 `_ready()` 中初始化音频控制器；在行为触发、激励、淡出时同步音频事件 |
+| `godot_project/scripts/systems/summon_manager.gd` | 添加 OPT07 注释；构造体信息中增加 `audio_info` 字段 |
+
+### 7.4. 实现细节
+
+**SummonAudioProfile** 使用枚举而非字符串定义触发模式和音高策略，提供类型安全和自动补全支持。每种构造体的默认配置通过静态工厂方法创建，并通过 `get_profile_for_root()` 统一映射。
+
+**SummonAudioController** 内置程序化音色合成引擎，完全不依赖外部音频文件，与项目现有的 `bgm_manager.gd` 程序化合成哲学一致。支持以下音色：
+- **Pluck** — 清脆拨弦音（节拍哨塔）
+- **Delay Echo** — 延迟回声琐音（长程棱镜）
+- **Gate Pulse** — 门限脉冲（低频音墙）
+- **De-noise Sweep** — 滤波扫频（净化信标）
+- **Sub-Bass 808** — 808 低音冲击（重低音炮）
+- **Pad/Drone** — 和声铺底（和声光环）
+- **Hi-hat Pattern** — 高频节奏（高频陷阱）
+
+**BgmManager 扩展** 新增的和声指挥官 API 为未来的 OPT01 完整实现奠定基础。和弦进行表默认为 Am → G → F → Em 循环，与现有 Pad 和弦切换同步。
+
+### 7.5. 测试要点
+
+- 召唤七种构造体，确认每种都发出独特的音色
+- 节拍型构造体的音效与 BGM 节拍严格对齐
+- 持续型构造体在和弦切换时平滑更新音高
+- 激励时触发额外音频事件
+- 多个构造体同时存在时的音乐织体效果
+- 构造体淡出时音频正确停止
+
+---
+
+## 版本变更记录
+
+| 版本 | 日期 | 变更内容 | 作者 |
+|------|------|---------|------|
+| v2.0 | 2026-02-12 | 完成实现：新增 SummonAudioProfile、SummonAudioController，集成到 summon_construct.gd 和 summon_manager.gd，扩展 bgm_manager.gd | Manus AI |
+| v1.0 | 2026-02-12 | 初始设计稿 | Manus AI |

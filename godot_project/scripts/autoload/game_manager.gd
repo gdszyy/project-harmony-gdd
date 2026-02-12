@@ -210,6 +210,9 @@ func reset_game() -> void:
 		MusicTheoryEngine.clear_history()
 	if ModeSystem.has_method("reset"):
 		ModeSystem.reset()
+	# OPT01: 重置和声指挥官
+	if BGMManager.has_method("_reset_harmony_conductor"):
+		BGMManager._reset_harmony_conductor()
 
 	game_state_changed.emit(current_state)
 

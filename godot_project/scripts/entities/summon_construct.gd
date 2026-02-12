@@ -13,6 +13,11 @@
 ##   - 基于小节数的生命周期
 ##   - 共鸣网络 (Resonance Network)
 ##   - 玩家指挥 (Conducting) — 弹体击中触发激励
+##
+## OPT07 集成：
+##   - 每种构造体挂载独立的 SummonAudioController
+##   - 行为触发时同步触发音频事件
+##   - 音频严格量化到节拍网格上
 extends Node2D
 
 # ============================================================
@@ -153,6 +158,9 @@ var _visual_body: Polygon2D = null
 var _visual_aura: Polygon2D = null
 var _excitation_cooldown: float = 0.0
 
+## === OPT07: 音频控制器 ===
+var _audio_controller: Node2D = null  ## SummonAudioController 实例
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -168,6 +176,9 @@ func _ready() -> void:
 	if GameManager.has_signal("beat_tick"):
 		if not GameManager.beat_tick.is_connected(_on_beat):
 			GameManager.beat_tick.connect(_on_beat)
+	
+	# === OPT07: 初始化音频控制器 ===
+	_setup_audio_controller()
 	
 	# 入场动画
 	_play_spawn_animation()
@@ -251,6 +262,9 @@ func _perform_action(is_strong: bool, multiplier: float) -> void:
 			_action_harmony_aura(multiplier)
 		6:  # B — 高频陷阱：持续伤害
 			_action_hi_hat_trap(multiplier)
+	
+	# === OPT07: 触发事件型音频 ===
+	_trigger_event_audio()
 	
 	construct_action.emit(construct_id, _config.get("name", "unknown"))
 
@@ -370,6 +384,10 @@ func excite() -> void:
 	
 	# 立即执行一次强拍效果
 	_perform_action(true, _config.get("strong_beat_mult", 1.0) * 1.5)
+	
+	# === OPT07: 激励时触发额外音频事件 ===
+	if _audio_controller and _audio_controller.has_method("trigger_on_event"):
+		_audio_controller.trigger_on_event()
 	
 	# 激励视觉
 	_play_excitation_visual()
@@ -534,4 +552,50 @@ func _play_excitation_visual() -> void:
 func _start_fade_out() -> void:
 	_is_fading = true
 	_fade_timer = 0.0
+	
+	# === OPT07: 停用音频控制器 ===
+	if _audio_controller and _audio_controller.has_method("deactivate"):
+		_audio_controller.deactivate()
+	
 	construct_expired.emit(construct_id)
+
+# ============================================================
+# OPT07 — 音频控制器集成
+# ============================================================
+
+## 初始化音频控制器
+func _setup_audio_controller() -> void:
+	var controller_script = load("res://scripts/entities/summon_audio_controller.gd")
+	if controller_script == null:
+		push_warning("SummonConstruct: 无法加载 SummonAudioController 脚本")
+		return
+	
+	_audio_controller = Node2D.new()
+	_audio_controller.set_script(controller_script)
+	
+	# 获取对应的音频配置
+	var profile: SummonAudioProfile = SummonAudioProfile.get_profile_for_root(root_note)
+	_audio_controller.audio_profile = profile
+	
+	_audio_controller.name = "AudioController"
+	add_child(_audio_controller)
+
+## 触发事件型音频（在 _perform_action 中调用）
+func _trigger_event_audio() -> void:
+	if _audio_controller == null:
+		return
+	
+	# 仅对事件型触发模式的构造体手动触发
+	if _audio_controller.audio_profile == null:
+		return
+	
+	var trigger_mode = _audio_controller.audio_profile.trigger_mode
+	if trigger_mode == SummonAudioProfile.TriggerMode.ON_EVENT:
+		if _audio_controller.has_method("trigger_on_event"):
+			_audio_controller.trigger_on_event()
+
+## 获取音频控制器信息（供调试使用）
+func get_audio_info() -> Dictionary:
+	if _audio_controller and _audio_controller.has_method("get_audio_info"):
+		return _audio_controller.get_audio_info()
+	return {}

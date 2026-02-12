@@ -45,6 +45,11 @@ var _kill_count_label: Label = null
 var _session_time_label: Label = null
 var _log_text: RichTextLabel = null
 
+# OPT05: 量化统计标签
+var _quantize_mode_label: Label = null
+var _quantize_queue_label: Label = null
+var _quantize_stats_label: Label = null
+
 # 调试开关引用
 var _god_mode_check: CheckBox = null
 var _infinite_fatigue_check: CheckBox = null
@@ -121,6 +126,7 @@ func _build_ui() -> void:
 	_build_spell_quick_test()
 	_build_sequencer_editor()
 	_build_dps_stats()
+	_build_quantize_stats()  # OPT05
 	_build_log_area()
 
 	# 添加到场景
@@ -932,6 +938,74 @@ func _build_dps_stats() -> void:
 	reset_btn.pressed.connect(func(): if _test_chamber: _test_chamber._reset_dps())
 	_content.add_child(reset_btn)
 
+# ---- OPT05: 音效量化统计区 ----
+func _build_quantize_stats() -> void:
+	_add_section_header("音效量化 (OPT05)")
+
+	var stats_panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.02, 0.08, 0.9)
+	style.border_color = Color(0.3, 0.6, 0.9) * 0.3
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	stats_panel.add_theme_stylebox_override("panel", style)
+
+	var stats_vbox := VBoxContainer.new()
+	stats_vbox.add_theme_constant_override("separation", 2)
+	stats_panel.add_child(stats_vbox)
+
+	_quantize_mode_label = _create_stat_label("量化模式: FULL")
+	_quantize_mode_label.add_theme_color_override("font_color", Color(0.3, 0.7, 1.0))
+	stats_vbox.add_child(_quantize_mode_label)
+
+	_quantize_queue_label = _create_stat_label("队列大小: 0")
+	stats_vbox.add_child(_quantize_queue_label)
+
+	_quantize_stats_label = _create_stat_label("总入队: 0 | 已处理: 0 | 即时: 0")
+	stats_vbox.add_child(_quantize_stats_label)
+
+	_content.add_child(stats_panel)
+
+	# 量化模式切换按钮
+	var mode_hbox := HBoxContainer.new()
+	mode_hbox.add_theme_constant_override("separation", 4)
+
+	var full_btn := Button.new()
+	full_btn.text = "FULL"
+	full_btn.custom_minimum_size = Vector2(0, 26)
+	full_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(full_btn, Color(0.3, 0.6, 0.9))
+	full_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.FULL))
+	mode_hbox.add_child(full_btn)
+
+	var soft_btn := Button.new()
+	soft_btn.text = "SOFT"
+	soft_btn.custom_minimum_size = Vector2(0, 26)
+	soft_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(soft_btn, Color(0.6, 0.6, 0.3))
+	soft_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.SOFT))
+	mode_hbox.add_child(soft_btn)
+
+	var off_btn := Button.new()
+	off_btn.text = "OFF"
+	off_btn.custom_minimum_size = Vector2(0, 26)
+	off_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_action_button(off_btn, Color(0.6, 0.3, 0.3))
+	off_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.OFF))
+	mode_hbox.add_child(off_btn)
+
+	_content.add_child(mode_hbox)
+
 # ---- 日志区 ----
 func _build_log_area() -> void:
 	_add_section_header("操作日志")
@@ -967,6 +1041,9 @@ func _build_log_area() -> void:
 # ============================================================
 
 func _update_stats_display() -> void:
+	# OPT05: 更新量化统计显示
+	_update_quantize_display()
+
 	if not _test_chamber:
 		return
 
@@ -985,6 +1062,23 @@ func _update_stats_display() -> void:
 	if _session_time_label:
 		var t: float = stats.get("session_time", 0.0)
 		_session_time_label.text = "测试时间: %d:%02d" % [int(t) / 60, int(t) % 60]
+
+## OPT05: 更新量化统计显示
+func _update_quantize_display() -> void:
+	var q_stats := AudioManager.get_quantize_stats()
+	if q_stats.is_empty():
+		return
+
+	if _quantize_mode_label:
+		_quantize_mode_label.text = "量化模式: %s" % q_stats.get("quantize_mode", "N/A")
+	if _quantize_queue_label:
+		_quantize_queue_label.text = "队列大小: %d" % q_stats.get("current_queue_size", 0)
+	if _quantize_stats_label:
+		_quantize_stats_label.text = "总入队: %d | 已处理: %d | 即时: %d" % [
+			q_stats.get("total_enqueued", 0),
+			q_stats.get("total_processed", 0),
+			q_stats.get("total_immediate", 0),
+		]
 
 # ============================================================
 # 信号回调

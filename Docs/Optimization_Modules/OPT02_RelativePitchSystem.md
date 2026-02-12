@@ -1,12 +1,12 @@
 # 法术音效的"相对音高"系统 (Relative Pitch System)
 
-**版本:** 1.0
+**版本:** 1.1
 **最后更新:** 2026-02-12
-**状态:** 设计稿
+**状态:** ✅ 已实现
 **作者:** Manus AI
 **优先级:** P0 — 第一优先级（奠定基础）
-**前置依赖:** OPT01 — 全局动态和声指挥官
-**关联模块:** `music_theory_engine.gd`, `bgm_manager.gd`, `MusicData`
+**前置依赖:** OPT01 — 全局动态和声指挥官 (✅ 已实现)
+**关联模块:** `relative_pitch_resolver.gd`, `bgm_manager.gd`, `audio_manager.gd`, `spellcraft_system.gd`, `music_data.gd`
 
 ---
 
@@ -198,9 +198,38 @@ sequenceDiagram
 
 ---
 
-## 6. 引用文档
+## 6. 实现记录
 
-- `godot_project/scripts/autoload/music_theory_engine.gd` — 和弦识别引擎
-- `godot_project/scripts/autoload/music_data.gd` — 乐理数据定义
+### 6.1. 实现日期
+
+2026-02-12
+
+### 6.2. 修改文件清单
+
+| 文件 | 修改类型 | 说明 |
+| :--- | :--- | :--- |
+| `scripts/systems/relative_pitch_resolver.gd` | 新增 | 相对音高解析器核心类（`class_name RelativePitchResolver`），提供度数解析、和弦音吸附、MIDI/频率转换、pitch_scale 计算等功能 |
+| `scripts/autoload/audio_manager.gd` | 修改 | 集成相对音高系统：`_calculate_relative_pitch_scale()` 和 `_resolve_chord_notes_relative()`，修改 `_on_spell_cast` 和 `_on_chord_cast` 回调 |
+| `scripts/autoload/spellcraft_system.gd` | 修改 | 在两处 spell_data 构建中添加 `pitch_degree` 和 `white_key` 字段 |
+| `scripts/data/music_data.gd` | 修改 | 添加 `WHITE_KEY_PITCH_DEGREE`、`DEGREE_FUNCTION_ROLES`、`SCALE_DEFINITIONS`、`build_scale()` |
+
+### 6.3. 实现要点
+
+1. **RelativePitchResolver** 作为独立的 `class_name` 类实现，提供纯静态方法，无需实例化
+2. 通过 `Engine.get_singleton()` 和 `SceneTree.root` 双重机制访问 BGMManager，确保兼容性
+3. 和弦音吸附算法使用最小半音距离，确保音高始终和谐
+4. 向下兼容：无 `pitch_degree` 时回退到随机微调模式
+5. 与 OPT01 和声指挥官 API 完全对接：`get_current_chord()`、`get_current_scale()`、`quantize_to_scale()`
+6. 与 OPT05 量化系统无冲突，可独立工作
+
+---
+
+## 7. 引用文档
+
+- `godot_project/scripts/systems/relative_pitch_resolver.gd` — 相对音高解析器
+- `godot_project/scripts/autoload/bgm_manager.gd` — 和声指挥官 (OPT01)
+- `godot_project/scripts/autoload/audio_manager.gd` — 音频管理器
+- `godot_project/scripts/autoload/spellcraft_system.gd` — 法术构建系统
+- `godot_project/scripts/data/music_data.gd` — 乐理数据定义
 - `Docs/Audio_Design_Guide.md` — 音频设计指南
 - `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` — 前置依赖

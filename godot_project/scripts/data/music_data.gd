@@ -570,3 +570,691 @@ const WHITE_KEY_TO_NOTE: Dictionary = {
 	WhiteKey.A: Note.A,
 	WhiteKey.B: Note.B,
 }
+
+# ============================================================
+# OPT02: 相对音高系统数据 (Relative Pitch System)
+# ============================================================
+
+## 白键音符的默认音程度数映射
+## 度数表示音符在当前音阶中的功能角色 (1=根音, 2=上主音, ..., 7=导音)
+const WHITE_KEY_PITCH_DEGREE: Dictionary = {
+	WhiteKey.C: 1,  ## 根音 (Tonic)
+	WhiteKey.D: 2,  ## 上主音 (Supertonic)
+	WhiteKey.E: 3,  ## 中音 (Mediant)
+	WhiteKey.F: 4,  ## 下属音 (Subdominant)
+	WhiteKey.G: 5,  ## 属音 (Dominant)
+	WhiteKey.A: 6,  ## 下中音 (Submediant)
+	WhiteKey.B: 7,  ## 导音 (Leading Tone)
+}
+
+## 音程度数的功能角色信息
+## tension: 紧张度 (0.0=完全和谐, 1.0=极度紧张)
+## stability: 稳定性 (0.0=不稳定, 1.0=完全稳定)
+## is_chord_priority: 是否优先吸附到和弦音
+const DEGREE_FUNCTION_ROLES: Dictionary = {
+	1: {"name": "根音", "en": "Tonic", "tension": 0.0, "stability": 1.0, "is_chord_priority": true},
+	2: {"name": "上主音", "en": "Supertonic", "tension": 0.3, "stability": 0.5, "is_chord_priority": false},
+	3: {"name": "中音", "en": "Mediant", "tension": 0.2, "stability": 0.7, "is_chord_priority": true},
+	4: {"name": "下属音", "en": "Subdominant", "tension": 0.5, "stability": 0.4, "is_chord_priority": false},
+	5: {"name": "属音", "en": "Dominant", "tension": 0.7, "stability": 0.6, "is_chord_priority": true},
+	6: {"name": "下中音", "en": "Submediant", "tension": 0.4, "stability": 0.5, "is_chord_priority": false},
+	7: {"name": "导音", "en": "Leading Tone", "tension": 0.9, "stability": 0.2, "is_chord_priority": false},
+}
+
+## 常用音阶定义 (用于章节调式系统)
+## 每个音阶是一个音高类数组 (0-11)
+const SCALE_DEFINITIONS: Dictionary = {
+	"natural_minor":  [0, 2, 3, 5, 7, 8, 10],   ## 自然小调 (Aeolian)
+	"harmonic_minor": [0, 2, 3, 5, 7, 8, 11],   ## 和声小调
+	"melodic_minor":  [0, 2, 3, 5, 7, 9, 11],   ## 旋律小调 (上行)
+	"major":          [0, 2, 4, 5, 7, 9, 11],   ## 自然大调 (Ionian)
+	"dorian":         [0, 2, 3, 5, 7, 9, 10],   ## 多利亚调式
+	"phrygian":       [0, 1, 3, 5, 7, 8, 10],   ## 弗里吉亚调式
+	"lydian":         [0, 2, 4, 6, 7, 9, 11],   ## 利底亚调式
+	"mixolydian":     [0, 2, 4, 5, 7, 9, 10],   ## 混合利底亚调式
+	"locrian":        [0, 1, 3, 5, 6, 8, 10],   ## 洛克里亚调式
+	"pentatonic_minor": [0, 3, 5, 7, 10],        ## 小调五声音阶
+	"blues":          [0, 3, 5, 6, 7, 10],       ## 布鲁斯音阶
+}
+
+## 根据根音和音阶名称生成完整音阶
+static func build_scale(root: int, scale_name: String) -> Array[int]:
+	var intervals: Array = SCALE_DEFINITIONS.get(scale_name, SCALE_DEFINITIONS["natural_minor"])
+	var scale: Array[int] = []
+	for interval in intervals:
+		scale.append((root + interval) % 12)
+	return scale
+
+# ============================================================
+# 和声指挥官 — 马尔可夫链数据 (OPT01)
+# ============================================================
+
+## A 自然小调 (Aeolian) 音阶
+const SCALE_A_MINOR: Array[int] = [9, 11, 0, 2, 4, 5, 7]  ## A B C D E F G
+
+## A 自然小调的自然和弦 (根音 → 和弦类型)
+## i=Am, ii°=Bdim, III=C, iv=Dm, v=Em, VI=F, VII=G
+const AEOLIAN_DIATONIC_CHORDS: Dictionary = {
+	9:  ChordType.MINOR,       ## Am  (i)
+	11: ChordType.DIMINISHED,  ## Bdim (ii°)
+	0:  ChordType.MAJOR,       ## C   (III)
+	2:  ChordType.MINOR,       ## Dm  (iv)
+	4:  ChordType.MINOR,       ## Em  (v)
+	5:  ChordType.MAJOR,       ## F   (VI)
+	7:  ChordType.MAJOR,       ## G   (VII)
+}
+
+## 马尔可夫链转移概率矩阵 (A 自然小调)
+## 外层 key = 当前和弦根音, 内层 key = 下一个和弦根音
+## 内层 value = { "probability": float, "type": ChordType }
+## 每行概率之和 = 1.0
+const MARKOV_MATRIX_A_MINOR: Dictionary = {
+	# Am (i) → 倾向于走向 Dm, Em, F
+	9: {
+		9:  { "probability": 0.05, "type": ChordType.MINOR },       # Am → Am
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },  # Am → Bdim
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },       # Am → C
+		2:  { "probability": 0.20, "type": ChordType.MINOR },       # Am → Dm
+		4:  { "probability": 0.25, "type": ChordType.MINOR },       # Am → Em
+		5:  { "probability": 0.20, "type": ChordType.MAJOR },       # Am → F
+		7:  { "probability": 0.10, "type": ChordType.MAJOR },       # Am → G
+	},
+	# Bdim (ii°) → 强烈倾向解决到 Am 或 Em
+	11: {
+		9:  { "probability": 0.30, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.25, "type": ChordType.MINOR },
+		5:  { "probability": 0.10, "type": ChordType.MAJOR },
+		7:  { "probability": 0.05, "type": ChordType.MAJOR },
+	},
+	# C (III) → 倾向于 F, G
+	0: {
+		9:  { "probability": 0.10, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.05, "type": ChordType.MAJOR },
+		2:  { "probability": 0.15, "type": ChordType.MINOR },
+		4:  { "probability": 0.10, "type": ChordType.MINOR },
+		5:  { "probability": 0.30, "type": ChordType.MAJOR },
+		7:  { "probability": 0.25, "type": ChordType.MAJOR },
+	},
+	# Dm (iv) → 倾向于 Em (v→i 准备), G
+	2: {
+		9:  { "probability": 0.15, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.10, "type": ChordType.MAJOR },
+		2:  { "probability": 0.05, "type": ChordType.MINOR },
+		4:  { "probability": 0.35, "type": ChordType.MINOR },
+		5:  { "probability": 0.10, "type": ChordType.MAJOR },
+		7:  { "probability": 0.20, "type": ChordType.MAJOR },
+	},
+	# Em (v) → 强烈倾向解决到 Am (i)
+	4: {
+		9:  { "probability": 0.40, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.05, "type": ChordType.MINOR },
+		5:  { "probability": 0.15, "type": ChordType.MAJOR },
+		7:  { "probability": 0.10, "type": ChordType.MAJOR },
+	},
+	# F (VI) → 倾向于 C, Em, G
+	5: {
+		9:  { "probability": 0.10, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.25, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.25, "type": ChordType.MINOR },
+		5:  { "probability": 0.05, "type": ChordType.MAJOR },
+		7:  { "probability": 0.20, "type": ChordType.MAJOR },
+	},
+	# G (VII) → 强烈倾向解决到 Am (i), 也常去 C
+	7: {
+		9:  { "probability": 0.35, "type": ChordType.MINOR },
+		11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		0:  { "probability": 0.20, "type": ChordType.MAJOR },
+		2:  { "probability": 0.10, "type": ChordType.MINOR },
+		4:  { "probability": 0.10, "type": ChordType.MINOR },
+		5:  { "probability": 0.15, "type": ChordType.MAJOR },
+		7:  { "probability": 0.05, "type": ChordType.MAJOR },
+	},
+}
+
+## 音高类 (0-11) 到 C2 八度频率的映射 (用于 Bass 层)
+## C2=65.41, C#2=69.30, D2=73.42, ... B2=123.47
+const PITCH_CLASS_TO_BASS_FREQ: Dictionary = {
+	0:  65.41,   # C2
+	1:  69.30,   # C#2
+	2:  73.42,   # D2
+	3:  77.78,   # D#2
+	4:  82.41,   # E2
+	5:  87.31,   # F2
+	6:  92.50,   # F#2
+	7:  98.00,   # G2
+	8:  103.83,  # G#2
+	9:  110.00,  # A2
+	10: 116.54,  # A#2
+	11: 123.47,  # B2
+}
+
+## 音高类 (0-11) 到 C3 八度频率的映射 (用于 Pad 层)
+## C3=130.81, C#3=138.59, D3=146.83, ... B3=246.94
+const PITCH_CLASS_TO_PAD_FREQ: Dictionary = {
+	0:  130.81,  # C3
+	1:  138.59,  # C#3
+	2:  146.83,  # D3
+	3:  155.56,  # D#3
+	4:  164.81,  # E3
+	5:  174.61,  # F3
+	6:  185.00,  # F#3
+	7:  196.00,  # G3
+	8:  207.65,  # G#3
+	9:  220.00,  # A3
+	10: 233.08,  # A#3
+	11: 246.94,  # B3
+}
+
+# ============================================================
+# OPT04 — 章节调性进化系统数据
+# ============================================================
+
+## 调式枚举
+## 每个章节对应一种调式/音阶，从简单和谐逐步走向复杂不和谐
+enum TonalMode {
+	IONIAN,       ## Ch1 — 大调 (纯净、和谐、明亮)
+	DORIAN,       ## Ch2 — 多利亚 (忧郁、神圣、空灵)
+	MIXOLYDIAN,   ## Ch3 — 混合利底亚 (明亮、具有导向性)
+	PHRYGIAN,     ## Ch4 — 弗里几亚 (戏剧性、紧张、异域)
+	LOCRIAN,      ## Ch5 — 洛克里亚 (极度不和谐、冲突)
+	BLUES,        ## Ch6 — 蓝调音阶 (蓝调、张力、表现力)
+	CHROMATIC,    ## Ch7 — 半音阶/十二音 (无调性、自由、混沌)
+}
+
+## 章节调性映射表
+## 每个章节的完整调式配置，包含根音、音阶音符、马尔可夫矩阵引用、建议BPM范围和情感标签
+## "scale" 使用绝对音高类 (0-11)，与 OPT01 的 current_scale 格式一致
+## "markov_matrix_key" 引用下方 CHAPTER_MARKOV_MATRICES 中的键
+const CHAPTER_TONALITY_MAP: Dictionary = {
+	1: {
+		"name": "Ionian",
+		"mode": TonalMode.IONIAN,
+		"root": 0,  # C
+		"scale": [0, 2, 4, 5, 7, 9, 11],  # C D E F G A B
+		"markov_matrix_key": "ch1_ionian",
+		"suggested_bpm_range": [100, 120],
+		"pad_character": "warm_sine",
+		"emotion": "纯净、和谐、明亮",
+	},
+	2: {
+		"name": "Dorian",
+		"mode": TonalMode.DORIAN,
+		"root": 2,  # D
+		"scale": [2, 4, 5, 7, 9, 11, 0],  # D E F G A B C
+		"markov_matrix_key": "ch2_dorian",
+		"suggested_bpm_range": [90, 110],
+		"pad_character": "hollow_pad",
+		"emotion": "忧郁、神圣、空灵",
+	},
+	3: {
+		"name": "Mixolydian",
+		"mode": TonalMode.MIXOLYDIAN,
+		"root": 7,  # G
+		"scale": [7, 9, 11, 0, 2, 4, 5],  # G A B C D E F
+		"markov_matrix_key": "ch3_mixolydian",
+		"suggested_bpm_range": [100, 120],
+		"pad_character": "bright_pad",
+		"emotion": "明亮、具有导向性",
+	},
+	4: {
+		"name": "Phrygian",
+		"mode": TonalMode.PHRYGIAN,
+		"root": 4,  # E
+		"scale": [4, 5, 7, 9, 11, 0, 2],  # E F G A B C D
+		"markov_matrix_key": "ch4_phrygian",
+		"suggested_bpm_range": [110, 130],
+		"pad_character": "dark_pad",
+		"emotion": "戏剧性、紧张、异域",
+	},
+	5: {
+		"name": "Locrian",
+		"mode": TonalMode.LOCRIAN,
+		"root": 11,  # B
+		"scale": [11, 0, 2, 4, 5, 7, 9],  # B C D E F G A
+		"markov_matrix_key": "ch5_locrian",
+		"suggested_bpm_range": [120, 140],
+		"pad_character": "tense_pad",
+		"emotion": "极度不和谐、冲突",
+	},
+	6: {
+		"name": "Blues",
+		"mode": TonalMode.BLUES,
+		"root": 0,  # C
+		"scale": [0, 3, 5, 6, 7, 10],  # C Eb F F# G Bb
+		"markov_matrix_key": "ch6_blues",
+		"suggested_bpm_range": [130, 150],
+		"pad_character": "bluesy_pad",
+		"emotion": "蓝调、张力、表现力",
+	},
+	7: {
+		"name": "Chromatic",
+		"mode": TonalMode.CHROMATIC,
+		"root": -1,  # 无固定根音
+		"scale": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+		"markov_matrix_key": "ch7_chromatic",
+		"suggested_bpm_range": [130, 160],
+		"pad_character": "spectral_noise",
+		"emotion": "无调性、自由、混沌",
+	},
+}
+
+## 章节马尔可夫链转移概率矩阵
+## 格式与 OPT01 的 MARKOV_MATRIX_A_MINOR 完全一致：
+##   外层 key = 当前和弦根音 (绝对音高类 0-11)
+##   内层 key = 下一个和弦根音
+##   内层 value = { "probability": float, "type": ChordType }
+const CHAPTER_MARKOV_MATRICES: Dictionary = {
+	## Ch1 Ionian (C大调): I-IV-V-I 经典进行为主
+	## C=0, Dm=2, Em=4, F=5, G=7, Am=9, Bdim=11
+	"ch1_ionian": {
+		0: {  # C (I)
+			0:  { "probability": 0.05, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.25, "type": ChordType.MAJOR },
+			7:  { "probability": 0.30, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		},
+		2: {  # Dm (ii)
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.05, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.10, "type": ChordType.MAJOR },
+			7:  { "probability": 0.35, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+		},
+		4: {  # Em (iii)
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.25, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.25, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+		},
+		5: {  # F (IV)
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.05, "type": ChordType.MAJOR },
+			7:  { "probability": 0.30, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.20, "type": ChordType.DIMINISHED },
+		},
+		7: {  # G (V)
+			0:  { "probability": 0.40, "type": ChordType.MAJOR },
+			2:  { "probability": 0.05, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.05, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+		},
+		9: {  # Am (vi)
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.30, "type": ChordType.MAJOR },
+			9:  { "probability": 0.05, "type": ChordType.MINOR },
+			11: { "probability": 0.15, "type": ChordType.DIMINISHED },
+		},
+		11: {  # Bdim (vii°)
+			0:  { "probability": 0.35, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+		},
+	},
+	## Ch2 Dorian (D多利亚): i-IV-v 进行，中世纪圣咏风格
+	## Dm=2, Em=4, F=5, G=7, Am=9, Bdim=11, C=0
+	"ch2_dorian": {
+		2: {  # Dm (i)
+			2:  { "probability": 0.05, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.10, "type": ChordType.MAJOR },
+			7:  { "probability": 0.25, "type": ChordType.MAJOR },
+			9:  { "probability": 0.20, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		4: {  # Em (ii)
+			2:  { "probability": 0.20, "type": ChordType.MINOR },
+			4:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.20, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		5: {  # F (III)
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.05, "type": ChordType.MAJOR },
+			7:  { "probability": 0.25, "type": ChordType.MAJOR },
+			9:  { "probability": 0.20, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		7: {  # G (IV) — Dorian 特征和弦
+			2:  { "probability": 0.20, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.05, "type": ChordType.MAJOR },
+			9:  { "probability": 0.25, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		9: {  # Am (v)
+			2:  { "probability": 0.35, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.10, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.05, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		11: {  # Bdim (vi°)
+			2:  { "probability": 0.30, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+		},
+		0: {  # C (VII)
+			2:  { "probability": 0.25, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.20, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+		},
+	},
+	## Ch3 Mixolydian (G混合利底亚): I-bVII-IV 进行，巴洛克风格
+	## G=7, Am=9, Bdim=11, C=0, Dm=2, Em=4, F=5
+	"ch3_mixolydian": {
+		7: {  # G (I)
+			7:  { "probability": 0.05, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.40, "type": ChordType.MAJOR },  # bVII 特征
+		},
+		9: {  # Am (ii)
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.05, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.20, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		11: {  # Bdim (iii°)
+			7:  { "probability": 0.30, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.20, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+		},
+		0: {  # C (IV)
+			7:  { "probability": 0.20, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.05, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.30, "type": ChordType.MAJOR },
+		},
+		2: {  # Dm (v)
+			7:  { "probability": 0.35, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.05, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		4: {  # Em (vi)
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.20, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		5: {  # F (bVII) — Mixolydian 特征和弦
+			7:  { "probability": 0.35, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.20, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+			4:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.10, "type": ChordType.MAJOR },
+		},
+	},
+	## Ch4 Phrygian (E弗里几亚): i-bII-bVII 进行，异域紧张
+	## Em=4, F=5, G=7, Am=9, Bdim=11, C=0, Dm=2
+	"ch4_phrygian": {
+		4: {  # Em (i)
+			4:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.35, "type": ChordType.MAJOR },  # bII 特征
+			7:  { "probability": 0.10, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.20, "type": ChordType.MINOR },  # bVII
+		},
+		5: {  # F (bII) — Phrygian 特征和弦
+			4:  { "probability": 0.35, "type": ChordType.MINOR },
+			5:  { "probability": 0.05, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.10, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		7: {  # G (III)
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+			7:  { "probability": 0.05, "type": ChordType.MAJOR },
+			9:  { "probability": 0.20, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		9: {  # Am (iv)
+			4:  { "probability": 0.25, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.05, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		11: {  # Bdim (v°)
+			4:  { "probability": 0.30, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+			7:  { "probability": 0.10, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+		},
+		0: {  # C (VI)
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.10, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.05, "type": ChordType.MAJOR },
+			2:  { "probability": 0.20, "type": ChordType.MINOR },
+		},
+		2: {  # Dm (bVII)
+			4:  { "probability": 0.30, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+			7:  { "probability": 0.10, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.10, "type": ChordType.MAJOR },
+			2:  { "probability": 0.10, "type": ChordType.MINOR },
+		},
+	},
+	## Ch5 Locrian (B洛克里亚): 不稳定进行，减和弦为核心
+	## Bdim=11, C=0, Dm=2, Em=4, F=5, G=7, Am=9
+	"ch5_locrian": {
+		11: {  # Bdim (i°) — 极不稳定
+			11: { "probability": 0.05, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.20, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		0: {  # C (bII)
+			11: { "probability": 0.20, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.05, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		2: {  # Dm (iii)
+			11: { "probability": 0.15, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.05, "type": ChordType.MINOR },
+			4:  { "probability": 0.20, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		4: {  # Em (iv)
+			11: { "probability": 0.15, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		5: {  # F (V)
+			11: { "probability": 0.15, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.05, "type": ChordType.MAJOR },
+			7:  { "probability": 0.20, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		7: {  # G (VI)
+			11: { "probability": 0.20, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.05, "type": ChordType.MAJOR },
+			9:  { "probability": 0.15, "type": ChordType.MINOR },
+		},
+		9: {  # Am (VII)
+			11: { "probability": 0.20, "type": ChordType.DIMINISHED },
+			0:  { "probability": 0.15, "type": ChordType.MAJOR },
+			2:  { "probability": 0.15, "type": ChordType.MINOR },
+			4:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.15, "type": ChordType.MAJOR },
+			7:  { "probability": 0.15, "type": ChordType.MAJOR },
+			9:  { "probability": 0.05, "type": ChordType.MINOR },
+		},
+	},
+	## Ch6 Blues (C蓝调): I7-IV7-V7 蓝调进行
+	## C=0, Eb=3, F=5, F#=6, G=7, Bb=10
+	"ch6_blues": {
+		0: {  # C7 (I)
+			0:  { "probability": 0.05, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.30, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.05, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.30, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		3: {  # Eb (bIII)
+			0:  { "probability": 0.25, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.05, "type": ChordType.MINOR },
+			5:  { "probability": 0.25, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.05, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.20, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		5: {  # F7 (IV)
+			0:  { "probability": 0.20, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.05, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.10, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.35, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		6: {  # F# (passing)
+			0:  { "probability": 0.15, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.05, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.30, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		7: {  # G7 (V)
+			0:  { "probability": 0.40, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.10, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.05, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.05, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.20, "type": ChordType.MAJOR },
+		},
+		10: {  # Bb (bVII)
+			0:  { "probability": 0.25, "type": ChordType.DOMINANT_7 },
+			3:  { "probability": 0.15, "type": ChordType.MINOR },
+			5:  { "probability": 0.20, "type": ChordType.DOMINANT_7 },
+			6:  { "probability": 0.05, "type": ChordType.DIMINISHED },
+			7:  { "probability": 0.25, "type": ChordType.DOMINANT_7 },
+			10: { "probability": 0.10, "type": ChordType.MAJOR },
+		},
+	},
+	## Ch7 Chromatic (半音阶): 均匀分布，完全随机
+	## 所有 12 个音高类，每个到其他的概率近似均匀
+	"ch7_chromatic": {
+		0:  { 0: {"probability":0.02,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.08,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		1:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.02,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.08,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		2:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.02,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.08,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		3:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.02,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.08,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		4:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.02,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.08,"type":ChordType.DIMINISHED} },
+		5:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.02,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.08,"type":ChordType.DIMINISHED} },
+		6:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.02,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.08,"type":ChordType.DIMINISHED} },
+		7:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.08,"type":ChordType.DIMINISHED}, 7: {"probability":0.02,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		8:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.02,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.08,"type":ChordType.DIMINISHED} },
+		9:  { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.02,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.08,"type":ChordType.DIMINISHED} },
+		10: { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.08,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.09,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.02,"type":ChordType.MAJOR}, 11: {"probability":0.09,"type":ChordType.DIMINISHED} },
+		11: { 0: {"probability":0.09,"type":ChordType.MAJOR}, 1: {"probability":0.09,"type":ChordType.MINOR}, 2: {"probability":0.09,"type":ChordType.MINOR}, 3: {"probability":0.09,"type":ChordType.MAJOR}, 4: {"probability":0.09,"type":ChordType.MINOR}, 5: {"probability":0.09,"type":ChordType.MAJOR}, 6: {"probability":0.09,"type":ChordType.DIMINISHED}, 7: {"probability":0.09,"type":ChordType.MAJOR}, 8: {"probability":0.08,"type":ChordType.MINOR}, 9: {"probability":0.09,"type":ChordType.MINOR}, 10: {"probability":0.09,"type":ChordType.MAJOR}, 11: {"probability":0.02,"type":ChordType.DIMINISHED} },
+	},
+}

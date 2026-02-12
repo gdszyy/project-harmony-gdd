@@ -150,11 +150,15 @@ func _on_beat(_beat_index: int) -> void:
 
 func _trigger_burst() -> void:
 	_beat_counter = 0
-		_is_charging = false
-		if _sprite and _sprite.material and _sprite.material.has_param("countdown_progress"):
-			_sprite.material.set("countdown_progress", 0.0)
+	_is_charging = false
+	if _sprite and _sprite.material and _sprite.material.has_param("countdown_progress"):
+		_sprite.material.set("countdown_progress", 0.0)
 	_is_bursting = true
 	_burst_timer = burst_duration
+
+	# OPT03: 爆发时触发攻击音高层
+	if _audio_controller:
+		_audio_controller.play_behavior_pitch("attack")
 
 	if _target:
 		_burst_direction = (_target.global_position - global_position).normalized()

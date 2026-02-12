@@ -1,8 +1,13 @@
 ## bgm_manager.gd
-## 程序化 Techno BGM 合成引擎 (Autoload)
+## 程序化 Techno BGM 合成引擎 / 和声指挥官 (Autoload)
 ##
 ## 不依赖任何外部音频文件，完全在代码中实时合成多层 Minimal Techno / Glitch Techno
 ## 鼓点与音轨，与 GameManager 的 BPM 系统完美同步。
+##
+## OPT04 — 章节调性进化 (Chapter-Based Tonality Evolution)：
+##   - 每个章节拥有独立的调式/音阶 (Ionian → Chromatic)
+##   - 章节切换时通过共同音过渡法平滑转换调式
+##   - 动态切换马尔可夫链矩阵以匹配新调式的和声进行风格
 ##
 ## 音轨层级 (由低到高)：
 ##   1. Kick (底鼓)        — 4/4 拍核心节拍器，20-80Hz 正弦衰减
@@ -28,6 +33,18 @@ signal bgm_beat_synced(beat_index: int)
 signal bgm_measure_synced(measure_index: int)
 signal layer_toggled(layer_name: String, enabled: bool)
 signal intensity_changed(new_intensity: float)
+## OPT05: 十六分音符时钟信号，用于音效量化系统 (Rez-Style Input Quantization)
+signal sixteenth_tick(sixteenth_index: int)
+## OPT01: 全局和声上下文变更信号 — 广播当前和弦根音、类型和音符列表
+signal harmony_context_changed(chord_root: int, chord_type: int, chord_notes: Array)
+## OPT04: 章节调性变更信号 — 广播章节ID、调式名称和音阶
+signal tonality_changed(chapter_id: int, mode_name: String, scale_notes: Array)
+
+## === OPT07: 召唤系统音乐性深化 ===
+## 十六分音符级别的节拍信号（供召唤物音频控制器使用）
+signal sixteenth_tick()
+## 和声上下文变更信号（根音、和弦类型、组成音）
+signal harmony_context_changed(root: int, type: int, notes: Array)
 
 # ============================================================
 # 常量
@@ -116,6 +133,38 @@ var _is_muffled: bool = false
 @export var muffled_cutoff_hz: float = 800.0
 
 # ============================================================
+# OPT01: 和声指挥官状态 (Global Dynamic Harmony Conductor)
+# ============================================================
+
+## 当前和弦根音 (MIDI 音高类, 0-11)
+var current_chord_root: int = 9  ## A (默认 Am)
+## 当前和弦类型
+var current_chord_type: int = MusicData.ChordType.MINOR  ## 默认小三和弦
+## 当前和弦包含的所有音高类
+var current_chord_notes: Array[int] = [9, 0, 4]  ## A, C, E
+## 当前全局音阶 (由章节调式决定)
+var current_scale: Array[int] = [9, 11, 0, 2, 4, 5, 7]  ## A 自然小调
+
+## 缓存的待切换和弦 (等待小节边界)
+var _pending_chord: Dictionary = {}
+## 自动演进倒计时 (小节数)
+var _auto_evolve_countdown: int = 2
+## 静默阈值: 玩家无和弦输入超过此小节数后触发自动演进
+const AUTO_EVOLVE_THRESHOLD: int = 2
+## 马尔可夫链转移概率矩阵 (运行时引用)
+var _markov_matrix: Dictionary = {}
+
+# ============================================================
+# OPT04: 章节调性进化状态
+# ============================================================
+
+## 当前调式信息
+var _current_tonal_mode_name: String = "Aeolian"  ## 默认 A 自然小调
+var _current_tonal_mode: int = -1  ## MusicData.TonalMode 枚举值, -1 = 未启用
+var _current_tonality_chapter_id: int = 0  ## 当前调性对应的章节 ID
+var _is_tonality_transitioning: bool = false  ## 是否正在进行调式过渡
+
+# ============================================================
 # 生命周期
 # ============================================================
 
@@ -124,6 +173,7 @@ func _ready() -> void:
 	_setup_players()
 	_init_default_patterns()
 	_connect_signals()
+	_init_harmony_conductor()  ## OPT01: 初始化和声指挥官
 
 func _process(delta: float) -> void:
 	if not _is_playing:
@@ -157,6 +207,16 @@ func _connect_signals() -> void:
 	if GameManager.has_signal("game_state_changed"):
 		GameManager.game_state_changed.connect(_on_game_state_changed)
 	_connect_fatigue_signals()
+	# OPT01: 连接和声指挥官信号
+	if MusicTheoryEngine.has_signal("chord_identified"):
+		MusicTheoryEngine.chord_identified.connect(_on_player_chord_identified)
+	bgm_measure_synced.connect(_on_harmony_measure_synced)
+	# OPT04: 连接章节管理器的章节开始信号
+	var chapter_mgr = get_node_or_null("/root/ChapterManager")
+	if chapter_mgr == null and get_tree():
+		chapter_mgr = get_tree().get_first_node_in_group("chapter_manager")
+	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
+		chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
 
 func _init_default_patterns() -> void:
 	## Hi-Hat 默认模式：八分音符 (每隔一个十六分音符)
@@ -455,15 +515,20 @@ func start_bgm(bpm: float = 0.0) -> void:
 	_update_timing()
 	_reset_clock()
 
-	# 重新生成 Bass 采样 (依赖 BPM)
-	for i in range(BASS_NOTES.size()):
-		_samples["bass_%d" % i] = _gen_bass_note(BASS_NOTES[i])
+	# OPT01: 重置和声指挥官状态
+	_reset_harmony_conductor()
+
+	# OPT01: 根据当前和弦生成 Bass 和 Pad 采样
+	_regenerate_dynamic_bass_sample()
+	_regenerate_dynamic_pad_sample()
 
 	# 启动 Pad 循环
 	_start_pad_loop()
 
 	_is_playing = true
 	bgm_changed.emit("techno_%d" % int(_bpm))
+	# OPT01: 广播初始和声上下文
+	harmony_context_changed.emit(current_chord_root, current_chord_type, current_chord_notes)
 
 ## 停止 BGM
 func stop_bgm(fade_out: bool = true) -> void:
@@ -703,8 +768,15 @@ func _tick_sixteenth() -> void:
 	if step < _bass_pattern.size() and _bass_pattern[step] >= 0:
 		if _layer_config["bass"]["enabled"]:
 			var note_idx: int = _bass_pattern[step]
-			if note_idx < BASS_NOTES.size():
+			# OPT01: 优先使用动态和弦音符采样
+			var bass_key := "bass_dynamic_%d" % note_idx
+			if _samples.has(bass_key):
+				_trigger_sample("bass", bass_key)
+			elif note_idx < BASS_NOTES.size():
 				_trigger_sample("bass", "bass_%d" % note_idx)
+
+	# ---- OPT07: 发射十六分音符信号 ----
+	sixteenth_tick.emit()
 
 	# ---- 更新计数器 ----
 	_current_sixteenth += 1
@@ -713,11 +785,15 @@ func _tick_sixteenth() -> void:
 		_current_beat += 1
 		bgm_beat_synced.emit(_current_beat)
 
+	# OPT05: 发射十六分音符时钟信号，供 AudioEventQueue 使用
+	sixteenth_tick.emit(_current_sixteenth)
+
 	if step == 0 and _current_sixteenth > 1:
 		_current_measure += 1
 		bgm_measure_synced.emit(_current_measure)
-		# 每 4 小节切换 Pad 和弦
-		_update_pad_chord()
+			# OPT01: 和声指挥官接管和弦切换，不再使用固定循环
+			# 旧逻辑: _update_pad_chord() — 已由 _on_harmony_measure_synced() 替代
+			# OPT07: 和声上下文现由 OPT01 和声指挥官统一管理
 
 # ============================================================
 # 采样触发
@@ -749,7 +825,11 @@ func _start_pad_loop() -> void:
 	var player: AudioStreamPlayer = _layer_config["pad"]["player"]
 	if player == null:
 		return
-	var stream: AudioStreamWAV = _samples.get("pad_0")
+	# OPT01: 使用动态和弦采样而非固定索引
+	var stream: AudioStreamWAV = _samples.get("pad_dynamic")
+	if stream == null:
+		# 回退到旧的固定采样
+		stream = _samples.get("pad_0")
 	if stream:
 		player.stream = stream
 		player.play()
@@ -1009,3 +1089,345 @@ func stop_external_bgm(fade_duration: float = 1.0) -> void:
 
 func _on_game_state_changed(new_state: GameManager.GameState) -> void:
 	auto_select_bgm_for_state(new_state)
+
+# ============================================================
+# OPT01: 和声指挥官核心逻辑 (Global Dynamic Harmony Conductor)
+# ============================================================
+
+## 初始化和声指挥官
+func _init_harmony_conductor() -> void:
+	# 加载马尔可夫链矩阵 (默认 A 自然小调)
+	_markov_matrix = MusicData.MARKOV_MATRIX_A_MINOR
+	current_scale = MusicData.SCALE_A_MINOR.duplicate()
+	# 初始和弦: Am
+	current_chord_root = 9
+	current_chord_type = MusicData.ChordType.MINOR
+	current_chord_notes = _calculate_chord_notes(current_chord_root, current_chord_type)
+	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
+
+## 重置和声指挥官状态 (游戏开始/重启时调用)
+func _reset_harmony_conductor() -> void:
+	current_chord_root = 9  # A
+	current_chord_type = MusicData.ChordType.MINOR
+	current_chord_notes = [9, 0, 4]  # Am: A, C, E
+	current_scale = MusicData.SCALE_A_MINOR.duplicate()
+	_pending_chord = {}
+	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
+	_markov_matrix = MusicData.MARKOV_MATRIX_A_MINOR
+
+## 响应玩家和弦输入 (由 MusicTheoryEngine.chord_identified 触发)
+func _on_player_chord_identified(chord_type: int, root_note: int) -> void:
+	# 将和弦切换请求缓存，等待小节边界
+	_pending_chord = {
+		"root": root_note % 12,
+		"type": chord_type,
+	}
+	# 玩家输入重置自动演进计时
+	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
+	print("[HarmonyConductor] 玩家和弦缓存: root=%d, type=%d (等待小节同步)" % [root_note % 12, chord_type])
+
+## 小节同步处理 — 和声指挥官的核心调度
+func _on_harmony_measure_synced(measure_index: int) -> void:
+	if not _is_playing:
+		return
+
+	if not _pending_chord.is_empty():
+		# 玩家输入的和弦优先 — 立即应用
+		_apply_chord_change(_pending_chord["root"], _pending_chord["type"])
+		_pending_chord = {}
+	else:
+		# 自动演进逻辑
+		_auto_evolve_countdown -= 1
+		if _auto_evolve_countdown <= 0:
+			var next_chord := _get_markov_next_chord(current_chord_root)
+			_apply_chord_change(next_chord["root"], next_chord["type"])
+			# 重置倒计时，但使用略长的间隔避免过于频繁
+			_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
+
+## 应用和弦切换 — 更新所有声部和全局状态
+func _apply_chord_change(root: int, type: int) -> void:
+	var old_root := current_chord_root
+	current_chord_root = root
+	current_chord_type = type
+	current_chord_notes = _calculate_chord_notes(root, type)
+
+	# 重新生成 Pad 和 Bass 采样以匹配新和弦
+	_regenerate_dynamic_pad_sample()
+	_regenerate_dynamic_bass_sample()
+
+	# 交叉淡入新 Pad 采样
+	_crossfade_pad_to_dynamic()
+
+	# 广播全局和声上下文变更
+	harmony_context_changed.emit(current_chord_root, current_chord_type, current_chord_notes)
+
+	if old_root != root:
+		print("[HarmonyConductor] 和弦切换: %s → %s (type=%d)" % [
+			_note_name(old_root), _note_name(root), type])
+
+## 计算和弦包含的音高类
+func _calculate_chord_notes(root: int, type: int) -> Array[int]:
+	var intervals: Array = MusicData.CHORD_INTERVALS.get(type, [0, 4, 7])
+	var notes: Array[int] = []
+	for interval in intervals:
+		notes.append((root + interval) % 12)
+	return notes
+
+## 马尔可夫链：根据当前和弦概率性选择下一个和弦
+func _get_markov_next_chord(current_root: int) -> Dictionary:
+	var transitions = _markov_matrix.get(current_root, {})
+	if transitions.is_empty():
+		# 如果当前根音不在矩阵中，回到主和弦
+		return {"root": current_scale[0], "type": MusicData.ChordType.MINOR}
+
+	var rand := randf()
+	var cumulative: float = 0.0
+	for next_root in transitions:
+		var entry: Dictionary = transitions[next_root]
+		cumulative += entry["probability"]
+		if rand <= cumulative:
+			return {"root": next_root, "type": entry["type"]}
+
+	# 安全回退：返回主和弦
+	return {"root": current_scale[0], "type": MusicData.ChordType.MINOR}
+
+# ============================================================
+# OPT01: 动态声部采样生成
+# ============================================================
+
+## 根据当前和弦重新生成 Pad 采样
+func _regenerate_dynamic_pad_sample() -> void:
+	var pad_freqs: Array = []
+	for note_pc in current_chord_notes:
+		# 限制 Pad 最多使用 4 个音 (根三五七)
+		if pad_freqs.size() >= 4:
+			break
+		var freq: float = MusicData.PITCH_CLASS_TO_PAD_FREQ.get(note_pc, 220.0)
+		pad_freqs.append(freq)
+	_samples["pad_dynamic"] = _gen_pad_chord(pad_freqs)
+
+## 根据当前和弦重新生成 Bass 采样
+## Bass 模式使用和弦音符: 索引 0=根音, 1=五音, 2=三音, 3=八度根音, 4=七音(如有)
+func _regenerate_dynamic_bass_sample() -> void:
+	# 构建 Bass 音符频率表 (基于当前和弦)
+	var bass_freqs: Array[float] = []
+	# 索引 0: 根音
+	bass_freqs.append(MusicData.PITCH_CLASS_TO_BASS_FREQ.get(current_chord_root, 110.0))
+	# 索引 1: 五音 (如果和弦有)
+	if current_chord_notes.size() >= 3:
+		bass_freqs.append(MusicData.PITCH_CLASS_TO_BASS_FREQ.get(current_chord_notes[2], 98.0))
+	else:
+		bass_freqs.append(bass_freqs[0] * 1.5)  # 纯五度近似
+	# 索引 2: 三音
+	if current_chord_notes.size() >= 2:
+		bass_freqs.append(MusicData.PITCH_CLASS_TO_BASS_FREQ.get(current_chord_notes[1], 82.41))
+	else:
+		bass_freqs.append(bass_freqs[0])
+	# 索引 3: 高八度根音
+	bass_freqs.append(bass_freqs[0] * 2.0)
+	# 索引 4: 七音 (如果和弦有)
+	if current_chord_notes.size() >= 4:
+		bass_freqs.append(MusicData.PITCH_CLASS_TO_BASS_FREQ.get(current_chord_notes[3], 110.0))
+	else:
+		bass_freqs.append(bass_freqs[0])  # 无七音时回退到根音
+
+	# 为每个索引生成采样
+	for i in range(bass_freqs.size()):
+		_samples["bass_dynamic_%d" % i] = _gen_bass_note(bass_freqs[i])
+
+## 交叉淡入新的 Pad 采样
+func _crossfade_pad_to_dynamic() -> void:
+	if not _layer_config["pad"]["enabled"]:
+		return
+	var player: AudioStreamPlayer = _layer_config["pad"]["player"]
+	if player == null:
+		return
+	var stream: AudioStreamWAV = _samples.get("pad_dynamic")
+	if stream == null:
+		return
+
+	# 交叉淡入淡出
+	var tween := create_tween()
+	var target_vol: float = _layer_config["pad"]["volume_db"]
+	tween.tween_property(player, "volume_db", -40.0, 0.5)
+	tween.tween_callback(func():
+		player.stream = stream
+		player.play()
+	)
+	tween.tween_property(player, "volume_db", target_vol, 0.5)
+
+# ============================================================
+# OPT01: 公共查询 API
+# ============================================================
+
+## 供其他系统查询当前和声上下文
+func get_current_chord() -> Dictionary:
+	return {
+		"root": current_chord_root,
+		"type": current_chord_type,
+		"notes": current_chord_notes,
+	}
+
+## 获取当前全局音阶
+func get_current_scale() -> Array[int]:
+	return current_scale
+
+## 获取和弦中指定度数的音符
+## degree: 1=根音, 3=三音, 5=五音, 7=七音
+func get_chord_note_for_degree(degree: int) -> int:
+	var index := (degree - 1) / 2  # 1→0, 3→1, 5→2, 7→3
+	if index < current_chord_notes.size():
+		return current_chord_notes[index]
+	return current_chord_root
+
+## 音阶锁定：将任意音高吸附到当前音阶最近的音
+func quantize_to_scale(pitch_class: int) -> int:
+	var min_distance: int = 12
+	var closest_note: int = pitch_class
+	for scale_note in current_scale:
+		var dist := absi((pitch_class - scale_note + 12) % 12)
+		if dist > 6:
+			dist = 12 - dist
+		if dist < min_distance:
+			min_distance = dist
+			closest_note = scale_note
+	return closest_note
+
+## 辅助：音高类转音名
+func _note_name(pc: int) -> String:
+	const NAMES: Array[String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+	if pc >= 0 and pc < 12:
+		return NAMES[pc]
+	return "?"
+
+# ============================================================
+# OPT04: 章节调性进化系统 (Chapter-Based Tonality Evolution)
+# ============================================================
+
+## 响应章节切换（来自 ChapterManager.chapter_started 信号）
+## 触发调式过渡流程：旧调式 → 共同音过渡 → 新调式
+func _on_chapter_started_tonality(chapter_id: int, _chapter_name: String = "") -> void:
+	if chapter_id == _current_tonality_chapter_id:
+		return
+
+	var config: Dictionary = MusicData.CHAPTER_TONALITY_MAP.get(chapter_id, {})
+	if config.is_empty():
+		push_warning("[TonalityEvolution] 未找到章节 %d 的调式配置" % chapter_id)
+		return
+
+	print("[TonalityEvolution] 章节切换: %d → %d (%s)" % [
+		_current_tonality_chapter_id, chapter_id, config.get("name", "Unknown")])
+
+	_current_tonality_chapter_id = chapter_id
+	_start_tonality_transition(config)
+
+## 启动调式过渡
+## 使用共同音过渡法实现平滑的调式切换：
+##   阶段1 (2小节): 仅使用旧音阶与新音阶的共同音
+##   阶段2: 完全切换到新调式
+func _start_tonality_transition(new_config: Dictionary) -> void:
+	_is_tonality_transitioning = true
+	var old_scale: Array[int] = current_scale.duplicate()
+	var new_scale: Array[int] = []
+	var raw_scale: Array = new_config.get("scale", [])
+	for note in raw_scale:
+		new_scale.append(int(note))
+
+	# 计算共同音 (Common Tones)
+	var common_tones: Array[int] = []
+	for note in old_scale:
+		if note in new_scale:
+			common_tones.append(note)
+
+	print("[TonalityEvolution] 共同音数量: %d (旧=%d, 新=%d)" % [
+		common_tones.size(), old_scale.size(), new_scale.size()])
+
+	# 阶段1：使用共同音过渡（如果共同音不足3个，使用旧音阶）
+	if common_tones.size() >= 3:
+		_apply_transition_scale(common_tones)
+	else:
+		# 共同音不足，保持旧音阶但将根音切换到新调式的根音
+		_apply_transition_scale(old_scale)
+
+	# 等待2小节后切换到完整新音阶
+	_schedule_tonality_completion(new_config, new_scale)
+
+## 应用过渡期间的临时音阶
+func _apply_transition_scale(transition_notes: Array[int]) -> void:
+	current_scale = transition_notes
+	# 将当前和弦根音量化到过渡音阶
+	var quantized_root := quantize_to_scale(current_chord_root)
+	if quantized_root != current_chord_root:
+		_apply_chord_change(quantized_root, current_chord_type)
+
+## 调度调式过渡完成
+## 使用 Timer 等待指定小节数后完成切换
+func _schedule_tonality_completion(new_config: Dictionary, new_scale: Array[int]) -> void:
+	var measures_to_wait: int = 2
+	var beats_per_measure: int = 4
+	if GameManager and "beats_per_measure" in GameManager:
+		beats_per_measure = GameManager.beats_per_measure
+	var wait_time: float = measures_to_wait * beats_per_measure * _beat_interval
+
+	var timer := get_tree().create_timer(wait_time)
+	timer.timeout.connect(func():
+		_complete_tonality_transition(new_config, new_scale)
+	)
+
+## 完成调式过渡
+## 切换到新调式的完整音阶，加载新的马尔可夫矩阵
+func _complete_tonality_transition(new_config: Dictionary, new_scale: Array[int]) -> void:
+	# 更新音阶
+	current_scale = new_scale
+
+	# 更新调式元数据
+	_current_tonal_mode_name = new_config.get("name", "Unknown")
+	_current_tonal_mode = new_config.get("mode", -1)
+
+	# 加载新的马尔可夫链矩阵
+	var matrix_key: String = new_config.get("markov_matrix_key", "")
+	if not matrix_key.is_empty():
+		var new_matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get(matrix_key, {})
+		if not new_matrix.is_empty():
+			_markov_matrix = new_matrix
+			print("[TonalityEvolution] 加载马尔可夫矩阵: %s" % matrix_key)
+		else:
+			push_warning("[TonalityEvolution] 未找到马尔可夫矩阵: %s" % matrix_key)
+
+	# 设置新调式的主和弦
+	var root: int = new_config.get("root", -1)
+	if root >= 0:
+		# 查找该根音在新马尔可夫矩阵中的和弦类型
+		var root_entry: Dictionary = _markov_matrix.get(root, {})
+		var chord_type: int = MusicData.ChordType.MINOR
+		# 使用矩阵中该根音的自身条目来确定和弦类型
+		if root_entry.has(root):
+			chord_type = root_entry[root].get("type", MusicData.ChordType.MINOR)
+		_apply_chord_change(root, chord_type)
+
+	_is_tonality_transitioning = false
+
+	# 广播调式变更
+	tonality_changed.emit(_current_tonality_chapter_id, _current_tonal_mode_name, current_scale)
+	print("[TonalityEvolution] 调式过渡完成: %s (Ch%d)" % [
+		_current_tonal_mode_name, _current_tonality_chapter_id])
+
+## 手动设置调式（用于测试或特殊场景）
+func set_tonality(chapter_id: int) -> void:
+	_on_chapter_started_tonality(chapter_id)
+
+## 获取当前调式名称
+func get_current_mode() -> String:
+	return _current_tonal_mode_name
+
+## 获取当前调式枚举值
+func get_current_tonal_mode() -> int:
+	return _current_tonal_mode
+
+## 获取当前调性章节 ID
+func get_current_tonality_chapter() -> int:
+	return _current_tonality_chapter_id
+
+## 检查是否正在进行调式过渡
+func is_tonality_transitioning() -> bool:
+	return _is_tonality_transitioning
