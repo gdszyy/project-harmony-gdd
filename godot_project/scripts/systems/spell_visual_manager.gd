@@ -180,8 +180,12 @@ func _on_chord_cast(chord_data: Dictionary) -> void:
 			_vfx_symphony_storm(player_pos, chord_data)
 		MusicData.SpellForm.FINALE:
 			_vfx_finale(player_pos, chord_data)
+		MusicData.SpellForm.SLOW_FIELD:
+			_vfx_slow_field(player_pos, chord_data)
+		MusicData.SpellForm.AUGMENTED_BURST:
+			_vfx_augmented_burst(player_pos, chord_data)
 	
-	# 层级五：音色×和弦交互特效
+		# 层级五：音色×和弦交互特效
 	var timbre = chord_data.get("timbre", MusicData.TimbreType.NONE)
 	if timbre != MusicData.TimbreType.NONE:
 		_spawn_timbre_chord_interaction(player_pos, timbre, spell_form, chord_data)
@@ -1144,11 +1148,132 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 			r_tween.tween_callback(ring.queue_free)
 		)
 	
-	visual_effect_spawned.emit("finale", pos)
-
-# ============================================================
-# 层级三：攻击质感层（音色系别）
-# ============================================================
+		visual_effect_spawned.emit("finale", pos)
+	
+	## 迟缓领域：紫蓝色减速波纹 + 旋转领域场
+	func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:
+		var aim_dir := _get_aim_direction()
+		var target_pos := pos + aim_dir * 200.0
+		var color := Color(0.3, 0.3, 0.7)  # 深蓝紫色
+		
+		# 从天而降的减速标记
+		var pillar := Line2D.new()
+		pillar.width = 35.0
+		pillar.default_color = Color(color.r, color.g, color.b, 0.25)
+		pillar.add_point(Vector2(0, -400))
+		pillar.add_point(Vector2(0, 0))
+		pillar.global_position = target_pos
+		add_child(pillar)
+		
+		var p_tween := pillar.create_tween()
+		p_tween.tween_property(pillar, "modulate:a", 1.0, 0.1)
+		p_tween.tween_property(pillar, "modulate:a", 0.0, 0.4)
+		p_tween.tween_callback(pillar.queue_free)
+		
+		# 减速波纹外环（六边形）
+		var outer := _create_polygon(target_pos, 70.0, 6, Color(color.r, color.g, color.b, 0.15))
+		
+		# 内环波纹
+		var inner := _create_polygon(target_pos, 50.0, 6, Color(color.r, color.g, color.b, 0.12))
+		inner.rotation = PI / 6.0
+		
+		# 减速领域边框
+		var border := _create_ring(target_pos, 65.0, color, 0.35)
+		
+		# 减速波纹扩散效果
+		for i in range(3):
+			get_tree().create_timer(i * 0.2).timeout.connect(func():
+				var wave := _create_ring(target_pos, 10.0, Color(color.r, color.g, color.b, 0.5 - i * 0.1), 0.4)
+				var w_tween := wave.create_tween()
+				w_tween.set_parallel(true)
+				w_tween.tween_property(wave, "scale", Vector2(8.0, 8.0), 0.8)
+				w_tween.tween_property(wave, "modulate:a", 0.0, 1.0)
+				w_tween.chain()
+				w_tween.tween_callback(wave.queue_free)
+			)
+		
+		# 持续的减速粒子效果
+		_active_effects.append({
+			"nodes": [outer, inner, border],
+			"type": "slow_field",
+			"duration": 5.0,
+			"time_alive": 0.0,
+			"rotation_speed": -1.0,  # 反向旋转表示减速
+			"position": target_pos,
+			"particle_timer": 0.0,
+			"particle_interval": 0.3,
+			"color": color,
+		})
+		
+		visual_effect_spawned.emit("slow_field", target_pos)
+	
+	## 增幅爆发：橙色爆炸 + 护盾效果（2.2x伤害）
+	func _vfx_augmented_burst(pos: Vector2, _data: Dictionary) -> void:
+		var color := Color(1.0, 0.6, 0.0)  # 橙色
+		
+		# 爆炸核心闪光（增强版）
+		var flash := _create_polygon(pos, 22.0, 8, Color.WHITE)
+		var f_tween := flash.create_tween()
+		f_tween.tween_property(flash, "scale", Vector2(4.0, 4.0), 0.1)
+		f_tween.tween_property(flash, "modulate:a", 0.0, 0.15)
+		f_tween.tween_callback(flash.queue_free)
+		
+		# 爆炸粒子爆发（更多、更远）
+		_spawn_radial_particles(pos, color, 20, 65.0, 0.45)
+		
+		# 第二波橙色粒子
+		get_tree().create_timer(0.06).timeout.connect(func():
+			_spawn_radial_particles(pos, Color(1.0, 0.5, 0.0), 12, 50.0, 0.4)
+		)
+		
+		# 爆炸冲击波
+		for i in range(2):
+			var delay := i * 0.05
+			get_tree().create_timer(delay).timeout.connect(func():
+				var ring := _create_ring(pos, 8.0, color.lightened(i * 0.2), 0.6 - i * 0.1)
+				var tween := ring.create_tween()
+				tween.set_parallel(true)
+				tween.tween_property(ring, "scale", Vector2(30.0, 30.0), 0.4)
+				tween.tween_property(ring, "modulate:a", 0.0, 0.5)
+				tween.chain()
+				tween.tween_callback(ring.queue_free)
+			)
+		
+		# 护盾效果（爆炸后的防护）
+		get_tree().create_timer(0.15).timeout.connect(func():
+			var shield_color := Color(1.0, 0.7, 0.2)  # 金橙色护盾
+			
+			# 护盾六边形
+			var shield := _create_polygon(pos, 50.0, 6, Color(shield_color.r, shield_color.g, shield_color.b, 0.15))
+			
+			# 护盾边框
+			var shield_border := _create_ring(pos, 50.0, shield_color, 0.5)
+			
+			# 汇聚的能量光点（从四周向中心）
+			for i in range(8):
+				var angle := (TAU / 8) * i
+				var start := pos + Vector2.from_angle(angle) * 80.0
+				var particle := _create_polygon(start, 3.0, 4, Color(1.0, 0.8, 0.3, 0.8))
+				var p_tween := particle.create_tween()
+				p_tween.tween_property(particle, "global_position", pos, 0.4)
+				p_tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.5)
+				p_tween.tween_callback(particle.queue_free)
+			
+			# 护盾消退动画
+			var s_tween := shield.create_tween()
+			s_tween.tween_property(shield, "modulate:a", 0.0, 1.5)
+			s_tween.tween_callback(shield.queue_free)
+			
+			var sb_tween := shield_border.create_tween()
+			sb_tween.tween_property(shield_border, "modulate:a", 0.0, 1.5)
+			sb_tween.tween_callback(shield_border.queue_free)
+		)
+		
+		visual_effect_spawned.emit("augmented_burst", pos)
+	
+	# ============================================================
+	# 层级三：攻击质感层（音色系别）
+	# ============================================================
 
 ## 音色施法反馈（叠加在基础施法光环上）
 func _spawn_timbre_cast_feedback(pos: Vector2, timbre: MusicData.TimbreType) -> void:
