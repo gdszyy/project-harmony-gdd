@@ -543,6 +543,8 @@ func _end_dialogue() -> void:
 	)
 
 ## 跳过整个对话
+## 注意：跳过时只发射 dialogue_skipped 信号，不再同时发射 dialogue_completed，
+## 避免 boss_spawner 中 CONNECT_ONE_SHOT 回调被触发两次导致双重 Boss 生成。
 func _skip_dialogue() -> void:
 	if not allow_skip:
 		return
@@ -551,7 +553,6 @@ func _skip_dialogue() -> void:
 		set_process(false)
 		_pause_game(false)
 		dialogue_skipped.emit(_current_boss_key)
-		dialogue_completed.emit(_current_boss_key, _current_dialogue_type)
 	)
 
 # ============================================================

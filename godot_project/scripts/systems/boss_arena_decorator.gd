@@ -45,6 +45,7 @@ var _environment_layer: Control
 var _particle_container: Control
 var _vignette: ColorRect
 var _ambient_overlay: ColorRect
+var _screen_tint_overlay: ColorRect
 var _active_particles: Array[GPUParticles2D] = []
 
 # ============================================================
@@ -218,6 +219,15 @@ func _build_environment_layers() -> void:
 	_particle_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_environment_layer.add_child(_particle_container)
 
+	# 屏幕色调覆盖层（使用 screen_tint 配置）
+	_screen_tint_overlay = ColorRect.new()
+	_screen_tint_overlay.name = "ScreenTintOverlay"
+	_screen_tint_overlay.anchor_right = 1.0
+	_screen_tint_overlay.anchor_bottom = 1.0
+	_screen_tint_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_screen_tint_overlay.color = Color(1, 1, 1, 0)
+	_environment_layer.add_child(_screen_tint_overlay)
+
 	# 暗角效果
 	_vignette = ColorRect.new()
 	_vignette.name = "Vignette"
@@ -309,6 +319,16 @@ func _apply_arena_config(config: Dictionary) -> void:
 	var ambient_color: Color = config.get("ambient_color", Color(0, 0, 0, 0.1))
 	_ambient_overlay.color = ambient_color
 	_ambient_overlay.modulate.a = 0.0
+
+	# 屏幕色调覆盖（微妙的全屏色彩偏移）
+	var screen_tint: Color = config.get("screen_tint", Color(1, 1, 1, 1))
+	# 将 screen_tint 转换为低透明度覆盖色，避免过度影响画面
+	var tint_overlay_color := Color(
+		screen_tint.r, screen_tint.g, screen_tint.b,
+		(1.0 - screen_tint.a) * 0.08  # 非白色时产生微弱色彩偏移
+	)
+	_screen_tint_overlay.color = tint_overlay_color
+	_screen_tint_overlay.modulate.a = 0.0
 
 func _create_particles(config: Dictionary) -> void:
 	# 清除旧粒子
@@ -548,12 +568,14 @@ func _fade_in_arena() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(_vignette, "modulate:a", 1.0, transition_duration)
 	tween.tween_property(_ambient_overlay, "modulate:a", 1.0, transition_duration)
+	tween.tween_property(_screen_tint_overlay, "modulate:a", 1.0, transition_duration)
 
 func _fade_out_arena() -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_vignette, "modulate:a", 0.0, transition_duration)
 	tween.tween_property(_ambient_overlay, "modulate:a", 0.0, transition_duration)
+	tween.tween_property(_screen_tint_overlay, "modulate:a", 0.0, transition_duration)
 	tween.chain()
 	tween.tween_callback(func():
 		_clear_particles()
@@ -598,19 +620,23 @@ func _process(delta: float) -> void:
 	if _current_boss_key == "boss_noise":
 		_update_glitch_effect(delta)
 
-func _update_beat_pulse(delta: float) -> void:
+func _update_beat_pulse(_delta: float) -> void:
 	# 通过 BGMManager 获取节拍相位
+	# BGMManager 使用 _current_sixteenth (0-based) 跟踪小节内位置
 	var bgm_mgr := get_node_or_null("/root/BGMManager")
 	if bgm_mgr == null:
 		return
 
+	# 从 _current_sixteenth 计算节拍相位 (0.0 ~ 1.0 每拍)
+	# 每拍 = 4 个十六分音符，所以 beat_phase = (sixteenth % 4) / 4.0
 	var beat_phase: float = 0.0
-	if bgm_mgr.has_method("get_beat_phase"):
+	if "_current_sixteenth" in bgm_mgr:
+		var sixteenth: int = bgm_mgr._current_sixteenth
+		beat_phase = float(sixteenth % 4) / 4.0
+	elif bgm_mgr.has_method("get_beat_phase"):
 		beat_phase = bgm_mgr.get_beat_phase()
-	elif "beat_phase" in bgm_mgr:
-		beat_phase = bgm_mgr.beat_phase
 
-	# 节拍时刻环境闪烁
+	# 节拍时刻环境闪烁（beat_phase 接近 0 时脉冲最强）
 	var pulse := exp(-beat_phase * 4.0) * 0.15
 	_ambient_overlay.modulate.a = 1.0 + pulse
 

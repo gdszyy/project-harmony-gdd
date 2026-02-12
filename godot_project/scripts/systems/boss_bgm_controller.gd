@@ -199,29 +199,11 @@ const BOSS_BGM_CONFIGS: Dictionary = {
 # ============================================================
 
 func _ready() -> void:
-	# 连接 BossSpawner 信号（如果存在）
-	_connect_boss_signals()
-
-func _connect_boss_signals() -> void:
-	var spawner := get_tree().get_first_node_in_group("boss_spawner")
-	if spawner == null:
-		# 延迟重试
-		get_tree().create_timer(0.5).timeout.connect(_connect_boss_signals_deferred)
-		return
-	_bind_spawner_signals(spawner)
-
-func _connect_boss_signals_deferred() -> void:
-	var spawner := get_tree().get_first_node_in_group("boss_spawner")
-	if spawner:
-		_bind_spawner_signals(spawner)
-
-func _bind_spawner_signals(spawner: Node) -> void:
-	if spawner.has_signal("boss_fight_started"):
-		if not spawner.boss_fight_started.is_connected(_on_boss_fight_started):
-			spawner.boss_fight_started.connect(_on_boss_fight_started)
-	if spawner.has_signal("boss_fight_ended"):
-		if not spawner.boss_fight_ended.is_connected(_on_boss_fight_ended):
-			spawner.boss_fight_ended.connect(_on_boss_fight_ended)
+	# BossBGMController 由 BossSpawner 创建并作为子节点添加，
+	# BossSpawner 会直接调用 enter_boss_bgm() / exit_boss_bgm()，
+	# 因此不再自动连接 boss_fight_started/ended 信号，
+	# 避免 BGM 被触发两次导致闪烁。
+	pass
 
 # ============================================================
 # 公共接口
@@ -356,9 +338,15 @@ func _save_current_state() -> void:
 	if bgm == null:
 		return
 
+	# 保存当前状态，包括 BPM、强度、音量和节奏型
+	var kick_vol: float = bgm._layer_config.get("kick", {}).get("volume_db", -6.0)
+	var pad_vol: float = bgm._layer_config.get("pad", {}).get("volume_db", -16.0)
+
 	_saved_state = {
 		"bpm": bgm.get_bgm_bpm(),
 		"intensity": bgm.get_intensity(),
+		"kick_volume_db": kick_vol,
+		"pad_volume_db": pad_vol,
 	}
 
 func _restore_saved_state() -> void:
@@ -374,7 +362,18 @@ func _restore_saved_state() -> void:
 	var target_intensity: float = _saved_state.get("intensity", 0.5)
 	_transition_intensity(target_intensity)
 
-	# 恢复默认节奏型（由 _update_layer_mix 自动处理）
+	# 恢复节奏型为默认值
+	# BGMManager 的默认模式：hihat=eighth, ghost=default, bass=default
+	bgm.set_hihat_pattern("eighth")
+	bgm.set_ghost_pattern("default")
+	bgm.set_bass_pattern("default")
+
+	# 恢复音量
+	var kick_vol: float = _saved_state.get("kick_volume_db", -6.0)
+	var pad_vol: float = _saved_state.get("pad_volume_db", -16.0)
+	bgm.set_layer_volume("kick", kick_vol)
+	bgm.set_layer_volume("pad", pad_vol)
+
 	# 重置音调偏移
 	_apply_pitch_shift(0.0)
 
@@ -444,7 +443,9 @@ func _apply_pitch_shift(shift: float) -> void:
 			tween.tween_property(player, "pitch_scale", 1.0 + shift, 1.0)
 
 # ============================================================
-# 信号回调
+# 信号回调（后备，仅在独立使用时手动连接）
+# 当 BossBGMController 作为 BossSpawner 子节点时，这些回调不会被自动连接。
+# 如果需要独立使用本控制器，可手动将这些方法连接到 BossSpawner 信号。
 # ============================================================
 
 func _on_boss_fight_started(boss_name: String) -> void:
