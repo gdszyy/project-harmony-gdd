@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://loading_screen_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/loading_screen.gd" id="1_loading"]
+
+[node name="LoadingScreen" type="CanvasLayer"]
+layer = 110
+script = ExtResource("1_loading")
+tip_cycle_interval = 4.0
+min_display_time = 1.5
+transition_duration = 0.8

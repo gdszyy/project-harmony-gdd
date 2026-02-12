@@ -5,3 +5,10 @@
 [node name="TutorialHintManager" type="CanvasLayer"]
 layer = 100
 script = ExtResource("1_tutorial")
+default_hint_duration = 4.0
+fade_in_duration = 0.3
+fade_out_duration = 0.5
+unlock_display_duration = 3.0
+hint_bottom_offset = 120.0
+arrow_pulse_speed = 2.0
+arrow_bounce_amplitude = 8.0

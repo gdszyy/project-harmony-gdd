@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://tooltip_system_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/tooltip_system.gd" id="1_tooltip"]
+
+[node name="TooltipSystem" type="CanvasLayer"]
+layer = 108
+script = ExtResource("1_tooltip")
+show_delay = 0.5
+fade_in_duration = 0.15
+max_width = 350.0
+mouse_offset = Vector2(16, 16)
+edge_padding = 12.0

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://tutorial_sequence_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/tutorial_sequence.gd" id="1_sequence"]
+
+[node name="TutorialSequence" type="CanvasLayer"]
+layer = 99
+script = ExtResource("1_sequence")
+step_transition_delay = 1.0
+auto_save_to_codex = true

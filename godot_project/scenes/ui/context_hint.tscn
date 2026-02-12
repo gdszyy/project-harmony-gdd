@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://context_hint_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/context_hint.gd" id="1_context"]
+
+[node name="ContextHint" type="CanvasLayer"]
+layer = 90
+script = ExtResource("1_context")
+hint_display_duration = 5.0
+hint_fade_in = 0.4
+hint_fade_out = 0.6
+hint_cooldown = 30.0
+idle_threshold = 15.0
+max_visible_hints = 2

@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://toast_notification_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/toast_notification.gd" id="1_toast"]
+
+[node name="ToastNotification" type="CanvasLayer"]
+layer = 95
+script = ExtResource("1_toast")
+default_duration = 3.0
+fade_in_duration = 0.35
+fade_out_duration = 0.5
+slide_distance = 320.0
+max_visible_toasts = 4
+pool_size = 8
+toast_spacing = 8.0
+toast_margin_right = 20.0
+toast_margin_top = 80.0
