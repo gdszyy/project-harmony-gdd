@@ -124,7 +124,10 @@
 | #98 | 补救任务 | Open | [查看](https://github.com/gdszyy/project-harmony-gdd/issues/98) |
 | #99 | 验收Bug | Open | [查看](https://github.com/gdszyy/project-harmony-gdd/issues/99) |
 | #100 | 补救任务 | Open | [查看](https://github.com/gdszyy/project-harmony-gdd/issues/100) |
+| #101 | 验收Bug | Open | [查看](https://github.com/gdszyy/project-harmony-gdd/issues/101) |
 | #102 | 补救任务 | Open | [查看](https://github.com/gdszyy/project-harmony-gdd/issues/102) |
+
+> **注**: Issue #101 与 #96 内容重复（均为 UIColors Autoload 路径错误），已统一由补救 Issue #98 覆盖。
 
 ### 6.2 验收时间线
 
