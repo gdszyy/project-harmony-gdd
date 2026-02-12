@@ -136,7 +136,7 @@ PhaseIndicator (Control)
 **GDScript 切换逻辑：**
 
 ```gdscript
-# phase_indicator.gd
+# phase_indicator_ui.gd
 extends Control
 
 signal phase_switch_requested(target_phase: int)
@@ -234,7 +234,7 @@ func _on_beat_tick() -> void:
 使用 `GPUParticles2D` 节点，将粒子的发射区域设置为圆环形状。通过代码动态控制 `amount`（密度）、`speed_scale`（速度）和 `color`（颜色），实现能量变化的视觉反馈。
 
 ```gdscript
-# phase_energy_ring.gd
+# phase_energy_bar.gd
 extends GPUParticles2D
 
 @export var max_particles: int = 200
@@ -296,7 +296,7 @@ SOF 指示器设计为一条位于主 AFI 条下方的**细长、破碎的辉光
 ### 5.4. Godot 实现建议
 
 ```gdscript
-# spectrum_offset_fatigue_bar.gd
+# spectral_fatigue_indicator.gd
 extends Control
 
 const BAR_WIDTH := 160.0
@@ -547,7 +547,7 @@ void fragment() {
 **GDScript 触发逻辑：**
 
 ```gdscript
-# phase_transition_effect.gd
+# phase_transition_overlay.gd
 extends ColorRect
 
 func play_transition(target_phase: int) -> void:
@@ -604,7 +604,7 @@ func play_transition(target_phase: int) -> void:
 在 HUD 根节点的 `CanvasItem` 上附加一个全局色调偏移 Shader：
 
 ```glsl
-// hud_phase_tint.gdshader
+// hud_phase_tint.gdshader (注意：实际实现中此功能由 phase_hud_tint_manager.gd 脚本控制，无独立 shader 文件)
 shader_type canvas_item;
 
 uniform float hue_shift : hint_range(-0.15, 0.15) = 0.0;
@@ -720,7 +720,7 @@ func _on_phase_changed(new_phase: int) -> void:
 ### 9.4. Godot 实现建议
 
 ```gdscript
-# gain_hint_panel.gd
+# phase_gain_hint.gd
 extends PanelContainer
 
 const SLIDE_DURATION := 0.2
@@ -803,17 +803,17 @@ func _get_phase_data(phase: int) -> Dictionary:
 
 | 文件路径 | 类型 | 描述 |
 | :--- | :--- | :--- |
-| `scripts/ui/phase_indicator.gd` | GDScript | 三相位切换指示器控件 |
-| `scripts/ui/phase_energy_ring.gd` | GDScript | 相位能量环控件 |
-| `scripts/ui/spectrum_offset_fatigue_bar.gd` | GDScript | 频谱偏移疲劳条控件 |
-| `scripts/ui/gain_hint_panel.gd` | GDScript | 相位增益提示面板 |
-| `scripts/ui/phase_transition_effect.gd` | GDScript | 全屏过渡效果控制器 |
+| `scripts/ui/phase_indicator_ui.gd` | GDScript | 三相位切换指示器控件 |
+| `scripts/ui/phase_energy_bar.gd` | GDScript | 相位能量条控件 |
+| `scripts/ui/spectral_fatigue_indicator.gd` | GDScript | 频谱偏移疲劳条控件 |
+| `scripts/ui/phase_gain_hint.gd` | GDScript | 相位增益提示面板 |
+| `scripts/ui/phase_transition_overlay.gd` | GDScript | 全屏过渡效果控制器 |
 | `shaders/ui/phase_sector.gdshader` | Shader | 相位扇区渲染（辉光、色差、畸变） |
 | `shaders/ui/energy_ring.gdshader` | Shader | 能量环粒子流动效果 |
 | `shaders/ui/phase_transition.gdshader` | Shader | 全屏频谱扫描过渡 |
-| `shaders/ui/hud_phase_tint.gdshader` | Shader | HUD 全局色调偏移 |
+| ~~`shaders/ui/hud_phase_tint.gdshader`~~ | ~~Shader~~ | HUD 全局色调偏移功能已由 `scripts/ui/phase_hud_tint_manager.gd` 脚本控制实现，无独立 shader 文件 |
 | `scenes/ui/phase_indicator.tscn` | 场景 | 三相位指示器 + 能量环组合场景 |
-| `scenes/ui/gain_hint_panel.tscn` | 场景 | 增益提示面板预制体 |
+| `scenes/ui/phase_gain_hint.tscn` | 场景 | 增益提示面板预制体 |
 
 ### 10.2. 信号架构
 
@@ -838,8 +838,8 @@ FatigueManager (现有 Autoload)
 
 | 文件 | 修改内容 |
 | :--- | :--- |
-| `scripts/ui/hud.gd` | 新增 `PhaseIndicator`、`PhaseEnergyRing`、`SpectrumOffsetFatigueBar`、`PhaseTransitionEffect` 节点引用；添加 `_on_phase_changed()` 回调以触发 HUD 色调变化。 |
-| `scripts/ui/timbre_wheel_ui.gd` | 重构为四象限布局；新增 `update_gain_highlights()` 方法以响应相位变化。 |
+| `scripts/ui/hud.gd` | 新增 `PhaseIndicator`、`PhaseEnergyBar`、`SpectralFatigueIndicator`、`PhaseTransitionOverlay` 节点引用；添加 `_on_phase_changed()` 回调以触发 HUD 色调变化。 |
+| `scripts/ui/timbre_wheel_ui.gd` | 重构为四象限布局；新增 `update_gain_highlights()` 方法以响应相位变化。（注：原文档中提及的 `timbre_wheel_phase_extension.gd` 的相关功能已直接整合在此文件中实现，无需独立扩展文件。） |
 | `scripts/autoload/ui_colors.gd` | 新增相位相关颜色常量（见下表）。 |
 | `scripts/ui/fatigue_meter.gd` | 新增 `draw_offset_fatigue()` 方法或将 SOF 条独立为新控件。 |
 
@@ -882,7 +882,7 @@ const ENERGY_CRITICAL := Color("#FF4D4D")
 | | `direction` | int | 0, 1, 2 | PhaseManager |
 | | `target_color` | vec4 | — | 目标相位色 |
 | | `scan_width` | float | 0.01 - 0.2 | 固定值 0.1 |
-| `hud_phase_tint.gdshader` | `hue_shift` | float | -0.15 - 0.15 | PhaseManager |
+| ~~`hud_phase_tint.gdshader`~~ | `hue_shift` | float | -0.15 - 0.15 | PhaseManager（注：实际由 `phase_hud_tint_manager.gd` 脚本控制） |
 | | `brightness_offset` | float | -0.2 - 0.2 | PhaseManager |
 
 ### 10.6. 性能预算

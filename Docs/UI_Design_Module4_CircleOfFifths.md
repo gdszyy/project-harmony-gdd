@@ -552,7 +552,9 @@ func _format_description(data: UpgradeData) -> String:
     return text
 ```
 
-**`UpgradeData.gd` — 数据资源:**
+**`UpgradeData.gd` — 数据资源（待实现）:**
+
+> **注意**: `UpgradeData.gd` 文件当前尚未在项目中创建，以下为设计参考。
 
 ```gdscript
 extends Resource
@@ -574,7 +576,9 @@ class_name UpgradeData
 
 ### 12.3. Shader 参考
 
-**罗盘辉光边框 Shader (`compass_glow_border.gdshader`):**
+**罗盘辉光边框 Shader (`compass_glow_border.gdshader`)（待实现）:**
+
+> **注意**: `compass_glow_border.gdshader` 文件当前尚未在项目中创建，以下为设计参考。
 
 ```glsl
 shader_type canvas_item;
@@ -603,7 +607,9 @@ void fragment() {
 }
 ```
 
-**星云核心 Shader (`nebula_core.gdshader`):**
+**星云核心 Shader (`nebula_core.gdshader`)（待实现）:**
+
+> **注意**: `nebula_core.gdshader` 文件当前尚未在项目中创建，以下为设计参考。
 
 ```glsl
 shader_type canvas_item;

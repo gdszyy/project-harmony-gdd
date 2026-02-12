@@ -134,13 +134,15 @@
   - **效果**: 屏幕底部会有一条由多个叠加的正弦波构成的、不断流动的“谐振波形”。它的颜色、振幅和频率会随时间缓慢变化，营造出一种“宇宙正在呼吸”的生命感。
   - **实现**: 使用一个 `TextureRect` 节点，并应用一个基于时间的 `waveform.gdshader` 来程序化生成和驱动波形动画。
 
+> **注意**: `waveform.gdshader` 文件当前缺失（代码中通过 `ResourceLoader.exists()` 进行了安全检查，不会引发运行时错误），该背景波形动效尚未实现。
+
 ## 7. Godot 实现建议
 
 以下为在 Godot 4.x 中实现此 UI 模块的技术建议。
 
 ### 7.1. 节点结构
 
-建议为每个主界面创建一个独立的场景（`.tscn` 文件），并通过一个全局单例（Autoload）的场景管理器（`SceneManager.gd`）来处理场景切换和转场。
+建议为每个主界面创建一个独立的场景（`.tscn` 文件），并通过一个全局单例（Autoload）的 UI 转场管理器（`ui_transition_manager.gd`）来处理场景切换和转场。
 
 **`main_menu.tscn` 示例结构:**
 
@@ -173,8 +175,8 @@ func _ready():
     $CenterContainer/VBoxContainer/SettingsButton.pressed.connect(_on_settings_button_pressed)
 
 func _on_start_button_pressed():
-    # 调用全局场景管理器，并指定转场类型
-    SceneManager.switch_scene("res://scenes/gameplay.tscn", "glitch")
+    # 调用全局 UI 转场管理器，并指定转场类型
+    UITransitionManager.transition_to_scene("res://scenes/gameplay.tscn", "glitch")
 
 func _on_settings_button_pressed():
     # 也可以将设置菜单作为子场景实例弹出

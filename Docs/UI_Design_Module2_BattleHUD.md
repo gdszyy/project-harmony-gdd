@@ -134,7 +134,7 @@ HUD 元素被组织在不同的 `CanvasLayer` 上，以确保清晰的渲染顺�
 
 #### Godot 实现建议
 
-序列器状态环的实现建议以一个 `Node3D` 作为根节点，通过脚本在运行时动态生成 16 个 `MeshInstance3D` 作为刻度标记，以及一个额外的 `MeshInstance3D` 作为节拍光标。所有这些网格实例都应使用 `ShaderMaterial` 以实现动态效果。刻度标记的着色器可以接收一个 `note_color` uniform，使其在有音符时显示亮色，无音符时显示暗紫色。当节拍光标扫过某个刻度时，脚本可以向该刻度的着色器传递一个 `hit_intensity` uniform，以触发其短暂的闪耀和放大动画。最后，一个 `sequencer_ring.gd` 脚本将作为总控制器，负责监听 `GameManager` 的 `beat_tick` 信号，并根据节拍计数器更新光标位置及触发相应的视觉特效。
+序列器状态环的实现建议以一个 `Node3D` 作为根节点，通过脚本在运行时动态生成 16 个 `MeshInstance3D` 作为刻度标记，以及一个额外的 `MeshInstance3D` 作为节拍光标。所有这些网格实例都应使用 `ShaderMaterial` 以实现动态效果。刻度标记的着色器可以接收一个 `note_color` uniform，使其在有音符时显示亮色，无音符时显示暗紫色。当节拍光标扫过某个刻度时，脚本可以向该刻度的着色器传递一个 `hit_intensity` uniform，以触发其短暂的闪耀和放大动画。最后，一个 `sequencer_ui.gd` 脚本将作为总控制器，负责监听 `GameManager` 的 `beat_tick` 信号，并根据节拍计数器更新光标位置及触发相应的视觉特效。
 
 ### 3.4. 手动施法槽
 
@@ -189,7 +189,7 @@ HUD 元素被组织在不同的 `CanvasLayer` 上，以确保清晰的渲染顺�
 
 #### Godot 实现建议
 
-伤害数字系统的实现核心在于**对象池（Object Pooling）**技术。由于游戏中可能瞬间产生大量伤害数字，频繁实例化新节点会造成严重性能问题。因此，必须预先创建一定数量的伤害数字节点（例如，一个包含 `Label` 和 `AnimationPlayer` 的 `DamageNumber.tscn` 场景），并将它们置于一个池中进行复用。一个全局的 `DamageNumberManager` 单例将负责管理这个对象池，并在需要时取出、设置并激活一个伤害数字实例。每个伤害类型的独特动画轨迹、缩放和透明度变化可以通过 `AnimationPlayer` 或 `Tween` 来精确控制。对于暴击的故障效果和自伤的流淌效果，则可以为 `Label` 应用 `ShaderMaterial`，并通过在着色器中扰动 `UV` 或 `VERTEX` 坐标来实现。
+伤害数字系统的实现核心在于**对象池（Object Pooling）**技术。由于游戏中可能瞬间产生大量伤害数字，频繁实例化新节点会造成严重性能问题。因此，必须预先创建一定数量的伤害数字节点（例如，一个包含 `Label` 和 `AnimationPlayer` 的 `damage_number.tscn` 场景），并将它们置于一个池中进行复用。一个全局的 `DamageNumberManager` 单例将负责管理这个对象池，并在需要时取出、设置并激活一个伤害数字实例。每个伤害类型的独特动画轨迹、缩放和透明度变化可以通过 `AnimationPlayer` 或 `Tween` 来精确控制。对于暴击的故障效果和自伤的流淌效果，则可以为 `Label` 应用 `ShaderMaterial`，并通过在着色器中扰动 `UV` 或 `VERTEX` 坐标来实现。
 
 ### 3.7. Boss 血条主题化设计
 
@@ -227,7 +227,7 @@ Boss 血条的实现推荐使用一个 `TextureProgressBar`，并为其 `texture
 
 #### Godot 实现建议
 
-弹药环的实现方式类似于序列器状态环，可以从一个 `Node3D` 根节点开始通过脚本绘制。但考虑到需要绘制灵活的弧形，直接使用 `MeshInstance3D` 可能不太合适，更推荐的方案是使用 `ImmediateMesh` 进行动态网格生成，或者在一个 `Sprite3D` 的纹理上通过 `_draw()` 方法进行绘制。最高效的方案是开发一个能够绘制可变长度弧形的着色器，该着色器接收 `start_angle`、`end_angle`、`fill_ratio` 和 `color` 等 `uniform` 变量来精确绘制每个弧段。最后，一个 `ammo_ring.gd` 脚本将负责管理所有弧段，它会从 `Player` 或 `WeaponManager` 获取实时的弹药信息，并据此更新每个弧段对应着色器的 `fill_ratio` uniform。
+弹药环的实现方式类似于序列器状态环，可以从一个 `Node3D` 根节点开始通过脚本绘制。但考虑到需要绘制灵活的弧形，直接使用 `MeshInstance3D` 可能不太合适，更推荐的方案是使用 `ImmediateMesh` 进行动态网格生成，或者在一个 `Sprite3D` 的纹理上通过 `_draw()` 方法进行绘制。最高效的方案是开发一个能够绘制可变长度弧形的着色器，该着色器接收 `start_angle`、`end_angle`、`fill_ratio` 和 `color` 等 `uniform` 变量来精确绘制每个弧段。最后，一个 `ammo_ring_hud.gd` 脚本将负责管理所有弧段，它会从 `Player` 或 `WeaponManager` 获取实时的弹药信息，并据此更新每个弧段对应着色器的 `fill_ratio` uniform。
 
 ### 3.9. 召唤物 HUD
 

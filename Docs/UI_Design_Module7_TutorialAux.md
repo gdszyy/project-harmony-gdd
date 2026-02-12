@@ -49,7 +49,7 @@
 
 **交互流程**
 1.  **触发 (Trigger):** 教学事件由游戏内的特定行为触发，例如 `FIRST_NOTE_PICKUP`（首次拾取音符晶片）或 `FATIGUE_FIRST_HIGH`（听感疲劳首次超过60%）。
-2.  **执行 (Execution):** 事件触发后，教学管理器 (`TutorialManager`) 将接管部分UI交互，开始执行引导步骤。游戏不会暂停，但玩家的部分操作可能会被限制，以聚焦于当前教学目标。
+2.  **执行 (Execution):** 事件触发后，教学管理器 (`tutorial_manager.gd`) 将接管部分UI交互，开始执行引导步骤。游戏不会暂停，但玩家的部分操作可能会被限制，以聚焦于当前教学目标。
 3.  **引导 (Guidance):** 系统将组合使用多种视觉提示（见3.2节）来引导玩家完成操作。例如，高亮显示“一体化编曲台”按钮，并用箭头和文字气泡指示玩家点击。
 4.  **完成与继续 (Completion & Continuation):** 当玩家完成指定操作（如成功装备一个音符），当前步骤结束。系统会显示一个简短的正面反馈（如“完成！”的Toast通知），然后自动进入下一步，或等待下一个教学事件的触发。
 
@@ -127,12 +127,12 @@
 
 | 模块 | 建议实现方案 | 关键节点/脚本 | 依赖与集成 |
 | :--- | :--- | :--- | :--- |
-| **新手教学系统** | 创建新的 `TutorialManager` Autoload，管理教学事件序列。使用独立的场景实现高亮遮罩和箭头气泡。 | `TutorialManager.gd`, `TutorialHighlight.tscn`, `TutorialHintArrow.tscn` | 监听 `GameManager` 状态信号；在 `CodexUI` 中添加回顾入口。 |
-| **加载画面** | 创建 `LoadingScreen.tscn` 场景，在场景切换时加载。提示文本从外部文件(JSON)读取。 | `LoadingScreen.tscn`, `loading_tips.json` | 由 `GameManager` 的场景切换函数调用。 |
+| **新手教学系统** | 创建新的 `tutorial_manager` Autoload（位于 `scripts/systems/`），管理教学事件序列。高亮遮罩和箭头气泡功能已由 `tutorial_hint_manager.gd` 脚本统一控制，无独立场景文件。 | `tutorial_manager.gd`, `tutorial_hint_manager.gd` | 监听 `GameManager` 状态信号；在 `CodexUI` 中添加回顾入口。 |
+| **加载画面** | 创建 `LoadingScreen.tscn` 场景，在场景切换时加载。 | `LoadingScreen.tscn`, `loading_screen.gd` | 由 `GameManager` 的场景切换函数调用。（注：原设计中的 `loading_tips.json` 当前缺失，提示文本可能已硬编码在 `loading_screen.gd` 中。） |
 | **游戏结束界面** | 重构现有 `run_results_screen.gd`，整合死亡原因显示和基于评级的动态背景特效。 | `RunResultsScreen.gd` (建议重命名为 `FinalMovementScreen.gd`) | 需要从 `GameManager` 获取最终统计数据和和谐度评级。 |
-| **通用弹窗** | 创建可复用的 `ConfirmationDialog.tscn` 场景，继承自 `PopupPanel`。 | `ConfirmationDialog.tscn`, `ConfirmationDialog.gd` | 在需要确认操作的地方（如 `PauseMenu`）实例化并等待信号。 |
-| **Toast 通知** | 创建 `NotificationManager.gd` Autoload，管理通知队列和显示 [4]。 | `NotificationManager.gd`, `ToastPanel.tscn` | 游戏各处（如 `AchievementManager`, `Inventory`）均可调用其公共方法来显示通知。 |
-| **工具提示** | 创建 `CustomTooltip.tscn` 场景，并编写脚本覆盖 `Control._make_custom_tooltip` 方法 [5]。 | `CustomTooltip.tscn`, `tooltip_controller.gd` | 在全局脚本中设置，即可为所有控件启用自定义 Tooltip。 |
+| **通用弹窗** | 创建可复用的对话框场景，继承自 `PopupPanel`。 | `dialog_system.gd` | 在需要确认操作的地方（如 `PauseMenu`）实例化并等待信号。 |
+| **Toast 通知** | 创建 `notification_manager.gd` Autoload，管理通知队列和显示 [4]。 | `notification_manager.gd`, `toast_notification.tscn` | 游戏各处（如 `AchievementManager`, `Inventory`）均可调用其公共方法来显示通知。 |
+| **工具提示** | 创建 `CustomTooltip.tscn` 场景，并编写脚本覆盖 `Control._make_custom_tooltip` 方法 [5]。 | `CustomTooltip.tscn`, `tooltip_system.gd` | 在全局脚本中设置，即可为所有控件启用自定义 Tooltip。 |
 
 ---
 

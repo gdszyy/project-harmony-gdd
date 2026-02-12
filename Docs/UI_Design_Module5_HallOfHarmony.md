@@ -266,7 +266,7 @@
 
 ### 9.1. 场景结构与节点组织
 
-- **主场景 (`HallOfHarmony.tscn`)**: 使用 `Control` 节点作为根节点。背景的星空和粒子效果可以使用 `SubViewport` 在 3D 环境下渲染 (`WorldEnvironment` + `Camera3D` + `GPUParticles3D`)，然后通过 `SubViewportContainer` 显示在 2D UI 的底层。
+- **主场景 (`hall_of_harmony.tscn`)**: 使用 `Control` 节点作为根节点。背景的星空和粒子效果可以使用 `SubViewport` 在 3D 环境下渲染 (`WorldEnvironment` + `Camera3D` + `GPUParticles3D`)，然后通过 `SubViewportContainer` 显示在 2D UI 的底层。
 - **模块化 UI**: 将四大模块的技能树、结算界面、调式选择界面等都创建为独立的场景 (`.tscn` 文件)。在主场景中通过一个 `CanvasLayer` 和脚本逻辑来动态加载、实例化和切换它们。这有助于保持代码的整洁和独立性。
 - **节点复用**: 将技能树中的“节点”创建为一个可复用的场景 (`SkillNode.tscn`)。该场景应包含所有状态（未解锁、可解锁、已解锁）的视觉元素，并通过一个脚本来控制其状态切换和交互逻辑。
 
