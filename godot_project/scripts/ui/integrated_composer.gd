@@ -42,40 +42,31 @@ signal panel_toggled(is_open: bool)
 # 常量 — 全局 UI 主题规范（来自美术文档）
 # ============================================================
 ## 面板背景色：星空紫，80% 不透明度
-const THEME_BG_COLOR := Color("141026CC")
+const THEME_BG_COLOR := UIColors.with_alpha(UIColors.PANEL_BG, 0.80)
 ## 面板边框色：主强调色，40% 不透明度
-const THEME_BORDER_COLOR := Color("9D6FFF66")
+const THEME_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.40)
 ## 文本色：晶体白
-const THEME_TEXT_COLOR := Color("EAE6FF")
+const THEME_TEXT_COLOR := UIColors.TEXT_PRIMARY
 ## 按钮/强调色：主强调色
-const THEME_ACCENT_COLOR := Color("9D6FFF")
+const THEME_ACCENT_COLOR := UIColors.ACCENT
 ## 有效放置区高亮色：谐振青
-const THEME_DROP_HIGHLIGHT := Color("00FFD4")
+const THEME_DROP_HIGHLIGHT := UIColors.ACCENT_2
 ## 无效操作反馈色
-const THEME_INVALID_COLOR := Color("FF4444")
+const THEME_INVALID_COLOR := UIColors.OFFENSE
 ## 标题/次要文本色
-const THEME_SUBTITLE_COLOR := Color("9D8FBF")
+const THEME_SUBTITLE_COLOR := UIColors.TEXT_HINT
 
 # ============================================================
 # 音符颜色编码系统（来自 UI 设计文档 §4.1）
 # ============================================================
-const NOTE_COLORS_V3 := {
-	0: Color("00FFD4"),  # C — 谐振青
-	1: Color("0088FF"),  # D — 疾风蓝
-	2: Color("66FF66"),  # E — 翠叶绿
-	3: Color("8844FF"),  # F — 深渊紫
-	4: Color("FF4444"),  # G — 烈焰红
-	5: Color("FF8800"),  # A — 烈日橙
-	6: Color("FF44AA"),  # B — 霓虹粉
-}
 
 ## 黑键颜色（基于对应白键的暗化版本）
 const BLACK_KEY_COLORS_V3 := {
-	0: Color("009988"),  # C# — 谐振青暗化
-	1: Color("005599"),  # D# — 疾风蓝暗化
-	2: Color("6633CC"),  # F# — 深渊紫暗化
-	3: Color("CC2222"),  # G# — 烈焰红暗化
-	4: Color("CC6600"),  # A# — 烈日橙暗化
+	0: UIColors.BLACK_KEY_COLORS[0],  # C# — 谐振青暗化
+	1: UIColors.BLACK_KEY_COLORS[1],  # D# — 疾风蓝暗化
+	2: UIColors.BLACK_KEY_COLORS[2],  # F# — 深渊紫暗化
+	3: UIColors.BLACK_KEY_COLORS[3],  # G# — 烈焰红暗化
+	4: UIColors.BLACK_KEY_COLORS[4],  # A# — 烈日橙暗化
 }
 
 # ============================================================
@@ -316,11 +307,11 @@ func _on_sequencer_updated(_sequence) -> void:
 
 ## 获取音符颜色（v3.0 新配色方案）
 static func get_note_color(note_key: int) -> Color:
-	return NOTE_COLORS_V3.get(note_key, Color(0.5, 0.5, 0.5))
+	return UIColors.get_note_color_by_int(note_key)
 
 ## 获取黑键颜色
 static func get_black_key_color(black_key_idx: int) -> Color:
-	return BLACK_KEY_COLORS_V3.get(black_key_idx, Color(0.4, 0.4, 0.4))
+	return BLACK_KEY_COLORS_V3.get(black_key_idx, UIColors.TEXT_DIM)
 
 ## 获取音符名称
 static func get_note_name(note_key: int) -> String:
@@ -342,7 +333,7 @@ static func create_drag_preview(text: String, color: Color, icon_size: Vector2 =
 
 	## 创建半透明背景样式
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.4)
+	style.bg_color = UIColors.with_alpha(color, 0.4)
 	style.border_color = color
 	style.border_width_left = 2
 	style.border_width_right = 2
@@ -353,7 +344,7 @@ static func create_drag_preview(text: String, color: Color, icon_size: Vector2 =
 	style.corner_radius_bottom_left = 6
 	style.corner_radius_bottom_right = 6
 	## 辉光效果通过 shadow 模拟
-	style.shadow_color = Color(color.r, color.g, color.b, 0.5)
+	style.shadow_color = UIColors.with_alpha(color, 0.5)
 	style.shadow_size = 4
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -373,7 +364,7 @@ static func create_drag_preview(text: String, color: Color, icon_size: Vector2 =
 ## 创建面板样式（统一的面板外观）
 static func create_panel_stylebox(bg_alpha: float = 0.8) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.078, 0.063, 0.149, bg_alpha)  # 星空紫
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, bg_alpha)  # 星空紫
 	style.border_color = THEME_BORDER_COLOR
 	style.border_width_left = 1
 	style.border_width_right = 1

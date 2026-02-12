@@ -13,11 +13,9 @@ const TOTAL_WIDTH: float = SLOT_SIZE * SLOT_COUNT + SLOT_GAP * (SLOT_COUNT - 1) 
 const TOTAL_HEIGHT: float = SLOT_SIZE + 20.0
 
 # 颜色
-const COLOR_ACCENT      := Color(0.616, 0.435, 1.0)     # #9D6FFF 主强调色
-const COLOR_ABYSS_BLACK := Color(0.039, 0.031, 0.078)    # #0A0814 深渊黑
-const COLOR_CRYSTAL_WHITE := Color(0.918, 0.902, 1.0)    # #EAE6FF 晶体白
-const COLOR_ERROR_RED   := Color(1.0, 0.133, 0.267)      # #FF2244 错误红
-const COLOR_STARRY_PURPLE := Color(0.078, 0.063, 0.149)  # #141026 星空紫
+const COLOR_ACCENT      := UIColors.ACCENT     # #9D6FFF 主强调色
+const COLOR_ABYSS_BLACK := UIColors.PRIMARY_BG    # #0A0814 深渊黑
+const COLOR_STARRY_PURPLE := UIColors.PANEL_BG  # #141026 星空紫
 
 # 按键标签
 const KEY_LABELS := ["Q", "W", "E"]
@@ -92,7 +90,7 @@ func _draw() -> void:
 		var flash: float = slot["flash_timer"]
 
 		# === 1. 槽位背景 ===
-		draw_rect(slot_rect, Color(COLOR_STARRY_PURPLE, 0.8))
+		draw_rect(slot_rect, UIColors.with_alpha(COLOR_STARRY_PURPLE, 0.8))
 
 		# === 2. 电流特效背景 (可用时) ===
 		if is_available and not is_cooling and mana_ok:
@@ -107,9 +105,9 @@ func _draw() -> void:
 		if not mana_ok:
 			# 法力不足：红色闪烁
 			var red_flash := sin(_time * 6.0) * 0.3 + 0.5
-			icon_color = Color(COLOR_ERROR_RED, red_flash)
+			icon_color = UIColors.with_alpha(UIColors.ERROR_RED, red_flash)
 		elif is_cooling:
-			icon_color = Color(icon_color, 0.3)
+			icon_color = UIColors.with_alpha(icon_color, 0.3)
 
 		draw_rect(icon_rect, icon_color)
 
@@ -121,26 +119,26 @@ func _draw() -> void:
 				Vector2(slot_x, slot_y),
 				Vector2(SLOT_SIZE, mask_height)
 			)
-			draw_rect(mask_rect, Color(COLOR_ABYSS_BLACK, 0.7))
+			draw_rect(mask_rect, UIColors.with_alpha(COLOR_ABYSS_BLACK, 0.7))
 
 			# 冷却时间文字
 			var cd_text := "%.1f" % slot["cooldown_current"]
 			draw_string(font,
 				Vector2(slot_x + SLOT_SIZE / 2.0 - 10, slot_y + SLOT_SIZE / 2.0 + 5),
-				cd_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, COLOR_CRYSTAL_WHITE)
+				cd_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, UIColors.TEXT_PRIMARY)
 
 		# === 5. 边框 ===
 		var border_color := COLOR_ACCENT
 		if not mana_ok:
-			border_color = COLOR_ERROR_RED
+			border_color = UIColors.ERROR_RED
 		elif is_cooling:
-			border_color = Color(COLOR_ACCENT, 0.3)
+			border_color = UIColors.with_alpha(COLOR_ACCENT, 0.3)
 
 		# 冷却完成闪光
 		if flash > 0:
 			border_color = Color.WHITE
 			var glow_alpha := flash / 0.3
-			draw_rect(slot_rect, Color(COLOR_ACCENT, glow_alpha * 0.3))
+			draw_rect(slot_rect, UIColors.with_alpha(COLOR_ACCENT, glow_alpha * 0.3))
 
 		draw_rect(slot_rect, border_color, false, 2.0)
 
@@ -151,12 +149,12 @@ func _draw() -> void:
 				Vector2(SLOT_SIZE + 4, SLOT_SIZE + 4)
 			)
 			var glow_alpha := 0.15 + sin(_time * 2.0) * 0.05
-			draw_rect(glow_rect, Color(COLOR_ACCENT, glow_alpha))
+			draw_rect(glow_rect, UIColors.with_alpha(COLOR_ACCENT, glow_alpha))
 
 		# === 7. 按键标签 ===
 		draw_string(font,
 			Vector2(slot_x + SLOT_SIZE / 2.0 - 4, slot_y + SLOT_SIZE + 12),
-			KEY_LABELS[i], HORIZONTAL_ALIGNMENT_CENTER, -1, 10, Color(COLOR_CRYSTAL_WHITE, 0.6))
+			KEY_LABELS[i], HORIZONTAL_ALIGNMENT_CENTER, -1, 10, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.6))
 
 ## 绘制电流特效
 func _draw_current_effect(rect: Rect2, base_color: Color) -> void:
@@ -169,7 +167,7 @@ func _draw_current_effect(rect: Rect2, base_color: Color) -> void:
 		draw_line(
 			Vector2(rect.position.x + x_offset, y),
 			Vector2(rect.position.x + rect.size.x + x_offset, y),
-			Color(base_color, line_alpha), 1.0
+			UIColors.with_alpha(base_color, line_alpha), 1.0
 		)
 
 # ============================================================

@@ -20,9 +20,8 @@ const MAX_PARTICLES: int = 200
 const NUMERIC_THRESHOLD: float = 0.3
 
 ## 能量颜色分级
-const COLOR_FULL := Color("#EAE6FF")      # 晶体白 (100%-50%)
-const COLOR_WARNING := Color("#FFD700")    # 黄色 (50%-10%)
-const COLOR_CRITICAL := Color("#FF4D4D")   # 危险红 (10%-0%)
+const COLOR_FULL := UIColors.TEXT_PRIMARY      # 晶体白 (100%-50%)
+const COLOR_CRITICAL := UIColors.DANGER   # 危险红 (10%-0%)
 
 ## 刻度位置（25%, 50%, 75%, 100%）
 const TICK_POSITIONS: Array = [0.25, 0.5, 0.75, 1.0]
@@ -114,7 +113,7 @@ func _draw() -> void:
 	# 6. 数值标签（低能量时）
 	if _display_ratio < NUMERIC_THRESHOLD:
 		var value_text := "%d" % int(_display_ratio * 100.0)
-		var text_color := COLOR_CRITICAL if _display_ratio < 0.1 else COLOR_WARNING
+		var text_color := COLOR_CRITICAL if _display_ratio < 0.1 else UIColors.WARNING
 		# 闪烁效果
 		if _display_ratio < 0.1:
 			text_color.a = 0.5 + 0.5 * sin(_time * 10.0)
@@ -123,7 +122,7 @@ func _draw() -> void:
 
 ## 绘制背景圆环
 func _draw_ring_bg(center: Vector2) -> void:
-	var bg_color := Color(0.08, 0.06, 0.15, 0.4)
+	var bg_color := UIColors.with_alpha(UIColors.PANEL_BG, 0.4)
 	draw_arc(center, (RING_INNER_R + RING_OUTER_R) / 2.0,
 		0, TAU, 48, bg_color, RING_WIDTH)
 
@@ -192,7 +191,7 @@ func _draw_tick_marks(center: Vector2) -> void:
 		var angle := PI / 2.0 + tick * TAU
 		var inner_pos := center + Vector2.from_angle(angle) * RING_INNER_R
 		var outer_pos := center + Vector2.from_angle(angle) * RING_OUTER_R
-		var tick_color := Color(0.4, 0.38, 0.5, 0.25)
+		var tick_color := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.25)
 		draw_line(inner_pos, outer_pos, tick_color, 1.0)
 
 ## 绘制蒸发/汇入效果粒子
@@ -317,10 +316,10 @@ func _get_energy_color() -> Color:
 		return COLOR_FULL
 	elif _display_ratio > 0.3:
 		var t := (_display_ratio - 0.3) / 0.2
-		return COLOR_WARNING.lerp(COLOR_FULL, t)
+		return UIColors.WARNING.lerp(COLOR_FULL, t)
 	elif _display_ratio > 0.1:
 		var t := (_display_ratio - 0.1) / 0.2
-		return COLOR_CRITICAL.lerp(COLOR_WARNING, t)
+		return COLOR_CRITICAL.lerp(UIColors.WARNING, t)
 	else:
 		return COLOR_CRITICAL
 

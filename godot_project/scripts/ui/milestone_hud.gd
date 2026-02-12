@@ -35,7 +35,7 @@ func _setup_ui() -> void:
 	# 进度条背景
 	_progress_bg = ColorRect.new()
 	_progress_bg.name = "MilestoneProgressBG"
-	_progress_bg.color = Color(0.1, 0.1, 0.15, 0.6)
+	_progress_bg.color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.6)
 	_progress_bg.anchor_left = 0.3
 	_progress_bg.anchor_right = 0.7
 	_progress_bg.anchor_top = 0.0
@@ -47,7 +47,7 @@ func _setup_ui() -> void:
 	# 进度条填充
 	_progress_bar = ColorRect.new()
 	_progress_bar.name = "MilestoneProgressFill"
-	_progress_bar.color = Color(0.3, 0.6, 1.0, 0.8)
+	_progress_bar.color = UIColors.with_alpha(UIColors.DENSITY_SAFE, 0.8)
 	_progress_bar.anchor_left = 0.3
 	_progress_bar.anchor_right = 0.3  # 动态调整
 	_progress_bar.anchor_top = 0.0
@@ -61,7 +61,7 @@ func _setup_ui() -> void:
 	_milestone_label.name = "MilestoneLabel"
 	_milestone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_milestone_label.add_theme_font_size_override("font_size", 11)
-	_milestone_label.add_theme_color_override("font_color", Color(0.7, 0.8, 1.0, 0.9))
+	_milestone_label.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.9))
 	_milestone_label.anchor_left = 0.3
 	_milestone_label.anchor_right = 0.7
 	_milestone_label.anchor_top = 0.0
@@ -107,7 +107,7 @@ func _update_display() -> void:
 	# 警告效果（最后 30 秒）
 	if remaining <= 30.0 and not _warning_active:
 		_warning_active = true
-		_progress_bar.color = Color(1.0, 0.3, 0.2, 0.9)
+		_progress_bar.color = UIColors.with_alpha(UIColors.DANGER, 0.9)
 	elif remaining > 30.0:
 		_warning_active = false
-		_progress_bar.color = Color(0.3, 0.6, 1.0, 0.8)
+		_progress_bar.color = UIColors.with_alpha(UIColors.DENSITY_SAFE, 0.8)

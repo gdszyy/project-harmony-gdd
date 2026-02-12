@@ -47,7 +47,7 @@ func _ready() -> void:
 		mat.shader = shader
 		mat.set_shader_parameter("progress", 0.0)
 		mat.set_shader_parameter("direction", 0)
-		mat.set_shader_parameter("target_color", Color("#4DFFF3"))
+		mat.set_shader_parameter("target_color", UIColors.ACCENT_2)
 		mat.set_shader_parameter("scan_width", 0.1)
 		mat.set_shader_parameter("chromatic_strength", 0.015)
 		mat.set_shader_parameter("noise_strength", 0.3)
@@ -83,7 +83,7 @@ func play_transition(target_phase: int) -> void:
 	# 设置方向和颜色
 	var direction: int = DIRECTION_MAP.get(target_phase, 2)
 	var color: Color = ResonanceSlicingManager.PHASE_COLORS.get(
-		target_phase, Color("#9D6FFF"))
+		target_phase, UIColors.ACCENT)
 
 	mat.set_shader_parameter("direction", direction)
 	mat.set_shader_parameter("target_color", color)
@@ -125,7 +125,7 @@ func play_corruption_transition() -> void:
 
 	# 频谱失调使用特殊参数
 	mat.set_shader_parameter("direction", 2)  # 从中心向外
-	mat.set_shader_parameter("target_color", Color("#FF0066"))
+	mat.set_shader_parameter("target_color", UIColors.FATIGUE_CRITICAL)
 	mat.set_shader_parameter("scan_width", 0.15)
 	mat.set_shader_parameter("chromatic_strength", 0.03)
 	mat.set_shader_parameter("noise_strength", 0.6)

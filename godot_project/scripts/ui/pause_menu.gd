@@ -32,11 +32,11 @@ extends Control
 # ============================================================
 
 ## 背景遮罩色: 深渊黑 #0A0814, 50% 透明
-const COLOR_OVERLAY := Color(0.039, 0.031, 0.078, 0.5)
+const COLOR_OVERLAY := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
 ## 标题色: 晶体白
-const COLOR_TITLE := Color("#EAE6FF")
+const COLOR_TITLE := UIColors.TEXT_PRIMARY
 ## 统计信息色: 次级文本
-const COLOR_STATS := Color("#A098C8")
+const COLOR_STATS := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 动画参数
@@ -90,7 +90,6 @@ func _ready() -> void:
 
 	# 监听 GameManager 的状态变化
 	GameManager.game_state_changed.connect(_on_game_state_changed)
-
 
 func _unhandled_input(event: InputEvent) -> void:
 	# 按 ESC 键切换暂停状态
@@ -158,7 +157,6 @@ func _show_menu() -> void:
 		tween.tween_property(button, "modulate:a", 1.0, 0.15) \
 			.set_ease(Tween.EASE_OUT)
 
-
 ## 隐藏暂停菜单，带退场动画
 func _hide_menu() -> void:
 	# 面板缩小淡出
@@ -217,14 +215,12 @@ func _setup_button_animations() -> void:
 		button.button_up.connect(_on_button_up.bind(button))
 		button.resized.connect(func(): button.pivot_offset = button.size / 2.0)
 
-
 ## 悬停进入: 缩放 1.05x
 func _on_button_hover_enter(button: Button) -> void:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(button, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), BUTTON_ANIM_DURATION) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(button, "modulate", Color(1.2, 1.2, 1.2), BUTTON_ANIM_DURATION)
-
+	tween.tween_property(button, "modulate", Color.WHITE, BUTTON_ANIM_DURATION)
 
 ## 悬停离开: 恢复
 func _on_button_hover_exit(button: Button) -> void:
@@ -233,21 +229,19 @@ func _on_button_hover_exit(button: Button) -> void:
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween.tween_property(button, "modulate", Color.WHITE, BUTTON_ANIM_DURATION)
 
-
 ## 按下: 缩放 0.95x
 func _on_button_down(button: Button) -> void:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(button, "scale", Vector2(PRESSED_SCALE, PRESSED_SCALE), BUTTON_ANIM_DURATION * 0.5) \
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(button, "modulate", Color(0.8, 0.8, 0.8), BUTTON_ANIM_DURATION * 0.5)
-
+	tween.tween_property(button, "modulate", UIColors.TEXT_SECONDARY, BUTTON_ANIM_DURATION * 0.5)
 
 ## 释放: 恢复悬停状态
 func _on_button_up(button: Button) -> void:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(button, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), BUTTON_ANIM_DURATION) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(button, "modulate", Color(1.2, 1.2, 1.2), BUTTON_ANIM_DURATION)
+	tween.tween_property(button, "modulate", Color.WHITE, BUTTON_ANIM_DURATION)
 
 # ============================================================
 # 按钮回调
@@ -256,7 +250,6 @@ func _on_button_up(button: Button) -> void:
 ## 继续游戏 — 恢复游戏状态
 func _on_continue_pressed() -> void:
 	GameManager.resume_game()
-
 
 ## 打开设置菜单 — 实例化设置菜单并叠加显示
 func _on_settings_pressed() -> void:
@@ -267,7 +260,6 @@ func _on_settings_pressed() -> void:
 		add_child(settings_menu)
 		if settings_menu.has_signal("menu_closed"):
 			settings_menu.menu_closed.connect(func(): settings_menu.queue_free())
-
 
 ## 返回主菜单 — 取消暂停并切换到主菜单场景
 func _on_return_pressed() -> void:

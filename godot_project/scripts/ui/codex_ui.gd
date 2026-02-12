@@ -25,22 +25,15 @@ signal entry_viewed(entry_id: String)
 # ============================================================
 # 颜色方案 (与 UI 设计文档 §1.2 对齐)
 # ============================================================
-const COL_BG := Color("#0A0814")              ## 深渊黑
-const COL_PANEL_BG := Color("#141026")        ## 星空紫
-const COL_HEADER_BG := Color("#100C20")       ## 深色头部
-const COL_ACCENT := Color("#9D6FFF")          ## 谐振紫
-const COL_GOLD := Color("#FFD700")            ## 圣光金
-const COL_TEXT_PRIMARY := Color("#EAE6FF")    ## 晶体白
-const COL_TEXT_SECONDARY := Color("#A098C8")  ## 星云灰
-const COL_TEXT_DIM := Color("#6B668A")        ## 暗淡文本
-const COL_LOCKED := Color("#6B668A")          ## 锁定文本
-const COL_ENTRY_BG := Color("#18142C")        ## 条目背景
-const COL_ENTRY_HOVER := Color("#201A38")     ## 条目悬停
-const COL_ENTRY_SELECTED := Color("#2A2248")  ## 条目选中
-const COL_DETAIL_BG := Color("#120E22F2")     ## 详情背景
-const COL_DEMO_BG := Color("#0D0A1A")         ## 演示区背景
-const COL_DEMO_BORDER := Color("#9D6FFF33")   ## 演示区边框
-const COL_SEPARATOR := Color("#9D6FFF40")     ## 分割线
+const COL_HEADER_BG := UIColors.PANEL_DARK       ## 深色头部
+const COL_LOCKED := UIColors.TEXT_DIM          ## 锁定文本
+const COL_ENTRY_BG := UIColors.PANEL_LIGHT        ## 条目背景
+const COL_ENTRY_HOVER := UIColors.PANEL_LIGHTER     ## 条目悬停
+const COL_ENTRY_SELECTED := UIColors.PANEL_SELECTED  ## 条目选中
+var COL_DETAIL_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.95)     ## 详情背景
+var COL_DEMO_BG := UIColors.PRIMARY_BG         ## 演示区背景
+const COL_DEMO_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.20)   ## 演示区边框
+const COL_SEPARATOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)     ## 分割线
 
 # ============================================================
 # 卷配置 — 完整四卷数据映射
@@ -102,11 +95,11 @@ const DATA_SOURCES: Dictionary = {
 # 敌人类型颜色映射
 # ============================================================
 const ENEMY_TYPE_COLORS: Dictionary = {
-	"static":  Color(0.7, 0.3, 0.3),
-	"silence": Color(0.2, 0.1, 0.4),
-	"screech": Color(1.0, 0.8, 0.0),
-	"pulse":   Color(0.0, 0.5, 1.0),
-	"wall":    Color(0.5, 0.5, 0.5),
+	"static":  UIColors.HAZARD_COLORS["static"],
+	"silence": UIColors.HAZARD_COLORS["silence"],
+	"screech": UIColors.DISSONANCE_MID,
+	"pulse":   UIColors.SHIELD,
+	"wall":    UIColors.TEXT_DIM,
 }
 
 # ============================================================
@@ -208,7 +201,7 @@ func _is_entry_unlocked(entry_id: String) -> bool:
 func _build_ui() -> void:
 	# 全屏背景
 	_background = ColorRect.new()
-	_background.color = COL_BG
+	_background.color = UIColors.PRIMARY_BG
 	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_background)
 
@@ -260,7 +253,7 @@ func _build_header() -> Control:
 	header_style.content_margin_right = 20
 	header_style.content_margin_top = 8
 	header_style.content_margin_bottom = 8
-	header_style.border_color = COL_ACCENT
+	header_style.border_color = UIColors.ACCENT
 	header_style.border_width_bottom = 1
 	header.add_theme_stylebox_override("panel", header_style)
 
@@ -273,8 +266,8 @@ func _build_header() -> Control:
 	_back_btn.custom_minimum_size = Vector2(80, 36)
 	_back_btn.pressed.connect(_on_back_pressed)
 	var back_style := StyleBoxFlat.new()
-	back_style.bg_color = COL_PANEL_BG
-	back_style.border_color = COL_ACCENT
+	back_style.bg_color = UIColors.PANEL_BG
+	back_style.border_color = UIColors.ACCENT
 	back_style.border_width_left = 1
 	back_style.border_width_right = 1
 	back_style.border_width_top = 1
@@ -286,15 +279,15 @@ func _build_header() -> Control:
 	back_style.content_margin_left = 12
 	back_style.content_margin_right = 12
 	_back_btn.add_theme_stylebox_override("normal", back_style)
-	_back_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
-	_back_btn.add_theme_color_override("font_hover_color", COL_TEXT_PRIMARY)
+	_back_btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+	_back_btn.add_theme_color_override("font_hover_color", UIColors.TEXT_PRIMARY)
 	hbox.add_child(_back_btn)
 
 	# 标题
 	_title_label = Label.new()
 	_title_label.text = "✦ 谐 振 法 典 ✦"
 	_title_label.add_theme_font_size_override("font_size", 22)
-	_title_label.add_theme_color_override("font_color", COL_GOLD)
+	_title_label.add_theme_color_override("font_color", UIColors.GOLD)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hbox.add_child(_title_label)
@@ -305,8 +298,8 @@ func _build_header() -> Control:
 	_search_input.custom_minimum_size = Vector2(220, 32)
 	_search_input.text_changed.connect(_on_search_changed)
 	var search_style := StyleBoxFlat.new()
-	search_style.bg_color = Color(COL_PANEL_BG.r, COL_PANEL_BG.g, COL_PANEL_BG.b, 0.9)
-	search_style.border_color = COL_ACCENT
+	search_style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
+	search_style.border_color = UIColors.ACCENT
 	search_style.border_width_bottom = 1
 	search_style.corner_radius_top_left = 4
 	search_style.corner_radius_top_right = 4
@@ -315,14 +308,14 @@ func _build_header() -> Control:
 	search_style.content_margin_left = 10
 	search_style.content_margin_right = 10
 	_search_input.add_theme_stylebox_override("normal", search_style)
-	_search_input.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
-	_search_input.add_theme_color_override("font_placeholder_color", COL_TEXT_DIM)
+	_search_input.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
+	_search_input.add_theme_color_override("font_placeholder_color", UIColors.TEXT_DIM)
 	hbox.add_child(_search_input)
 
 	# 收集进度
 	_progress_label = Label.new()
 	_progress_label.add_theme_font_size_override("font_size", 12)
-	_progress_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	_progress_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	hbox.add_child(_progress_label)
 
 	header.add_child(hbox)
@@ -335,7 +328,7 @@ func _build_header() -> Control:
 func _build_left_panel() -> Control:
 	var left_panel := PanelContainer.new()
 	var left_style := StyleBoxFlat.new()
-	left_style.bg_color = COL_PANEL_BG
+	left_style.bg_color = UIColors.PANEL_BG
 	left_style.content_margin_left = 8
 	left_style.content_margin_right = 8
 	left_style.content_margin_top = 8
@@ -349,7 +342,7 @@ func _build_left_panel() -> Control:
 	var vol_label := Label.new()
 	vol_label.text = "— 卷目 —"
 	vol_label.add_theme_font_size_override("font_size", 12)
-	vol_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	vol_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	vol_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left_vbox.add_child(vol_label)
 
@@ -366,7 +359,7 @@ func _build_left_panel() -> Control:
 
 		var btn_style := StyleBoxFlat.new()
 		btn_style.bg_color = COL_ENTRY_BG
-		btn_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.2)
+		btn_style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.2)
 		btn_style.border_width_left = 2
 		btn_style.corner_radius_top_left = 4
 		btn_style.corner_radius_bottom_left = 4
@@ -376,18 +369,18 @@ func _build_left_panel() -> Control:
 
 		var btn_hover := btn_style.duplicate()
 		btn_hover.bg_color = COL_ENTRY_HOVER
-		btn_hover.border_color = COL_ACCENT
+		btn_hover.border_color = UIColors.ACCENT
 		btn.add_theme_stylebox_override("hover", btn_hover)
 
 		var btn_pressed := btn_style.duplicate()
 		btn_pressed.bg_color = COL_ENTRY_SELECTED
-		btn_pressed.border_color = COL_GOLD
+		btn_pressed.border_color = UIColors.GOLD
 		btn_pressed.border_width_left = 3
 		btn.add_theme_stylebox_override("disabled", btn_pressed)
 
-		btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
-		btn.add_theme_color_override("font_hover_color", COL_GOLD)
-		btn.add_theme_color_override("font_disabled_color", COL_GOLD)
+		btn.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
+		btn.add_theme_color_override("font_hover_color", UIColors.GOLD)
+		btn.add_theme_color_override("font_disabled_color", UIColors.GOLD)
 		btn.add_theme_font_size_override("font_size", 13)
 		btn.pressed.connect(_on_volume_selected.bind(i))
 		_volume_tabs.add_child(btn)
@@ -401,7 +394,7 @@ func _build_left_panel() -> Control:
 	var subcat_label := Label.new()
 	subcat_label.text = "— 分类 —"
 	subcat_label.add_theme_font_size_override("font_size", 11)
-	subcat_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	subcat_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	subcat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	left_vbox.add_child(subcat_label)
 
@@ -433,7 +426,7 @@ func _build_left_panel() -> Control:
 func _build_right_panel() -> Control:
 	var right_panel := PanelContainer.new()
 	var right_style := StyleBoxFlat.new()
-	right_style.bg_color = Color(COL_DETAIL_BG.r, COL_DETAIL_BG.g, COL_DETAIL_BG.b, 0.95)
+	right_style.bg_color = UIColors.with_alpha(COL_DETAIL_BG, 0.95)
 	right_style.content_margin_left = 20
 	right_style.content_margin_right = 20
 	right_style.content_margin_top = 16
@@ -453,7 +446,7 @@ func _build_right_panel() -> Control:
 	var welcome := Label.new()
 	welcome.text = "选择左侧条目以查看详情"
 	welcome.add_theme_font_size_override("font_size", 16)
-	welcome.add_theme_color_override("font_color", COL_TEXT_DIM)
+	welcome.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	welcome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	welcome.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	welcome.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -504,7 +497,7 @@ func _build_bg_3d_atmosphere() -> void:
 	var bg_env := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0, 0, 0, 0)
+	env.background_color = UIColors.with_alpha(Color.BLACK, 0.0)
 	env.glow_enabled = true
 	env.glow_intensity = 0.5
 	env.glow_bloom = 0.3
@@ -574,7 +567,7 @@ func _rebuild_subcat_bar() -> void:
 
 		var btn_style := StyleBoxFlat.new()
 		btn_style.bg_color = COL_ENTRY_BG
-		btn_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+		btn_style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 		btn_style.border_width_bottom = 1
 		btn_style.corner_radius_top_left = 4
 		btn_style.corner_radius_top_right = 4
@@ -584,12 +577,12 @@ func _rebuild_subcat_bar() -> void:
 
 		var btn_active := btn_style.duplicate()
 		btn_active.bg_color = COL_ENTRY_SELECTED
-		btn_active.border_color = COL_ACCENT
+		btn_active.border_color = UIColors.ACCENT
 		btn_active.border_width_bottom = 2
 		btn.add_theme_stylebox_override("disabled", btn_active)
 
-		btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
-		btn.add_theme_color_override("font_disabled_color", COL_ACCENT)
+		btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+		btn.add_theme_color_override("font_disabled_color", UIColors.ACCENT)
 		btn.add_theme_font_size_override("font_size", 11)
 		btn.pressed.connect(_on_subcat_selected.bind(i))
 		_subcat_bar.add_child(btn)
@@ -639,7 +632,7 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 	# 条目行样式
 	var row_style := StyleBoxFlat.new()
 	row_style.bg_color = COL_ENTRY_BG
-	row_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.1)
+	row_style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.1)
 	row_style.border_width_left = 2
 	row_style.corner_radius_top_left = 3
 	row_style.corner_radius_bottom_left = 3
@@ -669,7 +662,7 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 	else:
 		btn.text = "🔒 ???"
 		btn.add_theme_color_override("font_color", COL_LOCKED)
-		btn.add_theme_color_override("font_hover_color", COL_TEXT_DIM)
+		btn.add_theme_color_override("font_hover_color", UIColors.TEXT_DIM)
 
 	btn.add_theme_font_size_override("font_size", 12)
 
@@ -722,7 +715,7 @@ func _show_entry_detail(entry_id: String) -> void:
 	var subtitle_label := Label.new()
 	subtitle_label.text = entry.get("subtitle", "")
 	subtitle_label.add_theme_font_size_override("font_size", 13)
-	subtitle_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	subtitle_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	subtitle_hbox.add_child(subtitle_label)
 
 	var rarity_label := Label.new()
@@ -744,7 +737,7 @@ func _show_entry_detail(entry_id: String) -> void:
 	var desc_label := Label.new()
 	desc_label.text = entry.get("description", "无描述")
 	desc_label.add_theme_font_size_override("font_size", 13)
-	desc_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	desc_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_container.add_child(desc_label)
 
@@ -794,7 +787,7 @@ func _show_locked_detail(entry_id: String, entry: Dictionary) -> void:
 		var hint_label := Label.new()
 		hint_label.text = hint_text
 		hint_label.add_theme_font_size_override("font_size", 12)
-		hint_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+		hint_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lock_container.add_child(hint_label)
@@ -856,7 +849,7 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 		var stats_title := Label.new()
 		stats_title.text = "— 属性 —"
 		stats_title.add_theme_font_size_override("font_size", 13)
-		stats_title.add_theme_color_override("font_color", COL_ACCENT)
+		stats_title.add_theme_color_override("font_color", UIColors.ACCENT)
 		stats_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_detail_container.add_child(stats_title)
 		_detail_container.add_child(stats_grid)
@@ -867,14 +860,14 @@ func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) 
 	var label := Label.new()
 	label.text = label_text
 	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	label.custom_minimum_size.x = 120
 	grid.add_child(label)
 
 	var value := Label.new()
 	value.text = value_text
 	value.add_theme_font_size_override("font_size", 12)
-	value.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	value.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	grid.add_child(value)
 
 # ============================================================
@@ -902,7 +895,7 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 	var env_node := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0, 0, 0, 0)
+	env.background_color = UIColors.with_alpha(Color.BLACK, 0.0)
 	env.ambient_light_color = Color.WHITE
 	env.ambient_light_energy = 0.3
 	env.glow_enabled = true
@@ -981,7 +974,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	var demo_title := Label.new()
 	demo_title.text = "— 法术演示 —"
 	demo_title.add_theme_font_size_override("font_size", 14)
-	demo_title.add_theme_color_override("font_color", COL_ACCENT)
+	demo_title.add_theme_color_override("font_color", UIColors.ACCENT)
 	demo_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_demo_section.add_child(demo_title)
 
@@ -990,7 +983,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_info_label = Label.new()
 	_demo_info_label.text = demo_config.get("demo_desc", "点击施放按钮查看效果")
 	_demo_info_label.add_theme_font_size_override("font_size", 11)
-	_demo_info_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	_demo_info_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	_demo_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_demo_section.add_child(_demo_info_label)
 
@@ -1010,8 +1003,8 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_3d_env = WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(COL_DEMO_BG)
-	env.ambient_light_color = Color(0.3, 0.25, 0.5)
+	env.background_color = UIColors.PRIMARY_BG
+	env.ambient_light_color = UIColors.TEXT_LOCKED
 	env.ambient_light_energy = 0.4
 	env.glow_enabled = true
 	env.glow_intensity = 0.6
@@ -1040,7 +1033,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	var demo_panel := PanelContainer.new()
 	var demo_style := StyleBoxFlat.new()
 	demo_style.bg_color = COL_DEMO_BG
-	demo_style.border_color = COL_ACCENT
+	demo_style.border_color = UIColors.ACCENT
 	demo_style.border_width_left = 1
 	demo_style.border_width_right = 1
 	demo_style.border_width_top = 1
@@ -1063,8 +1056,8 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_cast_btn.custom_minimum_size = Vector2(100, 32)
 	_demo_cast_btn.pressed.connect(_on_demo_cast.bind(entry_id))
 	var cast_style := StyleBoxFlat.new()
-	cast_style.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
-	cast_style.border_color = COL_ACCENT
+	cast_style.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
+	cast_style.border_color = UIColors.ACCENT
 	cast_style.border_width_left = 1
 	cast_style.border_width_right = 1
 	cast_style.border_width_top = 1
@@ -1076,7 +1069,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	cast_style.content_margin_left = 12
 	cast_style.content_margin_right = 12
 	_demo_cast_btn.add_theme_stylebox_override("normal", cast_style)
-	_demo_cast_btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_demo_cast_btn.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	btn_hbox.add_child(_demo_cast_btn)
 
 	_demo_clear_btn = Button.new()
@@ -1084,10 +1077,10 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_clear_btn.custom_minimum_size = Vector2(100, 32)
 	_demo_clear_btn.pressed.connect(_clear_demo)
 	var clear_style := cast_style.duplicate()
-	clear_style.bg_color = Color(0.3, 0.1, 0.1, 0.3)
-	clear_style.border_color = Color(0.8, 0.3, 0.3)
+	clear_style.bg_color = UIColors.with_alpha(UIColors.DANGER, 0.3)
+	clear_style.border_color = UIColors.DANGER
 	_demo_clear_btn.add_theme_stylebox_override("normal", clear_style)
-	_demo_clear_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	_demo_clear_btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	btn_hbox.add_child(_demo_clear_btn)
 
 	_demo_section.add_child(btn_hbox)
@@ -1096,7 +1089,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_status_label = Label.new()
 	_demo_status_label.text = ""
 	_demo_status_label.add_theme_font_size_override("font_size", 10)
-	_demo_status_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_demo_status_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_demo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_demo_section.add_child(_demo_status_label)
 
@@ -1110,7 +1103,7 @@ func _create_demo_grid() -> Node2D:
 		plane.size = Vector2(20, 20)
 		grid_mesh.mesh = plane
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.05, 0.04, 0.1)
+		mat.albedo_color = UIColors.PRIMARY_BG
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		grid_mesh.material_override = mat
 		_demo_3d_entity_layer.add_child(grid_mesh)
@@ -1162,9 +1155,9 @@ func _demo_cast_chord(config: Dictionary) -> void:
 		var sphere := MeshInstance3D.new()
 		sphere.mesh = SphereMesh.new()
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = COL_ACCENT
+		mat.albedo_color = UIColors.ACCENT
 		mat.emission_enabled = true
-		mat.emission = COL_ACCENT
+		mat.emission = UIColors.ACCENT
 		mat.emission_energy_multiplier = 3.0
 		sphere.material_override = mat
 		sphere.position = Vector3(0, 1, 0)

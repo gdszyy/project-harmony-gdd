@@ -26,14 +26,7 @@ signal tooltip_hidden()
 # ============================================================
 # 主题颜色
 # ============================================================
-const PANEL_BG := Color("#100C20")
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const BORDER_COLOR := Color("#2A2040")
-const SUCCESS_COLOR := Color("#4DFF80")
-const DANGER_COLOR := Color("#FF4D4D")
-const GOLD_COLOR := Color("#FFD700")
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 配置
@@ -278,7 +271,7 @@ func _create_stat_row(stat: Dictionary) -> HBoxContainer:
 	var value := Label.new()
 	value.text = str(stat.get("value", ""))
 	value.add_theme_font_size_override("font_size", 13)
-	var color: Color = stat.get("color", TEXT_PRIMARY)
+	var color: Color = stat.get("color", UIColors.TEXT_PRIMARY)
 	value.add_theme_color_override("font_color", color)
 	row.add_child(value)
 
@@ -324,9 +317,9 @@ func _get_rarity_text(rarity: String) -> String:
 func _get_rarity_color(rarity: String) -> Color:
 	match rarity:
 		"common": return TEXT_SECONDARY
-		"rare": return Color("#4D8BFF")
-		"epic": return ACCENT_COLOR
-		"legendary": return GOLD_COLOR
+		"rare": return UIColors.RARITY_RARE
+		"epic": return UIColors.ACCENT
+		"legendary": return UIColors.GOLD
 		_: return TEXT_SECONDARY
 
 # ============================================================
@@ -340,7 +333,7 @@ func _build_ui() -> void:
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.95)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.95)
 	style.corner_radius_top_left = 6
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_left = 6
@@ -353,8 +346,8 @@ func _build_ui() -> void:
 	style.border_width_right = 1
 	style.border_width_top = 1
 	style.border_width_bottom = 1
-	style.border_color = BORDER_COLOR
-	style.shadow_color = Color(0, 0, 0, 0.4)
+	style.border_color = UIColors.BORDER_DEFAULT
+	style.shadow_color = UIColors.with_alpha(Color.BLACK, 0.4)
 	style.shadow_size = 4
 	_tooltip_panel.add_theme_stylebox_override("panel", style)
 
@@ -370,7 +363,7 @@ func _build_ui() -> void:
 	_title_label.name = "TitleLabel"
 	_title_label.text = ""
 	_title_label.add_theme_font_size_override("font_size", 15)
-	_title_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	_title_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_hbox.add_child(_title_label)
 
@@ -386,7 +379,7 @@ func _build_ui() -> void:
 	# 分隔线
 	_separator = ColorRect.new()
 	_separator.name = "Separator"
-	_separator.color = Color(ACCENT_COLOR, 0.2)
+	_separator.color = UIColors.with_alpha(UIColors.ACCENT, 0.2)
 	_separator.custom_minimum_size.y = 1
 	vbox.add_child(_separator)
 

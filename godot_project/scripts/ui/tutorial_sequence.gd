@@ -27,11 +27,7 @@ signal all_sequences_completed()
 # ============================================================
 # 主题颜色
 # ============================================================
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const SUCCESS_COLOR := Color("#4DFF80")
-const PANEL_BG := Color("#141026")
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 教学事件定义

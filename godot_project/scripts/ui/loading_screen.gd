@@ -27,23 +27,20 @@ signal transition_finished()
 # ============================================================
 # 主题颜色
 # ============================================================
-const PANEL_BG := Color("#141026")
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const BG_DARK := Color("#0A0814")
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
+const BG_DARK := UIColors.PRIMARY_BG
 
 # ============================================================
 # 章节数据
 # ============================================================
 const CHAPTER_DATA: Dictionary = {
-	1: {"title": "谐振之初", "subtitle": "第一乐章", "bg_color": Color("#0D0826")},
-	2: {"title": "圣咏回响", "subtitle": "第二乐章", "bg_color": Color("#0A1020")},
-	3: {"title": "对位迷宫", "subtitle": "第三乐章", "bg_color": Color("#100818")},
-	4: {"title": "古典秩序", "subtitle": "第四乐章", "bg_color": Color("#0C0A1E")},
-	5: {"title": "命运交响", "subtitle": "第五乐章", "bg_color": Color("#120A10")},
-	6: {"title": "爵士即兴", "subtitle": "第六乐章", "bg_color": Color("#0A0E1A")},
-	7: {"title": "数字衰变", "subtitle": "第七乐章", "bg_color": Color("#0E0608")},
+	1: {"title": "谐振之初", "subtitle": "第一乐章", "bg_color": UIColors.PRIMARY_BG},
+	2: {"title": "圣咏回响", "subtitle": "第二乐章", "bg_color": UIColors.PRIMARY_BG},
+	3: {"title": "对位迷宫", "subtitle": "第三乐章", "bg_color": UIColors.PRIMARY_BG},
+	4: {"title": "古典秩序", "subtitle": "第四乐章", "bg_color": UIColors.PRIMARY_BG},
+	5: {"title": "命运交响", "subtitle": "第五乐章", "bg_color": UIColors.PRIMARY_BG},
+	6: {"title": "爵士即兴", "subtitle": "第六乐章", "bg_color": UIColors.PRIMARY_BG},
+	7: {"title": "数字衰变", "subtitle": "第七乐章", "bg_color": UIColors.PRIMARY_BG},
 }
 
 # ============================================================
@@ -262,7 +259,7 @@ func _build_ui() -> void:
 	# 视差背景层
 	_bg_parallax_rect = ColorRect.new()
 	_bg_parallax_rect.name = "ParallaxLayer"
-	_bg_parallax_rect.color = Color(ACCENT_COLOR, 0.03)
+	_bg_parallax_rect.color = UIColors.with_alpha(UIColors.ACCENT, 0.03)
 	_bg_parallax_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bg_parallax_rect.offset_left = -20
 	_bg_parallax_rect.offset_right = 20
@@ -272,13 +269,13 @@ func _build_ui() -> void:
 
 	# 装饰线条（顶部和底部）
 	var top_line := ColorRect.new()
-	top_line.color = Color(ACCENT_COLOR, 0.3)
+	top_line.color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 	top_line.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top_line.offset_bottom = 2
 	_root_container.add_child(top_line)
 
 	var bottom_line := ColorRect.new()
-	bottom_line.color = Color(ACCENT_COLOR, 0.3)
+	bottom_line.color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 	bottom_line.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	bottom_line.offset_top = -2
 	_root_container.add_child(bottom_line)
@@ -303,7 +300,7 @@ func _build_ui() -> void:
 	_chapter_label.text = "谐振之初"
 	_chapter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_chapter_label.add_theme_font_size_override("font_size", 52)
-	_chapter_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	_chapter_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_chapter_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_chapter_label.offset_top = -40
 	_chapter_label.offset_bottom = 30
@@ -341,7 +338,7 @@ func _build_ui() -> void:
 	_progress_bar.offset_bottom = -35
 
 	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(PANEL_BG, 0.6)
+	bar_bg.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.6)
 	bar_bg.corner_radius_top_left = 5
 	bar_bg.corner_radius_top_right = 5
 	bar_bg.corner_radius_bottom_left = 5
@@ -349,7 +346,7 @@ func _build_ui() -> void:
 	_progress_bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = ACCENT_COLOR
+	bar_fill.bg_color = UIColors.ACCENT
 	bar_fill.corner_radius_top_left = 5
 	bar_fill.corner_radius_top_right = 5
 	bar_fill.corner_radius_bottom_left = 5

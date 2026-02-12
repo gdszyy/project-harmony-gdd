@@ -16,9 +16,9 @@ const BAR_HEIGHT: float = 6.0
 const TITLE_HEIGHT: float = 12.0
 
 ## SOF 颜色分级
-const COLOR_LOW := Color("#9D6FFF")     # 暗紫 (0%-30%)
-const COLOR_MID := Color("#FF4D6A")     # 品红 (30%-60%)
-const COLOR_HIGH := Color("#FF0066")    # 刺眼品红 (80%-100%)
+const COLOR_LOW := UIColors.ACCENT     # 暗紫 (0%-30%)
+const COLOR_MID := UIColors.MODE_BLUES     # 品红 (30%-60%)
+const COLOR_HIGH := UIColors.FATIGUE_CRITICAL    # 刺眼品红 (80%-100%)
 
 ## 全局警告阈值
 const GLOBAL_WARNING_THRESHOLD: float = 0.8
@@ -90,7 +90,7 @@ func _draw() -> void:
 
 	# 背景条
 	draw_rect(Rect2(start, Vector2(BAR_WIDTH, BAR_HEIGHT)),
-		Color(0.08, 0.06, 0.15, 0.5))
+		UIColors.with_alpha(UIColors.PANEL_BG, 0.5))
 
 	# 填充条
 	if _display_value > 0.001:

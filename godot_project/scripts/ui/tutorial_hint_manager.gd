@@ -30,15 +30,7 @@ signal highlight_ended(target_name: String)
 # ============================================================
 # 主题颜色常量
 # ============================================================
-const PANEL_BG := Color("#141026")
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const MASK_COLOR := Color(0.0, 0.0, 0.0, 0.7)
-const SUCCESS_COLOR := Color("#4DFF80")
-const DANGER_COLOR := Color("#FF4D4D")
-const GOLD_COLOR := Color("#FFD700")
-const HINT_BORDER := Color("#4DFFF3")
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 配置
@@ -270,16 +262,16 @@ func show_unlock(unlock_type: String, unlock_name: String, message: String) -> v
 	match unlock_type:
 		"note":
 			icon = "♪"
-			color = Color(0.3, 0.8, 1.0)
+			color = UIColors.SHIELD
 		"feature":
 			icon = "★"
-			color = GOLD_COLOR
+			color = UIColors.GOLD
 		"rhythm":
 			icon = "♩"
-			color = SUCCESS_COLOR
+			color = UIColors.SUCCESS
 		"achievement":
 			icon = "🏆"
-			color = GOLD_COLOR
+			color = UIColors.GOLD
 
 	_unlock_icon_label.text = icon
 	_unlock_icon_label.add_theme_color_override("font_color", color)
@@ -441,7 +433,7 @@ func _create_step_indicator() -> void:
 	_step_title_label.text = "教学引导"
 	_step_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_step_title_label.add_theme_font_size_override("font_size", 16)
-	_step_title_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	_step_title_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_step_title_label.position = Vector2(0, 0)
 	_step_title_label.size = Vector2(400, 24)
 	_step_container.add_child(_step_title_label)
@@ -458,7 +450,7 @@ func _create_step_indicator() -> void:
 
 	# 进度条样式
 	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(PANEL_BG, 0.6)
+	bar_bg.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.6)
 	bar_bg.corner_radius_top_left = 4
 	bar_bg.corner_radius_top_right = 4
 	bar_bg.corner_radius_bottom_left = 4
@@ -466,7 +458,7 @@ func _create_step_indicator() -> void:
 	_step_progress_bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = ACCENT_COLOR
+	bar_fill.bg_color = UIColors.ACCENT
 	bar_fill.corner_radius_top_left = 4
 	bar_fill.corner_radius_top_right = 4
 	bar_fill.corner_radius_bottom_left = 4
@@ -515,17 +507,17 @@ func _create_mask_overlay() -> void:
 	_highlight_glow.name = "HighlightGlow"
 	_highlight_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var glow_style := StyleBoxFlat.new()
-	glow_style.bg_color = Color(0, 0, 0, 0)
+	glow_style.bg_color = UIColors.with_alpha(Color.BLACK, 0.0)
 	glow_style.border_width_left = 3
 	glow_style.border_width_right = 3
 	glow_style.border_width_top = 3
 	glow_style.border_width_bottom = 3
-	glow_style.border_color = ACCENT_COLOR
+	glow_style.border_color = UIColors.ACCENT
 	glow_style.corner_radius_top_left = 8
 	glow_style.corner_radius_top_right = 8
 	glow_style.corner_radius_bottom_left = 8
 	glow_style.corner_radius_bottom_right = 8
-	glow_style.shadow_color = Color(ACCENT_COLOR, 0.5)
+	glow_style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.5)
 	glow_style.shadow_size = 12
 	_highlight_glow.add_theme_stylebox_override("panel", glow_style)
 	_mask_overlay.add_child(_highlight_glow)
@@ -535,7 +527,7 @@ func _create_mask_overlay() -> void:
 func _create_mask_rect(rect_name: String) -> ColorRect:
 	var rect := ColorRect.new()
 	rect.name = rect_name
-	rect.color = MASK_COLOR
+	rect.color = UIColors.MASK_COLOR
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
@@ -553,7 +545,7 @@ func _create_arrow_indicator() -> void:
 	_arrow_sprite.name = "ArrowLabel"
 	_arrow_sprite.text = "▼"
 	_arrow_sprite.add_theme_font_size_override("font_size", 36)
-	_arrow_sprite.add_theme_color_override("font_color", ACCENT_COLOR)
+	_arrow_sprite.add_theme_color_override("font_color", UIColors.ACCENT)
 	_arrow_sprite.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_arrow_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_arrow_container.add_child(_arrow_sprite)
@@ -572,7 +564,7 @@ func _create_bubble_panel() -> void:
 	_bubble_panel.custom_minimum_size = Vector2(280, 60)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.95)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.95)
 	style.corner_radius_top_left = 10
 	style.corner_radius_top_right = 10
 	style.corner_radius_bottom_left = 10
@@ -585,8 +577,8 @@ func _create_bubble_panel() -> void:
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.border_color = ACCENT_COLOR
-	style.shadow_color = Color(ACCENT_COLOR, 0.3)
+	style.border_color = UIColors.ACCENT
+	style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 	style.shadow_size = 8
 	_bubble_panel.add_theme_stylebox_override("panel", style)
 
@@ -596,7 +588,7 @@ func _create_bubble_panel() -> void:
 	_bubble_label.fit_content = true
 	_bubble_label.scroll_active = false
 	_bubble_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bubble_label.add_theme_color_override("default_color", TEXT_PRIMARY)
+	_bubble_label.add_theme_color_override("default_color", UIColors.TEXT_PRIMARY)
 	_bubble_label.add_theme_font_size_override("normal_font_size", 15)
 	_bubble_panel.add_child(_bubble_label)
 
@@ -618,7 +610,7 @@ func _create_hint_panel() -> void:
 	_hint_panel.offset_bottom = -hint_bottom_offset
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.9)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
 	style.corner_radius_top_left = 10
 	style.corner_radius_top_right = 10
 	style.corner_radius_bottom_left = 10
@@ -631,8 +623,8 @@ func _create_hint_panel() -> void:
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(ACCENT_COLOR, 0.6)
-	style.shadow_color = Color(ACCENT_COLOR, 0.2)
+	style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.6)
+	style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.2)
 	style.shadow_size = 6
 	_hint_panel.add_theme_stylebox_override("panel", style)
 
@@ -641,7 +633,7 @@ func _create_hint_panel() -> void:
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	_hint_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_hint_label.add_theme_font_size_override("font_size", 18)
 	_hint_panel.add_child(_hint_label)
 
@@ -663,7 +655,7 @@ func _create_unlock_panel() -> void:
 	_unlock_panel.offset_bottom = 76.0
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.92)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.92)
 	style.corner_radius_top_left = 12
 	style.corner_radius_top_right = 12
 	style.corner_radius_bottom_left = 12
@@ -676,8 +668,8 @@ func _create_unlock_panel() -> void:
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(GOLD_COLOR, 0.7)
-	style.shadow_color = Color(GOLD_COLOR, 0.3)
+	style.border_color = UIColors.with_alpha(UIColors.GOLD, 0.7)
+	style.shadow_color = UIColors.with_alpha(UIColors.GOLD, 0.3)
 	style.shadow_size = 8
 	_unlock_panel.add_theme_stylebox_override("panel", style)
 
@@ -688,14 +680,14 @@ func _create_unlock_panel() -> void:
 	_unlock_icon_label = Label.new()
 	_unlock_icon_label.name = "UnlockIcon"
 	_unlock_icon_label.add_theme_font_size_override("font_size", 28)
-	_unlock_icon_label.add_theme_color_override("font_color", GOLD_COLOR)
+	_unlock_icon_label.add_theme_color_override("font_color", UIColors.GOLD)
 	hbox.add_child(_unlock_icon_label)
 
 	_unlock_label = Label.new()
 	_unlock_label.name = "UnlockLabel"
 	_unlock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_unlock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_unlock_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+	_unlock_label.add_theme_color_override("font_color", UIColors.GOLD)
 	_unlock_label.add_theme_font_size_override("font_size", 20)
 	hbox.add_child(_unlock_label)
 
@@ -721,7 +713,7 @@ func _create_skip_button() -> void:
 	_skip_button.offset_bottom = 50.0
 
 	var style_normal := StyleBoxFlat.new()
-	style_normal.bg_color = Color(PANEL_BG, 0.8)
+	style_normal.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.8)
 	style_normal.corner_radius_top_left = 6
 	style_normal.corner_radius_top_right = 6
 	style_normal.corner_radius_bottom_left = 6
@@ -730,15 +722,15 @@ func _create_skip_button() -> void:
 	style_normal.border_width_right = 1
 	style_normal.border_width_top = 1
 	style_normal.border_width_bottom = 1
-	style_normal.border_color = Color(TEXT_SECONDARY, 0.5)
+	style_normal.border_color = UIColors.with_alpha(TEXT_SECONDARY, 0.5)
 	_skip_button.add_theme_stylebox_override("normal", style_normal)
 
 	var style_hover := style_normal.duplicate()
-	style_hover.border_color = ACCENT_COLOR
+	style_hover.border_color = UIColors.ACCENT
 	_skip_button.add_theme_stylebox_override("hover", style_hover)
 
 	_skip_button.add_theme_color_override("font_color", TEXT_SECONDARY)
-	_skip_button.add_theme_color_override("font_hover_color", TEXT_PRIMARY)
+	_skip_button.add_theme_color_override("font_hover_color", UIColors.TEXT_PRIMARY)
 	_skip_button.add_theme_font_size_override("font_size", 14)
 
 	_skip_button.pressed.connect(_on_skip_pressed)
@@ -866,7 +858,7 @@ func _highlight_ui_element_light(element_name: String, duration: float) -> void:
 
 	var highlight := ColorRect.new()
 	highlight.name = "UIHighlight_%s" % element_name
-	highlight.color = Color(ACCENT_COLOR, 0.0)
+	highlight.color = UIColors.with_alpha(UIColors.ACCENT, 0.0)
 	highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	if target_node.get_parent():

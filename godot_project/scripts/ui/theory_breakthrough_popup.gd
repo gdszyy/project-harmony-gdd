@@ -21,13 +21,6 @@ signal breakthrough_animation_completed()
 # ============================================================
 # 常量 — 颜色 (§1.2)
 # ============================================================
-const COL_GOLD := Color("#FFD700")
-const COL_GOLD_BRIGHT := Color("#FFED4A")
-const COL_PANEL_BG := Color("#141026")
-const COL_ACCENT := Color("#9D6FFF")
-const COL_TEXT_PRIMARY := Color("#EAE6FF")
-const COL_TEXT_SECONDARY := Color("#A098C8")
-const COL_BG_DARK := Color("#0A0814")
 
 # ============================================================
 # 动画参数
@@ -91,13 +84,13 @@ func _draw() -> void:
 
 	# 金色闪光
 	if _flash_alpha > 0:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, _flash_alpha))
+		draw_rect(Rect2(Vector2.ZERO, size), UIColors.with_alpha(UIColors.GOLD, _flash_alpha))
 
 	# 几何图案粒子
 	for p in _particles:
 		var life_ratio := p["life"] / p["max_life"]
 		var alpha := life_ratio * 0.8
-		var col := Color(p["color"].r, p["color"].g, p["color"].b, alpha)
+		var col := UIColors.with_alpha(p["color"], alpha)
 		var s: float = p["size"] * life_ratio
 
 		# 绘制菱形粒子
@@ -112,7 +105,7 @@ func _draw() -> void:
 
 	# 中心星云辉光
 	if _nebula_alpha > 0:
-		var glow_col := Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, _nebula_alpha * 0.3)
+		var glow_col := UIColors.with_alpha(UIColors.GOLD, _nebula_alpha * 0.3)
 		for r in range(3):
 			var radius := 80.0 + r * 40.0
 			draw_arc(center, radius, 0, TAU, 64, glow_col, 2.0 + r)
@@ -181,7 +174,7 @@ func _spawn_particles() -> void:
 			"life": randf_range(1.0, 2.5),
 			"max_life": randf_range(1.0, 2.5),
 			"size": randf_range(4.0, 12.0),
-			"color": COL_GOLD.lerp(COL_GOLD_BRIGHT, randf()),
+			"color": UIColors.GOLD.lerp(UIColors.GOLD_BRIGHT, randf()),
 		}
 		particle["max_life"] = particle["life"]
 		_particles.append(particle)
@@ -190,7 +183,7 @@ func _build_breakthrough_card() -> void:
 	# 暗色背景
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = Color(COL_BG_DARK.r, COL_BG_DARK.g, COL_BG_DARK.b, 0.85)
+	_overlay.color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.85)
 	_overlay.modulate.a = 0.0
 	add_child(_overlay)
 
@@ -203,8 +196,8 @@ func _build_breakthrough_card() -> void:
 	_card_panel.offset_bottom = 120
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = COL_PANEL_BG
-	style.border_color = COL_GOLD
+	style.bg_color = UIColors.PANEL_BG
+	style.border_color = UIColors.GOLD
 	style.border_width_left = 3
 	style.border_width_right = 3
 	style.border_width_top = 3
@@ -213,7 +206,7 @@ func _build_breakthrough_card() -> void:
 	style.corner_radius_top_right = 16
 	style.corner_radius_bottom_left = 16
 	style.corner_radius_bottom_right = 16
-	style.shadow_color = Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, 0.3)
+	style.shadow_color = UIColors.with_alpha(UIColors.GOLD, 0.3)
 	style.shadow_size = 12
 	style.content_margin_left = 24
 	style.content_margin_right = 24
@@ -229,7 +222,7 @@ func _build_breakthrough_card() -> void:
 	var deco := Label.new()
 	deco.text = "✦ 乐理突破 ✦"
 	deco.add_theme_font_size_override("font_size", 14)
-	deco.add_theme_color_override("font_color", COL_GOLD)
+	deco.add_theme_color_override("font_color", UIColors.GOLD)
 	deco.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(deco)
 
@@ -237,7 +230,7 @@ func _build_breakthrough_card() -> void:
 	var icon := Label.new()
 	icon.text = "♮"
 	icon.add_theme_font_size_override("font_size", 48)
-	icon.add_theme_color_override("font_color", COL_GOLD_BRIGHT)
+	icon.add_theme_color_override("font_color", UIColors.GOLD_BRIGHT)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(icon)
 
@@ -245,7 +238,7 @@ func _build_breakthrough_card() -> void:
 	_title_label = Label.new()
 	_title_label.text = _breakthrough_data.get("title", "乐理突破")
 	_title_label.add_theme_font_size_override("font_size", 22)
-	_title_label.add_theme_color_override("font_color", COL_GOLD)
+	_title_label.add_theme_color_override("font_color", UIColors.GOLD)
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_title_label)
@@ -253,14 +246,14 @@ func _build_breakthrough_card() -> void:
 	# 分割线
 	var sep := ColorRect.new()
 	sep.custom_minimum_size = Vector2(0, 1)
-	sep.color = Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, 0.4)
+	sep.color = UIColors.with_alpha(UIColors.GOLD, 0.4)
 	vbox.add_child(sep)
 
 	# 描述
 	_desc_label = Label.new()
 	_desc_label.text = _breakthrough_data.get("description", "你在音乐理论上获得了新的领悟。")
 	_desc_label.add_theme_font_size_override("font_size", 14)
-	_desc_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_desc_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_desc_label)
@@ -271,7 +264,7 @@ func _build_breakthrough_card() -> void:
 		var effect_label := Label.new()
 		effect_label.text = effect_text
 		effect_label.add_theme_font_size_override("font_size", 12)
-		effect_label.add_theme_color_override("font_color", COL_ACCENT)
+		effect_label.add_theme_color_override("font_color", UIColors.ACCENT)
 		effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vbox.add_child(effect_label)
@@ -281,10 +274,10 @@ func _build_breakthrough_card() -> void:
 	_confirm_btn.text = "领悟 ✦"
 	_confirm_btn.custom_minimum_size = Vector2(160, 40)
 	_confirm_btn.pressed.connect(_on_confirm)
-	_confirm_btn.add_theme_color_override("font_color", COL_PANEL_BG)
+	_confirm_btn.add_theme_color_override("font_color", UIColors.PANEL_BG)
 	_confirm_btn.add_theme_font_size_override("font_size", 15)
 	var btn_style := StyleBoxFlat.new()
-	btn_style.bg_color = COL_GOLD
+	btn_style.bg_color = UIColors.GOLD
 	btn_style.corner_radius_top_left = 8
 	btn_style.corner_radius_top_right = 8
 	btn_style.corner_radius_bottom_left = 8
@@ -295,7 +288,7 @@ func _build_breakthrough_card() -> void:
 	btn_style.content_margin_bottom = 8
 	_confirm_btn.add_theme_stylebox_override("normal", btn_style)
 	var btn_hover := btn_style.duplicate()
-	btn_hover.bg_color = COL_GOLD_BRIGHT
+	btn_hover.bg_color = UIColors.GOLD_BRIGHT
 	_confirm_btn.add_theme_stylebox_override("hover", btn_hover)
 
 	var btn_center := CenterContainer.new()

@@ -27,34 +27,19 @@ const CARD_GAP := 4.0
 const CARD_MARGIN_X := 6.0
 
 ## 颜色定义
-const CARD_BG := Color("0E0B1FB0")
-const CARD_HOVER_BG := Color("9D6FFF25")
-const CARD_EQUIPPED_BG := Color("0A081580")
-const CARD_BORDER := Color("9D6FFF30")
-const CARD_HOVER_BORDER := Color("9D6FFF80")
-const CARD_EQUIPPED_BORDER := Color("9D6FFF18")
-const SECTION_TITLE_COLOR := Color("9D8FBF")
-const SPELL_NAME_COLOR := Color("EAE6FF")
-const SPELL_NAME_EQUIPPED := Color("9D8FBF80")
-const FORM_DESC_COLOR := Color("9D8FBFB0")
-const STATUS_READY_COLOR := Color("33CC66B0")
-const STATUS_EQUIPPED_COLOR := Color("3399FFB0")
-const EMPTY_HINT_COLOR := Color("9D8FBF60")
+var CARD_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.69)
+const CARD_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.15)
+var CARD_EQUIPPED_BG := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
+const CARD_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+const CARD_HOVER_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.50)
+const CARD_EQUIPPED_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.09)
+const SPELL_NAME_EQUIPPED := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
+const FORM_DESC_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.69)
+var STATUS_READY_COLOR := UIColors.with_alpha(UIColors.SUCCESS, 0.69)
+var STATUS_EQUIPPED_COLOR := UIColors.with_alpha(UIColors.RARITY_RARE, 0.69)
+const EMPTY_HINT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
 
 ## 法术形态颜色
-const SPELL_FORM_COLORS := {
-	"enhanced_projectile": Color("FFD94D"),
-	"dot_projectile": Color("3366CC"),
-	"explosive_projectile": Color("FF6633"),
-	"shockwave": Color("8822BB"),
-	"magic_circle": Color("FFCC00"),
-	"celestial_strike": Color("CC1111"),
-	"shield_heal": Color("33E666"),
-	"summon_construct": Color("2233BB"),
-	"charged_projectile": Color("D9D9F2"),
-	"slow_field": Color("4D4DBB"),
-	"generic_blast": Color("808080"),
-}
 
 ## 法术形态图标（来自 UI 设计文档 §4.2）
 const SPELL_FORM_ICONS := {
@@ -72,11 +57,6 @@ const SPELL_FORM_ICONS := {
 }
 
 ## 音符颜色
-const NOTE_COLORS := {
-	0: Color("00FFD4"), 1: Color("0088FF"), 2: Color("66FF66"),
-	3: Color("8844FF"), 4: Color("FF4444"), 5: Color("FF8800"),
-	6: Color("FF44AA"),
-}
 
 # ============================================================
 # 状态
@@ -117,13 +97,13 @@ func _draw() -> void:
 
 	## ===== 标题 =====
 	draw_string(font, Vector2(x, y + 12), "SPELLBOOK",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, SECTION_TITLE_COLOR)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 
 	## 法术数量
 	var spellbook := NoteInventory.spellbook
 	var count_str := "(%d)" % spellbook.size()
 	draw_string(font, Vector2(x + 80, y + 12), count_str,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("9D8FBF80"))
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(UIColors.TEXT_HINT, 0.50))
 	y += 20.0
 
 	## ===== 空法术书提示 =====
@@ -131,7 +111,7 @@ func _draw() -> void:
 		draw_string(font, Vector2(x, y + 16),
 			"尚无和弦法术", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, EMPTY_HINT_COLOR)
 		draw_string(font, Vector2(x, y + 32),
-			"在上方炼成区合成", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("9D8FBF40"))
+			"在上方炼成区合成", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(UIColors.TEXT_HINT, 0.25))
 		return
 
 	## ===== 法术卡片列表 =====
@@ -181,7 +161,7 @@ func _draw() -> void:
 
 		## 法术名称
 		var spell_name: String = spell.get("spell_name", "Unknown")
-		var name_color := SPELL_NAME_COLOR if not is_equipped else SPELL_NAME_EQUIPPED
+		var name_color := UIColors.TEXT_PRIMARY if not is_equipped else SPELL_NAME_EQUIPPED
 		draw_string(font,
 			card_rect.position + Vector2(30, 20),
 			spell_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, name_color)
@@ -194,7 +174,7 @@ func _draw() -> void:
 
 		## 根音色条
 		var root_note: int = spell.get("root_note", 0)
-		var root_color: Color = NOTE_COLORS.get(root_note, Color(0.5, 0.5, 0.5))
+		var root_color: Color = UIColors.get_note_color_by_int(root_note)
 		if is_equipped:
 			root_color.a = 0.3
 		draw_rect(
@@ -327,11 +307,11 @@ func _create_spell_drag_preview(icon: String, name: String, color: Color) -> Con
 	panel.size = sz
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.4)
+	style.bg_color = UIColors.with_alpha(color, 0.4)
 	style.border_color = color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(6)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.5)
+	style.shadow_color = UIColors.with_alpha(color, 0.5)
 	style.shadow_size = 5
 	panel.add_theme_stylebox_override("panel", style)
 

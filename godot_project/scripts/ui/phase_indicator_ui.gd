@@ -146,11 +146,11 @@ func _draw() -> void:
 		_draw_arc_sweep(center)
 
 	# 绘制中心点
-	draw_circle(center, 4.0, Color(0.08, 0.06, 0.15, 0.9))
-	draw_arc(center, 4.0, 0, TAU, 16, Color(0.4, 0.3, 0.6, 0.6), 1.0)
+	draw_circle(center, 4.0, UIColors.with_alpha(UIColors.PANEL_BG, 0.9))
+	draw_arc(center, 4.0, 0, TAU, 16, UIColors.with_alpha(UIColors.ACCENT, 0.6), 1.0)
 
 	# 绘制快捷键提示（小字）
-	var hint_color := Color(0.42, 0.4, 0.54, 0.5)
+	var hint_color := UIColors.with_alpha(UIColors.TEXT_DIM, 0.5)
 	draw_string(font, center + Vector2(-6, RING_RADIUS + 16), "1/2/3",
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 7, hint_color)
 

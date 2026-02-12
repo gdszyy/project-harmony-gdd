@@ -17,16 +17,8 @@ signal confirm_pressed()
 # ============================================================
 # 颜色方案
 # ============================================================
-const BG_COLOR := Color(0.03, 0.02, 0.06, 0.97)
-const ACCENT := Color("#9D6FFF")
-const GOLD := Color("#FFD700")
-const CYAN := Color("#00E5FF")
-const TEXT_COLOR := Color("#EAE6FF")
-const DIM_TEXT := Color("#A098C8")
-const SUCCESS := Color("#4DFF80")
-const DANGER := Color("#FF4D4D")
-const FRAGMENT_COLOR := Color(0.6, 0.4, 1.0)
-const WARM_ORANGE := Color(1.0, 0.6, 0.2)
+const FRAGMENT_COLOR := UIColors.ACCENT
+const WARM_ORANGE := UIColors.WARNING
 
 # ============================================================
 # 调式数据（与 MetaProgressionManager.MODE_CONFIGS 对应）
@@ -38,7 +30,7 @@ const MODE_DISPLAY := {
 		"desc": "C大调，全套白键。没有特殊限制，适合新手。",
 		"notes": "C D E F G A B",
 		"passive": "无特殊被动",
-		"color": Color(0.4, 0.6, 1.0),
+		"color": UIColors.SHIELD,
 		"orbit_radius": 0.0,  # 中心
 		"angle_offset": 0.0,
 	},
@@ -48,7 +40,7 @@ const MODE_DISPLAY := {
 		"desc": "小调色彩，自带回响效果。投射物附带回音波。",
 		"notes": "D E F G A B C",
 		"passive": "投射物 +15% 回响范围",
-		"color": Color(0.3, 0.8, 0.6),
+		"color": UIColors.SUCCESS,
 		"orbit_radius": 160.0,
 		"angle_offset": -0.5,
 	},
@@ -58,7 +50,7 @@ const MODE_DISPLAY := {
 		"desc": "CDEGA 五音，减少选择但伤害更高。",
 		"notes": "C D E G A",
 		"passive": "法术伤害 +20%",
-		"color": Color(1.0, 0.3, 0.3),
+		"color": UIColors.DANGER,
 		"orbit_radius": 160.0,
 		"angle_offset": 0.5,
 	},
@@ -68,7 +60,7 @@ const MODE_DISPLAY := {
 		"desc": "不和谐音符不再造成伤害，转为暴击概率。",
 		"notes": "C Eb F F# G Bb",
 		"passive": "不和谐→暴击转化",
-		"color": Color(0.8, 0.5, 1.0),
+		"color": UIColors.ACCENT,
 		"orbit_radius": 260.0,
 		"angle_offset": 0.0,
 	},
@@ -170,19 +162,19 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 
 	# 背景
-	draw_rect(Rect2(Vector2.ZERO, vp), BG_COLOR)
+	draw_rect(Rect2(Vector2.ZERO, vp), UIColors.PRIMARY_BG)
 
 	# 星尘
 	for star in _stars:
 		var flicker := 0.5 + 0.5 * sin(_time * 0.7 + star["phase"])
 		draw_circle(star["pos"], star["size"],
-			Color(0.5, 0.5, 0.7, star["brightness"] * flicker * 0.4))
+			UIColors.with_alpha(UIColors.TEXT_DIM, star["brightness"] * flicker * 0.4))
 
 	# 标题
 	draw_string(font, Vector2(vp.x * 0.4 - 100, 40),
 		"CELESTIAL TUNER", HORIZONTAL_ALIGNMENT_CENTER, 200, 20, WARM_ORANGE)
 	draw_string(font, Vector2(vp.x * 0.4 - 60, 62),
-		"天 体 调 音 仪", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, DIM_TEXT)
+		"天 体 调 音 仪", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, UIColors.TEXT_SECONDARY)
 
 	# 轨道环
 	_draw_orbits(center)
@@ -209,7 +201,7 @@ func _draw_orbits(center: Vector2) -> void:
 	var radii := [160.0, 260.0]
 	for r in radii:
 		draw_arc(center, r, 0, TAU, 64,
-			Color(0.15, 0.12, 0.22, 0.3), 1.0)
+			UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.3), 1.0)
 
 func _draw_connections(center: Vector2) -> void:
 	# 从中心向外连线
@@ -217,12 +209,12 @@ func _draw_connections(center: Vector2) -> void:
 		if mode_name == "ionian":
 			continue
 		var pos: Vector2 = _mode_positions.get(mode_name, center)
-		draw_line(center, pos, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.1), 1.0)
+		draw_line(center, pos, UIColors.with_alpha(UIColors.ACCENT, 0.1), 1.0)
 
 func _draw_mode_planet(mode_name: String, font: Font, center: Vector2) -> void:
 	var display: Dictionary = MODE_DISPLAY[mode_name]
 	var pos: Vector2 = _mode_positions.get(mode_name, center)
-	var mode_color: Color = display.get("color", ACCENT)
+	var mode_color: Color = display.get("color", UIColors.ACCENT)
 	var is_selected := (mode_name == _selected_mode)
 	var is_hover := (mode_name == _hover_mode)
 	var is_unlocked := _is_mode_unlocked(mode_name)
@@ -241,15 +233,15 @@ func _draw_mode_planet(mode_name: String, font: Font, center: Vector2) -> void:
 				var a2 := float(i + 1) / float(segments) * TAU
 				var p1 := pos + Vector2(cos(a1), sin(a1)) * radius
 				var p2 := pos + Vector2(cos(a2), sin(a2)) * radius
-				draw_line(p1, p2, Color(0.3, 0.25, 0.4, 0.3), 1.5)
+				draw_line(p1, p2, UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3), 1.5)
 		draw_string(font, pos + Vector2(-8, 5), "?",
-			HORIZONTAL_ALIGNMENT_CENTER, 16, 14, Color(0.4, 0.35, 0.5, 0.4))
+			HORIZONTAL_ALIGNMENT_CENTER, 16, 14, UIColors.with_alpha(UIColors.TEXT_DIM, 0.4))
 		# 费用
 		var cost := _get_mode_cost(mode_name)
 		if cost > 0:
 			draw_string(font, pos + Vector2(-20, radius + 14),
 				"%d ✦" % cost, HORIZONTAL_ALIGNMENT_CENTER, 40, 9,
-				Color(DANGER.r, DANGER.g, DANGER.b, 0.5))
+				UIColors.with_alpha(UIColors.DANGER, 0.5))
 		return
 
 	# 已解锁
@@ -259,29 +251,29 @@ func _draw_mode_planet(mode_name: String, font: Font, center: Vector2) -> void:
 			var r := radius + 4 + i * 4.0
 			var alpha := 0.15 - i * 0.04
 			draw_arc(pos, r, 0, TAU, 48,
-				Color(GOLD.r, GOLD.g, GOLD.b, alpha + 0.05 * sin(_time * 2.0)), 2.0)
-		draw_circle(pos, radius, Color(mode_color.r, mode_color.g, mode_color.b, 0.2))
-		draw_arc(pos, radius, 0, TAU, 48, Color(GOLD.r, GOLD.g, GOLD.b, 0.8), 2.5)
+				UIColors.with_alpha(UIColors.GOLD, alpha + 0.05 * sin(_time * 2.0)), 2.0)
+		draw_circle(pos, radius, UIColors.with_alpha(mode_color, 0.2))
+		draw_arc(pos, radius, 0, TAU, 48, UIColors.with_alpha(UIColors.GOLD, 0.8), 2.5)
 	elif is_hover:
-		draw_circle(pos, radius, Color(mode_color.r, mode_color.g, mode_color.b, 0.12))
+		draw_circle(pos, radius, UIColors.with_alpha(mode_color, 0.12))
 		draw_arc(pos, radius, 0, TAU, 48,
-			Color(mode_color.r, mode_color.g, mode_color.b, 0.6), 2.0)
+			UIColors.with_alpha(mode_color, 0.6), 2.0)
 	else:
-		draw_circle(pos, radius, Color(mode_color.r, mode_color.g, mode_color.b, 0.08))
+		draw_circle(pos, radius, UIColors.with_alpha(mode_color, 0.08))
 		draw_arc(pos, radius, 0, TAU, 48,
-			Color(mode_color.r, mode_color.g, mode_color.b, 0.35), 1.5)
+			UIColors.with_alpha(mode_color, 0.35), 1.5)
 
 	# 调式名称
 	var name_text: String = display.get("name", "")
 	var name_short := name_text.left(4) if name_text.length() > 4 else name_text
-	var text_col := GOLD if is_selected else (TEXT_COLOR if is_hover else mode_color)
+	var text_col := UIColors.GOLD if is_selected else (UIColors.TEXT_PRIMARY if is_hover else mode_color)
 	draw_string(font, pos + Vector2(-16, 5), name_short,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 11, text_col)
 
 	# 标签
 	draw_string(font, pos + Vector2(-30, radius + 14),
 		display.get("name", ""), HORIZONTAL_ALIGNMENT_CENTER, 60, 10,
-		Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, 0.7))
+		UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.7))
 
 func _draw_info_panel(font: Font, vp: Vector2) -> void:
 	# 右侧信息面板
@@ -291,8 +283,8 @@ func _draw_info_panel(font: Font, vp: Vector2) -> void:
 	var panel_h := vp.y * 0.65
 	var panel_rect := Rect2(Vector2(panel_x, panel_y), Vector2(panel_w, panel_h))
 
-	draw_rect(panel_rect, Color(0.06, 0.04, 0.1, 0.7))
-	draw_rect(panel_rect, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.15), false, 1.0)
+	draw_rect(panel_rect, UIColors.with_alpha(UIColors.PANEL_DARK, 0.7))
+	draw_rect(panel_rect, UIColors.with_alpha(UIColors.ACCENT, 0.15), false, 1.0)
 
 	# 显示当前悬停或选中的调式信息
 	var display_mode := _hover_mode if not _hover_mode.is_empty() else _selected_mode
@@ -300,7 +292,7 @@ func _draw_info_panel(font: Font, vp: Vector2) -> void:
 	if display.is_empty():
 		return
 
-	var mode_color: Color = display.get("color", ACCENT)
+	var mode_color: Color = display.get("color", UIColors.ACCENT)
 	var y := panel_y + 20
 
 	# 调式名称
@@ -311,31 +303,31 @@ func _draw_info_panel(font: Font, vp: Vector2) -> void:
 	# 职业标题
 	draw_string(font, Vector2(panel_x + 20, y + 15),
 		"[ %s ]" % display.get("title", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-		Color(GOLD.r, GOLD.g, GOLD.b, 0.7))
+		UIColors.with_alpha(UIColors.GOLD, 0.7))
 	y += 30
 
 	# 分隔线
 	draw_line(Vector2(panel_x + 20, y), Vector2(panel_x + panel_w - 20, y),
-		Color(0.2, 0.18, 0.3, 0.4), 1.0)
+		UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.4), 1.0)
 	y += 15
 
 	# 描述
 	draw_string(font, Vector2(panel_x + 20, y + 14),
-		display.get("desc", ""), HORIZONTAL_ALIGNMENT_LEFT, int(panel_w - 40), 12, DIM_TEXT)
+		display.get("desc", ""), HORIZONTAL_ALIGNMENT_LEFT, int(panel_w - 40), 12, UIColors.TEXT_SECONDARY)
 	y += 40
 
 	# 音阶
 	draw_string(font, Vector2(panel_x + 20, y + 14),
-		"音阶:", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.5, 0.45, 0.6))
+		"音阶:", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 	draw_string(font, Vector2(panel_x + 70, y + 14),
-		display.get("notes", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, CYAN)
+		display.get("notes", ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UIColors.CYAN)
 	y += 30
 
 	# 被动效果
 	draw_string(font, Vector2(panel_x + 20, y + 14),
-		"被动:", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.5, 0.45, 0.6))
+		"被动:", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 	draw_string(font, Vector2(panel_x + 70, y + 14),
-		display.get("passive", ""), HORIZONTAL_ALIGNMENT_LEFT, int(panel_w - 90), 12, SUCCESS)
+		display.get("passive", ""), HORIZONTAL_ALIGNMENT_LEFT, int(panel_w - 90), 12, UIColors.SUCCESS)
 	y += 30
 
 	# 解锁状态
@@ -343,16 +335,16 @@ func _draw_info_panel(font: Font, vp: Vector2) -> void:
 	if is_unlocked:
 		if display_mode == _selected_mode:
 			draw_string(font, Vector2(panel_x + 20, y + 14),
-				"✓ 当前选择", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, GOLD)
+				"✓ 当前选择", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UIColors.GOLD)
 		else:
 			draw_string(font, Vector2(panel_x + 20, y + 14),
 				"已解锁 — 点击选择", HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
-				Color(CYAN.r, CYAN.g, CYAN.b, 0.7))
+				UIColors.with_alpha(UIColors.CYAN, 0.7))
 	else:
 		var cost := _get_mode_cost(display_mode)
 		draw_string(font, Vector2(panel_x + 20, y + 14),
 			"需要 %d ✦ 解锁" % cost, HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
-			Color(DANGER.r, DANGER.g, DANGER.b, 0.7))
+			UIColors.with_alpha(UIColors.DANGER, 0.7))
 
 var _back_btn_rect := Rect2()
 var _confirm_btn_rect := Rect2()
@@ -360,17 +352,17 @@ var _confirm_btn_rect := Rect2()
 func _draw_buttons(font: Font, vp: Vector2) -> void:
 	# 返回
 	_back_btn_rect = Rect2(Vector2(30, vp.y - 55), Vector2(120, 40))
-	draw_rect(_back_btn_rect, Color(0.1, 0.08, 0.18, 0.85))
-	draw_rect(_back_btn_rect, Color(0.4, 0.35, 0.55, 0.5), false, 1.0)
+	draw_rect(_back_btn_rect, UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.85))
+	draw_rect(_back_btn_rect, UIColors.with_alpha(UIColors.TEXT_DIM, 0.5), false, 1.0)
 	draw_string(font, _back_btn_rect.position + Vector2(16, 26),
-		"← 返回", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.7, 0.65, 0.85))
+		"← 返回", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.TEXT_SECONDARY)
 
 	# 确认选择
 	_confirm_btn_rect = Rect2(Vector2(vp.x - 180, vp.y - 55), Vector2(150, 40))
-	draw_rect(_confirm_btn_rect, Color(0.05, 0.15, 0.1, 0.85))
-	draw_rect(_confirm_btn_rect, Color(0.3, 0.8, 0.5, 0.5), false, 1.0)
+	draw_rect(_confirm_btn_rect, UIColors.with_alpha(UIColors.SUCCESS, 0.85))
+	draw_rect(_confirm_btn_rect, UIColors.with_alpha(UIColors.SUCCESS, 0.5), false, 1.0)
 	draw_string(font, _confirm_btn_rect.position + Vector2(16, 26),
-		"确认选择 ✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.3, 0.9, 0.5))
+		"确认选择 ✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.DIFFICULTY_EASY)
 
 # ============================================================
 # 输入处理

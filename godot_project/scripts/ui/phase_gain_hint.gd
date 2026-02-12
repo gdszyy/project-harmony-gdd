@@ -16,7 +16,6 @@ const PANEL_MAX_HEIGHT: float = 200.0
 ## 面板圆角
 const PANEL_CORNER_RADIUS: float = 4.0
 ## 面板背景色
-const PANEL_BG := Color("#141026D9")  # 星空紫 85% 不透明
 ## 面板边框宽度
 const BORDER_WIDTH: float = 1.5
 
@@ -95,7 +94,7 @@ func _draw() -> void:
 
 	# 面板背景
 	var bg_rect := Rect2(Vector2.ZERO, Vector2(PANEL_WIDTH, _panel_height))
-	draw_rect(bg_rect, PANEL_BG)
+	draw_rect(bg_rect, UIColors.PANEL_BG)
 
 	# 面板边框（发光）
 	var border_color := _phase_color
@@ -131,7 +130,7 @@ func _draw() -> void:
 		draw_line(Vector2(12, y_cursor), Vector2(PANEL_WIDTH - 12, y_cursor),
 			sep_color, 0.5)
 		y_cursor += 8
-		var bonus_color := Color("#FFD700")  # 金色
+		var bonus_color := UIColors.GOLD  # 金色
 		draw_string(font, Vector2(16, y_cursor + TIMBRE_BONUS_FONT_SIZE),
 			"♦ " + _timbre_bonus_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, TIMBRE_BONUS_FONT_SIZE, bonus_color)
@@ -258,17 +257,17 @@ func _get_fallback_modifiers(phase: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	match phase:
 		1:  # Overtone
-			result.append({"text": "▲ 移速 +30%", "color": Color("#4DFFF3")})
-			result.append({"text": "▲ 冲刺冷却 -50%", "color": Color("#4DFFF3")})
-			result.append({"text": "▼ 受伤 +20%", "color": Color("#FF4D4D")})
+			result.append({"text": "▲ 移速 +30%", "color": UIColors.ACCENT_2})
+			result.append({"text": "▲ 冲刺冷却 -50%", "color": UIColors.ACCENT_2})
+			result.append({"text": "▼ 受伤 +20%", "color": UIColors.DANGER})
 		2:  # SubBass
-			result.append({"text": "▲ 获得霸体", "color": Color("#FF8C42")})
-			result.append({"text": "▲ 受伤 -50%", "color": Color("#FF8C42")})
-			result.append({"text": "▼ 移速 -20%", "color": Color("#FF4D4D")})
-			result.append({"text": "▼ 无法冲刺", "color": Color("#FF4D4D")})
+			result.append({"text": "▲ 获得霸体", "color": UIColors.WARNING})
+			result.append({"text": "▲ 受伤 -50%", "color": UIColors.WARNING})
+			result.append({"text": "▼ 移速 -20%", "color": UIColors.DANGER})
+			result.append({"text": "▼ 无法冲刺", "color": UIColors.DANGER})
 		_:  # Fundamental
-			result.append({"text": "◆ 无属性修正", "color": Color("#A098C8")})
-			result.append({"text": "▲ 能量恢复最快", "color": Color("#4DFF80")})
+			result.append({"text": "◆ 无属性修正", "color": UIColors.TEXT_SECONDARY})
+			result.append({"text": "▲ 能量恢复最快", "color": UIColors.SUCCESS})
 	return result
 
 # ============================================================

@@ -24,10 +24,8 @@ const FLOAT_SPEED: float = 50.0
 const HORIZONTAL_SPREAD: float = 20.0
 
 # 颜色
-const COLOR_CRYSTAL_WHITE  := Color(0.918, 0.902, 1.0)   # #EAE6FF
-const COLOR_HOLY_GOLD      := Color(1.0, 0.843, 0.0)     # #FFD700
-const COLOR_CORRUPT_PURPLE := Color(0.533, 0.0, 1.0)     # #8800FF
-const COLOR_HEAL_GREEN     := Color(0.4, 1.0, 0.698)     # #66FFB2
+var COLOR_CORRUPT_PURPLE := UIColors.CORRUPT_PURPLE     # #8800FF
+var COLOR_HEAL_GREEN     := UIColors.HEAL_GREEN     # #66FFB2
 
 # 字体大小
 const FONT_SIZE_NORMAL: int = 22
@@ -127,14 +125,14 @@ func show_damage(damage: float, pos: Vector2, type: DamageType = DamageType.NORM
 			_velocity = Vector2(h_offset * 0.3, -FLOAT_SPEED)
 			_label.text = str(int(damage))
 			_label.add_theme_font_size_override("font_size", FONT_SIZE_NORMAL)
-			_label.add_theme_color_override("font_color", COLOR_CRYSTAL_WHITE)
+			_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 			_initial_scale = Vector2.ONE
 
 		DamageType.CRITICAL:
 			_velocity = Vector2(h_offset * 0.2, -FLOAT_SPEED * 0.3)
 			_label.text = str(int(damage))
 			_label.add_theme_font_size_override("font_size", FONT_SIZE_CRIT)
-			_label.add_theme_color_override("font_color", COLOR_HOLY_GOLD)
+			_label.add_theme_color_override("font_color", UIColors.GOLD)
 			_initial_scale = Vector2(1.2, 1.2)
 			_spawn_ripple()
 
@@ -142,7 +140,7 @@ func show_damage(damage: float, pos: Vector2, type: DamageType = DamageType.NORM
 			_velocity = Vector2(h_offset * 0.2, -FLOAT_SPEED * 0.3)
 			_label.text = str(int(damage))
 			_label.add_theme_font_size_override("font_size", FONT_SIZE_CRIT)
-			_label.add_theme_color_override("font_color", COLOR_HOLY_GOLD)
+			_label.add_theme_color_override("font_color", UIColors.GOLD)
 			_initial_scale = Vector2(1.3, 1.3)
 			_spawn_ripple()
 
@@ -285,7 +283,7 @@ func _draw() -> void:
 			var r: float = ripple.get_meta("radius", 0.0)
 			var a: float = ripple.get_meta("alpha", 0.0)
 			if r > 0.1 and a > 0.01:
-				var ripple_color := Color(COLOR_HOLY_GOLD, a)
+				var ripple_color := UIColors.with_alpha(UIColors.GOLD, a)
 				_draw_ring(Vector2.ZERO, r, 1.5, ripple_color)
 
 	# 治疗光点汇聚
@@ -298,7 +296,7 @@ func _draw() -> void:
 				var dist := 30.0 * (1.0 - converge)
 				var p := Vector2.from_angle(angle) * dist
 				var dot_alpha := (1.0 - converge) * 0.6
-				draw_circle(p, 2.0, Color(COLOR_HEAL_GREEN, dot_alpha))
+				draw_circle(p, 2.0, UIColors.with_alpha(COLOR_HEAL_GREEN, dot_alpha))
 
 func _draw_ring(center: Vector2, radius: float, width: float, color: Color) -> void:
 	var segments := 32

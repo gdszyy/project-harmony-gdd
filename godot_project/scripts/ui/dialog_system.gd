@@ -26,13 +26,7 @@ signal cancel_pressed(dialog_id: String)
 # ============================================================
 # 主题颜色
 # ============================================================
-const PANEL_BG := Color("#141026")
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const DANGER_COLOR := Color("#FF4D4D")
-const SUCCESS_COLOR := Color("#4DFF80")
-const MASK_COLOR := Color(0.0, 0.0, 0.0, 0.65)
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 弹窗类型
@@ -197,16 +191,16 @@ func _show_dialog(data: Dictionary) -> void:
 	match _current_type:
 		DialogType.CONFIRM:
 			_icon_label.text = "?"
-			_icon_label.add_theme_color_override("font_color", ACCENT_COLOR)
+			_icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 		DialogType.INFO:
 			_icon_label.text = "i"
-			_icon_label.add_theme_color_override("font_color", ACCENT_COLOR)
+			_icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 		DialogType.WARNING:
 			_icon_label.text = "!"
-			_icon_label.add_theme_color_override("font_color", DANGER_COLOR)
+			_icon_label.add_theme_color_override("font_color", UIColors.DANGER)
 		DialogType.CUSTOM:
 			_icon_label.text = "◆"
-			_icon_label.add_theme_color_override("font_color", ACCENT_COLOR)
+			_icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 
 	# 设置消息
 	_message_label.text = data.get("message", "")
@@ -275,12 +269,12 @@ func _build_buttons(data: Dictionary) -> void:
 			cancel_btn.pressed.connect(_on_cancel)
 			_button_container.add_child(cancel_btn)
 
-			var confirm_btn := _create_dialog_button("确认", ACCENT_COLOR)
+			var confirm_btn := _create_dialog_button("确认", UIColors.ACCENT)
 			confirm_btn.pressed.connect(_on_confirm)
 			_button_container.add_child(confirm_btn)
 
 		DialogType.INFO:
-			var ok_btn := _create_dialog_button("确定", ACCENT_COLOR)
+			var ok_btn := _create_dialog_button("确定", UIColors.ACCENT)
 			ok_btn.pressed.connect(_on_confirm)
 			_button_container.add_child(ok_btn)
 
@@ -289,7 +283,7 @@ func _build_buttons(data: Dictionary) -> void:
 			cancel_btn.pressed.connect(_on_cancel)
 			_button_container.add_child(cancel_btn)
 
-			var confirm_btn := _create_dialog_button("确认", DANGER_COLOR)
+			var confirm_btn := _create_dialog_button("确认", UIColors.DANGER)
 			confirm_btn.pressed.connect(_on_confirm)
 			_button_container.add_child(confirm_btn)
 
@@ -297,7 +291,7 @@ func _build_buttons(data: Dictionary) -> void:
 			var buttons: Array = data.get("buttons", [])
 			for btn_data in buttons:
 				var btn_text: String = btn_data.get("text", "按钮")
-				var btn_color: Color = btn_data.get("color", ACCENT_COLOR)
+				var btn_color: Color = btn_data.get("color", UIColors.ACCENT)
 				var btn_callback: Callable = btn_data.get("callback", Callable())
 				var btn := _create_dialog_button(btn_text, btn_color)
 				if btn_callback.is_valid():
@@ -317,7 +311,7 @@ func _create_dialog_button(text: String, accent: Color) -> Button:
 	btn.custom_minimum_size = Vector2(120, 40)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.9)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
 	style.corner_radius_top_left = 6
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_left = 6
@@ -330,15 +324,15 @@ func _create_dialog_button(text: String, accent: Color) -> Button:
 	btn.add_theme_stylebox_override("normal", style)
 
 	var style_hover := style.duplicate()
-	style_hover.bg_color = Color(accent, 0.15)
+	style_hover.bg_color = UIColors.with_alpha(accent, 0.15)
 	btn.add_theme_stylebox_override("hover", style_hover)
 
 	var style_pressed := style.duplicate()
-	style_pressed.bg_color = Color(accent, 0.25)
+	style_pressed.bg_color = UIColors.with_alpha(accent, 0.25)
 	btn.add_theme_stylebox_override("pressed", style_pressed)
 
 	btn.add_theme_color_override("font_color", accent)
-	btn.add_theme_color_override("font_hover_color", TEXT_PRIMARY)
+	btn.add_theme_color_override("font_hover_color", UIColors.TEXT_PRIMARY)
 	btn.add_theme_font_size_override("font_size", 15)
 
 	return btn
@@ -367,7 +361,7 @@ func _build_ui() -> void:
 	# 背景遮罩
 	_overlay = ColorRect.new()
 	_overlay.name = "DialogOverlay"
-	_overlay.color = MASK_COLOR
+	_overlay.color = UIColors.MASK_COLOR
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
@@ -382,7 +376,7 @@ func _build_ui() -> void:
 	_dialog_panel.offset_bottom = 120
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(PANEL_BG, 0.95)
+	panel_style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.95)
 	panel_style.corner_radius_top_left = 14
 	panel_style.corner_radius_top_right = 14
 	panel_style.corner_radius_bottom_left = 14
@@ -395,8 +389,8 @@ func _build_ui() -> void:
 	panel_style.border_width_right = 2
 	panel_style.border_width_top = 2
 	panel_style.border_width_bottom = 2
-	panel_style.border_color = Color(ACCENT_COLOR, 0.5)
-	panel_style.shadow_color = Color(ACCENT_COLOR, 0.15)
+	panel_style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.5)
+	panel_style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.15)
 	panel_style.shadow_size = 12
 	_dialog_panel.add_theme_stylebox_override("panel", panel_style)
 
@@ -412,21 +406,21 @@ func _build_ui() -> void:
 	_icon_label.name = "DialogIcon"
 	_icon_label.text = "?"
 	_icon_label.add_theme_font_size_override("font_size", 28)
-	_icon_label.add_theme_color_override("font_color", ACCENT_COLOR)
+	_icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 	title_hbox.add_child(_icon_label)
 
 	_title_label = Label.new()
 	_title_label.name = "DialogTitle"
 	_title_label.text = "标题"
 	_title_label.add_theme_font_size_override("font_size", 22)
-	_title_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	_title_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	title_hbox.add_child(_title_label)
 
 	vbox.add_child(title_hbox)
 
 	# 分隔线
 	var separator := ColorRect.new()
-	separator.color = Color(ACCENT_COLOR, 0.3)
+	separator.color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 	separator.custom_minimum_size.y = 1
 	vbox.add_child(separator)
 

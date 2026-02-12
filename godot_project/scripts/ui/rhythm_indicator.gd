@@ -24,11 +24,8 @@ signal miss_beat()
 @export var good_window_ms: float = 100.0
 
 # 颜色
-const COLOR_CRYSTAL_WHITE  := Color(0.918, 0.902, 1.0)   # #EAE6FF
-const COLOR_RESONANCE_CYAN := Color(0.0, 1.0, 0.831)     # #00FFD4
-const COLOR_HOLY_GOLD      := Color(1.0, 0.843, 0.0)     # #FFD700
-const COLOR_ERROR_RED      := Color(1.0, 0.133, 0.267)   # #FF2244
-const COLOR_STARRY_PURPLE  := Color(0.078, 0.063, 0.149) # #141026
+var COLOR_RESONANCE_CYAN := UIColors.RESONANCE_CYAN     # #00FFD4
+const COLOR_STARRY_PURPLE  := UIColors.PANEL_BG # #141026
 
 # ============================================================
 # 内部状态
@@ -44,7 +41,7 @@ var _time: float = 0.0
 var _flash_intensity: float = 0.0
 var _flash_color: Color = Color.WHITE
 var _shockwave_progress: float = 0.0
-var _shockwave_color: Color = COLOR_HOLY_GOLD
+var _shockwave_color: Color = UIColors.GOLD
 
 ## 卡拍判定
 var _last_beat_time: float = 0.0
@@ -132,7 +129,7 @@ func _draw() -> void:
 	# === 4. 中心脉冲 ===
 	if _beat_progress < 0.15:
 		var pulse_alpha := (1.0 - _beat_progress / 0.15) * 0.3
-		draw_circle(center, outer_radius * 0.15, Color(COLOR_RESONANCE_CYAN, pulse_alpha))
+		draw_circle(center, outer_radius * 0.15, UIColors.with_alpha(COLOR_RESONANCE_CYAN, pulse_alpha))
 
 	# === 5. BPM 文字 ===
 	var font := ThemeDB.fallback_font
@@ -146,13 +143,13 @@ func _draw() -> void:
 		match _beat_accuracy:
 			"perfect":
 				accuracy_text = "PERFECT!"
-				accuracy_color = COLOR_HOLY_GOLD
+				accuracy_color = UIColors.GOLD
 			"good":
 				accuracy_text = "GOOD"
-				accuracy_color = Color(0.4, 0.9, 0.4)
+				accuracy_color = UIColors.SUCCESS
 			"miss":
 				accuracy_text = "MISS"
-				accuracy_color = COLOR_ERROR_RED
+				accuracy_color = UIColors.ERROR_RED
 		accuracy_color.a = _flash_intensity
 		draw_string(font, Vector2(center.x - 22, size.y - 2), accuracy_text,
 			HORIZONTAL_ALIGNMENT_CENTER, -1, 11, accuracy_color)
@@ -167,7 +164,7 @@ func _draw_outer_ring(center: Vector2, radius: float) -> void:
 		var a2 := (TAU / segments) * (i + 1)
 		var p1 := center + Vector2.from_angle(a1) * radius
 		var p2 := center + Vector2.from_angle(a2) * radius
-		draw_line(p1, p2, Color(COLOR_CRYSTAL_WHITE, 0.2), ring_width, true)
+		draw_line(p1, p2, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.2), ring_width, true)
 
 	# 刻度标记
 	for i in range(total_ticks):
@@ -179,7 +176,7 @@ func _draw_outer_ring(center: Vector2, radius: float) -> void:
 
 		var p_outer := center + Vector2.from_angle(angle) * (radius + tick_len * 0.5)
 		var p_inner := center + Vector2.from_angle(angle) * (radius - tick_len * 0.5)
-		draw_line(p_inner, p_outer, Color(COLOR_CRYSTAL_WHITE, tick_alpha), tick_width, true)
+		draw_line(p_inner, p_outer, UIColors.with_alpha(UIColors.TEXT_PRIMARY, tick_alpha), tick_width, true)
 
 func _draw_inner_ring(center: Vector2, radius: float) -> void:
 	if radius < 2.0:
@@ -191,7 +188,7 @@ func _draw_inner_ring(center: Vector2, radius: float) -> void:
 		var a2 := (TAU / segments) * (i + 1)
 		var p1 := center + Vector2.from_angle(a1) * radius
 		var p2 := center + Vector2.from_angle(a2) * radius
-		draw_line(p1, p2, Color(COLOR_RESONANCE_CYAN, 0.8), ring_width + 1.0, true)
+		draw_line(p1, p2, UIColors.with_alpha(COLOR_RESONANCE_CYAN, 0.8), ring_width + 1.0, true)
 
 	# 辉光
 	for i in range(segments):
@@ -199,7 +196,7 @@ func _draw_inner_ring(center: Vector2, radius: float) -> void:
 		var a2 := (TAU / segments) * (i + 1)
 		var p1 := center + Vector2.from_angle(a1) * radius
 		var p2 := center + Vector2.from_angle(a2) * radius
-		draw_line(p1, p2, Color(COLOR_RESONANCE_CYAN, 0.2), ring_width + 5.0, true)
+		draw_line(p1, p2, UIColors.with_alpha(COLOR_RESONANCE_CYAN, 0.2), ring_width + 5.0, true)
 
 func _draw_shockwave(center: Vector2, base_radius: float) -> void:
 	var shock_radius := base_radius + (1.0 - _shockwave_progress) * 20.0
@@ -210,7 +207,7 @@ func _draw_shockwave(center: Vector2, base_radius: float) -> void:
 		var a2 := (TAU / segments) * (i + 1)
 		var p1 := center + Vector2.from_angle(a1) * shock_radius
 		var p2 := center + Vector2.from_angle(a2) * shock_radius
-		draw_line(p1, p2, Color(_shockwave_color, shock_alpha), 2.0 * _shockwave_progress, true)
+		draw_line(p1, p2, UIColors.with_alpha(_shockwave_color, shock_alpha), 2.0 * _shockwave_progress, true)
 
 # ============================================================
 # 节拍回调
@@ -235,21 +232,21 @@ func judge_beat_accuracy() -> String:
 
 	if min_offset_ms <= perfect_window_ms:
 		_beat_accuracy = "perfect"
-		_flash_color = COLOR_HOLY_GOLD
+		_flash_color = UIColors.GOLD
 		_flash_intensity = 1.0
 		_shockwave_progress = 1.0
-		_shockwave_color = COLOR_HOLY_GOLD
+		_shockwave_color = UIColors.GOLD
 		perfect_beat_hit.emit()
 	elif min_offset_ms <= good_window_ms:
 		_beat_accuracy = "good"
-		_flash_color = Color(0.4, 0.9, 0.4)
+		_flash_color = UIColors.SUCCESS
 		_flash_intensity = 0.7
 		_shockwave_progress = 0.5
 		_shockwave_color = Color.WHITE
 		good_beat_hit.emit()
 	else:
 		_beat_accuracy = "miss"
-		_flash_color = COLOR_ERROR_RED
+		_flash_color = UIColors.ERROR_RED
 		_flash_intensity = 0.4
 		miss_beat.emit()
 

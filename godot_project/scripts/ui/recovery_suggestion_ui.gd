@@ -152,9 +152,9 @@ func _show_suggestion(message: String, afi: float) -> void:
 		_suggestion_label.text = message
 		var suggestion_color: Color
 		if is_severe:
-			suggestion_color = Color(1.0, 0.3, 0.2)
+			suggestion_color = UIColors.DANGER
 		else:
-			suggestion_color = Color(1.0, 0.8, 0.2)
+			suggestion_color = UIColors.GOLD
 		_suggestion_label.add_theme_color_override("font_color", suggestion_color)
 
 # ============================================================

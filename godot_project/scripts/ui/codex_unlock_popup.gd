@@ -28,12 +28,6 @@ signal notification_dismissed(entry_id: String)
 # ============================================================
 # 常量 — 颜色方案 (与 §1.2 对齐)
 # ============================================================
-const COL_BG := Color("#141026E6")            ## 星空紫 90%
-const COL_ACCENT := Color("#9D6FFF")          ## 谐振紫
-const COL_GOLD := Color("#FFD700")            ## 圣光金
-const COL_TEXT_PRIMARY := Color("#EAE6FF")    ## 晶体白
-const COL_TEXT_SECONDARY := Color("#A098C8")  ## 次级文本
-const COL_TEXT_DIM := Color("#6B668A")        ## 暗淡文本
 
 # ============================================================
 # 常量 — 布局参数 (§9.1)
@@ -129,8 +123,8 @@ func show_special_unlock(entry_id: String, entry_name: String,
 		"name": entry_name,
 		"subtitle": subtitle,
 		"rarity": 3,
-		"rarity_color": COL_GOLD,
-		"icon_color": COL_GOLD,
+		"rarity_color": UIColors.GOLD,
+		"icon_color": UIColors.GOLD,
 		"is_special": true,
 		"category_text": category_text,
 	})
@@ -141,13 +135,13 @@ func show_upgrade_acquired(upgrade_name: String, direction: String) -> void:
 	var cat_text := "升级获得"
 	match direction:
 		"offense":
-			icon_color = Color("#FF4444")
+			icon_color = UIColors.OFFENSE
 			cat_text = "进攻升级获得"
 		"defense":
-			icon_color = Color("#4488FF")
+			icon_color = UIColors.DEFENSE
 			cat_text = "防御升级获得"
 		"core":
-			icon_color = COL_ACCENT
+			icon_color = UIColors.ACCENT
 			cat_text = "核心升级获得"
 
 	_queue.append({
@@ -203,7 +197,7 @@ func _show_next() -> void:
 	panel.custom_minimum_size = Vector2(POPUP_WIDTH, POPUP_HEIGHT)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = COL_BG
+	style.bg_color = UIColors.PRIMARY_BG
 	style.corner_radius_top_left = POPUP_CORNER_RADIUS
 	style.corner_radius_top_right = POPUP_CORNER_RADIUS
 	style.corner_radius_bottom_left = POPUP_CORNER_RADIUS
@@ -214,7 +208,7 @@ func _show_next() -> void:
 	style.content_margin_bottom = 8
 
 	# 边框：特殊 → 圣光金 2px + 阴影；普通 → 谐振紫 1px
-	var border_color := COL_GOLD if is_special else rarity_color
+	var border_color := UIColors.GOLD if is_special else rarity_color
 	var border_w := 2 if is_special else 1
 	style.border_color = border_color
 	style.border_width_left = border_w
@@ -223,7 +217,7 @@ func _show_next() -> void:
 	style.border_width_bottom = border_w
 
 	if is_special:
-		style.shadow_color = Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, 0.3)
+		style.shadow_color = UIColors.with_alpha(UIColors.GOLD, 0.3)
 		style.shadow_size = 4
 
 	panel.add_theme_stylebox_override("panel", style)
@@ -235,12 +229,12 @@ func _show_next() -> void:
 	# 左侧图标
 	var icon_bg := ColorRect.new()
 	icon_bg.custom_minimum_size = Vector2(POPUP_ICON_SIZE, POPUP_ICON_SIZE)
-	icon_bg.color = Color(icon_color.r, icon_color.g, icon_color.b, 0.2)
+	icon_bg.color = UIColors.with_alpha(icon_color, 0.2)
 
 	var icon_label := Label.new()
 	icon_label.text = "★" if is_special else "♪"
 	icon_label.add_theme_font_size_override("font_size", 22)
-	icon_label.add_theme_color_override("font_color", COL_GOLD if is_special else icon_color)
+	icon_label.add_theme_color_override("font_color", UIColors.GOLD if is_special else icon_color)
 	icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	icon_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -256,14 +250,14 @@ func _show_next() -> void:
 	var name_label := Label.new()
 	name_label.text = info.get("name", "???")
 	name_label.add_theme_font_size_override("font_size", 14)
-	name_label.add_theme_color_override("font_color", COL_GOLD if is_special else COL_TEXT_PRIMARY)
+	name_label.add_theme_color_override("font_color", UIColors.GOLD if is_special else UIColors.TEXT_PRIMARY)
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	text_vbox.add_child(name_label)
 
 	var cat_label := Label.new()
 	cat_label.text = info.get("category_text", "已添加至图鉴")
 	cat_label.add_theme_font_size_override("font_size", 11)
-	cat_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	cat_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	text_vbox.add_child(cat_label)
 
 	var subtitle: String = info.get("subtitle", "")
@@ -271,7 +265,7 @@ func _show_next() -> void:
 		var sub_label := Label.new()
 		sub_label.text = subtitle
 		sub_label.add_theme_font_size_override("font_size", 10)
-		sub_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+		sub_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 		sub_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		text_vbox.add_child(sub_label)
 
@@ -301,10 +295,10 @@ func _show_next() -> void:
 	if is_special:
 		var pulse_tween := create_tween().set_loops(3)
 		pulse_tween.tween_property(panel, "modulate",
-			Color(1.3, 1.2, 0.8, 1.0), 0.3)\
+			UIColors.GOLD_BRIGHT, 0.3)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		pulse_tween.tween_property(panel, "modulate",
-			Color(1.0, 1.0, 1.0, 1.0), 0.3)\
+			Color.WHITE, 0.3)\
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 
 	# ---- 自动退场定时器 ----

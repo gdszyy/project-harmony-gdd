@@ -19,25 +19,17 @@ signal main_menu_pressed()
 # ============================================================
 # 颜色方案
 # ============================================================
-const BG_COLOR := Color(0.02, 0.01, 0.03, 0.97)
-const ACCENT := Color("#9D6FFF")
-const GOLD := Color("#FFD700")
-const CYAN := Color("#00E5FF")
-const TEXT_COLOR := Color("#EAE6FF")
-const DIM_TEXT := Color("#A098C8")
-const SUCCESS := Color("#4DFF80")
-const DANGER := Color("#FF4D4D")
-const FRAGMENT_COLOR := Color(0.6, 0.4, 1.0)
+const FRAGMENT_COLOR := UIColors.ACCENT
 
 # ============================================================
 # 评价等级
 # ============================================================
 const EVALUATIONS := {
-	"S": {"name": "HARMONIC MASTER", "color": Color("#FFD700"), "threshold": 2000},
-	"A": {"name": "RESONANCE", "color": Color("#00E5FF"), "threshold": 1200},
-	"B": {"name": "MELODY", "color": Color("#9D6FFF"), "threshold": 600},
-	"C": {"name": "RHYTHM", "color": Color("#4DFF80"), "threshold": 300},
-	"D": {"name": "NOISE", "color": Color("#A098C8"), "threshold": 0},
+	"S": {"name": "HARMONIC MASTER", "color": UIColors.GOLD, "threshold": 2000},
+	"A": {"name": "RESONANCE", "color": UIColors.CYAN, "threshold": 1200},
+	"B": {"name": "MELODY", "color": UIColors.ACCENT, "threshold": 600},
+	"C": {"name": "RHYTHM", "color": UIColors.SUCCESS, "threshold": 300},
+	"D": {"name": "NOISE", "color": UIColors.TEXT_SECONDARY, "threshold": 0},
 }
 
 # ============================================================
@@ -74,7 +66,7 @@ var _fragment_particles: Array[Dictionary] = []
 ## 评价
 var _eval_grade: String = "D"
 var _eval_name: String = "NOISE"
-var _eval_color: Color = DIM_TEXT
+var _eval_color: Color = UIColors.TEXT_SECONDARY
 var _eval_scale: float = 0.0
 
 ## 行动按钮
@@ -288,13 +280,13 @@ func _do_draw(canvas: Control) -> void:
 	var font := ThemeDB.fallback_font
 
 	# 背景
-	canvas.draw_rect(Rect2(Vector2.ZERO, vp), BG_COLOR)
+	canvas.draw_rect(Rect2(Vector2.ZERO, vp), UIColors.PRIMARY_BG)
 
 	# 星尘
 	for star in _stars:
 		var flicker := 0.5 + 0.5 * sin(_time * 0.6 + star["phase"])
 		canvas.draw_circle(star["pos"], star["size"],
-			Color(0.5, 0.5, 0.7, star["brightness"] * flicker * 0.4))
+			UIColors.with_alpha(UIColors.TEXT_DIM, star["brightness"] * flicker * 0.4))
 
 	match _current_phase:
 		Phase.STATS:
@@ -309,11 +301,11 @@ func _do_draw(canvas: Control) -> void:
 func _draw_stats_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2) -> void:
 	canvas.draw_string(font, Vector2(center.x - 100, 80),
 		"PERFORMANCE", HORIZONTAL_ALIGNMENT_CENTER, 200, 24,
-		Color(GOLD.r, GOLD.g, GOLD.b, 0.9))
+		UIColors.with_alpha(UIColors.GOLD, 0.9))
 	canvas.draw_string(font, Vector2(center.x - 60, 105),
-		"演 出 评 价", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, DIM_TEXT)
+		"演 出 评 价", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, UIColors.TEXT_SECONDARY)
 	canvas.draw_line(Vector2(center.x - 200, 120), Vector2(center.x + 200, 120),
-		Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.2), 1.0)
+		UIColors.with_alpha(UIColors.ACCENT, 0.2), 1.0)
 
 	var start_y := 160.0
 	var row_h := 45.0
@@ -324,15 +316,15 @@ func _draw_stats_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2
 		var alpha := reveal_progress
 		canvas.draw_string(font, Vector2(center.x - 180, y + 18),
 			item["icon"], HORIZONTAL_ALIGNMENT_LEFT, -1, 16,
-			Color(ACCENT.r, ACCENT.g, ACCENT.b, alpha * 0.7))
+			UIColors.with_alpha(UIColors.ACCENT, alpha * 0.7))
 		canvas.draw_string(font, Vector2(center.x - 150, y + 18),
 			item["label"], HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-			Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, alpha))
+			UIColors.with_alpha(UIColors.TEXT_SECONDARY, alpha))
 		canvas.draw_string(font, Vector2(center.x + 80, y + 18),
 			item["value"], HORIZONTAL_ALIGNMENT_RIGHT, 100, 16,
-			Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, alpha))
+			UIColors.with_alpha(UIColors.TEXT_PRIMARY, alpha))
 		canvas.draw_line(Vector2(center.x - 180, y + 30), Vector2(center.x + 180, y + 30),
-			Color(0.2, 0.18, 0.3, alpha * 0.3), 1.0)
+			UIColors.with_alpha(UIColors.TEXT_LOCKED, alpha * 0.3), 1.0)
 
 	if _eval_scale > 0.0:
 		var eval_y := start_y + _stat_items.size() * row_h + 40
@@ -340,56 +332,56 @@ func _draw_stats_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2
 		var eval_rect := Rect2(
 			Vector2(center.x - 120 * scale, eval_y),
 			Vector2(240 * scale, 60 * scale))
-		canvas.draw_rect(eval_rect, Color(_eval_color.r, _eval_color.g, _eval_color.b, 0.08 * scale))
-		canvas.draw_rect(eval_rect, Color(_eval_color.r, _eval_color.g, _eval_color.b, 0.3 * scale), false, 2.0)
+		canvas.draw_rect(eval_rect, UIColors.with_alpha(_eval_color, 0.08 * scale))
+		canvas.draw_rect(eval_rect, UIColors.with_alpha(_eval_color, 0.3 * scale), false, 2.0)
 		canvas.draw_string(font, eval_rect.position + Vector2(20 * scale, 38 * scale),
 			_eval_grade, HORIZONTAL_ALIGNMENT_LEFT, -1, int(32 * scale),
-			Color(_eval_color.r, _eval_color.g, _eval_color.b, scale))
+			UIColors.with_alpha(_eval_color, scale))
 		canvas.draw_string(font, eval_rect.position + Vector2(60 * scale, 30 * scale),
 			_eval_name, HORIZONTAL_ALIGNMENT_LEFT, -1, int(14 * scale),
-			Color(_eval_color.r, _eval_color.g, _eval_color.b, scale * 0.8))
+			UIColors.with_alpha(_eval_color, scale * 0.8))
 
 	if _stat_reveal_index >= _stat_items.size() and _eval_scale >= 0.8:
 		var hint_alpha := 0.3 + 0.3 * sin(_time * 2.0)
 		canvas.draw_string(font, Vector2(center.x - 60, vp.y - 50),
 			"点击继续", HORIZONTAL_ALIGNMENT_CENTER, 120, 12,
-			Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, hint_alpha))
+			UIColors.with_alpha(UIColors.TEXT_SECONDARY, hint_alpha))
 
 func _draw_fragments_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2) -> void:
 	canvas.draw_string(font, Vector2(center.x - 100, 80),
 		"RESONANCE", HORIZONTAL_ALIGNMENT_CENTER, 200, 24,
-		Color(FRAGMENT_COLOR.r, FRAGMENT_COLOR.g, FRAGMENT_COLOR.b, 0.9))
+		UIColors.with_alpha(FRAGMENT_COLOR, 0.9))
 	canvas.draw_string(font, Vector2(center.x - 60, 105),
-		"共 鸣 收 获", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, DIM_TEXT)
+		"共 鸣 收 获", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, UIColors.TEXT_SECONDARY)
 	canvas.draw_string(font, Vector2(center.x - 15, center.y - 30),
 		"✦", HORIZONTAL_ALIGNMENT_CENTER, 30, 48,
-		Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.8))
+		UIColors.with_alpha(UIColors.ACCENT, 0.8))
 	var count_text := "+%d" % _fragment_count_display
 	canvas.draw_string(font, Vector2(center.x - 60, center.y + 30),
 		count_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 36,
-		Color(FRAGMENT_COLOR.r, FRAGMENT_COLOR.g, FRAGMENT_COLOR.b, 1.0))
+		UIColors.with_alpha(FRAGMENT_COLOR, 1.0))
 	var total := _result.get("total_fragments", _fragment_count_display)
 	canvas.draw_string(font, Vector2(center.x - 80, center.y + 65),
-		"总计: %d 共鸣碎片" % total, HORIZONTAL_ALIGNMENT_CENTER, 160, 13, DIM_TEXT)
+		"总计: %d 共鸣碎片" % total, HORIZONTAL_ALIGNMENT_CENTER, 160, 13, UIColors.TEXT_SECONDARY)
 	if _result.get("harmony_bonus", false):
 		canvas.draw_string(font, Vector2(center.x - 60, center.y + 90),
-			"♪ 和谐度加成!", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, SUCCESS)
+			"♪ 和谐度加成!", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, UIColors.SUCCESS)
 	for particle in _fragment_particles:
 		var alpha: float = particle["life"]
 		canvas.draw_circle(particle["pos"], particle["size"],
-			Color(ACCENT.r, ACCENT.g, ACCENT.b, alpha * 0.6))
+			UIColors.with_alpha(UIColors.ACCENT, alpha * 0.6))
 	if _fragment_count_display >= _fragment_target:
 		var hint_alpha := 0.3 + 0.3 * sin(_time * 2.0)
 		canvas.draw_string(font, Vector2(center.x - 60, vp.y - 50),
 			"点击继续", HORIZONTAL_ALIGNMENT_CENTER, 120, 12,
-			Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, hint_alpha))
+			UIColors.with_alpha(UIColors.TEXT_SECONDARY, hint_alpha))
 
 func _draw_actions_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2) -> void:
 	canvas.draw_string(font, Vector2(center.x - 80, 100),
 		"NEXT MOVE", HORIZONTAL_ALIGNMENT_CENTER, 160, 22,
-		Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, 0.9))
+		UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.9))
 	canvas.draw_string(font, Vector2(center.x - 60, 125),
-		"下 一 步", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, DIM_TEXT)
+		"下 一 步", HORIZONTAL_ALIGNMENT_CENTER, 120, 12, UIColors.TEXT_SECONDARY)
 
 	_btn_rects.clear()
 	var btn_w := 280.0
@@ -400,11 +392,11 @@ func _draw_actions_phase(canvas: Control, center: Vector2, font: Font, vp: Vecto
 
 	var buttons := [
 		{"key": "retry", "label": "再次演奏", "sublabel": "挑战更高评价",
-		 "icon": "▶", "color": SUCCESS},
+		 "icon": "▶", "color": UIColors.SUCCESS},
 		{"key": "hall", "label": "和谐殿堂", "sublabel": "强化你的能力",
-		 "icon": "✦", "color": ACCENT},
+		 "icon": "✦", "color": UIColors.ACCENT},
 		{"key": "menu", "label": "返回主菜单", "sublabel": "保存并退出",
-		 "icon": "◀", "color": DIM_TEXT},
+		 "icon": "◀", "color": UIColors.TEXT_SECONDARY},
 	]
 
 	for i in range(buttons.size()):
@@ -416,21 +408,21 @@ func _draw_actions_phase(canvas: Control, center: Vector2, font: Font, vp: Vecto
 		var is_hover := (_hover_btn == btn["key"])
 		var btn_color: Color = btn["color"]
 		var bg_alpha := 0.12 if is_hover else 0.06
-		canvas.draw_rect(rect, Color(btn_color.r, btn_color.g, btn_color.b, bg_alpha))
+		canvas.draw_rect(rect, UIColors.with_alpha(btn_color, bg_alpha))
 		var border_alpha := 0.6 if is_hover else 0.25
-		canvas.draw_rect(rect, Color(btn_color.r, btn_color.g, btn_color.b, border_alpha), false, 1.5)
+		canvas.draw_rect(rect, UIColors.with_alpha(btn_color, border_alpha), false, 1.5)
 		if is_hover:
 			var glow_rect := Rect2(rect.position - Vector2(3, 3), rect.size + Vector2(6, 6))
-			canvas.draw_rect(glow_rect, Color(btn_color.r, btn_color.g, btn_color.b, 0.06), false, 3.0)
+			canvas.draw_rect(glow_rect, UIColors.with_alpha(btn_color, 0.06), false, 3.0)
 		canvas.draw_string(font, rect.position + Vector2(20, 35),
 			btn["icon"], HORIZONTAL_ALIGNMENT_LEFT, -1, 20,
-			Color(btn_color.r, btn_color.g, btn_color.b, 0.8 if is_hover else 0.5))
+			UIColors.with_alpha(btn_color, 0.8 if is_hover else 0.5))
 		canvas.draw_string(font, rect.position + Vector2(55, 30),
 			btn["label"], HORIZONTAL_ALIGNMENT_LEFT, -1, 16,
-			Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, 1.0 if is_hover else 0.7))
+			UIColors.with_alpha(UIColors.TEXT_PRIMARY, 1.0 if is_hover else 0.7))
 		canvas.draw_string(font, rect.position + Vector2(55, 50),
 			btn["sublabel"], HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-			Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, 0.7 if is_hover else 0.4))
+			UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.7 if is_hover else 0.4))
 
 func _draw_phase_indicator(canvas: Control, font: Font, vp: Vector2) -> void:
 	var indicator_y := 30.0
@@ -443,16 +435,16 @@ func _draw_phase_indicator(canvas: Control, font: Font, vp: Vector2) -> void:
 		var r := 4.0 if is_current else 3.0
 		var color: Color
 		if is_current:
-			color = ACCENT
+			color = UIColors.ACCENT
 		elif is_past:
-			color = Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.4)
+			color = UIColors.with_alpha(UIColors.ACCENT, 0.4)
 		else:
-			color = Color(0.3, 0.25, 0.4, 0.3)
+			color = UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
 		canvas.draw_circle(Vector2(x, indicator_y), r, color)
 		if i < 2:
-			var line_color := Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.2)
+			var line_color := UIColors.with_alpha(UIColors.ACCENT, 0.2)
 			if is_past:
-				line_color = Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.4)
+				line_color = UIColors.with_alpha(UIColors.ACCENT, 0.4)
 			canvas.draw_line(Vector2(x + 5, indicator_y), Vector2(x + dot_spacing - 5, indicator_y),
 				line_color, 1.0)
 

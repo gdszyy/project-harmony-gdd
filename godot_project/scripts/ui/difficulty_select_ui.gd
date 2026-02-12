@@ -45,7 +45,7 @@ func _setup_ui() -> void:
 	# 半透明背景
 	var bg := ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.0, 0.0, 0.05, 0.92)
+	bg.color = UIColors.with_alpha(Color.BLACK, 0.92)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -55,7 +55,7 @@ func _setup_ui() -> void:
 	_title_label.text = "选择难度"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 36)
-	_title_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	_title_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_title_label.anchor_left = 0.0
 	_title_label.anchor_right = 1.0
 	_title_label.anchor_top = 0.0
@@ -87,10 +87,10 @@ func _setup_ui() -> void:
 	else:
 		# 后备数据
 		difficulties = [
-			{"id": 0, "name": "和声入门", "name_en": "Harmonic Prelude", "description": "适合新手", "icon": "♩", "color": Color(0.3, 0.8, 0.5)},
-			{"id": 1, "name": "标准演奏", "name_en": "Standard Performance", "description": "推荐", "icon": "♪", "color": Color(0.3, 0.6, 1.0)},
-			{"id": 2, "name": "大师挑战", "name_en": "Maestro Challenge", "description": "高难度", "icon": "♫", "color": Color(1.0, 0.6, 0.2)},
-			{"id": 3, "name": "噩梦交响", "name_en": "Nightmare Symphony", "description": "极限", "icon": "𝄞", "color": Color(0.9, 0.15, 0.15)},
+			{"id": 0, "name": "和声入门", "name_en": "Harmonic Prelude", "description": "适合新手", "icon": "♩", "color": UIColors.DIFFICULTY_EASY},
+			{"id": 1, "name": "标准演奏", "name_en": "Standard Performance", "description": "推荐", "icon": "♪", "color": UIColors.DENSITY_SAFE},
+			{"id": 2, "name": "大师挑战", "name_en": "Maestro Challenge", "description": "高难度", "icon": "♫", "color": UIColors.WARNING},
+			{"id": 3, "name": "噩梦交响", "name_en": "Nightmare Symphony", "description": "极限", "icon": "𝄞", "color": UIColors.DIFFICULTY_EXPERT},
 		]
 
 	_cards.clear()
@@ -105,7 +105,7 @@ func _setup_ui() -> void:
 	_description_label.name = "DescriptionLabel"
 	_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_description_label.add_theme_font_size_override("font_size", 18)
-	_description_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+	_description_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	_description_label.anchor_left = 0.1
 	_description_label.anchor_right = 0.9
 	_description_label.anchor_top = 0.74
@@ -132,7 +132,7 @@ func _setup_ui() -> void:
 	_back_button.name = "BackButton"
 	_back_button.text = "返回"
 	_back_button.custom_minimum_size = Vector2(140, 45)
-	_style_button(_back_button, Color(0.5, 0.5, 0.6))
+	_style_button(_back_button, UIColors.TEXT_DIM)
 	_back_button.pressed.connect(_on_back_pressed)
 	button_container.add_child(_back_button)
 
@@ -141,7 +141,7 @@ func _setup_ui() -> void:
 	_confirm_button.name = "ConfirmButton"
 	_confirm_button.text = "确认选择"
 	_confirm_button.custom_minimum_size = Vector2(160, 45)
-	_style_button(_confirm_button, Color(0.3, 0.7, 1.0))
+	_style_button(_confirm_button, UIColors.DENSITY_SAFE)
 	_confirm_button.pressed.connect(_on_confirm_pressed)
 	button_container.add_child(_confirm_button)
 
@@ -153,7 +153,7 @@ func _create_difficulty_card(diff: Dictionary, index: int) -> PanelContainer:
 
 	# 卡片样式
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.08, 0.12, 0.9)
+	style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9)
 	style.border_color = diff.get("color", Color.WHITE).darkened(0.3)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(12)
@@ -181,7 +181,7 @@ func _create_difficulty_card(diff: Dictionary, index: int) -> PanelContainer:
 	name_label.text = diff.get("name", "")
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 22)
-	name_label.add_theme_color_override("font_color", Color(0.95, 0.95, 1.0))
+	name_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	vbox.add_child(name_label)
 
 	# 英文名
@@ -189,7 +189,7 @@ func _create_difficulty_card(diff: Dictionary, index: int) -> PanelContainer:
 	en_label.text = diff.get("name_en", "")
 	en_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	en_label.add_theme_font_size_override("font_size", 11)
-	en_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	en_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	vbox.add_child(en_label)
 
 	# 分隔线
@@ -203,7 +203,7 @@ func _create_difficulty_card(diff: Dictionary, index: int) -> PanelContainer:
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_label.add_theme_font_size_override("font_size", 13)
-	desc_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
+	desc_label.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	vbox.add_child(desc_label)
 
 	# 点击事件
@@ -217,7 +217,7 @@ func _create_difficulty_card(diff: Dictionary, index: int) -> PanelContainer:
 
 func _style_button(button: Button, accent: Color) -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.15, 0.9)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.9)
 	style.border_color = accent
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(6)
@@ -228,12 +228,12 @@ func _style_button(button: Button, accent: Color) -> void:
 	button.add_theme_stylebox_override("normal", style)
 
 	var hover := style.duplicate()
-	hover.bg_color = Color(accent.r, accent.g, accent.b, 0.2)
+	hover.bg_color = UIColors.with_alpha(accent, 0.2)
 	hover.border_color = accent.lightened(0.2)
 	hover.set_border_width_all(2)
 	button.add_theme_stylebox_override("hover", hover)
 
-	button.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	button.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	button.add_theme_font_size_override("font_size", 14)
 
 # ============================================================
@@ -252,14 +252,14 @@ func _update_selection() -> void:
 
 		if i == _selected_index:
 			# 选中状态
-			var color: Color = Color(0.3, 0.6, 1.0)
+			var color: Color = UIColors.DENSITY_SAFE
 			if i < difficulties.size():
 				color = difficulties[i].get("color", color)
 			style.border_color = color
 			style.set_border_width_all(3)
-			style.bg_color = Color(color.r, color.g, color.b, 0.15)
+			style.bg_color = UIColors.with_alpha(color, 0.15)
 			card.add_theme_stylebox_override("panel", style)
-			card.modulate = Color(1.1, 1.1, 1.1)
+			card.modulate = Color.WHITE
 
 			# 更新描述
 			if i < difficulties.size() and _description_label:
@@ -267,11 +267,11 @@ func _update_selection() -> void:
 		else:
 			# 未选中状态
 			style.set_border_width_all(1)
-			style.bg_color = Color(0.08, 0.08, 0.12, 0.9)
+			style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9)
 			if i < difficulties.size():
 				style.border_color = difficulties[i].get("color", Color.WHITE).darkened(0.5)
 			card.add_theme_stylebox_override("panel", style)
-			card.modulate = Color(0.7, 0.7, 0.7)
+			card.modulate = UIColors.TEXT_DIM
 
 # ============================================================
 # 按钮回调

@@ -11,15 +11,13 @@ const OVERLAY_HEIGHT := 160.0
 const GRAPH_HEIGHT := 80.0
 const GRAPH_WIDTH := 230.0
 const MARGIN := 12.0
-const BG_COLOR := Color(0.04, 0.03, 0.08, 0.85)
-const BORDER_COLOR := Color(0.5, 0.3, 0.9, 0.5)
-const DPS_COLOR := Color(0.3, 0.9, 0.5)
-const PEAK_COLOR := Color(1.0, 0.85, 0.2)
-const AVG_COLOR := Color(0.5, 0.7, 1.0)
-const GRAPH_BG := Color(0.06, 0.04, 0.10, 0.9)
-const GRAPH_LINE := Color(0.3, 0.9, 0.5, 0.8)
-const GRAPH_FILL := Color(0.3, 0.9, 0.5, 0.15)
-const GRAPH_GRID := Color(0.15, 0.12, 0.22, 0.5)
+const DPS_COLOR := UIColors.DIFFICULTY_EASY
+const PEAK_COLOR := UIColors.GOLD
+var AVG_COLOR := UIColors.SHIELD
+var GRAPH_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.9)
+const GRAPH_LINE := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.8)
+const GRAPH_FILL := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.15)
+const GRAPH_GRID := UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.5)
 
 # ============================================================
 # 状态
@@ -105,12 +103,12 @@ func _on_panel_draw() -> void:
 
 	# 背景
 	var bg_style := Rect2(Vector2.ZERO, panel_size)
-	_draw_panel.draw_rect(bg_style, BG_COLOR)
-	_draw_panel.draw_rect(bg_style, BORDER_COLOR, false, 1.0)
+	_draw_panel.draw_rect(bg_style, UIColors.PRIMARY_BG)
+	_draw_panel.draw_rect(bg_style, UIColors.BORDER_DEFAULT, false, 1.0)
 
 	# 标题
 	_draw_panel.draw_string(font, Vector2(10, 16), "DPS MONITOR",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.4, 0.35, 0.5))
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.TEXT_DIM)
 
 	# 获取统计数据
 	var current_dps := 0.0
@@ -128,12 +126,12 @@ func _on_panel_draw() -> void:
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 20, DPS_COLOR)
 
 	_draw_panel.draw_string(font, Vector2(120, 30), "PEAK",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.35, 0.5))
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.TEXT_DIM)
 	_draw_panel.draw_string(font, Vector2(120, 42), "%.1f" % peak_dps,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, PEAK_COLOR)
 
 	_draw_panel.draw_string(font, Vector2(180, 30), "AVG",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.35, 0.5))
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.TEXT_DIM)
 	_draw_panel.draw_string(font, Vector2(180, 42), "%.1f" % avg_dps,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, AVG_COLOR)
 
@@ -181,4 +179,4 @@ func _on_panel_draw() -> void:
 			_draw_panel.draw_polyline(points, GRAPH_LINE, 1.5, true)
 
 	# 图表边框
-	_draw_panel.draw_rect(graph_rect, BORDER_COLOR, false, 1.0)
+	_draw_panel.draw_rect(graph_rect, UIColors.BORDER_DEFAULT, false, 1.0)

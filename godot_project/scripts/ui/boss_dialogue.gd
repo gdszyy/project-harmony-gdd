@@ -353,7 +353,7 @@ func _build_ui() -> void:
 	# 背景暗化层
 	_background_dim = ColorRect.new()
 	_background_dim.name = "BackgroundDim"
-	_background_dim.color = Color(0.0, 0.0, 0.0, 0.6)
+	_background_dim.color = UIColors.with_alpha(Color.BLACK, 0.6)
 	_background_dim.anchor_right = 1.0
 	_background_dim.anchor_bottom = 1.0
 	_background_dim.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -373,8 +373,8 @@ func _build_ui() -> void:
 
 	# 面板样式
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.05, 0.03, 0.08, 0.92)
-	style.border_color = Color(0.6, 0.3, 0.9, 0.8)
+	style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.92)
+	style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.8)
 	style.border_width_top = 2
 	style.border_width_bottom = 2
 	style.border_width_left = 2
@@ -424,13 +424,13 @@ func _build_ui() -> void:
 	_name_label = Label.new()
 	_name_label.name = "BossName"
 	_name_label.add_theme_font_size_override("font_size", 22)
-	_name_label.add_theme_color_override("font_color", Color(0.9, 0.7, 1.0))
+	_name_label.add_theme_color_override("font_color", UIColors.ACCENT)
 	name_row.add_child(_name_label)
 
 	_title_label = Label.new()
 	_title_label.name = "BossTitle"
 	_title_label.add_theme_font_size_override("font_size", 14)
-	_title_label.add_theme_color_override("font_color", Color(0.6, 0.5, 0.7))
+	_title_label.add_theme_color_override("font_color", UIColors.TEXT_HINT)
 	name_row.add_child(_title_label)
 
 	# 对话文本
@@ -441,7 +441,7 @@ func _build_ui() -> void:
 	_text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text_label.add_theme_font_size_override("normal_font_size", 18)
-	_text_label.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
+	_text_label.add_theme_color_override("default_color", UIColors.TEXT_PRIMARY)
 	text_container.add_child(_text_label)
 
 	# 底部提示行
@@ -454,14 +454,14 @@ func _build_ui() -> void:
 	_advance_indicator.name = "AdvanceIndicator"
 	_advance_indicator.text = "▼ 点击继续"
 	_advance_indicator.add_theme_font_size_override("font_size", 13)
-	_advance_indicator.add_theme_color_override("font_color", Color(0.5, 0.4, 0.6, 0.8))
+	_advance_indicator.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_DIM, 0.8))
 	hint_row.add_child(_advance_indicator)
 
 	_skip_hint = Label.new()
 	_skip_hint.name = "SkipHint"
 	_skip_hint.text = "  [ESC 跳过]"
 	_skip_hint.add_theme_font_size_override("font_size", 12)
-	_skip_hint.add_theme_color_override("font_color", Color(0.4, 0.3, 0.5, 0.6))
+	_skip_hint.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.6))
 	hint_row.add_child(_skip_hint)
 
 # ============================================================
@@ -687,36 +687,7 @@ func _get_boss_title_for_key(boss_key: String) -> String:
 
 ## 根据情感更新头像占位符颜色
 func _update_portrait_color(emotion: String) -> void:
-	var color_map: Dictionary = {
-		"solemn": Color(0.8, 0.75, 0.5),
-		"commanding": Color(0.9, 0.8, 0.4),
-		"challenge": Color(1.0, 0.4, 0.3),
-		"surprised": Color(0.5, 0.8, 1.0),
-		"accepting": Color(0.6, 0.9, 0.7),
-		"reverent": Color(0.7, 0.6, 1.0),
-		"stern": Color(0.5, 0.4, 0.7),
-		"enlightened": Color(1.0, 0.95, 0.7),
-		"proud": Color(0.8, 0.6, 0.3),
-		"respectful": Color(0.6, 0.8, 0.6),
-		"blessing": Color(0.9, 0.85, 0.5),
-		"elegant": Color(0.9, 0.8, 1.0),
-		"disdainful": Color(0.8, 0.5, 0.9),
-		"inviting": Color(0.7, 0.9, 1.0),
-		"impressed": Color(0.5, 0.9, 0.8),
-		"wistful": Color(0.7, 0.7, 0.9),
-		"fierce": Color(1.0, 0.3, 0.2),
-		"passionate": Color(1.0, 0.5, 0.3),
-		"moved": Color(0.6, 0.7, 1.0),
-		"encouraging": Color(0.8, 0.9, 0.5),
-		"cool": Color(0.3, 0.5, 0.9),
-		"serious": Color(0.5, 0.4, 0.6),
-		"glitch": Color(0.0, 1.0, 0.5),
-		"cold": Color(0.3, 0.3, 0.5),
-		"final": Color(0.8, 0.0, 0.3),
-		"transcendent": Color(1.0, 1.0, 1.0),
-		"neutral": Color(0.7, 0.7, 0.7),
-	}
-	var color: Color = color_map.get(emotion, Color(0.7, 0.7, 0.7))
+	var color: Color = UIColors.get_emotion_color(emotion)
 
 	# 创建程序化头像占位符（彩色渐变方块）
 	var img := Image.create(100, 100, false, Image.FORMAT_RGBA8)
@@ -724,7 +695,7 @@ func _update_portrait_color(emotion: String) -> void:
 		for x in range(100):
 			var u := float(x) / 100.0
 			var v := float(y) / 100.0
-			var c := color.lerp(Color(0.1, 0.05, 0.15), v * 0.6)
+			var c := color.lerp(UIColors.PRIMARY_BG, v * 0.6)
 			# 添加边框
 			if x < 2 or x > 97 or y < 2 or y > 97:
 				c = color.lightened(0.3)

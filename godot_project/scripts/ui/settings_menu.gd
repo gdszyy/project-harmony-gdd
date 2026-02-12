@@ -39,10 +39,10 @@ signal menu_closed
 # 颜色常量
 # ============================================================
 
-const COLOR_TITLE := Color("#EAE6FF")
-const COLOR_SUBTITLE := Color("#A098C8")
-const COLOR_ACCENT := Color("#9D6FFF")
-const COLOR_DIM_BG := Color(0.039, 0.031, 0.078, 0.6)
+const COLOR_TITLE := UIColors.TEXT_PRIMARY
+const COLOR_SUBTITLE := UIColors.TEXT_SECONDARY
+const COLOR_ACCENT := UIColors.ACCENT
+const COLOR_DIM_BG := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.6)
 
 # ============================================================
 # 节点引用 — 音频标签页
@@ -140,7 +140,6 @@ func _ready() -> void:
 
 	# 播放入场动画
 	_play_entrance_animation()
-
 
 func _input(event: InputEvent) -> void:
 	# 处理按键重绑定的输入捕获

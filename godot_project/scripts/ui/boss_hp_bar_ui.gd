@@ -20,23 +20,23 @@ const PHASE_TRANSITION_DURATION := 1.0
 
 ## 7种Boss填充颜色
 const CHAPTER_FILL_COLORS: Dictionary = {
-	1: Color(0.0, 1.0, 0.831),    # 谐振青 (毕达哥拉斯)
-	2: Color(0.4, 0.15, 0.1),     # 暗红 + 圣光金 (圭多)
-	3: Color(0.7, 0.55, 0.2),     # 黄铜 (巴赫)
-	4: Color(1.0, 0.9, 0.6),      # 象牙白 / 金色 (莫扎特)
-	5: Color(0.85, 0.15, 0.1),    # 橙红 (贝多芬)
-	6: Color(0.2, 0.5, 1.0),      # 霓虹蓝 (爵士)
-	7: Color(0.5, 0.5, 0.5),      # 全频谱灰 (噪音)
+	1: UIColors.BOSS_PHASE_COLORS[1],    # 谐振青 (毕达哥拉斯)
+	2: UIColors.BOSS_PHASE_COLORS[2],     # 暗红 + 圣光金 (圭多)
+	3: UIColors.BOSS_PHASE_COLORS[3],     # 黄铜 (巴赫)
+	4: UIColors.GOLD,      # 象牙白 / 金色 (莫扎特)
+	5: UIColors.BOSS_PHASE_COLORS[5],    # 橙红 (贝多芬)
+	6: UIColors.BOSS_PHASE_COLORS[6],      # 霓虹蓝 (爵士)
+	7: UIColors.TEXT_DIM,      # 全频谱灰 (噪音)
 }
 
 const CHAPTER_BORDER_COLORS: Dictionary = {
-	1: Color(0.918, 0.902, 1.0),   # 晶体白
-	2: Color(1.0, 0.843, 0.0),     # 圣光金
-	3: Color(0.5, 0.4, 0.15),      # 暗金
-	4: Color(1.0, 0.85, 0.3),      # 金色
-	5: Color(1.0, 0.6, 0.15),      # 闪电橙
-	6: Color(1.0, 0.3, 0.6),       # 霓虹粉
-	7: Color(1.0, 0.0, 0.667),     # 故障洋红
+	1: UIColors.TEXT_PRIMARY,   # 晶体白
+	2: UIColors.GOLD,     # 圣光金
+	3: UIColors.BOSS_RAGE_COLORS[3],      # 暗金
+	4: UIColors.GOLD,      # 金色
+	5: UIColors.BOSS_RAGE_COLORS[5],      # 闪电橙
+	6: UIColors.BOSS_RAGE_COLORS[6],       # 霓虹粉
+	7: UIColors.BOSS_RAGE_COLORS[7],     # 故障洋红
 }
 
 const CHAPTER_BOSS_NAMES: Dictionary = {
@@ -120,7 +120,7 @@ func _build_ui() -> void:
 	_name_label.name = "BossNameLabel"
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.add_theme_font_size_override("font_size", 16)
-	_name_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_name_label.add_theme_color_override("font_color", UIColors.GOLD)
 	_name_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_name_label.offset_top = 5
 	_name_label.offset_left = -200
@@ -153,7 +153,7 @@ func _build_ui() -> void:
 	_hp_text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hp_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_hp_text_label.add_theme_font_size_override("font_size", 12)
-	_hp_text_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	_hp_text_label.add_theme_color_override("font_color", UIColors.with_alpha(Color.WHITE, 0.9))
 	_hp_text_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bar_rect.add_child(_hp_text_label)
 
@@ -162,7 +162,7 @@ func _build_ui() -> void:
 	_phase_label.name = "PhaseLabel"
 	_phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_phase_label.add_theme_font_size_override("font_size", 11)
-	_phase_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9, 0.8))
+	_phase_label.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.8))
 	_phase_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_phase_label.offset_top = -20
 	_phase_label.offset_left = -200

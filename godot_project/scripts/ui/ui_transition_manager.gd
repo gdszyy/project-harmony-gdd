@@ -59,7 +59,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_setup_transition_layer()
 
-
 ## 构建转场所需的节点层级
 func _setup_transition_layer() -> void:
 	# 创建顶层 CanvasLayer (z_index 设为极高值)
@@ -88,7 +87,7 @@ func _setup_transition_layer() -> void:
 	_fade_rect = ColorRect.new()
 	_fade_rect.name = "FadeRect"
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_fade_rect.color = Color(0.039, 0.031, 0.078, 0.0)  # 深渊黑 #0A0814
+	_fade_rect.color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.0)  # 深渊黑 #0A0814
 	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade_rect.visible = false
 	_canvas_layer.add_child(_fade_rect)
@@ -116,7 +115,6 @@ func transition_to_scene(target_scene_path: String, transition_type: String = "g
 			push_warning("UITransitionManager: 未知转场类型 '%s'，使用默认 glitch" % transition_type)
 			await _play_glitch_transition(target_scene_path)
 
-
 ## 执行转场并调用回调（用于非场景切换的情况，如弹出子菜单）
 ## [param callback] 在转场中点执行的回调函数
 ## [param transition_type] 转场类型
@@ -132,7 +130,6 @@ func transition_with_callback(callback: Callable, transition_type: String = "gli
 			await _play_fade_callback(callback)
 		_:
 			callback.call()
-
 
 ## 查询当前是否正在转场
 func is_transitioning() -> bool:
@@ -177,7 +174,6 @@ func _play_glitch_transition(target_scene_path: String) -> void:
 	_is_transitioning = false
 	transition_finished.emit()
 
-
 ## 播放故障转场效果并执行回调
 func _play_glitch_callback(callback: Callable) -> void:
 	_is_transitioning = true
@@ -205,7 +201,6 @@ func _play_glitch_callback(callback: Callable) -> void:
 	_transition_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_is_transitioning = false
 	transition_finished.emit()
-
 
 ## 设置故障 shader 的 progress 参数
 func _set_glitch_progress(value: float) -> void:
@@ -247,7 +242,6 @@ func _play_fade_transition(target_scene_path: String) -> void:
 	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_is_transitioning = false
 	transition_finished.emit()
-
 
 ## 播放淡入淡出转场并执行回调
 func _play_fade_callback(callback: Callable) -> void:

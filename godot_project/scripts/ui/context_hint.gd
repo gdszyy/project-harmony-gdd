@@ -23,10 +23,9 @@ signal context_hint_dismissed(hint_id: String)
 # ============================================================
 # 主题颜色
 # ============================================================
-const PANEL_DARK := Color("#100C20")
-const ACCENT_CYAN := Color("#4DFFF3")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
+const PANEL_DARK := UIColors.PANEL_DARK
+const ACCENT_CYAN := UIColors.ACCENT_2
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # 配置
@@ -332,7 +331,7 @@ func _create_hint_panel_instance() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(320, 50)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_DARK, 0.92)
+	style.bg_color = UIColors.with_alpha(PANEL_DARK, 0.92)
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
@@ -345,8 +344,8 @@ func _create_hint_panel_instance() -> PanelContainer:
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(ACCENT_CYAN, 0.7)
-	style.shadow_color = Color(ACCENT_CYAN, 0.2)
+	style.border_color = UIColors.with_alpha(ACCENT_CYAN, 0.7)
+	style.shadow_color = UIColors.with_alpha(ACCENT_CYAN, 0.2)
 	style.shadow_size = 4
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -363,7 +362,7 @@ func _create_hint_panel_instance() -> PanelContainer:
 	label.name = "HintLabel"
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.x = 260
-	label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(label)
 

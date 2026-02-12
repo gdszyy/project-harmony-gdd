@@ -22,34 +22,26 @@ signal start_game_pressed()
 # ============================================================
 # 颜色方案
 # ============================================================
-const BG_COLOR := Color(0.03, 0.02, 0.06, 0.97)
-const ACCENT := Color("#9D6FFF")
-const GOLD := Color("#FFD700")
-const CYAN := Color("#00E5FF")
-const TEXT_COLOR := Color("#EAE6FF")
-const DIM_TEXT := Color("#A098C8")
-const SUCCESS := Color("#4DFF80")
-const DANGER := Color("#FF4D4D")
-const FRAGMENT_COLOR := Color(0.6, 0.4, 1.0)
+const FRAGMENT_COLOR := UIColors.ACCENT
 
 ## 节点状态颜色
-const NODE_LOCKED_BG := Color(0.1, 0.08, 0.16, 0.4)
-const NODE_LOCKED_BORDER := Color(0.3, 0.25, 0.4, 0.3)
-const NODE_UNLOCKABLE_BORDER := Color(0.6, 0.4, 1.0, 0.7)
-const NODE_UNLOCKED_BG := Color(0.0, 0.9, 1.0, 0.15)
-const NODE_UNLOCKED_BORDER := Color(0.0, 0.9, 1.0, 0.8)
+var NODE_LOCKED_BG := UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.4)
+var NODE_LOCKED_BORDER := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
+const NODE_UNLOCKABLE_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.7)
+var NODE_UNLOCKED_BG := UIColors.with_alpha(UIColors.ACCENT_2, 0.15)
+var NODE_UNLOCKED_BORDER := UIColors.with_alpha(UIColors.ACCENT_2, 0.8)
 
 ## 连线颜色
-const LINK_LOCKED := Color(0.2, 0.18, 0.3, 0.2)
-const LINK_ACTIVE := Color(0.6, 0.4, 1.0, 0.5)
-const LINK_UNLOCKED := Color(0.0, 0.9, 1.0, 0.4)
+var LINK_LOCKED := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.2)
+const LINK_ACTIVE := UIColors.with_alpha(UIColors.ACCENT, 0.5)
+var LINK_UNLOCKED := UIColors.with_alpha(UIColors.ACCENT_2, 0.4)
 
 ## 模块主题色
 const MODULE_COLORS := {
-	"instrument": Color(0.2, 0.8, 1.0),
-	"theory": Color(0.8, 0.4, 1.0),
-	"modes": Color(1.0, 0.6, 0.2),
-	"denoise": Color(0.3, 1.0, 0.5),
+	"instrument": UIColors.ACCENT_2,
+	"theory": UIColors.ACCENT,
+	"modes": UIColors.WARNING,
+	"denoise": UIColors.SUCCESS,
 }
 
 const MODULE_NAMES := {
@@ -437,16 +429,16 @@ func _draw() -> void:
 	var vp := get_viewport_rect().size
 	var center := vp / 2.0
 	var font := ThemeDB.fallback_font
-	var module_color: Color = MODULE_COLORS.get(_current_module, ACCENT)
+	var module_color: Color = MODULE_COLORS.get(_current_module, UIColors.ACCENT)
 
 	# 背景
-	draw_rect(Rect2(Vector2.ZERO, vp), BG_COLOR)
+	draw_rect(Rect2(Vector2.ZERO, vp), UIColors.PRIMARY_BG)
 
 	# 星尘
 	for star in _bg_stars:
 		var flicker := 0.5 + 0.5 * sin(_time * 0.8 + star["phase"])
 		draw_circle(star["pos"], star["size"],
-			Color(0.6, 0.6, 0.8, star["brightness"] * flicker * 0.5))
+			UIColors.with_alpha(UIColors.TEXT_SECONDARY, star["brightness"] * flicker * 0.5))
 
 	# 模块标题
 	var title: String = MODULE_NAMES.get(_current_module, "")
@@ -465,11 +457,11 @@ func _draw() -> void:
 		var bar_x := center.x - bar_w / 2.0
 		var bar_y := 55.0
 		draw_rect(Rect2(Vector2(bar_x, bar_y), Vector2(bar_w, bar_h)),
-			Color(0.15, 0.12, 0.22, 0.6))
+			UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.6))
 		draw_rect(Rect2(Vector2(bar_x, bar_y), Vector2(bar_w * progress, bar_h)),
-			Color(module_color.r, module_color.g, module_color.b, 0.7))
+			UIColors.with_alpha(module_color, 0.7))
 		draw_string(font, Vector2(bar_x + bar_w + 10, bar_y + 5),
-			"%d%%" % int(progress * 100), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)
+			"%d%%" % int(progress * 100), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.TEXT_SECONDARY)
 
 	# 布局装饰
 	_draw_layout_decoration(center, module_color)
@@ -500,7 +492,7 @@ func _draw_layout_decoration(center: Vector2, color: Color) -> void:
 				var last_pos: Vector2 = _node_positions.get(nodes[nodes.size() - 1]["id"], center)
 				draw_line(Vector2(first_pos.x - 40, center.y + 80),
 					Vector2(last_pos.x + 40, center.y + 80),
-					Color(color.r, color.g, color.b, 0.15), 2.0)
+					UIColors.with_alpha(color, 0.15), 2.0)
 			# 推杆轨道
 			for node in nodes:
 				var pos: Vector2 = _node_positions.get(node["id"], center)
@@ -510,13 +502,13 @@ func _draw_layout_decoration(center: Vector2, color: Color) -> void:
 				var track_top := pos.y - track_h / 2.0
 				# 轨道背景
 				draw_line(Vector2(pos.x, track_top), Vector2(pos.x, track_top + track_h),
-					Color(0.2, 0.18, 0.3, 0.3), 4.0)
+					UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3), 4.0)
 				# 填充量
 				var fill := float(level) / float(max(max_level, 1))
 				var fill_h := track_h * fill
 				draw_line(Vector2(pos.x, track_top + track_h - fill_h),
 					Vector2(pos.x, track_top + track_h),
-					Color(color.r, color.g, color.b, 0.4), 4.0)
+					UIColors.with_alpha(color, 0.4), 4.0)
 
 		"theory":
 			# 螺旋装饰线
@@ -527,7 +519,7 @@ func _draw_layout_decoration(center: Vector2, color: Color) -> void:
 				var r := 50.0 + t * 250.0
 				var pt := center + Vector2(cos(angle), sin(angle)) * r
 				var alpha := (1.0 - t) * 0.08
-				draw_circle(pt, 1.0, Color(color.r, color.g, color.b, alpha))
+				draw_circle(pt, 1.0, UIColors.with_alpha(color, alpha))
 
 		"modes":
 			# 星座背景网格
@@ -540,7 +532,7 @@ func _draw_layout_decoration(center: Vector2, color: Color) -> void:
 				var alpha := 0.06 - i * 0.01
 				var speed := 0.3 + i * 0.1
 				draw_arc(center, r, _time * speed, _time * speed + TAU, 64,
-					Color(color.r, color.g, color.b, alpha), 1.0)
+					UIColors.with_alpha(color, alpha), 1.0)
 
 func _draw_links(module_color: Color) -> void:
 	var tree: Dictionary = SKILL_TREES.get(_current_module, {})
@@ -570,7 +562,7 @@ func _draw_links(module_color: Color) -> void:
 				var pulse := fmod(_time * 0.8, 1.0)
 				var pulse_pos := from_pos.lerp(to_pos, pulse)
 				draw_circle(pulse_pos, 3.0,
-					Color(module_color.r, module_color.g, module_color.b, 0.5 * (1.0 - pulse)))
+					UIColors.with_alpha(module_color, 0.5 * (1.0 - pulse)))
 			else:
 				link_color = LINK_LOCKED
 
@@ -628,25 +620,25 @@ func _draw_locked_node(pos: Vector2, radius: float, node: Dictionary, font: Font
 			var p2 := pos + Vector2(cos(a2), sin(a2)) * radius
 			var border_color := NODE_LOCKED_BORDER
 			if is_hover:
-				border_color = Color(NODE_LOCKED_BORDER.r, NODE_LOCKED_BORDER.g, NODE_LOCKED_BORDER.b, 0.6)
+				border_color = UIColors.with_alpha(NODE_LOCKED_BORDER, 0.6)
 			draw_line(p1, p2, border_color, 1.5)
 
 	# 灰色图标
 	var name_text: String = node.get("name", "?")
 	if name_text.length() > 4:
 		name_text = name_text.left(4)
-	var text_color := Color(0.4, 0.35, 0.5, 0.4)
+	var text_color := UIColors.with_alpha(UIColors.TEXT_DIM, 0.4)
 	if is_hover:
-		text_color = Color(0.5, 0.45, 0.6, 0.7)
+		text_color = UIColors.with_alpha(UIColors.TEXT_HINT, 0.7)
 		# 实线轮廓
-		draw_arc(pos, radius, 0, TAU, 48, Color(0.4, 0.35, 0.55, 0.5), 1.5)
+		draw_arc(pos, radius, 0, TAU, 48, UIColors.with_alpha(UIColors.TEXT_DIM, 0.5), 1.5)
 	draw_string(font, pos + Vector2(-16, 5), name_text,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 10, text_color)
 
 	# 费用（悬停时显示）
 	if is_hover:
 		var cost := _get_node_cost(node["id"])
-		var cost_color := DANGER if _fragments < cost else FRAGMENT_COLOR
+		var cost_color := UIColors.DANGER if _fragments < cost else FRAGMENT_COLOR
 		draw_string(font, pos + Vector2(-20, radius + 16),
 			"%d ✦" % cost, HORIZONTAL_ALIGNMENT_CENTER, 40, 10, cost_color)
 
@@ -662,13 +654,13 @@ func _draw_unlockable_node(pos: Vector2, radius: float, node: Dictionary, font: 
 		if is_hover:
 			alpha *= 2.0
 		draw_arc(pos, r, 0, TAU, 48,
-			Color(module_color.r, module_color.g, module_color.b, alpha), 2.0)
+			UIColors.with_alpha(module_color, alpha), 2.0)
 
 	# 实线边框
 	draw_arc(pos, radius, 0, TAU, 48, NODE_UNLOCKABLE_BORDER, 2.0)
 
 	# 半透明填充
-	draw_circle(pos, radius * 0.9, Color(module_color.r, module_color.g, module_color.b, 0.08))
+	draw_circle(pos, radius * 0.9, UIColors.with_alpha(module_color, 0.08))
 
 	# 图标（单色但清晰）
 	var name_text: String = node.get("name", "?")
@@ -676,7 +668,7 @@ func _draw_unlockable_node(pos: Vector2, radius: float, node: Dictionary, font: 
 		name_text = name_text.left(4)
 	draw_string(font, pos + Vector2(-16, 5), name_text,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 10,
-		Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, 0.8))
+		UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.8))
 
 	# 费用
 	var cost := _get_node_cost(node["id"])
@@ -690,7 +682,7 @@ func _draw_unlockable_node(pos: Vector2, radius: float, node: Dictionary, font: 
 			var angle := _time * 3.0 + i * TAU / 4.0
 			var dist := radius + 15.0 - fmod(_time * 20.0 + i * 5.0, 20.0)
 			var pt := pos + Vector2(cos(angle), sin(angle)) * dist
-			draw_circle(pt, 2.0, Color(module_color.r, module_color.g, module_color.b, 0.4))
+			draw_circle(pt, 2.0, UIColors.with_alpha(module_color, 0.4))
 
 func _draw_unlocked_node(pos: Vector2, radius: float, node: Dictionary, font: Font, module_color: Color, is_hover: bool) -> void:
 	var level := _get_node_level(node["id"])
@@ -700,13 +692,13 @@ func _draw_unlocked_node(pos: Vector2, radius: float, node: Dictionary, font: Fo
 	# 发光填充
 	var fill_color: Color
 	if is_maxed:
-		fill_color = Color(GOLD.r, GOLD.g, GOLD.b, 0.2)
+		fill_color = UIColors.with_alpha(UIColors.GOLD, 0.2)
 	else:
-		fill_color = Color(CYAN.r, CYAN.g, CYAN.b, 0.15)
+		fill_color = UIColors.with_alpha(UIColors.CYAN, 0.15)
 	draw_circle(pos, radius, fill_color)
 
 	# 强烈边框
-	var border_color := Color(GOLD.r, GOLD.g, GOLD.b, 0.8) if is_maxed else NODE_UNLOCKED_BORDER
+	var border_color := UIColors.with_alpha(UIColors.GOLD, 0.8) if is_maxed else NODE_UNLOCKED_BORDER
 	draw_arc(pos, radius, 0, TAU, 48, border_color, 2.5)
 
 	# 外层辉光
@@ -714,13 +706,13 @@ func _draw_unlocked_node(pos: Vector2, radius: float, node: Dictionary, font: Fo
 	if is_hover:
 		glow_alpha *= 2.0
 	draw_arc(pos, radius + 4, 0, TAU, 48,
-		Color(border_color.r, border_color.g, border_color.b, glow_alpha), 3.0)
+		UIColors.with_alpha(border_color, glow_alpha), 3.0)
 
 	# 全彩图标
 	var name_text: String = node.get("name", "?")
 	if name_text.length() > 4:
 		name_text = name_text.left(4)
-	var text_color := GOLD if is_maxed else CYAN
+	var text_color := UIColors.GOLD if is_maxed else UIColors.CYAN
 	draw_string(font, pos + Vector2(-16, 5), name_text,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 10, text_color)
 
@@ -731,7 +723,7 @@ func _draw_unlocked_node(pos: Vector2, radius: float, node: Dictionary, font: Fo
 			level_text = "MAX"
 		draw_string(font, pos + Vector2(-24, radius + 16),
 			level_text, HORIZONTAL_ALIGNMENT_CENTER, 48, 9,
-			Color(GOLD.r, GOLD.g, GOLD.b, 0.7) if is_maxed else Color(CYAN.r, CYAN.g, CYAN.b, 0.7))
+			UIColors.with_alpha(UIColors.GOLD, 0.7) if is_maxed else UIColors.with_alpha(UIColors.CYAN, 0.7))
 
 	# 可继续升级时显示费用
 	if not is_maxed:
@@ -740,7 +732,7 @@ func _draw_unlocked_node(pos: Vector2, radius: float, node: Dictionary, font: Fo
 			var can_afford := _fragments >= cost
 			draw_string(font, pos + Vector2(-20, radius + 28),
 				"%d ✦" % cost, HORIZONTAL_ALIGNMENT_CENTER, 40, 9,
-				FRAGMENT_COLOR if can_afford else Color(DANGER.r, DANGER.g, DANGER.b, 0.6))
+				FRAGMENT_COLOR if can_afford else UIColors.with_alpha(UIColors.DANGER, 0.6))
 
 func _draw_unlock_animations(module_color: Color) -> void:
 	for anim in _unlock_anims:
@@ -754,7 +746,7 @@ func _draw_unlock_animations(module_color: Color) -> void:
 		var ring_r := node_radius * (1.0 + progress * 3.0)
 		var ring_alpha := (1.0 - progress) * 0.6
 		draw_arc(pos, ring_r, 0, TAU, 48,
-			Color(CYAN.r, CYAN.g, CYAN.b, ring_alpha), 2.5)
+			UIColors.with_alpha(UIColors.CYAN, ring_alpha), 2.5)
 
 		# 放射粒子
 		for i in range(8):
@@ -763,7 +755,7 @@ func _draw_unlock_animations(module_color: Color) -> void:
 			var pt := pos + Vector2(cos(angle), sin(angle)) * dist
 			var pt_alpha := (1.0 - progress) * 0.5
 			draw_circle(pt, 3.0 * (1.0 - progress),
-				Color(GOLD.r, GOLD.g, GOLD.b, pt_alpha))
+				UIColors.with_alpha(UIColors.GOLD, pt_alpha))
 
 func _draw_hover_tooltip(font: Font, vp: Vector2) -> void:
 	if _hover_node.is_empty():
@@ -779,38 +771,38 @@ func _draw_hover_tooltip(font: Font, vp: Vector2) -> void:
 		Vector2(vp.x / 2.0 - tooltip_w / 2.0, vp.y - 100),
 		Vector2(tooltip_w, tooltip_h))
 
-	draw_rect(tooltip_rect, Color(0.06, 0.04, 0.12, 0.92))
-	draw_rect(tooltip_rect, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.3), false, 1.0)
+	draw_rect(tooltip_rect, UIColors.with_alpha(UIColors.PANEL_DARK, 0.92))
+	draw_rect(tooltip_rect, UIColors.with_alpha(UIColors.ACCENT, 0.3), false, 1.0)
 
 	# 名称
 	draw_string(font, tooltip_rect.position + Vector2(12, 22),
-		node_data.get("name", "?"), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, TEXT_COLOR)
+		node_data.get("name", "?"), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.TEXT_PRIMARY)
 
 	# 描述
 	draw_string(font, tooltip_rect.position + Vector2(12, 42),
-		node_data.get("desc", ""), HORIZONTAL_ALIGNMENT_LEFT, int(tooltip_w - 24), 11, DIM_TEXT)
+		node_data.get("desc", ""), HORIZONTAL_ALIGNMENT_LEFT, int(tooltip_w - 24), 11, UIColors.TEXT_SECONDARY)
 
 	# 状态
 	var state: String = _node_states.get(_hover_node, "locked")
 	var level := _get_node_level(_hover_node)
 	var max_level: int = node_data.get("max_level", 1)
 	var status_text := ""
-	var status_color := DIM_TEXT
+	var status_color := UIColors.TEXT_SECONDARY
 
 	match state:
 		"unlocked":
 			if level >= max_level:
 				status_text = "已满级"
-				status_color = GOLD
+				status_color = UIColors.GOLD
 			else:
 				status_text = "Lv.%d/%d" % [level, max_level]
-				status_color = CYAN
+				status_color = UIColors.CYAN
 		"unlockable":
 			status_text = "可解锁"
-			status_color = SUCCESS
+			status_color = UIColors.SUCCESS
 		"locked":
 			status_text = "未解锁"
-			status_color = Color(0.5, 0.4, 0.6)
+			status_color = UIColors.TEXT_DIM
 
 	draw_string(font, tooltip_rect.position + Vector2(tooltip_w - 80, 22),
 		status_text, HORIZONTAL_ALIGNMENT_RIGHT, 70, 11, status_color)
@@ -821,17 +813,17 @@ var _start_btn_rect := Rect2()
 func _draw_nav_buttons(font: Font, vp: Vector2) -> void:
 	# 返回按钮
 	_back_btn_rect = Rect2(Vector2(30, vp.y - 55), Vector2(120, 40))
-	draw_rect(_back_btn_rect, Color(0.1, 0.08, 0.18, 0.85))
-	draw_rect(_back_btn_rect, Color(0.4, 0.35, 0.55, 0.5), false, 1.0)
+	draw_rect(_back_btn_rect, UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.85))
+	draw_rect(_back_btn_rect, UIColors.with_alpha(UIColors.TEXT_DIM, 0.5), false, 1.0)
 	draw_string(font, _back_btn_rect.position + Vector2(16, 26),
-		"← 返回", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.7, 0.65, 0.85))
+		"← 返回", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.TEXT_SECONDARY)
 
 	# 开始游戏按钮
 	_start_btn_rect = Rect2(Vector2(vp.x - 180, vp.y - 55), Vector2(150, 40))
-	draw_rect(_start_btn_rect, Color(0.05, 0.15, 0.1, 0.85))
-	draw_rect(_start_btn_rect, Color(0.3, 0.8, 0.5, 0.5), false, 1.0)
+	draw_rect(_start_btn_rect, UIColors.with_alpha(UIColors.SUCCESS, 0.85))
+	draw_rect(_start_btn_rect, UIColors.with_alpha(UIColors.SUCCESS, 0.5), false, 1.0)
 	draw_string(font, _start_btn_rect.position + Vector2(16, 26),
-		"开始演奏 ▶", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.3, 0.9, 0.5))
+		"开始演奏 ▶", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.DIFFICULTY_EASY)
 
 # ============================================================
 # 输入处理

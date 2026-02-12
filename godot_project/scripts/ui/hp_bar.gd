@@ -19,13 +19,11 @@ const LINE_WIDTH_BASE: float = 3.0
 const GLOW_WIDTH: float = 8.0
 
 # 颜色常量
-const COLOR_RESONANCE_CYAN := Color(0.0, 1.0, 0.831)   # #00FFD4
-const COLOR_DATA_ORANGE    := Color(1.0, 0.533, 0.0)    # #FF8800
-const COLOR_ERROR_RED      := Color(1.0, 0.133, 0.267)  # #FF2244
-const COLOR_GLITCH_MAGENTA := Color(1.0, 0.0, 0.667)    # #FF00AA
-const COLOR_CORRUPT_PURPLE := Color(0.533, 0.0, 1.0)    # #8800FF
-const COLOR_STARRY_PURPLE  := Color(0.078, 0.063, 0.149) # #141026
-const COLOR_CRYSTAL_WHITE  := Color(0.918, 0.902, 1.0)   # #EAE6FF
+var COLOR_RESONANCE_CYAN := UIColors.RESONANCE_CYAN   # #00FFD4
+var COLOR_DATA_ORANGE    := UIColors.DATA_ORANGE    # #FF8800
+var COLOR_GLITCH_MAGENTA := UIColors.GLITCH_MAGENTA    # #FF00AA
+var COLOR_CORRUPT_PURPLE := UIColors.CORRUPT_PURPLE    # #8800FF
+const COLOR_STARRY_PURPLE  := UIColors.PANEL_BG # #141026
 
 # ============================================================
 # 状态
@@ -104,7 +102,7 @@ func _draw() -> void:
 		var arc_bend := sin(t * PI) * 20.0
 		bg_points.append(Vector2(x, center_y - arc_bend))
 	if bg_points.size() > 1:
-		draw_polyline(bg_points, Color(COLOR_STARRY_PURPLE, 0.3), ARC_HEIGHT * 0.5, true)
+		draw_polyline(bg_points, UIColors.with_alpha(COLOR_STARRY_PURPLE, 0.3), ARC_HEIGHT * 0.5, true)
 
 	# 波形参数
 	var frequency := 3.0 + (1.0 - _display_ratio) * 9.0
@@ -153,7 +151,7 @@ func _draw() -> void:
 		wave_color = wave_color.lerp(COLOR_CORRUPT_PURPLE, _hit_flash * 0.7)
 
 	# 绘制辉光层
-	var glow_color := Color(wave_color, 0.15 * (1.0 + _beat_intensity * 0.5))
+	var glow_color := UIColors.with_alpha(wave_color, 0.15 * (1.0 + _beat_intensity * 0.5))
 	draw_polyline(wave_points, glow_color, LINE_WIDTH_BASE + GLOW_WIDTH, true)
 
 	# 绘制主波形线
@@ -161,17 +159,17 @@ func _draw() -> void:
 	draw_polyline(wave_points, wave_color, line_width, true)
 
 	# 绘制内辉光
-	var inner_glow := Color(wave_color, 0.4)
+	var inner_glow := UIColors.with_alpha(wave_color, 0.4)
 	draw_polyline(wave_points, inner_glow, line_width + 3.0, true)
 
 	# HP 文字
 	var font := ThemeDB.fallback_font
 	var hp_text := "%d / %d" % [int(GameManager.player_current_hp), int(GameManager.player_max_hp)]
 	var text_pos := Vector2(center_x - 30, center_y + 35)
-	draw_string(font, text_pos, hp_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color(COLOR_CRYSTAL_WHITE, 0.8))
+	draw_string(font, text_pos, hp_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.8))
 
 	# 标签
-	draw_string(font, Vector2(center_x - 40, center_y - 40), "RESONANCE", HORIZONTAL_ALIGNMENT_CENTER, -1, 9, Color(COLOR_CRYSTAL_WHITE, 0.5))
+	draw_string(font, Vector2(center_x - 40, center_y - 40), "RESONANCE", HORIZONTAL_ALIGNMENT_CENTER, -1, 9, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.5))
 
 	# 低血量故障方块
 	if _display_ratio < 0.25:
@@ -188,7 +186,7 @@ func _draw_glitch_blocks(base_color: Color) -> void:
 			var by := fmod(abs(cos(float(i) * 43.7 + _time * 7.0)) * ARC_HEIGHT, ARC_HEIGHT)
 			var bw := 4.0 + abs(sin(float(i) * 17.3)) * 20.0
 			var bh := 2.0 + abs(cos(float(i) * 23.1)) * 6.0
-			var block_color := Color(base_color, glitch_strength * 0.4)
+			var block_color := UIColors.with_alpha(base_color, glitch_strength * 0.4)
 			draw_rect(Rect2(Vector2(bx, by), Vector2(bw, bh)), block_color)
 
 # ============================================================
@@ -222,11 +220,11 @@ func _get_hp_color(hp: float) -> Color:
 		return COLOR_RESONANCE_CYAN.lerp(COLOR_DATA_ORANGE, blend)
 	elif hp > 0.25:
 		var blend := (0.50 - hp) / 0.25
-		return COLOR_DATA_ORANGE.lerp(COLOR_ERROR_RED, blend)
+		return COLOR_DATA_ORANGE.lerp(UIColors.ERROR_RED, blend)
 	else:
 		var blend := (0.25 - hp) / 0.25
 		var flicker := sin(_time * 15.0) * 0.5 + 0.5
-		return COLOR_ERROR_RED.lerp(COLOR_GLITCH_MAGENTA, blend * flicker)
+		return UIColors.ERROR_RED.lerp(COLOR_GLITCH_MAGENTA, blend * flicker)
 
 # ============================================================
 # 信号回调

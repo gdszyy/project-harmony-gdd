@@ -23,10 +23,6 @@ const FADE_IN_DURATION: float = 0.2
 const FADE_OUT_DURATION: float = 0.5
 
 # 颜色
-const COLOR_ERROR_RED      := Color(1.0, 0.133, 0.267)   # #FF2244
-const COLOR_HOLY_GOLD      := Color(1.0, 0.843, 0.0)     # #FFD700
-const COLOR_SECONDARY_TEXT := Color(0.627, 0.596, 0.784)  # #A098C8
-const COLOR_CRYSTAL_WHITE  := Color(0.918, 0.902, 1.0)    # #EAE6FF
 
 # ============================================================
 # 状态
@@ -36,7 +32,7 @@ var _timer: float = 0.0
 var _duration: float = DISPLAY_DURATION
 var _type: NotificationType = NotificationType.GENERIC_INFO
 var _text: String = ""
-var _color: Color = COLOR_CRYSTAL_WHITE
+var _color: Color = UIColors.TEXT_PRIMARY
 var _font_size: int = 24
 var _time: float = 0.0
 
@@ -94,7 +90,7 @@ func _draw() -> void:
 func _draw_density_overload(font: Font, center: Vector2, alpha: float) -> void:
 	# 全屏红色闪烁背景
 	var flash_alpha := sin(_time * 12.0) * 0.1 + 0.05
-	draw_rect(Rect2(Vector2.ZERO, size), Color(COLOR_ERROR_RED, flash_alpha * alpha))
+	draw_rect(Rect2(Vector2.ZERO, size), UIColors.with_alpha(UIColors.ERROR_RED, flash_alpha * alpha))
 
 	# 文字震动
 	var shake_x := sin(_time * 30.0) * 3.0 * alpha
@@ -104,13 +100,13 @@ func _draw_density_overload(font: Font, center: Vector2, alpha: float) -> void:
 	# 故障效果：色彩通道偏移
 	var ca_offset := 2.0 * alpha
 	draw_string(font, text_pos + Vector2(ca_offset, 0), _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, Color(1.0, 0.0, 0.0, alpha * 0.5))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, UIColors.with_alpha(UIColors.DANGER, alpha * 0.5))
 	draw_string(font, text_pos + Vector2(-ca_offset, 0), _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, Color(0.0, 0.0, 1.0, alpha * 0.3))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, UIColors.with_alpha(UIColors.DEFENSE, alpha * 0.3))
 
 	# 主文字
 	draw_string(font, text_pos, _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, Color(COLOR_ERROR_RED, alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, UIColors.with_alpha(UIColors.ERROR_RED, alpha))
 
 	# 像素化故障块
 	var block_count := 5
@@ -119,7 +115,7 @@ func _draw_density_overload(font: Font, center: Vector2, alpha: float) -> void:
 		var by := center.y + cos(float(i) * 37.7 + _time * 15.0) * 20.0
 		var bw := 10.0 + abs(sin(float(i) * 17.3 + _time * 10.0)) * 30.0
 		var bh := 3.0 + abs(cos(float(i) * 23.1)) * 5.0
-		draw_rect(Rect2(Vector2(bx, by), Vector2(bw, bh)), Color(COLOR_ERROR_RED, alpha * 0.4))
+		draw_rect(Rect2(Vector2(bx, by), Vector2(bw, bh)), UIColors.with_alpha(UIColors.ERROR_RED, alpha * 0.4))
 
 ## 和弦进行提示 — 圣光金 + 放大出现 + 光点消散
 func _draw_chord_progression(font: Font, center: Vector2, alpha: float, progress: float) -> void:
@@ -135,13 +131,13 @@ func _draw_chord_progression(font: Font, center: Vector2, alpha: float, progress
 	# 辉光
 	var glow_alpha := alpha * 0.3 * scale_factor
 	draw_string(font, text_pos + Vector2(-1, -1), _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), Color(COLOR_HOLY_GOLD, glow_alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), UIColors.with_alpha(UIColors.GOLD, glow_alpha))
 	draw_string(font, text_pos + Vector2(1, 1), _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), Color(COLOR_HOLY_GOLD, glow_alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), UIColors.with_alpha(UIColors.GOLD, glow_alpha))
 
 	# 主文字
 	draw_string(font, text_pos, _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), Color(COLOR_HOLY_GOLD, alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, int(22 * scale_factor), UIColors.with_alpha(UIColors.GOLD, alpha))
 
 	# 光点消散 (后半段)
 	if progress > 0.5:
@@ -152,7 +148,7 @@ func _draw_chord_progression(font: Font, center: Vector2, alpha: float, progress
 			var px := center.x + cos(angle) * dist
 			var py := center.y + sin(angle) * dist
 			var p_alpha := (1.0 - particle_progress) * alpha * 0.6
-			draw_circle(Vector2(px, py), 3.0 * (1.0 - particle_progress), Color(COLOR_HOLY_GOLD, p_alpha))
+			draw_circle(Vector2(px, py), 3.0 * (1.0 - particle_progress), UIColors.with_alpha(UIColors.GOLD, p_alpha))
 
 ## 单音寂静灰化 — 屏幕下方淡入淡出
 func _draw_note_silenced(font: Font, center: Vector2, alpha: float) -> void:
@@ -161,17 +157,17 @@ func _draw_note_silenced(font: Font, center: Vector2, alpha: float) -> void:
 
 	# 灰化图标
 	var icon_rect := Rect2(text_pos + Vector2(-20, -14), Vector2(16, 16))
-	draw_rect(icon_rect, Color(0.3, 0.3, 0.3, alpha))
+	draw_rect(icon_rect, UIColors.with_alpha(UIColors.TEXT_DIM, alpha))
 
 	# 文字
 	draw_string(font, text_pos, _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color(COLOR_SECONDARY_TEXT, alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 16, UIColors.with_alpha(UIColors.TEXT_SECONDARY, alpha))
 
 ## 通用提示
 func _draw_generic(font: Font, center: Vector2, alpha: float) -> void:
 	var text_pos := center + Vector2(-80, 10)
 	draw_string(font, text_pos, _text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, _font_size, Color(_color, alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, _font_size, UIColors.with_alpha(_color, alpha))
 
 # ============================================================
 # 公共接口
@@ -189,16 +185,16 @@ func show_notification(text: String, type: NotificationType, duration: float = D
 
 	match type:
 		NotificationType.DENSITY_OVERLOAD:
-			_color = COLOR_ERROR_RED
+			_color = UIColors.ERROR_RED
 			_font_size = 28
 		NotificationType.CHORD_PROGRESSION:
-			_color = COLOR_HOLY_GOLD
+			_color = UIColors.GOLD
 			_font_size = 22
 		NotificationType.NOTE_SILENCED:
-			_color = COLOR_SECONDARY_TEXT
+			_color = UIColors.TEXT_SECONDARY
 			_font_size = 16
 		_:
-			_color = COLOR_CRYSTAL_WHITE
+			_color = UIColors.TEXT_PRIMARY
 			_font_size = 20
 
 func _deactivate() -> void:

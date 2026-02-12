@@ -34,26 +34,20 @@ signal card_unhovered(card_index: int)
 # ============================================================
 # 常量 — 颜色 (§1.2)
 # ============================================================
-const COL_BG := Color("#141026")
-const COL_ACCENT := Color("#9D6FFF")
-const COL_GOLD := Color("#FFD700")
-const COL_TEXT_PRIMARY := Color("#EAE6FF")
-const COL_TEXT_SECONDARY := Color("#A098C8")
-const COL_TEXT_DIM := Color("#6B668A")
 
 ## 方向色
 const DIRECTION_COLORS := {
-	"offense": Color("#FF4444"),
-	"defense": Color("#4488FF"),
-	"core": Color("#9D6FFF"),
+	"offense": UIColors.OFFENSE,
+	"defense": UIColors.DEFENSE,
+	"core": UIColors.ACCENT,
 }
 
 ## 稀有度颜色
 const RARITY_COLORS := {
-	0: Color("#A098C8"),  ## 普通
-	1: Color("#4488FF"),  ## 稀有
-	2: Color("#9D6FFF"),  ## 史诗
-	3: Color("#FFD700"),  ## 传说
+	0: UIColors.TEXT_SECONDARY,  ## 普通
+	1: UIColors.DEFENSE,  ## 稀有
+	2: UIColors.ACCENT,  ## 史诗
+	3: UIColors.GOLD,  ## 传说
 }
 
 const RARITY_NAMES := {
@@ -124,8 +118,8 @@ func setup(data: Dictionary, index: int = 0) -> void:
 
 	var direction: String = data.get("direction", "core")
 	var rarity: int = data.get("rarity", 0)
-	var direction_color: Color = DIRECTION_COLORS.get(direction, COL_ACCENT)
-	var rarity_color: Color = RARITY_COLORS.get(rarity, COL_TEXT_SECONDARY)
+	var direction_color: Color = DIRECTION_COLORS.get(direction, UIColors.ACCENT)
+	var rarity_color: Color = RARITY_COLORS.get(rarity, UIColors.TEXT_SECONDARY)
 
 	# 更新顶部方向色条
 	if _top_bar:
@@ -183,8 +177,8 @@ func play_entrance_animation(delay: float = 0.0) -> void:
 func play_select_animation() -> void:
 	var tween := create_tween()
 	# 闪白
-	tween.tween_property(self, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.1)
-	tween.tween_property(self, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.2)
+	tween.tween_property(self, "modulate", Color.WHITE, 0.1)
+	tween.tween_property(self, "modulate", Color.WHITE, 0.2)
 	# 缩小飞走
 	tween.tween_property(self, "scale", Vector2(0.5, 0.5), 0.3)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
@@ -204,12 +198,12 @@ func play_dismiss_animation() -> void:
 func _build_card_ui() -> void:
 	# 面板样式
 	var style := StyleBoxFlat.new()
-	style.bg_color = COL_BG
-	style.corner_radius_top_left = card_corner_radius
-	style.corner_radius_top_right = card_corner_radius
-	style.corner_radius_bottom_left = card_corner_radius
-	style.corner_radius_bottom_right = card_corner_radius
-	style.border_color = COL_ACCENT
+	style.bg_color = UIColors.PRIMARY_BG
+	style.corner_radius_top_left = CARD_CORNER_RADIUS
+	style.corner_radius_top_right = CARD_CORNER_RADIUS
+	style.corner_radius_bottom_left = CARD_CORNER_RADIUS
+	style.corner_radius_bottom_right = CARD_CORNER_RADIUS
+	style.border_color = UIColors.ACCENT
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -225,8 +219,8 @@ func _build_card_ui() -> void:
 
 	# 顶部方向色条
 	_top_bar = ColorRect.new()
-	_top_bar.custom_minimum_size = Vector2(0, top_bar_height)
-	_top_bar.color = COL_ACCENT
+	_top_bar.custom_minimum_size = Vector2(0, TOP_BAR_HEIGHT)
+	_top_bar.color = UIColors.ACCENT
 	vbox.add_child(_top_bar)
 
 	# 图标区域
@@ -236,7 +230,7 @@ func _build_card_ui() -> void:
 	_icon_label = Label.new()
 	_icon_label.text = "♮"
 	_icon_label.add_theme_font_size_override("font_size", 40)
-	_icon_label.add_theme_color_override("font_color", COL_ACCENT)
+	_icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 	_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_center.add_child(_icon_label)
 
@@ -246,7 +240,7 @@ func _build_card_ui() -> void:
 	_title_label = Label.new()
 	_title_label.text = "升级名称"
 	_title_label.add_theme_font_size_override("font_size", 16)
-	_title_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_title_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_title_label)
@@ -255,14 +249,14 @@ func _build_card_ui() -> void:
 	_rarity_label = Label.new()
 	_rarity_label.text = "普通"
 	_rarity_label.add_theme_font_size_override("font_size", 10)
-	_rarity_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_rarity_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_rarity_label)
 
 	# 分割线
 	var sep := ColorRect.new()
 	sep.custom_minimum_size = Vector2(0, 1)
-	sep.color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+	sep.color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 	vbox.add_child(sep)
 
 	# 描述
@@ -272,7 +266,7 @@ func _build_card_ui() -> void:
 	_description.scroll_active = false
 	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_description.add_theme_font_size_override("normal_font_size", 12)
-	_description.add_theme_color_override("default_color", COL_TEXT_PRIMARY)
+	_description.add_theme_color_override("default_color", UIColors.TEXT_PRIMARY)
 	vbox.add_child(_description)
 
 	# 标签容器
@@ -285,7 +279,7 @@ func _build_card_ui() -> void:
 	_gold_badge = Label.new()
 	_gold_badge.text = "★ 局外解锁"
 	_gold_badge.add_theme_font_size_override("font_size", 10)
-	_gold_badge.add_theme_color_override("font_color", COL_GOLD)
+	_gold_badge.add_theme_color_override("font_color", UIColors.GOLD)
 	_gold_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_gold_badge.visible = false
 	vbox.add_child(_gold_badge)
@@ -298,7 +292,7 @@ func _update_tags(data: Dictionary) -> void:
 
 	var tags: Array = data.get("tags", [])
 	var direction: String = data.get("direction", "core")
-	var direction_color: Color = DIRECTION_COLORS.get(direction, COL_ACCENT)
+	var direction_color: Color = DIRECTION_COLORS.get(direction, UIColors.ACCENT)
 
 	for tag_text in tags:
 		var tag := Label.new()
@@ -308,8 +302,8 @@ func _update_tags(data: Dictionary) -> void:
 
 		var tag_panel := PanelContainer.new()
 		var tag_style := StyleBoxFlat.new()
-		tag_style.bg_color = Color(direction_color.r, direction_color.g, direction_color.b, 0.1)
-		tag_style.border_color = Color(direction_color.r, direction_color.g, direction_color.b, 0.3)
+		tag_style.bg_color = UIColors.with_alpha(direction_color, 0.1)
+		tag_style.border_color = UIColors.with_alpha(direction_color, 0.3)
 		tag_style.border_width_left = 1
 		tag_style.border_width_right = 1
 		tag_style.border_width_top = 1
@@ -339,7 +333,7 @@ func _update_border(direction_color: Color, rarity: int) -> void:
 		style.border_width_right = border_w
 		style.border_width_top = border_w
 		style.border_width_bottom = border_w
-		style.shadow_color = Color(direction_color.r, direction_color.g, direction_color.b, 0.2)
+		style.shadow_color = UIColors.with_alpha(direction_color, 0.2)
 		style.shadow_size = 3 if rarity >= 1 else 0
 		add_theme_stylebox_override("panel", style)
 
@@ -347,12 +341,12 @@ func _apply_gold_highlight(_original_color: Color) -> void:
 	# 金色边框 (§6)
 	var style := get_theme_stylebox("panel").duplicate() as StyleBoxFlat
 	if style:
-		style.border_color = COL_GOLD
+		style.border_color = UIColors.GOLD
 		style.border_width_left = 2
 		style.border_width_right = 2
 		style.border_width_top = 2
 		style.border_width_bottom = 2
-		style.shadow_color = Color(COL_GOLD.r, COL_GOLD.g, COL_GOLD.b, 0.3)
+		style.shadow_color = UIColors.with_alpha(UIColors.GOLD, 0.3)
 		style.shadow_size = 5
 		add_theme_stylebox_override("panel", style)
 

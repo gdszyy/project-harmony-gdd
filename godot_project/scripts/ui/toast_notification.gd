@@ -24,14 +24,7 @@ signal toast_dismissed(toast_type: String)
 # ============================================================
 # 主题颜色
 # ============================================================
-const PANEL_BG := Color("#141026")
-const ACCENT_COLOR := Color("#9D6FFF")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const SUCCESS_COLOR := Color("#4DFF80")
-const DANGER_COLOR := Color("#FF4D4D")
-const GOLD_COLOR := Color("#FFD700")
-const INFO_COLOR := Color("#4DFFF3")
+const TEXT_SECONDARY := UIColors.TEXT_SECONDARY
 
 # ============================================================
 # Toast 类型
@@ -51,14 +44,14 @@ enum ToastType {
 # 类型配置
 # ============================================================
 const TYPE_CONFIG: Dictionary = {
-	ToastType.INFO: {"icon": "ℹ", "color": INFO_COLOR, "border": INFO_COLOR},
-	ToastType.SUCCESS: {"icon": "✓", "color": SUCCESS_COLOR, "border": SUCCESS_COLOR},
-	ToastType.WARNING: {"icon": "⚠", "color": GOLD_COLOR, "border": GOLD_COLOR},
-	ToastType.ERROR: {"icon": "✗", "color": DANGER_COLOR, "border": DANGER_COLOR},
-	ToastType.ACHIEVEMENT: {"icon": "🏆", "color": GOLD_COLOR, "border": GOLD_COLOR},
-	ToastType.ITEM: {"icon": "♪", "color": ACCENT_COLOR, "border": ACCENT_COLOR},
-	ToastType.LEVEL_UP: {"icon": "★", "color": GOLD_COLOR, "border": GOLD_COLOR},
-	ToastType.CODEX: {"icon": "📖", "color": INFO_COLOR, "border": INFO_COLOR},
+	ToastType.INFO: {"icon": "ℹ", "color": UIColors.INFO, "border": UIColors.INFO},
+	ToastType.SUCCESS: {"icon": "✓", "color": UIColors.SUCCESS, "border": UIColors.SUCCESS},
+	ToastType.WARNING: {"icon": "⚠", "color": UIColors.GOLD, "border": UIColors.GOLD},
+	ToastType.ERROR: {"icon": "✗", "color": UIColors.DANGER, "border": UIColors.DANGER},
+	ToastType.ACHIEVEMENT: {"icon": "🏆", "color": UIColors.GOLD, "border": UIColors.GOLD},
+	ToastType.ITEM: {"icon": "♪", "color": UIColors.ACCENT, "border": UIColors.ACCENT},
+	ToastType.LEVEL_UP: {"icon": "★", "color": UIColors.GOLD, "border": UIColors.GOLD},
+	ToastType.CODEX: {"icon": "📖", "color": UIColors.INFO, "border": UIColors.INFO},
 }
 
 # ============================================================
@@ -279,7 +272,7 @@ func _update_panel_content(panel: PanelContainer, config: Dictionary, message: S
 
 	if icon_label:
 		icon_label.text = config.get("icon", "ℹ")
-		icon_label.add_theme_color_override("font_color", config.get("color", INFO_COLOR))
+		icon_label.add_theme_color_override("font_color", config.get("color", UIColors.INFO))
 
 	if msg_label:
 		msg_label.text = message
@@ -292,11 +285,11 @@ func _update_panel_content(panel: PanelContainer, config: Dictionary, message: S
 			sub_label.visible = false
 
 func _update_panel_style(panel: PanelContainer, config: Dictionary) -> void:
-	var border_color: Color = config.get("border", ACCENT_COLOR)
+	var border_color: Color = config.get("border", UIColors.ACCENT)
 	var style: StyleBoxFlat = panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
 	if style:
-		style.border_color = Color(border_color, 0.7)
-		style.shadow_color = Color(border_color, 0.15)
+		style.border_color = UIColors.with_alpha(border_color, 0.7)
+		style.shadow_color = UIColors.with_alpha(border_color, 0.15)
 		panel.add_theme_stylebox_override("panel", style)
 
 # ============================================================
@@ -322,7 +315,7 @@ func _create_toast_panel() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(300, 54)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG, 0.92)
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.92)
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
@@ -335,8 +328,8 @@ func _create_toast_panel() -> PanelContainer:
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(ACCENT_COLOR, 0.7)
-	style.shadow_color = Color(ACCENT_COLOR, 0.15)
+	style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.7)
+	style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.15)
 	style.shadow_size = 6
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -349,7 +342,7 @@ func _create_toast_panel() -> PanelContainer:
 	icon.name = "IconLabel"
 	icon.text = "ℹ"
 	icon.add_theme_font_size_override("font_size", 22)
-	icon.add_theme_color_override("font_color", INFO_COLOR)
+	icon.add_theme_color_override("font_color", UIColors.INFO)
 	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hbox.add_child(icon)
 
@@ -363,7 +356,7 @@ func _create_toast_panel() -> PanelContainer:
 	msg.name = "MessageLabel"
 	msg.text = ""
 	msg.add_theme_font_size_override("font_size", 15)
-	msg.add_theme_color_override("font_color", TEXT_PRIMARY)
+	msg.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	msg.custom_minimum_size.x = 230
 	vbox.add_child(msg)

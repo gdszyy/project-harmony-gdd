@@ -63,8 +63,8 @@ func _create_ui() -> void:
 	_label.name = "PerfLabel"
 	_label.position = Vector2(10, 10)
 	_label.add_theme_font_size_override("font_size", 12)
-	_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.5, 0.9))
-	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	_label.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.SUCCESS, 0.9))
+	_label.add_theme_color_override("font_shadow_color", UIColors.with_alpha(Color.BLACK, 0.7))
 	_label.add_theme_constant_override("shadow_offset_x", 1)
 	_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_label)

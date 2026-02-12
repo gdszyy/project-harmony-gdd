@@ -20,18 +20,13 @@ const MANUAL_CAST_SLOTS: int = 3
 
 # 音色颜色映射
 const NOTE_COLORS: Dictionary = {
-	"C": Color(0.0, 1.0, 0.831),    # 谐振青
-	"D": Color(0.2, 0.5, 1.0),      # 蓝色
-	"E": Color(0.4, 1.0, 0.698),    # 治愈绿
-	"F": Color(0.533, 0.0, 1.0),    # 深渊紫
-	"G": Color(1.0, 0.843, 0.0),    # 圣光金
-	"A": Color(1.0, 0.533, 0.0),    # 数据橙
-	"B": Color(1.0, 0.3, 0.6),      # 粉色
+	"G": UIColors.GOLD,    # 圣光金
+	"A": UIColors.DATA_ORANGE,    # 数据橙
+	"B": UIColors.GLITCH_MAGENTA,      # 粉色
 }
 
-const COLOR_INACTIVE := Color(0.2, 0.2, 0.3, 0.4)
-const COLOR_DEPLETED := Color(0.3, 0.3, 0.3, 0.5)
-const COLOR_CURSOR   := Color(0.918, 0.902, 1.0, 1.0)
+const COLOR_INACTIVE := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.4)
+const COLOR_DEPLETED := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.5)
 
 # ============================================================
 # 状态
@@ -83,9 +78,9 @@ func _update_ammo_data() -> void:
 	elif _ammo_arcs.is_empty():
 		# 默认数据
 		_ammo_arcs = [
-			{"note": "C", "fill": 1.0, "color": NOTE_COLORS["C"], "active": true},
-			{"note": "E", "fill": 0.7, "color": NOTE_COLORS["E"], "active": false},
-			{"note": "G", "fill": 0.4, "color": NOTE_COLORS["G"], "active": false},
+			{"note": "C", "fill": 1.0, "color": UIColors.get_note_color("C"), "active": true},
+			{"note": "E", "fill": 0.7, "color": UIColors.get_note_color("E"), "active": false},
+			{"note": "G", "fill": 0.4, "color": UIColors.get_note_color("G"), "active": false},
 		]
 
 # ============================================================
@@ -116,14 +111,14 @@ func _draw_sequencer_ring() -> void:
 		var p_outer := Vector2.from_angle(angle) * inner_radius
 		var p_inner := Vector2.from_angle(angle) * (inner_radius - tick_len)
 
-		var tick_color := COLOR_CURSOR if is_current else (Color(0.0, 0.8, 1.0, 0.8) if is_active else Color(0.078, 0.063, 0.149, 0.5))
+		var tick_color := UIColors.TEXT_PRIMARY if is_current else (UIColors.with_alpha(UIColors.ACCENT_2, 0.8) if is_active else UIColors.with_alpha(UIColors.PANEL_BG, 0.5))
 		var tick_width := 3.0 if is_current else (2.0 if is_active else 1.0)
 
 		draw_line(p_inner, p_outer, tick_color, tick_width, true)
 
 		# 施法点高亮
 		if is_active and is_current:
-			draw_circle(p_outer, 4.0, Color(0.0, 1.0, 0.831, 0.8))
+			draw_circle(p_outer, 4.0, UIColors.with_alpha(UIColors.ACCENT_2, 0.8))
 
 ## 绘制弹药弧段
 func _draw_ammo_ring() -> void:
@@ -144,7 +139,7 @@ func _draw_ammo_ring() -> void:
 		var is_depleted := fill < 0.01
 
 		# 绘制背景弧段
-		_draw_arc_segment(start_angle, start_angle + arc_length, ring_radius, arc_width, Color(color, 0.15))
+		_draw_arc_segment(start_angle, start_angle + arc_length, ring_radius, arc_width, UIColors.with_alpha(color, 0.15))
 
 		# 绘制填充弧段
 		var fill_end := start_angle + arc_length * fill
@@ -153,9 +148,9 @@ func _draw_ammo_ring() -> void:
 			fill_color = COLOR_DEPLETED
 		elif is_active:
 			var flash := sin(_time * 8.0) * 0.2 + 0.8
-			fill_color = Color(color.r * flash, color.g * flash, color.b * flash, 0.9)
+			fill_color = UIColors.with_alpha(color * flash, 0.9)
 		else:
-			fill_color = Color(color, 0.7)
+			fill_color = UIColors.with_alpha(color, 0.7)
 
 		if fill > 0.01:
 			_draw_arc_segment(start_angle, fill_end, ring_radius, arc_width, fill_color)
@@ -163,11 +158,11 @@ func _draw_ammo_ring() -> void:
 		# 耗尽红色闪烁
 		if is_depleted:
 			var red_flash := sin(_time * 6.0) * 0.3 + 0.3
-			_draw_arc_segment(start_angle, start_angle + arc_length, ring_radius, arc_width, Color(1.0, 0.1, 0.1, red_flash))
+			_draw_arc_segment(start_angle, start_angle + arc_length, ring_radius, arc_width, UIColors.with_alpha(UIColors.DANGER, red_flash))
 
 		# 激活高亮边框
 		if is_active:
-			_draw_arc_outline(start_angle, start_angle + arc_length, ring_radius, arc_width, Color(color, 0.6), 1.5)
+			_draw_arc_outline(start_angle, start_angle + arc_length, ring_radius, arc_width, UIColors.with_alpha(color, 0.6), 1.5)
 
 ## 绘制弧段
 func _draw_arc_segment(start: float, end: float, radius: float, width: float, color: Color) -> void:
@@ -225,10 +220,10 @@ func _draw_beat_cursor() -> void:
 
 	# 光点
 	var pulse := 1.0 + sin(_beat_progress * PI) * 0.3
-	draw_circle(cursor_pos, 4.0 * pulse, COLOR_CURSOR)
+	draw_circle(cursor_pos, 4.0 * pulse, UIColors.TEXT_PRIMARY)
 
 	# 辉光
-	draw_circle(cursor_pos, 8.0 * pulse, Color(COLOR_CURSOR, 0.2))
+	draw_circle(cursor_pos, 8.0 * pulse, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.2))
 
 # ============================================================
 # 信号回调

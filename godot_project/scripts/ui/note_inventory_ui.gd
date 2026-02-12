@@ -35,36 +35,17 @@ const BLACK_CELL_GAP := 4.0
 const SECTION_GAP := 12.0
 
 ## 颜色定义
-const CELL_BG := Color("141026A0")
-const CELL_HOVER_BG := Color("9D6FFF30")
-const CELL_EMPTY_BG := Color("14102660")
-const CELL_BORDER := Color("9D6FFF40")
-const COUNT_COLOR := Color("EAE6FF")
-const EMPTY_COUNT_COLOR := Color("9D8FBF60")
-const SECTION_TITLE_COLOR := Color("9D8FBF")
-const INSUFFICIENT_FLASH_COLOR := Color("FF444480")
+const CELL_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+const CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+const CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.38)
+const CELL_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+const EMPTY_COUNT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
+const INSUFFICIENT_FLASH_COLOR := UIColors.with_alpha(UIColors.OFFENSE, 0.50)
 
 ## 闪烁效果
 const FLASH_DURATION: float = 0.5
 
 ## 音符颜色编码（来自 UI 设计文档 §4.1）
-const NOTE_COLORS := {
-	0: Color("00FFD4"),  # C — 谐振青
-	1: Color("0088FF"),  # D — 疾风蓝
-	2: Color("66FF66"),  # E — 翠叶绿
-	3: Color("8844FF"),  # F — 深渊紫
-	4: Color("FF4444"),  # G — 烈焰红
-	5: Color("FF8800"),  # A — 烈日橙
-	6: Color("FF44AA"),  # B — 霓虹粉
-}
-
-const BLACK_KEY_COLORS := {
-	0: Color("009988"),  # C# — 谐振青暗化
-	1: Color("005599"),  # D# — 疾风蓝暗化
-	2: Color("6633CC"),  # F# — 深渊紫暗化
-	3: Color("CC2222"),  # G# — 烈焰红暗化
-	4: Color("CC6600"),  # A# — 烈日橙暗化
-}
 
 ## 音符描述（用于信息悬停）
 const NOTE_DESCRIPTIONS := {
@@ -148,7 +129,7 @@ func _draw() -> void:
 
 	## ===== 白键区域标题 =====
 	draw_string(font, Vector2(x, y + 12), "WHITE KEYS",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, SECTION_TITLE_COLOR)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.TEXT_HINT)
 	y += 18.0
 
 	## ===== 白键音符 =====
@@ -157,7 +138,7 @@ func _draw() -> void:
 		_white_rects.append(rect)
 
 		var count: int = NoteInventory.get_note_count(i)
-		var note_color: Color = NOTE_COLORS.get(i, Color(0.5, 0.5, 0.5))
+		var note_color: Color = UIColors.get_note_color_by_int(i)
 		var is_hover := (_hover_white == i)
 
 		## 背景色
@@ -178,24 +159,24 @@ func _draw() -> void:
 
 		## 左侧色条指示器
 		var indicator_rect := Rect2(Vector2(x, y), Vector2(4, WHITE_CELL_SIZE.y))
-		var indicator_color := note_color if count > 0 else Color(note_color.r, note_color.g, note_color.b, 0.2)
+		var indicator_color := note_color if count > 0 else UIColors.with_alpha(note_color, 0.2)
 		draw_rect(indicator_rect, indicator_color)
 
 		## 音符名称
 		var name_str: String = MusicData.WHITE_KEY_STATS.get(i, {}).get("name", "?")
-		var text_color := note_color if count > 0 else Color(0.4, 0.4, 0.5, 0.5)
+		var text_color := note_color if count > 0 else UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.5)
 		draw_string(font, Vector2(x + 12, y + WHITE_CELL_SIZE.y / 2.0 + 5),
 			name_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text_color)
 
 		## 音符描述
 		var desc_str: String = MusicData.WHITE_KEY_STATS.get(i, {}).get("desc", "")
-		var desc_color := Color(0.6, 0.55, 0.7, 0.7) if count > 0 else Color(0.4, 0.4, 0.5, 0.3)
+		var desc_color := UIColors.with_alpha(UIColors.TEXT_HINT, 0.7) if count > 0 else UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
 		draw_string(font, Vector2(x + 36, y + WHITE_CELL_SIZE.y / 2.0 + 4),
 			desc_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, desc_color)
 
 		## 库存数量
 		var count_str := "×%d" % count
-		var count_color := COUNT_COLOR if count > 0 else EMPTY_COUNT_COLOR
+		var count_color := UIColors.TEXT_PRIMARY if count > 0 else EMPTY_COUNT_COLOR
 		draw_string(font, Vector2(x + WHITE_CELL_SIZE.x - 36, y + WHITE_CELL_SIZE.y / 2.0 + 5),
 			count_str, HORIZONTAL_ALIGNMENT_RIGHT, -1, 12, count_color)
 
@@ -212,7 +193,7 @@ func _draw() -> void:
 
 	## ===== 黑键区域标题 =====
 	draw_string(font, Vector2(x, y + 12), "BLACK KEYS (修饰符)",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, SECTION_TITLE_COLOR)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.TEXT_HINT)
 	y += 18.0
 
 	## ===== 黑键修饰符 =====
@@ -222,7 +203,7 @@ func _draw() -> void:
 		_black_rects.append(rect)
 
 		var count: int = NoteInventory.get_black_key_count(i)
-		var bk_color: Color = BLACK_KEY_COLORS.get(i, Color(0.4, 0.4, 0.4))
+		var bk_color: Color = UIColors.get_black_key_color(i)
 		var is_hover := (_hover_black == i)
 
 		## 背景色
@@ -242,23 +223,23 @@ func _draw() -> void:
 
 		## 左侧色条
 		draw_rect(Rect2(Vector2(x + 10, y), Vector2(3, BLACK_CELL_SIZE.y)),
-			bk_color if count > 0 else Color(bk_color.r, bk_color.g, bk_color.b, 0.2))
+			bk_color if count > 0 else UIColors.with_alpha(bk_color, 0.2))
 
 		## 黑键名称
-		var text_color := bk_color if count > 0 else Color(0.4, 0.4, 0.5, 0.4)
+		var text_color := bk_color if count > 0 else UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.4)
 		draw_string(font, Vector2(x + 20, y + BLACK_CELL_SIZE.y / 2.0 + 4),
 			black_key_names[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, text_color)
 
 		## 修饰符效果名称
 		var mod_data: Dictionary = MusicData.BLACK_KEY_MODIFIERS.get(i, {})
 		var mod_name: String = mod_data.get("name", "?")
-		var mod_desc_color := Color(0.6, 0.5, 0.7, 0.6) if count > 0 else Color(0.4, 0.4, 0.5, 0.3)
+		var mod_desc_color := UIColors.with_alpha(UIColors.TEXT_HINT, 0.6) if count > 0 else UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
 		draw_string(font, Vector2(x + 48, y + BLACK_CELL_SIZE.y / 2.0 + 4),
 			mod_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, mod_desc_color)
 
 		## 库存数量
 		var count_str := "×%d" % count
-		var count_color := COUNT_COLOR if count > 0 else EMPTY_COUNT_COLOR
+		var count_color := UIColors.TEXT_PRIMARY if count > 0 else EMPTY_COUNT_COLOR
 		draw_string(font, Vector2(x + 10 + BLACK_CELL_SIZE.x - 36, y + BLACK_CELL_SIZE.y / 2.0 + 4),
 			count_str, HORIZONTAL_ALIGNMENT_RIGHT, -1, 11, count_color)
 
@@ -305,7 +286,7 @@ func _emit_white_info(idx: int) -> void:
 	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(idx, {})
 	var name_str: String = stats.get("name", "?")
 	var count: int = NoteInventory.get_note_count(idx)
-	var color: Color = NOTE_COLORS.get(idx, Color.WHITE)
+	var color: Color = UIColors.get_note_color_by_int(idx)
 	var desc := NOTE_DESCRIPTIONS.get(idx, "")
 	var stat_str := "DMG:%s SPD:%s DUR:%s SIZE:%s | 库存: ×%d" % [
 		str(stats.get("dmg", 0)), str(stats.get("spd", 0)),
@@ -315,7 +296,7 @@ func _emit_white_info(idx: int) -> void:
 
 ## 发送黑键信息
 func _emit_black_info(idx: int) -> void:
-	var color: Color = BLACK_KEY_COLORS.get(idx, Color(0.5, 0.5, 0.5))
+	var color: Color = UIColors.get_black_key_color(idx)
 	var count: int = NoteInventory.get_black_key_count(idx)
 	var desc := BLACK_KEY_DESCRIPTIONS.get(idx, "")
 	info_hover.emit("黑键修饰符", "%s | 库存: ×%d" % [desc, count], color)
@@ -337,7 +318,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 				return null
 
 			var name_str: String = MusicData.WHITE_KEY_STATS.get(i, {}).get("name", "?")
-			var color: Color = NOTE_COLORS.get(i, Color(0.5, 0.5, 0.5))
+			var color: Color = UIColors.get_note_color_by_int(i)
 
 			## 创建拖拽预览
 			var preview := _create_drag_preview(name_str, color)
@@ -359,7 +340,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 				return null
 
 			var bk_names := ["C#", "D#", "F#", "G#", "A#"]
-			var color: Color = BLACK_KEY_COLORS.get(i, Color(0.4, 0.4, 0.4))
+			var color: Color = UIColors.get_black_key_color(i)
 
 			var preview := _create_drag_preview(bk_names[i], color, Vector2(40, 32))
 			set_drag_preview(preview)
@@ -411,11 +392,11 @@ func _create_drag_preview(text: String, color: Color, preview_size: Vector2 = Ve
 	panel.size = preview_size
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.5)
+	style.bg_color = UIColors.with_alpha(color, 0.5)
 	style.border_color = color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(4)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.6)
+	style.shadow_color = UIColors.with_alpha(color, 0.6)
 	style.shadow_size = 6
 	panel.add_theme_stylebox_override("panel", style)
 

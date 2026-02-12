@@ -13,12 +13,8 @@ const ICON_SIZE := 36.0
 const PROGRESS_BAR_HEIGHT := 3.0
 
 # 颜色
-const BG_COLOR := Color(0.04, 0.03, 0.08, 0.75)
-const BORDER_COLOR := Color(0.616, 0.435, 1.0, 0.3)
-const BORDER_UPGRADE := Color(1.0, 0.843, 0.0, 0.8)
-const BORDER_BERSERK := Color(1.0, 0.133, 0.267, 0.8)
-const COLOR_CRYSTAL_WHITE := Color(0.918, 0.902, 1.0)
-const COLOR_WARNING := Color(1.0, 0.3, 0.1)
+const BORDER_UPGRADE := UIColors.with_alpha(UIColors.GOLD, 0.8)
+const BORDER_BERSERK := UIColors.with_alpha(UIColors.ERROR_RED, 0.8)
 
 # ============================================================
 # 状态
@@ -137,15 +133,15 @@ func _draw() -> void:
 
 	# 面板背景
 	var total_height := max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28
-	draw_rect(Rect2(Vector2(0, 0), Vector2(CARD_SIZE.x + 10, total_height)), BG_COLOR)
+	draw_rect(Rect2(Vector2(0, 0), Vector2(CARD_SIZE.x + 10, total_height)), UIColors.PRIMARY_BG)
 
 	# 标题
-	draw_string(font, Vector2(start_x, 14), "PHANTOM VOICES", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(COLOR_CRYSTAL_WHITE, 0.5))
+	draw_string(font, Vector2(start_x, 14), "PHANTOM VOICES", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.5))
 
 	# 共鸣加成
 	if _resonance_bonus > 0.0:
 		var res_text := "Resonance: +%.0f%%" % (_resonance_bonus * 100.0)
-		draw_string(font, Vector2(start_x + 95, 14), res_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1.0, 0.843, 0.0, 0.8))
+		draw_string(font, Vector2(start_x + 95, 14), res_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.GOLD, 0.8))
 
 	start_y = 22.0
 
@@ -165,7 +161,7 @@ func _draw() -> void:
 		_draw_summon_card(data, Vector2(start_x + offset_x, slot_y), alpha, font)
 
 func _draw_summon_card(data: Dictionary, pos: Vector2, alpha: float, font: Font) -> void:
-	var color: Color = data.get("color", Color(0.5, 0.5, 0.5))
+	var color: Color = data.get("color", UIColors.TEXT_DIM)
 	var time_remaining: float = data.get("time_remaining", 0.0)
 	var max_duration: float = data.get("max_duration", 12.0)
 	var type_name: String = data.get("type_name", "Unknown")
@@ -175,10 +171,10 @@ func _draw_summon_card(data: Dictionary, pos: Vector2, alpha: float, font: Font)
 	var card_rect := Rect2(pos, CARD_SIZE)
 
 	# 卡片背景
-	draw_rect(card_rect, Color(color.r, color.g, color.b, 0.12 * alpha))
+	draw_rect(card_rect, UIColors.with_alpha(color, 0.12 * alpha))
 
 	# 状态边框
-	var border_col := BORDER_COLOR
+	var border_col := UIColors.BORDER_DEFAULT
 	match status:
 		"upgrade_ready":
 			border_col = BORDER_UPGRADE
@@ -194,20 +190,20 @@ func _draw_summon_card(data: Dictionary, pos: Vector2, alpha: float, font: Font)
 
 	# 图标色块 (48x48 区域内的小色块)
 	var icon_rect := Rect2(pos + Vector2(4, 6), Vector2(ICON_SIZE, ICON_SIZE))
-	draw_rect(icon_rect, Color(color, 0.6 * alpha))
+	draw_rect(icon_rect, UIColors.with_alpha(color, 0.6 * alpha))
 	# 图标内文字
-	draw_string(font, pos + Vector2(10, 30), type_name.left(2).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(COLOR_CRYSTAL_WHITE, alpha))
+	draw_string(font, pos + Vector2(10, 30), type_name.left(2).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, UIColors.with_alpha(UIColors.TEXT_PRIMARY, alpha))
 
 	# 名称和等级
 	var name_pos := pos + Vector2(ICON_SIZE + 10, 16)
-	draw_string(font, name_pos, type_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(COLOR_CRYSTAL_WHITE, alpha))
-	draw_string(font, pos + Vector2(ICON_SIZE + 10, 30), "Lv.%d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(COLOR_CRYSTAL_WHITE, 0.6 * alpha))
+	draw_string(font, name_pos, type_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.with_alpha(UIColors.TEXT_PRIMARY, alpha))
+	draw_string(font, pos + Vector2(ICON_SIZE + 10, 30), "Lv.%d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.6 * alpha))
 
 	# 剩余时间
 	var time_text := "%.1fs" % time_remaining
-	var time_color := Color(0.7, 0.7, 0.8, alpha)
+	var time_color := UIColors.with_alpha(UIColors.TEXT_SECONDARY, alpha)
 	if time_remaining < 3.0:
-		time_color = Color(COLOR_WARNING, alpha)
+		time_color = UIColors.with_alpha(UIColors.WARNING, alpha)
 		# 闪烁
 		time_color.a *= (0.5 + sin(_time * 8.0) * 0.5)
 	draw_string(font, pos + Vector2(CARD_SIZE.x - 38, 16), time_text, HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, time_color)
@@ -217,9 +213,9 @@ func _draw_summon_card(data: Dictionary, pos: Vector2, alpha: float, font: Font)
 	var time_ratio := clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0
 
 	# 背景
-	draw_rect(Rect2(Vector2(pos.x + 1, bar_y), Vector2(CARD_SIZE.x - 2, PROGRESS_BAR_HEIGHT)), Color(0.1, 0.1, 0.15, 0.5 * alpha))
+	draw_rect(Rect2(Vector2(pos.x + 1, bar_y), Vector2(CARD_SIZE.x - 2, PROGRESS_BAR_HEIGHT)), UIColors.with_alpha(UIColors.PANEL_DARK, 0.5 * alpha))
 	# 填充
-	var bar_color := Color(color, 0.6 * alpha)
+	var bar_color := UIColors.with_alpha(color, 0.6 * alpha)
 	if time_remaining < 3.0:
-		bar_color = Color(COLOR_WARNING, 0.8 * alpha)
+		bar_color = UIColors.with_alpha(UIColors.WARNING, 0.8 * alpha)
 	draw_rect(Rect2(Vector2(pos.x + 1, bar_y), Vector2((CARD_SIZE.x - 2) * time_ratio, PROGRESS_BAR_HEIGHT)), bar_color)

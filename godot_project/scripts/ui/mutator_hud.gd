@@ -47,7 +47,7 @@ func _setup_ui() -> void:
 	title.text = "变异器"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	title.add_theme_font_size_override("font_size", 12)
-	title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7, 0.8))
+	title.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_DIM, 0.8))
 	_container.add_child(title)
 
 # ============================================================

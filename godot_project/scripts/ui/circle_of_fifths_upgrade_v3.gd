@@ -81,35 +81,28 @@ const CIRCLE_SIZE: int = 12
 # 常量 — 颜色体系 (严格遵循 UI 设计文档 §1.2)
 # ============================================================
 ## 全局 UI 主题
-const COL_PANEL_BG := Color("#141026")        ## 星空紫 80%
-const COL_ACCENT := Color("#9D6FFF")          ## 谐振紫
-const COL_TEXT_PRIMARY := Color("#EAE6FF")     ## 晶体白
-const COL_TEXT_SECONDARY := Color("#A098C8")   ## 星云灰
-const COL_HOLY_GOLD := Color("#FFD700")        ## 圣光金
-const COL_CURRENT_KEY := Color("#00FFD4")      ## 谐振青
-const COL_DEEP_BLACK := Color("#0A0814")       ## 深渊黑
+const COL_HOLY_GOLD := UIColors.GOLD        ## 圣光金
+const COL_CURRENT_KEY := UIColors.ACCENT_2      ## 谐振青
+const COL_DEEP_BLACK := UIColors.PRIMARY_BG       ## 深渊黑
 
 ## 三方向色 (设计文档 §3.1)
-const COL_OFFENSE := Color("#FFE066")          ## Dominant 黄
-const COL_DEFENSE := Color("#66FFB2")          ## 治愈绿
-const COL_CORE := Color("#EAE6FF")             ## 晶体白
 
 ## 方向色映射
 const DIRECTION_COLORS := {
-	"offense": Color("#FFE066"),
-	"defense": Color("#66FFB2"),
-	"core": Color("#EAE6FF"),
+	"offense": UIColors.GOLD,
+	"defense": UIColors.SUCCESS,
+	"core": UIColors.TEXT_PRIMARY,
 }
 
 ## 背景遮罩
-const BG_OVERLAY := Color(0.0, 0.0, 0.02, 0.75)
+var BG_OVERLAY := UIColors.with_alpha(Color.BLACK, 0.75)
 
 ## 稀有度颜色
 const RARITY_COLORS := {
-	"common": Color(0.7, 0.7, 0.75),
-	"rare": Color(0.3, 0.5, 1.0),
-	"epic": Color(0.7, 0.3, 1.0),
-	"legendary": Color(1.0, 0.85, 0.2),
+	"common": UIColors.RARITY_COMMON,
+	"rare": UIColors.RARITY_RARE,
+	"epic": UIColors.RARITY_EPIC,
+	"legendary": UIColors.GOLD,
 }
 
 ## ============================================================
@@ -897,7 +890,7 @@ func _draw() -> void:
 func _draw_nebula_core(alpha: float) -> void:
 	var scale := alpha
 	# 核心区域深色背景
-	var core_color := COL_PANEL_BG
+	var core_color := UIColors.PANEL_BG
 	core_color.a = 0.95 * alpha
 	draw_circle(_center, compass_core_radius * scale, core_color)
 
@@ -905,15 +898,15 @@ func _draw_nebula_core(alpha: float) -> void:
 	var layers := 5
 	for i in range(layers):
 		var t := float(i) / float(layers)
-		var r := compass_core_radius * scale * (0.3 + t * 0.7)
-		var nebula_color := COL_ACCENT
+		var r := COMPASS_CORE_RADIUS * scale * (0.3 + t * 0.7)
+		var nebula_color := UIColors.ACCENT
 		nebula_color.a = (0.08 - t * 0.015) * alpha
 		var offset_angle := _nebula_rotation + t * PI * 0.5
 		var offset := Vector2(cos(offset_angle), sin(offset_angle)) * 3.0 * (1.0 - t)
 		draw_arc(_center + offset, r, 0, TAU, 48, nebula_color, 2.0 - t)
 
 	# 核心边缘辉光
-	var glow_color := COL_ACCENT
+	var glow_color := UIColors.ACCENT
 	glow_color.a = 0.25 * alpha * _current_key_glow
 	draw_arc(_center, compass_core_radius * scale, 0, TAU, 48, glow_color, 3.0)
 
@@ -929,7 +922,7 @@ func _draw_connection_web(alpha: float) -> void:
 		var pos_a := _center + Vector2(cos(angle_a), sin(angle_a)) * compass_inner_radius * scale
 		var pos_b := _center + Vector2(cos(angle_b), sin(angle_b)) * compass_inner_radius * scale
 
-		var line_color := COL_ACCENT
+		var line_color := UIColors.ACCENT
 		# 高亮当前调性相邻的连接线
 		if i == _current_key_index or (i + 1) % CIRCLE_SIZE == _current_key_index:
 			line_color.a = 0.5 * alpha
@@ -945,7 +938,7 @@ func _draw_outer_ring(font: Font, alpha: float) -> void:
 	var scale := alpha
 
 	# 外圈环线
-	var ring_color := COL_ACCENT
+	var ring_color := UIColors.ACCENT
 	ring_color.a = 0.3 * alpha
 	draw_arc(_center, compass_outer_radius * scale, 0, TAU, 64, ring_color, 1.5)
 
@@ -966,7 +959,7 @@ func _draw_outer_ring(font: Font, alpha: float) -> void:
 			tick_color.a = alpha * _current_key_glow
 			tick_width = 3.0
 		else:
-			tick_color = COL_ACCENT
+			tick_color = UIColors.ACCENT
 			tick_color.a = 0.4 * alpha
 			tick_width = 1.5
 		draw_line(inner_pos, outer_pos, tick_color, tick_width, true)
@@ -979,7 +972,7 @@ func _draw_outer_ring(font: Font, alpha: float) -> void:
 			label_color.a = alpha * _current_key_glow
 			label_size = 18
 		else:
-			label_color = COL_TEXT_PRIMARY
+			label_color = UIColors.TEXT_PRIMARY
 			label_color.a = 0.7 * alpha
 			label_size = 16
 
@@ -1006,7 +999,7 @@ func _draw_middle_ring(font: Font, alpha: float) -> void:
 	var scale := alpha
 
 	# 中圈环线（更淡）
-	var ring_color := COL_ACCENT
+	var ring_color := UIColors.ACCENT
 	ring_color.a = 0.15 * alpha
 	draw_arc(_center, compass_middle_radius * scale, 0, TAU, 48, ring_color, 1.0)
 
@@ -1015,7 +1008,7 @@ func _draw_middle_ring(font: Font, alpha: float) -> void:
 		var angle := _key_index_to_angle(i) + _compass_rotation_offset
 		var label_pos := _center + Vector2(cos(angle), sin(angle)) * minor_label_radius * scale
 
-		var label_color := COL_TEXT_SECONDARY
+		var label_color := UIColors.TEXT_SECONDARY
 		label_color.a = 0.5 * alpha
 
 		var minor_text: String = MINOR_KEYS[i]
@@ -1037,7 +1030,7 @@ func _draw_current_key_highlight(font: Font, alpha: float) -> void:
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 28, key_color)
 
 	# 等级显示
-	var level_color := COL_TEXT_SECONDARY
+	var level_color := UIColors.TEXT_SECONDARY
 	level_color.a = 0.8 * alpha
 	draw_string(font, _center + Vector2(-18, 14), "Lv.%d" % GameManager.player_level,
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 12, level_color)
@@ -1050,7 +1043,7 @@ func _draw_title(font: Font, alpha: float) -> void:
 	var title_alpha := clampf(alpha * 2.0, 0.0, 1.0)
 
 	# 主标题
-	var tc := COL_TEXT_PRIMARY
+	var tc := UIColors.TEXT_PRIMARY
 	tc.a = title_alpha
 	var title_text := "LEVEL UP"
 	var title_width := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24).x
@@ -1059,14 +1052,14 @@ func _draw_title(font: Font, alpha: float) -> void:
 
 	# 副标题
 	var subtitle := ""
-	var subtitle_color := COL_TEXT_SECONDARY
+	var subtitle_color := UIColors.TEXT_SECONDARY
 	match _current_phase:
 		Phase.DIRECTION_SELECT:
 			subtitle = "Choose your musical direction"
 		Phase.CARD_SELECT:
 			var dir_name := _get_direction_display_name(_selected_direction)
 			subtitle = "%s — Select an upgrade" % dir_name
-			subtitle_color = DIRECTION_COLORS.get(_selected_direction, COL_TEXT_SECONDARY)
+			subtitle_color = DIRECTION_COLORS.get(_selected_direction, UIColors.TEXT_SECONDARY)
 		Phase.THEORY_BREAKTHROUGH:
 			subtitle = "◆ THEORY BREAKTHROUGH ◆"
 			subtitle_color = COL_HOLY_GOLD
@@ -1100,8 +1093,8 @@ func _draw_direction_runes(font: Font) -> void:
 			continue
 
 		var angle: float = dir_info["angle_offset"]
-		var rune_center := _center + Vector2(cos(angle), sin(angle)) * rune_radius * _appear_progress
-		var dir_color: Color = DIRECTION_COLORS.get(dir_key, COL_TEXT_PRIMARY)
+		var rune_center := _center + Vector2(cos(angle), sin(angle)) * RUNE_RADIUS * _appear_progress
+		var dir_color: Color = DIRECTION_COLORS.get(dir_key, UIColors.TEXT_PRIMARY)
 		var is_hover := (_hover_direction == dir_key)
 		var pulse := sin(_rune_pulse[i]) * 0.1 + 0.9
 
@@ -1113,7 +1106,7 @@ func _draw_direction_runes(font: Font) -> void:
 		_direction_hover_areas[dir_key] = { "center": rune_center, "radius": rune_r * 1.5 }
 
 		# 符文背景圆
-		var bg_color := COL_PANEL_BG
+		var bg_color := UIColors.PANEL_BG
 		bg_color.a = (0.95 if is_hover else 0.85) * progress
 		draw_circle(rune_center, rune_r, bg_color)
 
@@ -1146,7 +1139,7 @@ func _draw_direction_runes(font: Font) -> void:
 			label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, label_color)
 
 		# 描述
-		var desc_color := COL_TEXT_SECONDARY
+		var desc_color := UIColors.TEXT_SECONDARY
 		desc_color.a = (0.8 if is_hover else 0.5) * progress
 		var desc_text: String = dir_info["desc"]
 		var desc_width := font.get_string_size(desc_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 11).x
@@ -1190,7 +1183,7 @@ func _draw_upgrade_cards(font: Font) -> void:
 	if _current_options.is_empty():
 		return
 
-	var dir_color: Color = DIRECTION_COLORS.get(_selected_direction, COL_TEXT_PRIMARY)
+	var dir_color: Color = DIRECTION_COLORS.get(_selected_direction, UIColors.TEXT_PRIMARY)
 	var card_count := _current_options.size()
 
 	# 返回提示
@@ -1199,7 +1192,7 @@ func _draw_upgrade_cards(font: Font) -> void:
 	var back_width := font.get_string_size(back_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 10).x
 	draw_string(font, Vector2(_center.x - back_width / 2.0, _center.y + compass_outer_radius + 200),
 		back_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10,
-		Color(COL_TEXT_SECONDARY.r, COL_TEXT_SECONDARY.g, COL_TEXT_SECONDARY.b, 0.5 * back_alpha))
+		UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.5 * back_alpha))
 
 	# 卡片弧形排列
 	var total_width := card_count * (card_width + card_spacing) - card_spacing
@@ -1237,10 +1230,10 @@ func _draw_single_card(rect: Rect2, option: Dictionary, is_hover: bool,
 	var is_legendary := (rarity == "legendary")
 
 	# ---- 卡片背景 ----
-	var bg := COL_PANEL_BG
+	var bg := UIColors.PANEL_BG
 	bg.a = 0.8 * alpha
 	if is_hover:
-		bg = Color(COL_PANEL_BG.r + 0.03, COL_PANEL_BG.g + 0.02, COL_PANEL_BG.b + 0.06, 0.9 * alpha)
+		bg = UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.9 * alpha)
 	_draw_rounded_rect(rect, bg, 12.0)
 
 	# ---- 边框 (§5.2) ----
@@ -1296,7 +1289,7 @@ func _draw_single_card(rect: Rect2, option: Dictionary, is_hover: bool,
 	var title_text: String = option.get("name", "???")
 	if is_legendary:
 		title_text = "◆ " + title_text
-	var title_color := COL_HOLY_GOLD if is_legendary else COL_TEXT_PRIMARY
+	var title_color := COL_HOLY_GOLD if is_legendary else UIColors.TEXT_PRIMARY
 	title_color.a = alpha
 	var title_width := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 16).x
 	draw_string(font, Vector2(rect.position.x + (rect.size.x - title_width) / 2.0, title_y),
@@ -1330,7 +1323,7 @@ func _draw_single_card(rect: Rect2, option: Dictionary, is_hover: bool,
 	# ---- 下部描述区 (§5.1) ----
 	var desc_y := rect.position.y + rect.size.y * 0.62
 	var desc_text: String = option.get("desc", "")
-	var desc_color := COL_TEXT_PRIMARY
+	var desc_color := UIColors.TEXT_PRIMARY
 	desc_color.a = 0.85 * alpha
 	var max_desc_width := rect.size.x - 24.0
 
@@ -1344,7 +1337,7 @@ func _draw_single_card(rect: Rect2, option: Dictionary, is_hover: bool,
 	var tags: Array = option.get("tags", [])
 	var tag_y := rect.position.y + rect.size.y - 30
 	var tag_x := rect.position.x + 12
-	var tag_color := COL_TEXT_SECONDARY
+	var tag_color := UIColors.TEXT_SECONDARY
 	tag_color.a = 0.6 * alpha
 
 	for tag in tags:
@@ -1383,7 +1376,7 @@ func _draw_breakthrough_event(font: Font) -> void:
 	var pulse := sin(_breakthrough_pulse) * 0.15 + 0.85
 
 	# 屏幕变暗至10%
-	var dark_overlay := Color(0, 0, 0, 0.85 * progress)
+	var dark_overlay := UIColors.with_alpha(Color.BLACK, 0.85 * progress)
 	draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), dark_overlay)
 
 	# 中心金色光线放射 (§7.2)
@@ -1413,9 +1406,9 @@ func _draw_breakthrough_event(font: Font) -> void:
 	_breakthrough_rect = card_rect
 
 	# 卡片背景 — 流动金色星云纹理
-	var bg := Color(0.15, 0.12, 0.05, 0.95 * progress)
+	var bg := UIColors.with_alpha(UIColors.PANEL_DARK, 0.95 * progress)
 	if _hover_breakthrough:
-		bg = Color(0.2, 0.16, 0.06, 0.98 * progress)
+		bg = UIColors.with_alpha(UIColors.PANEL_DARK, 0.98 * progress)
 	_draw_rounded_rect(card_rect, bg, 12.0)
 
 	# 金色边框 — 双层辉光 (§7.2)
@@ -1453,7 +1446,7 @@ func _draw_breakthrough_event(font: Font) -> void:
 
 	# 描述
 	var desc_text: String = _breakthrough_event.get("desc", "")
-	var desc_color := Color(1.0, 0.95, 0.8, 0.85 * progress)
+	var desc_color := UIColors.with_alpha(UIColors.GOLD, 0.85 * progress)
 	var desc_lines := _wrap_text(desc_text, font, card_w - 40, 14)
 	for line_idx in range(desc_lines.size()):
 		draw_string(font, Vector2(card_pos.x + 20, card_pos.y + card_h * 0.58 + line_idx * 20),

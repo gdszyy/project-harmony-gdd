@@ -44,46 +44,32 @@ signal tutorial_step_advanced(step: int)
 # ============================================================
 
 ## HUD 状态面板颜色
-const BG_COLOR := Color(0.04, 0.03, 0.08, 0.85)
-const BORDER_COLOR := Color(0.25, 0.22, 0.38, 0.6)
-const TITLE_COLOR := Color(0.55, 0.5, 0.7, 0.9)
-const LABEL_COLOR := Color(0.5, 0.48, 0.6, 0.8)
-const VALUE_COLOR := Color(0.75, 0.72, 0.88, 0.9)
+const TITLE_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.9)
 
 ## 不和谐度颜色渐变
-const DISSONANCE_LOW_COLOR := Color(0.2, 0.7, 0.4)
-const DISSONANCE_MID_COLOR := Color(1.0, 0.8, 0.0)
-const DISSONANCE_HIGH_COLOR := Color(1.0, 0.2, 0.1)
+const DISSONANCE_LOW_COLOR := UIColors.DISSONANCE_LOW
+const DISSONANCE_MID_COLOR := UIColors.DISSONANCE_MID
+const DISSONANCE_HIGH_COLOR := UIColors.DISSONANCE_HIGH
 
 ## 疲劳等级颜色
 const FATIGUE_COLORS := {
-	0: Color(0.0, 0.8, 0.4),
-	1: Color(0.7, 0.8, 0.0),
-	2: Color(1.0, 0.6, 0.0),
-	3: Color(1.0, 0.2, 0.0),
-	4: Color(0.8, 0.0, 0.2),
+	0: UIColors.SUCCESS,
+	1: UIColors.OVERLOAD_COLORS[1],
+	2: UIColors.OVERLOAD_COLORS[2],
+	3: UIColors.OVERLOAD_COLORS[3],
+	4: UIColors.OVERLOAD_COLORS[4],
 }
 
 ## 密度过载颜色
-const DENSITY_SAFE_COLOR := Color(0.3, 0.6, 1.0)
-const DENSITY_WARN_COLOR := Color(1.0, 0.6, 0.0)
-const DENSITY_OVERLOAD_COLOR := Color(1.0, 0.15, 0.1)
+const DENSITY_SAFE_COLOR := UIColors.DENSITY_SAFE
+
+const DENSITY_OVERLOAD_COLOR := UIColors.DENSITY_OVERLOAD
 
 ## 护盾/暴击颜色
-const SHIELD_COLOR := Color(0.3, 0.7, 1.0, 0.8)
-const CRIT_COLOR := Color(1.0, 0.6, 0.2)
+const SHIELD_COLOR := UIColors.with_alpha(UIColors.DENSITY_SAFE, 0.8)
+const CRIT_COLOR := UIColors.WARNING
 
 ## 帮助面板颜色 (§1.2)
-const COL_HELP_BG := Color("#0A0814F2")
-const COL_HELP_PANEL := Color("#141026")
-const COL_ACCENT := Color("#9D6FFF")
-const COL_GOLD := Color("#FFD700")
-const COL_OFFENSE := Color("#FF4444")
-const COL_DEFENSE := Color("#4488FF")
-const COL_CORE := Color("#9D6FFF")
-const COL_TEXT_PRIMARY := Color("#EAE6FF")
-const COL_TEXT_SECONDARY := Color("#A098C8")
-const COL_TEXT_DIM := Color("#6B668A")
 
 # ============================================================
 # 帮助面板页签配置
@@ -252,9 +238,9 @@ func _draw() -> void:
 	var panel_height := panel_padding * 2 + 16 + content_height * _collapse_progress
 
 	# 面板背景
-	var panel_rect := Rect2(Vector2.ZERO, Vector2(panel_width, panel_height))
-	draw_rect(panel_rect, BG_COLOR)
-	draw_rect(panel_rect, BORDER_COLOR, false, 1.0)
+	var panel_rect := Rect2(Vector2.ZERO, Vector2(PANEL_WIDTH, panel_height))
+	draw_rect(panel_rect, UIColors.PRIMARY_BG)
+	draw_rect(panel_rect, UIColors.BORDER_DEFAULT, false, 1.0)
 
 	# 标题栏
 	var collapse_icon := "▼" if not _is_collapsed else "▶"
@@ -273,9 +259,9 @@ func _draw() -> void:
 		_get_dissonance_color(_display_dissonance),
 		"%.1f" % _display_dissonance, content_alpha)
 	if _dissonance_flash > 0:
-		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width, bar_height))
-		draw_rect(flash_rect, Color(1.0, 0.3, 0.1, _dissonance_flash * 0.3))
-	y += bar_height + bar_gap
+		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT))
+		draw_rect(flash_rect, UIColors.with_alpha(UIColors.DANGER, _dissonance_flash * 0.3))
+	y += BAR_HEIGHT + BAR_GAP
 
 	# 2. 听感疲劳
 	var fatigue_color: Color = FATIGUE_COLORS.get(_fatigue_level, FATIGUE_COLORS[0])
@@ -285,13 +271,13 @@ func _draw() -> void:
 		fatigue_color, "%d%% [%s]" % [int(_display_fatigue * 100), level_name], content_alpha)
 	if _fatigue_level >= 3:
 		var flash_alpha := sin(_time * 5.0) * 0.15 + 0.15
-		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width * _display_fatigue, bar_height))
-		draw_rect(flash_rect, Color(1.0, 0.0, 0.0, flash_alpha * content_alpha))
+		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH * _display_fatigue, BAR_HEIGHT))
+		draw_rect(flash_rect, UIColors.with_alpha(UIColors.DANGER, flash_alpha * content_alpha))
 	if _fatigue_penalty < 0.99:
 		var penalty_text := "DMG ×%.0f%%" % (_fatigue_penalty * 100)
-		draw_string(font, Vector2(x + label_width + bar_width + 5, y + bar_height), penalty_text,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1.0, 0.4, 0.2, 0.8 * content_alpha))
-	y += bar_height + bar_gap
+		draw_string(font, Vector2(x + LABEL_WIDTH + BAR_WIDTH + 5, y + BAR_HEIGHT), penalty_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, UIColors.with_alpha(UIColors.DANGER, 0.8 * content_alpha))
+	y += BAR_HEIGHT + BAR_GAP
 
 	# 3. 密度过载
 	var density_color := DENSITY_SAFE_COLOR
@@ -300,18 +286,18 @@ func _draw() -> void:
 		density_color = DENSITY_OVERLOAD_COLOR
 		density_label += " OVERLOAD"
 	elif _display_density > 0.7:
-		density_color = DENSITY_WARN_COLOR
+		density_color = UIColors.DENSITY_WARN
 		density_label += " WARN"
 	_draw_bar_section(font, x, y, "DENSITY", _display_density,
 		density_color, density_label, content_alpha)
 	if _overload_flash > 0:
-		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width, bar_height))
-		draw_rect(flash_rect, Color(1.0, 0.15, 0.1, _overload_flash * 0.4 * content_alpha))
+		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT))
+		draw_rect(flash_rect, UIColors.with_alpha(UIColors.DENSITY_OVERLOAD, _overload_flash * 0.4 * content_alpha))
 	if _accuracy_penalty > 0.01:
 		draw_string(font, Vector2(x + label_width + bar_width + 5, y + bar_height),
 			"Accuracy -%.0f%%" % (_accuracy_penalty * 100),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1.0, 0.3, 0.1, 0.8 * content_alpha))
-	y += bar_height + bar_gap
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, UIColors.with_alpha(UIColors.DANGER, 0.8 * content_alpha))
+	y += BAR_HEIGHT + BAR_GAP
 
 	# 4. 护盾值
 	if GameManager.max_shield_hp > 0:
@@ -330,8 +316,8 @@ func _draw() -> void:
 	if not _silenced_notes.is_empty():
 		y += 2
 		draw_string(font, Vector2(x, y + 9), "SILENCED:", HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
-			Color(LABEL_COLOR.r, LABEL_COLOR.g, LABEL_COLOR.b, content_alpha))
-		var note_x := x + label_width
+			UIColors.with_alpha(UIColors.with_alpha(UIColors.TEXT_HINT, 0.8), content_alpha))
+		var note_x := x + LABEL_WIDTH
 		for entry in _silenced_notes:
 			if entry is Dictionary:
 				var note_key: int = entry.get("note", -1)
@@ -339,10 +325,10 @@ func _draw() -> void:
 				var note_name: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
 				var note_alpha := 0.5 + sin(_time * 4.0) * 0.3
 				draw_string(font, Vector2(note_x, y + 9), note_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10,
-					Color(1.0, 0.2, 0.2, note_alpha * content_alpha))
+					UIColors.with_alpha(UIColors.DANGER, note_alpha * content_alpha))
 				var timer_ratio := clampf(remaining / 5.0, 0.0, 1.0)
 				draw_rect(Rect2(Vector2(note_x, y + 12), Vector2(20.0 * timer_ratio, 2)),
-					Color(1.0, 0.3, 0.3, 0.6 * content_alpha))
+					UIColors.with_alpha(UIColors.DANGER, 0.6 * content_alpha))
 				note_x += 30
 
 # ============================================================
@@ -351,33 +337,33 @@ func _draw() -> void:
 
 func _draw_bar_section(font: Font, x: float, y: float, label: String,
 		ratio: float, bar_color: Color, value_text: String, alpha: float) -> void:
-	draw_string(font, Vector2(x, y + bar_height - 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
-		Color(LABEL_COLOR.r, LABEL_COLOR.g, LABEL_COLOR.b, alpha))
+	draw_string(font, Vector2(x, y + BAR_HEIGHT - 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+		UIColors.with_alpha(UIColors.with_alpha(UIColors.TEXT_HINT, 0.8), alpha))
 
-	var bar_x := x + label_width
-	draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(bar_width, bar_height)),
-		Color(0.08, 0.06, 0.12, 0.5 * alpha))
+	var bar_x := x + LABEL_WIDTH
+	draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT)),
+		UIColors.with_alpha(UIColors.PANEL_DARK, 0.5 * alpha))
 
 	var fill_ratio := clampf(ratio, 0.0, 1.0)
 	if fill_ratio > 0.001:
-		draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(bar_width * fill_ratio, bar_height)),
-			Color(bar_color.r, bar_color.g, bar_color.b, bar_color.a * alpha))
-		var glow_x := bar_x + bar_width * fill_ratio - 2
+		draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH * fill_ratio, BAR_HEIGHT)),
+			UIColors.with_alpha(bar_color, bar_color.a * alpha))
+		var glow_x := bar_x + BAR_WIDTH * fill_ratio - 2
 		if glow_x > bar_x:
-			draw_rect(Rect2(Vector2(glow_x, y + 1), Vector2(3, bar_height)),
-				Color(bar_color.r, bar_color.g, bar_color.b, 0.3 * alpha))
+			draw_rect(Rect2(Vector2(glow_x, y + 1), Vector2(3, BAR_HEIGHT)),
+				UIColors.with_alpha(bar_color, 0.3 * alpha))
 
 	# 疲劳阈值标记线
 	if label == "FATIGUE":
 		for threshold_level in FatigueManager.thresholds:
 			var threshold: float = FatigueManager.thresholds[threshold_level]
-			draw_line(Vector2(bar_x + bar_width * threshold, y + 1),
-				Vector2(bar_x + bar_width * threshold, y + 1 + bar_height),
-				Color(1, 1, 1, 0.2 * alpha), 1.0)
+			draw_line(Vector2(bar_x + BAR_WIDTH * threshold, y + 1),
+				Vector2(bar_x + BAR_WIDTH * threshold, y + 1 + BAR_HEIGHT),
+				UIColors.with_alpha(Color.WHITE, 0.2 * alpha), 1.0)
 
 	draw_string(font, Vector2(bar_x + bar_width + 4, y + bar_height - 1), value_text,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 7,
-		Color(VALUE_COLOR.r, VALUE_COLOR.g, VALUE_COLOR.b, alpha))
+		UIColors.with_alpha(UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.9), alpha))
 
 func _get_dissonance_color(value: float) -> Color:
 	if value <= 2.0:
@@ -517,7 +503,7 @@ func _build_help_panel() -> void:
 	# 全屏暗色遮罩
 	_help_overlay = ColorRect.new()
 	_help_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_help_overlay.color = COL_HELP_BG
+	_help_overlay.color = UIColors.PRIMARY_BG
 	_help_overlay.gui_input.connect(_on_help_overlay_clicked)
 	_help_overlay.z_index = 100
 	add_child(_help_overlay)
@@ -535,8 +521,8 @@ func _build_help_panel() -> void:
 	_help_panel.z_index = 101
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = COL_HELP_PANEL
-	panel_style.border_color = COL_ACCENT
+	panel_style.bg_color = UIColors.PANEL_BG
+	panel_style.border_color = UIColors.ACCENT
 	panel_style.border_width_left = 2
 	panel_style.border_width_right = 2
 	panel_style.border_width_top = 2
@@ -549,7 +535,7 @@ func _build_help_panel() -> void:
 	panel_style.content_margin_right = 24
 	panel_style.content_margin_top = 16
 	panel_style.content_margin_bottom = 16
-	panel_style.shadow_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.15)
+	panel_style.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.15)
 	panel_style.shadow_size = 8
 	_help_panel.add_theme_stylebox_override("panel", panel_style)
 
@@ -563,7 +549,7 @@ func _build_help_panel() -> void:
 	var title_label := Label.new()
 	title_label.text = "✦ 机制说明 — 五度圈罗盘 ✦"
 	title_label.add_theme_font_size_override("font_size", 20)
-	title_label.add_theme_color_override("font_color", COL_GOLD)
+	title_label.add_theme_color_override("font_color", UIColors.GOLD)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_label)
 
@@ -572,13 +558,13 @@ func _build_help_panel() -> void:
 	close_btn.custom_minimum_size = Vector2(36, 36)
 	close_btn.pressed.connect(hide_help_panel)
 	var close_style := StyleBoxFlat.new()
-	close_style.bg_color = Color(0.3, 0.1, 0.1, 0.3)
+	close_style.bg_color = UIColors.with_alpha(UIColors.DANGER, 0.3)
 	close_style.corner_radius_top_left = 4
 	close_style.corner_radius_top_right = 4
 	close_style.corner_radius_bottom_left = 4
 	close_style.corner_radius_bottom_right = 4
 	close_btn.add_theme_stylebox_override("normal", close_style)
-	close_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	close_btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	close_btn.add_theme_color_override("font_hover_color", Color.RED)
 	header.add_child(close_btn)
 
@@ -587,7 +573,7 @@ func _build_help_panel() -> void:
 	# 分割线
 	var sep := ColorRect.new()
 	sep.custom_minimum_size = Vector2(0, 1)
-	sep.color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.4)
+	sep.color = UIColors.with_alpha(UIColors.ACCENT, 0.4)
 	main_vbox.add_child(sep)
 
 	# 页签栏
@@ -603,8 +589,8 @@ func _build_help_panel() -> void:
 		btn.pressed.connect(_on_help_tab_selected.bind(i))
 
 		var btn_style := StyleBoxFlat.new()
-		btn_style.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.1)
-		btn_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+		btn_style.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.1)
+		btn_style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 		btn_style.border_width_bottom = 1
 		btn_style.corner_radius_top_left = 4
 		btn_style.corner_radius_top_right = 4
@@ -613,13 +599,13 @@ func _build_help_panel() -> void:
 		btn.add_theme_stylebox_override("normal", btn_style)
 
 		var btn_active := btn_style.duplicate()
-		btn_active.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.25)
-		btn_active.border_color = COL_ACCENT
+		btn_active.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.25)
+		btn_active.border_color = UIColors.ACCENT
 		btn_active.border_width_bottom = 2
 		btn.add_theme_stylebox_override("disabled", btn_active)
 
-		btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
-		btn.add_theme_color_override("font_disabled_color", COL_ACCENT)
+		btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+		btn.add_theme_color_override("font_disabled_color", UIColors.ACCENT)
 		btn.add_theme_font_size_override("font_size", 12)
 		btn.disabled = (i == _help_current_tab)
 		_help_tab_bar.add_child(btn)
@@ -662,9 +648,9 @@ func _fill_circle_of_fifths_content() -> void:
 		"五度圈是音乐理论中最重要的概念之一，它描述了 12 个音级之间的和谐关系。" +
 		"在《Project Harmony》中，五度圈被具象化为一个古代星盘——你的升级罗盘。")
 	_add_help_kv_block([
-		["顺时针方向", "升号方向 (♯)，音色更明亮、锐利", COL_OFFENSE],
-		["逆时针方向", "降号方向 (♭)，音色更柔和、温暖", COL_DEFENSE],
-		["中心位置", "当前调性的稳定核心", COL_CORE],
+		["顺时针方向", "升号方向 (♯)，音色更明亮、锐利", UIColors.OFFENSE],
+		["逆时针方向", "降号方向 (♭)，音色更柔和、温暖", UIColors.DEFENSE],
+		["中心位置", "当前调性的稳定核心", UIColors.ACCENT],
 	])
 	_add_help_paragraph(
 		"每次升级时，罗盘会激活。你需要先选择一个方向（进攻/防御/核心），" +
@@ -676,19 +662,19 @@ func _fill_circle_of_fifths_content() -> void:
 
 func _fill_three_directions_content() -> void:
 	_add_help_section_title("三个升级方向")
-	_add_help_direction_block("进攻方向 (♯ 升号)", COL_OFFENSE, [
+	_add_help_direction_block("进攻方向 (♯ 升号)", UIColors.OFFENSE, [
 		"提升伤害、攻击速度、弹体效果",
 		"对应五度圈顺时针方向",
 		"适合追求高输出的玩法风格",
 		"升级类型：伤害加成、穿透、暴击、范围扩大",
 	])
-	_add_help_direction_block("防御方向 (♭ 降号)", COL_DEFENSE, [
+	_add_help_direction_block("防御方向 (♭ 降号)", UIColors.DEFENSE, [
 		"提升生存能力、护盾、回复",
 		"对应五度圈逆时针方向",
 		"适合追求稳健生存的玩法风格",
 		"升级类型：护盾、生命回复、减伤、控制效果",
 	])
-	_add_help_direction_block("核心方向 (♮ 还原号)", COL_CORE, [
+	_add_help_direction_block("核心方向 (♮ 还原号)", UIColors.ACCENT, [
 		"提升基础能力、解锁新机制",
 		"对应五度圈中心位置",
 		"适合追求全面发展的玩法风格",
@@ -701,9 +687,9 @@ func _fill_gold_badge_content() -> void:
 		"带有金色边框和 ★ 标识的升级卡片，代表它来自「和谐殿堂」的局外解锁系统。" +
 		"这些升级是你在多次游戏中积累的永久成长成果。")
 	_add_help_kv_block([
-		["金色边框", "该升级通过局外成长系统解锁", COL_GOLD],
-		["★ 徽章", "标记此升级为局外解锁来源", COL_GOLD],
-		["出现条件", "需要在和谐殿堂中先解锁对应节点", COL_TEXT_SECONDARY],
+		["金色边框", "该升级通过局外成长系统解锁", UIColors.GOLD],
+		["★ 徽章", "标记此升级为局外解锁来源", UIColors.GOLD],
+		["出现条件", "需要在和谐殿堂中先解锁对应节点", UIColors.TEXT_SECONDARY],
 	])
 	_add_help_paragraph(
 		"局外解锁的升级不会替代普通升级池，而是作为额外选项出现。" +
@@ -715,9 +701,9 @@ func _fill_theory_breakthrough_content() -> void:
 		"「乐理突破」是一种稀有的特殊升级事件，当你在五度圈上达到特定条件时触发。" +
 		"它会直接解锁核心游戏机制，如新的和弦类型、调式切换、节奏型等。")
 	_add_help_kv_block([
-		["触发条件", "在特定音级组合上积累足够升级", COL_ACCENT],
-		["视觉表现", "金色全屏闪光 + 几何图案粒子效果", COL_GOLD],
-		["效果", "永久解锁新的游戏机制", COL_GOLD],
+		["触发条件", "在特定音级组合上积累足够升级", UIColors.ACCENT],
+		["视觉表现", "金色全屏闪光 + 几何图案粒子效果", UIColors.GOLD],
+		["效果", "永久解锁新的游戏机制", UIColors.GOLD],
 	])
 	_add_help_paragraph(
 		"乐理突破事件的 UI 表现具有强烈的仪式感：罗盘会剧烈旋转，" +
@@ -725,10 +711,10 @@ func _fill_theory_breakthrough_content() -> void:
 		"这代表着你在音乐理论上的「顿悟」时刻。")
 	_add_help_section_title("突破类型示例")
 	_add_help_kv_block([
-		["和弦解锁", "解锁新的和弦组合方式", COL_ACCENT],
-		["调式切换", "获得在战斗中切换调式的能力", COL_ACCENT],
-		["节奏进化", "解锁更复杂的节奏型", COL_ACCENT],
-		["音色融合", "解锁音色混合技术", COL_ACCENT],
+		["和弦解锁", "解锁新的和弦组合方式", UIColors.ACCENT],
+		["调式切换", "获得在战斗中切换调式的能力", UIColors.ACCENT],
+		["节奏进化", "解锁更复杂的节奏型", UIColors.ACCENT],
+		["音色融合", "解锁音色混合技术", UIColors.ACCENT],
 	])
 
 # ============================================================
@@ -739,7 +725,7 @@ func _add_help_section_title(text: String) -> void:
 	var label := Label.new()
 	label.text = "— %s —" % text
 	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", COL_ACCENT)
+	label.add_theme_color_override("font_color", UIColors.ACCENT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_help_content_container.add_child(label)
 
@@ -747,7 +733,7 @@ func _add_help_paragraph(text: String) -> void:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_help_content_container.add_child(label)
 
@@ -761,21 +747,21 @@ func _add_help_kv_block(items: Array) -> void:
 		var key_label := Label.new()
 		key_label.text = item[0]
 		key_label.add_theme_font_size_override("font_size", 12)
-		key_label.add_theme_color_override("font_color", item[2] if item.size() > 2 else COL_TEXT_SECONDARY)
+		key_label.add_theme_color_override("font_color", item[2] if item.size() > 2 else UIColors.TEXT_SECONDARY)
 		key_label.custom_minimum_size.x = 120
 		grid.add_child(key_label)
 
 		var val_label := Label.new()
 		val_label.text = item[1]
 		val_label.add_theme_font_size_override("font_size", 12)
-		val_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+		val_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		val_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(val_label)
 
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.08)
-	style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.2)
+	style.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.08)
+	style.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.2)
 	style.border_width_left = 2
 	style.corner_radius_top_left = 4
 	style.corner_radius_bottom_left = 4
@@ -790,8 +776,8 @@ func _add_help_kv_block(items: Array) -> void:
 func _add_help_direction_block(title: String, color: Color, points: Array) -> void:
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.08)
-	style.border_color = Color(color.r, color.g, color.b, 0.4)
+	style.bg_color = UIColors.with_alpha(color, 0.08)
+	style.border_color = UIColors.with_alpha(color, 0.4)
 	style.border_width_left = 3
 	style.corner_radius_top_left = 6
 	style.corner_radius_bottom_left = 6
@@ -814,7 +800,7 @@ func _add_help_direction_block(title: String, color: Color, points: Array) -> vo
 		var point_label := Label.new()
 		point_label.text = "  · %s" % point
 		point_label.add_theme_font_size_override("font_size", 12)
-		point_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+		point_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		point_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vbox.add_child(point_label)
 
@@ -887,7 +873,7 @@ func _build_tutorial_ui() -> void:
 	# 半透明暗色遮罩
 	_tutorial_overlay = ColorRect.new()
 	_tutorial_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_tutorial_overlay.color = Color(0, 0, 0, 0.7)
+	_tutorial_overlay.color = UIColors.with_alpha(Color.BLACK, 0.7)
 	_tutorial_overlay.z_index = 200
 	add_child(_tutorial_overlay)
 
@@ -904,8 +890,8 @@ func _build_tutorial_ui() -> void:
 	_tutorial_panel.z_index = 201
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(COL_HELP_PANEL.r, COL_HELP_PANEL.g, COL_HELP_PANEL.b, 0.95)
-	panel_style.border_color = COL_ACCENT
+	panel_style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.95)
+	panel_style.border_color = UIColors.ACCENT
 	panel_style.border_width_left = 2
 	panel_style.border_width_right = 2
 	panel_style.border_width_top = 2
@@ -926,14 +912,14 @@ func _build_tutorial_ui() -> void:
 	# 步骤指示器
 	_tutorial_step_label = Label.new()
 	_tutorial_step_label.add_theme_font_size_override("font_size", 11)
-	_tutorial_step_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_tutorial_step_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_tutorial_step_label)
 
 	# 引导文本
 	_tutorial_text = Label.new()
 	_tutorial_text.add_theme_font_size_override("font_size", 15)
-	_tutorial_text.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_tutorial_text.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_tutorial_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tutorial_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tutorial_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -948,10 +934,10 @@ func _build_tutorial_ui() -> void:
 	_tutorial_skip_btn.text = "跳过引导"
 	_tutorial_skip_btn.custom_minimum_size = Vector2(100, 32)
 	_tutorial_skip_btn.pressed.connect(_end_tutorial)
-	_tutorial_skip_btn.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_tutorial_skip_btn.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_tutorial_skip_btn.add_theme_font_size_override("font_size", 12)
 	var skip_style := StyleBoxFlat.new()
-	skip_style.bg_color = Color(0.1, 0.08, 0.15, 0.5)
+	skip_style.bg_color = UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.5)
 	skip_style.corner_radius_top_left = 4
 	skip_style.corner_radius_top_right = 4
 	skip_style.corner_radius_bottom_left = 4
@@ -965,11 +951,11 @@ func _build_tutorial_ui() -> void:
 	_tutorial_next_btn.text = "下一步 →"
 	_tutorial_next_btn.custom_minimum_size = Vector2(120, 36)
 	_tutorial_next_btn.pressed.connect(_advance_tutorial)
-	_tutorial_next_btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_tutorial_next_btn.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_tutorial_next_btn.add_theme_font_size_override("font_size", 13)
 	var next_style := StyleBoxFlat.new()
-	next_style.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
-	next_style.border_color = COL_ACCENT
+	next_style.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
+	next_style.border_color = UIColors.ACCENT
 	next_style.border_width_left = 1
 	next_style.border_width_right = 1
 	next_style.border_width_top = 1
@@ -1045,8 +1031,8 @@ static func create_help_button(callback: Callable) -> Button:
 	btn.pressed.connect(callback)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.06, 0.15, 0.8)
-	style.border_color = Color("#9D6FFF")
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.8)
+	style.border_color = UIColors.ACCENT
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -1058,12 +1044,12 @@ static func create_help_button(callback: Callable) -> Button:
 	btn.add_theme_stylebox_override("normal", style)
 
 	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.15, 0.1, 0.25, 0.9)
-	hover_style.border_color = Color("#FFD700")
+	hover_style.bg_color = UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.9)
+	hover_style.border_color = UIColors.GOLD
 	btn.add_theme_stylebox_override("hover", hover_style)
 
-	btn.add_theme_color_override("font_color", Color("#A098C8"))
-	btn.add_theme_color_override("font_hover_color", Color("#FFD700"))
+	btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+	btn.add_theme_color_override("font_hover_color", UIColors.GOLD)
 	btn.add_theme_font_size_override("font_size", 18)
 
 	return btn

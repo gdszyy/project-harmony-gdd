@@ -33,38 +33,19 @@ const SLOT_GAP := 16.0
 const KEY_LABEL_HEIGHT := 16.0
 
 ## 颜色定义
-const SLOT_EMPTY_BG := Color("141026B0")
-const SLOT_HOVER_BG := Color("9D6FFF30")
-const SLOT_FILLED_BG := Color("1A1433D0")
-const SLOT_DROP_HIGHLIGHT := Color("00FFD466")
-const SLOT_BORDER := Color("9D6FFF50")
-const SLOT_ACTIVE_BORDER := Color("00FFD4CC")
-const KEY_LABEL_COLOR := Color("9D8FBF")
-const KEY_LABEL_BG := Color("9D6FFF20")
-const COOLDOWN_OVERLAY := Color("00000080")
-const SECTION_TITLE_COLOR := Color("9D8FBF")
+const SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.69)
+const SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+var SLOT_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+const SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+const SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.31)
+const SLOT_ACTIVE_BORDER := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
+const KEY_LABEL_COLOR := UIColors.TEXT_HINT
+const KEY_LABEL_BG := UIColors.with_alpha(UIColors.ACCENT, 0.13)
+var COOLDOWN_OVERLAY := UIColors.with_alpha(Color.BLACK, 0.5)
 
 ## 音符颜色
-const NOTE_COLORS := {
-	0: Color("00FFD4"), 1: Color("0088FF"), 2: Color("66FF66"),
-	3: Color("8844FF"), 4: Color("FF4444"), 5: Color("FF8800"),
-	6: Color("FF44AA"),
-}
 
 ## 法术形态颜色
-const SPELL_FORM_COLORS := {
-	"enhanced_projectile": Color("FFD94D"),
-	"dot_projectile": Color("3366CC"),
-	"explosive_projectile": Color("FF6633"),
-	"shockwave": Color("8822BB"),
-	"magic_circle": Color("FFCC00"),
-	"celestial_strike": Color("CC1111"),
-	"shield_heal": Color("33E666"),
-	"summon_construct": Color("2233BB"),
-	"charged_projectile": Color("D9D9F2"),
-	"slow_field": Color("4D4DBB"),
-	"generic_blast": Color("808080"),
-}
 
 ## 法术形态图标
 const SPELL_FORM_ICONS := {
@@ -126,7 +107,7 @@ func _draw() -> void:
 
 	## ===== 标题 =====
 	draw_string(font, Vector2(x, y + 12), "MANUAL CAST  手动施法",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, SECTION_TITLE_COLOR)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 	y += 20.0
 
 	## ===== 施法槽 =====
@@ -176,9 +157,9 @@ func _draw() -> void:
 		match slot_type:
 			"note":
 				var note_key: int = config.get("note", 0)
-				var note_color: Color = NOTE_COLORS.get(note_key, Color(0.5, 0.5, 0.5))
+				var note_color: Color = UIColors.get_note_color_by_int(note_key)
 				## 色块背景
-				draw_rect(rect.grow(-4), Color(note_color.r, note_color.g, note_color.b, 0.25))
+				draw_rect(rect.grow(-4), UIColors.with_alpha(note_color, 0.25))
 				## 音符名称
 				var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
 				draw_string(font,
@@ -192,7 +173,7 @@ func _draw() -> void:
 					var form_color: Color = SPELL_FORM_COLORS.get(spell_form, Color.WHITE)
 					var form_icon: String = SPELL_FORM_ICONS.get(spell_form, "●")
 					## 色块背景
-					draw_rect(rect.grow(-4), Color(form_color.r, form_color.g, form_color.b, 0.2))
+					draw_rect(rect.grow(-4), UIColors.with_alpha(form_color, 0.2))
 					## 法术图标
 					draw_string(font,
 						rect.position + Vector2(rect.size.x / 2.0 - 6, rect.size.y / 2.0 + 6),
@@ -201,12 +182,12 @@ func _draw() -> void:
 					## 法术已不存在
 					draw_string(font,
 						rect.position + Vector2(rect.size.x / 2.0 - 4, rect.size.y / 2.0 + 4),
-						"?", HORIZONTAL_ALIGNMENT_CENTER, -1, 18, Color("FF4444"))
+						"?", HORIZONTAL_ALIGNMENT_CENTER, -1, 18, UIColors.OFFENSE)
 			"empty":
 				## 空槽位提示
 				draw_string(font,
 					rect.position + Vector2(rect.size.x / 2.0 - 6, rect.size.y / 2.0 + 4),
-					"—", HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("9D8FBF40"))
+					"—", HORIZONTAL_ALIGNMENT_CENTER, -1, 16, UIColors.with_alpha(UIColors.TEXT_HINT, 0.25))
 
 		## 冷却进度覆盖
 		var cd_progress := SpellcraftSystem.get_manual_slot_cooldown_progress(i)
@@ -257,7 +238,7 @@ func _emit_slot_info(idx: int) -> void:
 		"note":
 			var note_key: int = config.get("note", 0)
 			var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
-			var color: Color = NOTE_COLORS.get(note_key, Color.WHITE)
+			var color: Color = UIColors.get_note_color_by_int(note_key)
 			info_hover.emit(
 				"手动施法槽 [%s] — %s 音符" % [SLOT_KEYS[idx], name_str],
 				"按键 %s 释放 | 对齐八分音符精度 | 右键清除" % SLOT_KEYS[idx],
@@ -278,7 +259,7 @@ func _emit_slot_info(idx: int) -> void:
 			info_hover.emit(
 				"手动施法槽 [%s] — 空" % SLOT_KEYS[idx],
 				"拖入音符或和弦法术 | 战斗中按 %s 释放" % SLOT_KEYS[idx],
-				Color("9D8FBF")
+				UIColors.TEXT_HINT
 			)
 
 # ============================================================
@@ -295,7 +276,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 			if slot_type == "note":
 				var note_key: int = config.get("note", 0)
 				var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
-				var color: Color = NOTE_COLORS.get(note_key, Color(0.5, 0.5, 0.5))
+				var color: Color = UIColors.get_note_color_by_int(note_key)
 
 				## 清除槽位（归还音符）
 				_clear_slot_internal(i)
@@ -448,11 +429,11 @@ func _create_drag_preview(text: String, color: Color) -> Control:
 	panel.size = sz
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.5)
+	style.bg_color = UIColors.with_alpha(color, 0.5)
 	style.border_color = color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(6)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.6)
+	style.shadow_color = UIColors.with_alpha(color, 0.6)
 	style.shadow_size = 5
 	panel.add_theme_stylebox_override("panel", style)
 

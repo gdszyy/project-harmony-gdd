@@ -27,7 +27,7 @@ signal node_unhovered(node_id: String)
 @export var node_cost: int = 0
 @export var node_max_level: int = 1
 @export var node_current_level: int = 0
-@export var node_color: Color = Color("#9D6FFF")
+@export var node_color: Color = UIColors.ACCENT
 @export var node_radius: float = 32.0
 
 # ============================================================
@@ -38,13 +38,7 @@ enum State { LOCKED, UNLOCKABLE, UNLOCKED }
 # ============================================================
 # 颜色常量
 # ============================================================
-const ACCENT := Color("#9D6FFF")
-const GOLD := Color("#FFD700")
-const CYAN := Color("#00E5FF")
-const TEXT_COLOR := Color("#EAE6FF")
-const DIM_TEXT := Color("#A098C8")
-const DANGER := Color("#FF4D4D")
-const FRAGMENT_COLOR := Color(0.6, 0.4, 1.0)
+const FRAGMENT_COLOR := UIColors.ACCENT
 
 # ============================================================
 # 内部状态
@@ -139,7 +133,7 @@ func _draw() -> void:
 	# 错误闪烁覆盖
 	if _error_flash > 0.0:
 		draw_arc(center, radius + 2, 0, TAU, 48,
-			Color(DANGER.r, DANGER.g, DANGER.b, _error_flash * 0.6), 3.0)
+			UIColors.with_alpha(UIColors.DANGER, _error_flash * 0.6), 3.0)
 
 	# 解锁动画
 	if _unlock_progress >= 0.0:
@@ -155,23 +149,23 @@ func _draw_locked(center: Vector2, radius: float, font: Font) -> void:
 			var p1 := center + Vector2(cos(a1), sin(a1)) * radius
 			var p2 := center + Vector2(cos(a2), sin(a2)) * radius
 			var alpha := 0.4 if _is_hovered else 0.25
-			draw_line(p1, p2, Color(0.3, 0.25, 0.4, alpha), 1.5)
+			draw_line(p1, p2, UIColors.with_alpha(UIColors.TEXT_LOCKED, alpha), 1.5)
 
 	# 悬停时变实线
 	if _is_hovered:
-		draw_arc(center, radius, 0, TAU, 48, Color(0.4, 0.35, 0.55, 0.4), 1.5)
+		draw_arc(center, radius, 0, TAU, 48, UIColors.with_alpha(UIColors.TEXT_DIM, 0.4), 1.5)
 
 	# 灰色名称
 	var alpha := 0.5 if _is_hovered else 0.3
 	var short_name := node_name.left(4) if node_name.length() > 4 else node_name
 	draw_string(font, center + Vector2(-16, 5), short_name,
-		HORIZONTAL_ALIGNMENT_CENTER, 32, 10, Color(0.4, 0.35, 0.5, alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, 32, 10, UIColors.with_alpha(UIColors.TEXT_DIM, alpha))
 
 	# 悬停时显示费用
 	if _is_hovered:
 		draw_string(font, center + Vector2(-20, radius + 16),
 			"%d ✦" % node_cost, HORIZONTAL_ALIGNMENT_CENTER, 40, 10,
-			Color(DANGER.r, DANGER.g, DANGER.b, 0.7))
+			UIColors.with_alpha(UIColors.DANGER, 0.7))
 
 func _draw_unlockable(center: Vector2, radius: float, font: Font) -> void:
 	# 脉动呼吸
@@ -184,21 +178,21 @@ func _draw_unlockable(center: Vector2, radius: float, font: Font) -> void:
 		if _is_hovered:
 			alpha *= 2.0
 		draw_arc(center, r, 0, TAU, 48,
-			Color(node_color.r, node_color.g, node_color.b, alpha), 2.0)
+			UIColors.with_alpha(node_color, alpha), 2.0)
 
 	# 实线边框
 	draw_arc(center, radius, 0, TAU, 48,
-		Color(node_color.r, node_color.g, node_color.b, 0.7), 2.0)
+		UIColors.with_alpha(node_color, 0.7), 2.0)
 
 	# 半透明填充
 	draw_circle(center, radius * 0.85,
-		Color(node_color.r, node_color.g, node_color.b, 0.06))
+		UIColors.with_alpha(node_color, 0.06))
 
 	# 名称
 	var short_name := node_name.left(4) if node_name.length() > 4 else node_name
 	draw_string(font, center + Vector2(-16, 5), short_name,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 10,
-		Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, 0.8))
+		UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.8))
 
 	# 费用
 	draw_string(font, center + Vector2(-20, radius + 16),
@@ -210,7 +204,7 @@ func _draw_unlockable(center: Vector2, radius: float, font: Font) -> void:
 			var angle := _time * 3.0 + i * TAU / 4.0
 			var dist := radius + 12.0 - fmod(_time * 18.0 + i * 5.0, 18.0)
 			var pt := center + Vector2(cos(angle), sin(angle)) * dist
-			draw_circle(pt, 2.0, Color(node_color.r, node_color.g, node_color.b, 0.4))
+			draw_circle(pt, 2.0, UIColors.with_alpha(node_color, 0.4))
 
 func _draw_unlocked(center: Vector2, radius: float, font: Font) -> void:
 	var is_maxed := node_current_level >= node_max_level
@@ -218,13 +212,13 @@ func _draw_unlocked(center: Vector2, radius: float, font: Font) -> void:
 	# 填充
 	var fill_color: Color
 	if is_maxed:
-		fill_color = Color(GOLD.r, GOLD.g, GOLD.b, 0.2)
+		fill_color = UIColors.with_alpha(UIColors.GOLD, 0.2)
 	else:
-		fill_color = Color(CYAN.r, CYAN.g, CYAN.b, 0.15)
+		fill_color = UIColors.with_alpha(UIColors.CYAN, 0.15)
 	draw_circle(center, radius, fill_color)
 
 	# 边框
-	var border := Color(GOLD.r, GOLD.g, GOLD.b, 0.8) if is_maxed else Color(CYAN.r, CYAN.g, CYAN.b, 0.8)
+	var border := UIColors.with_alpha(UIColors.GOLD, 0.8) if is_maxed else UIColors.with_alpha(UIColors.CYAN, 0.8)
 	draw_arc(center, radius, 0, TAU, 48, border, 2.5)
 
 	# 辉光
@@ -232,18 +226,18 @@ func _draw_unlocked(center: Vector2, radius: float, font: Font) -> void:
 	if _is_hovered:
 		glow_alpha *= 2.0
 	draw_arc(center, radius + 4, 0, TAU, 48,
-		Color(border.r, border.g, border.b, glow_alpha), 3.0)
+		UIColors.with_alpha(border, glow_alpha), 3.0)
 
 	# 名称
 	var short_name := node_name.left(4) if node_name.length() > 4 else node_name
-	var text_col := GOLD if is_maxed else CYAN
+	var text_col := UIColors.GOLD if is_maxed else UIColors.CYAN
 	draw_string(font, center + Vector2(-16, 5), short_name,
 		HORIZONTAL_ALIGNMENT_CENTER, 32, 10, text_col)
 
 	# 等级
 	if node_max_level > 1:
 		var level_text := "MAX" if is_maxed else "Lv.%d/%d" % [node_current_level, node_max_level]
-		var level_col := Color(GOLD.r, GOLD.g, GOLD.b, 0.7) if is_maxed else Color(CYAN.r, CYAN.g, CYAN.b, 0.7)
+		var level_col := UIColors.with_alpha(UIColors.GOLD, 0.7) if is_maxed else UIColors.with_alpha(UIColors.CYAN, 0.7)
 		draw_string(font, center + Vector2(-24, radius + 16),
 			level_text, HORIZONTAL_ALIGNMENT_CENTER, 48, 9, level_col)
 
@@ -256,7 +250,7 @@ func _draw_unlock_anim(center: Vector2, radius: float) -> void:
 	# 冲击波
 	var ring_r := radius * (1.0 + p * 3.0)
 	draw_arc(center, ring_r, 0, TAU, 48,
-		Color(CYAN.r, CYAN.g, CYAN.b, (1.0 - p) * 0.6), 2.5)
+		UIColors.with_alpha(UIColors.CYAN, (1.0 - p) * 0.6), 2.5)
 
 	# 放射线
 	for i in range(8):
@@ -264,7 +258,7 @@ func _draw_unlock_anim(center: Vector2, radius: float) -> void:
 		var inner := center + Vector2(cos(angle), sin(angle)) * radius * 0.5
 		var outer := center + Vector2(cos(angle), sin(angle)) * radius * (1.0 + p * 2.0)
 		draw_line(inner, outer,
-			Color(GOLD.r, GOLD.g, GOLD.b, (1.0 - p) * 0.5), 1.5)
+			UIColors.with_alpha(UIColors.GOLD, (1.0 - p) * 0.5), 1.5)
 
 # ============================================================
 # 输入处理

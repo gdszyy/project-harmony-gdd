@@ -18,16 +18,6 @@ signal upgrade_selected(upgrade_id: String, category: String)
 # ============================================================
 # 颜色方案 — 全局 UI 主题规范
 # ============================================================
-const BG_COLOR := Color("#0A0814")
-const PANEL_BG := Color("#141026CC")       # 80% 不透明
-const ACCENT := Color("#9D6FFF")           # 主强调色
-const GOLD := Color("#FFD700")             # 圣光金
-const CYAN := Color("#00E5FF")             # 谐振青
-const TEXT_COLOR := Color("#EAE6FF")       # 晶体白
-const DIM_TEXT := Color("#A098C8")         # 次级文本
-const SUCCESS := Color("#4DFF80")
-const DANGER := Color("#FF4D4D")
-const LOCKED_COLOR := Color("#6B668A")
 
 # ============================================================
 # 布局参数 — @export 支持编辑器实时调整
@@ -50,7 +40,7 @@ const MODULES := {
 		"name_en": "Instrument Tuning",
 		"desc": "永久强化你的基础能力",
 		"icon": "♪",
-		"color": Color(0.2, 0.8, 1.0),
+		"color": UIColors.ACCENT_2,
 		"position": "top_left",
 	},
 	"theory": {
@@ -58,7 +48,7 @@ const MODULES := {
 		"name_en": "Theory Archives",
 		"desc": "解锁高级乐理知识与和弦",
 		"icon": "♫",
-		"color": Color(0.8, 0.4, 1.0),
+		"color": UIColors.ACCENT,
 		"position": "top_right",
 	},
 	"modes": {
@@ -66,7 +56,7 @@ const MODULES := {
 		"name_en": "Mode Mastery",
 		"desc": "发现并激活新的演奏风格",
 		"icon": "♬",
-		"color": Color(1.0, 0.6, 0.2),
+		"color": UIColors.WARNING,
 		"position": "bottom_left",
 	},
 	"denoise": {
@@ -74,7 +64,7 @@ const MODULES := {
 		"name_en": "Acoustic Treatment",
 		"desc": "构建谐振防御场，抵御疲劳",
 		"icon": "♩",
-		"color": Color(0.3, 1.0, 0.5),
+		"color": UIColors.SUCCESS,
 		"position": "bottom_right",
 	},
 }
@@ -153,8 +143,8 @@ func _build_ui_overlay() -> void:
 	var frag_panel := PanelContainer.new()
 	frag_panel.name = "FragmentPanel"
 	var frag_style := StyleBoxFlat.new()
-	frag_style.bg_color = Color(0.08, 0.06, 0.14, 0.9)
-	frag_style.border_color = ACCENT.darkened(0.3)
+	frag_style.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
+	frag_style.border_color = UIColors.ACCENT.darkened(0.3)
 	frag_style.border_width_top = 1
 	frag_style.border_width_bottom = 1
 	frag_style.border_width_left = 1
@@ -179,19 +169,19 @@ func _build_ui_overlay() -> void:
 	var icon_label := Label.new()
 	icon_label.text = "✦"
 	icon_label.add_theme_font_size_override("font_size", 20)
-	icon_label.add_theme_color_override("font_color", ACCENT)
+	icon_label.add_theme_color_override("font_color", UIColors.ACCENT)
 	frag_hbox.add_child(icon_label)
 
 	_fragments_label = Label.new()
 	_fragments_label.text = "%d" % _resonance_fragments
 	_fragments_label.add_theme_font_size_override("font_size", 18)
-	_fragments_label.add_theme_color_override("font_color", TEXT_COLOR)
+	_fragments_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	frag_hbox.add_child(_fragments_label)
 
 	var frag_name := Label.new()
 	frag_name.text = "共鸣碎片"
 	frag_name.add_theme_font_size_override("font_size", 12)
-	frag_name.add_theme_color_override("font_color", DIM_TEXT)
+	frag_name.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	frag_hbox.add_child(frag_name)
 
 	# 底部按钮栏
@@ -229,7 +219,7 @@ func _draw() -> void:
 	var center := vp / 2.0
 
 	# 深空背景
-	draw_rect(Rect2(Vector2.ZERO, vp), BG_COLOR)
+	draw_rect(Rect2(Vector2.ZERO, vp), UIColors.PRIMARY_BG)
 
 	# 星尘粒子
 	_draw_stars()
@@ -244,10 +234,10 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(center.x - 120, 50),
 		"HALL OF HARMONY", HORIZONTAL_ALIGNMENT_CENTER, 240, 22,
-		Color(GOLD.r, GOLD.g, GOLD.b, 0.9))
+		UIColors.with_alpha(UIColors.GOLD, 0.9))
 	draw_string(font, Vector2(center.x - 60, 72),
 		"和 谐 殿 堂", HORIZONTAL_ALIGNMENT_CENTER, 120, 13,
-		Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, 0.7))
+		UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.7))
 
 	# 悬停信息
 	_draw_hover_info(font, vp)
@@ -263,7 +253,7 @@ func _draw_stars() -> void:
 		# 缓慢漂移
 		pos.x = fmod(pos.x + star["speed"] * 0.3, 1920.0)
 		star["pos"] = pos
-		draw_circle(pos, s, Color(0.7, 0.7, 0.9, alpha * 0.6))
+		draw_circle(pos, s, UIColors.with_alpha(UIColors.TEXT_SECONDARY, alpha * 0.6))
 
 func _draw_central_nebula(center: Vector2) -> void:
 	# 呼吸效果
@@ -274,19 +264,19 @@ func _draw_central_nebula(center: Vector2) -> void:
 	for i in range(5):
 		var r := base_radius + i * 20.0
 		var alpha := 0.15 - i * 0.025
-		var color := Color(CYAN.r, CYAN.g, CYAN.b, alpha)
+		var color := UIColors.with_alpha(UIColors.CYAN, alpha)
 		draw_arc(center, r, 0, TAU, 64, color, 2.0)
 
 	# 核心光点
-	draw_circle(center, 8.0, Color(CYAN.r, CYAN.g, CYAN.b, 0.6 * breath))
-	draw_circle(center, 4.0, Color(1.0, 1.0, 1.0, 0.8 * breath))
+	draw_circle(center, 8.0, UIColors.with_alpha(UIColors.CYAN, 0.6 * breath))
+	draw_circle(center, 4.0, UIColors.with_alpha(Color.WHITE, 0.8 * breath))
 
 	# 旋转光线
 	for i in range(8):
 		var angle := _time * 0.3 + i * TAU / 8.0
 		var inner := center + Vector2(cos(angle), sin(angle)) * 15.0
 		var outer := center + Vector2(cos(angle), sin(angle)) * (base_radius + 10.0)
-		draw_line(inner, outer, Color(GOLD.r, GOLD.g, GOLD.b, 0.08), 1.0)
+		draw_line(inner, outer, UIColors.with_alpha(UIColors.GOLD, 0.08), 1.0)
 
 func _draw_constellations(center: Vector2, vp: Vector2) -> void:
 	_constellation_rects.clear()
@@ -318,7 +308,7 @@ func _draw_constellations(center: Vector2, vp: Vector2) -> void:
 
 		# 连接线到中央星云
 		var line_alpha := 0.15 if not is_hover else 0.35
-		draw_line(center, constellation_center, Color(ACCENT.r, ACCENT.g, ACCENT.b, line_alpha), 1.0)
+		draw_line(center, constellation_center, UIColors.with_alpha(UIColors.ACCENT, line_alpha), 1.0)
 
 		# 星宿光点群
 		_draw_constellation_pattern(module_key, constellation_center, module_color, is_hover)
@@ -328,13 +318,13 @@ func _draw_constellations(center: Vector2, vp: Vector2) -> void:
 		var icon_size := 28 if is_hover else 22
 		draw_string(font, constellation_center + Vector2(-8, -40),
 			module["icon"], HORIZONTAL_ALIGNMENT_CENTER, -1, icon_size,
-			Color(module_color.r, module_color.g, module_color.b, icon_alpha))
+			UIColors.with_alpha(module_color, icon_alpha))
 
 		# 模块名称
 		var name_alpha := 1.0 if is_hover else 0.6
 		draw_string(font, constellation_center + Vector2(-40, 55),
 			module["name"], HORIZONTAL_ALIGNMENT_CENTER, 80, 14,
-			Color(TEXT_COLOR.r, TEXT_COLOR.g, TEXT_COLOR.b, name_alpha))
+			UIColors.with_alpha(UIColors.TEXT_PRIMARY, name_alpha))
 
 		# 进度指示
 		if _meta:
@@ -342,7 +332,7 @@ func _draw_constellations(center: Vector2, vp: Vector2) -> void:
 			var progress_text := "%d%%" % int(progress * 100)
 			draw_string(font, constellation_center + Vector2(-20, 72),
 				progress_text, HORIZONTAL_ALIGNMENT_CENTER, 40, 10,
-				Color(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, 0.6))
+				UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.6))
 
 		# 悬停辉光
 		if is_hover:
@@ -350,7 +340,7 @@ func _draw_constellations(center: Vector2, vp: Vector2) -> void:
 				var glow_r := 80.0 + i * 15.0
 				var glow_a := 0.08 - i * 0.02
 				draw_arc(constellation_center, glow_r, 0, TAU, 48,
-					Color(module_color.r, module_color.g, module_color.b, glow_a), 2.0)
+					UIColors.with_alpha(module_color, glow_a), 2.0)
 
 func _draw_constellation_pattern(module_key: String, center: Vector2, color: Color, is_hover: bool) -> void:
 	var breath := 0.8 + 0.2 * sin(_time * 1.2)
@@ -366,7 +356,7 @@ func _draw_constellation_pattern(module_key: String, center: Vector2, color: Col
 				points.append(Vector2(x, y))
 				var h := 25.0 + i * 3.0
 				draw_line(Vector2(x, y - h), Vector2(x, y + h),
-					Color(color.r, color.g, color.b, base_alpha * 0.6), 1.5)
+					UIColors.with_alpha(color, base_alpha * 0.6), 1.5)
 		"theory":
 			# 螺旋星系 — 辐射状
 			for i in range(12):
@@ -386,18 +376,18 @@ func _draw_constellation_pattern(module_key: String, center: Vector2, color: Col
 			for i in range(3):
 				var r := 15.0 + i * 15.0
 				draw_arc(center, r * breath, 0, TAU, 32,
-					Color(color.r, color.g, color.b, base_alpha * (0.5 - i * 0.1)), 1.0)
+					UIColors.with_alpha(color, base_alpha * (0.5 - i * 0.1)), 1.0)
 
 	# 绘制星点
 	for pt in points:
 		var s := 2.5 if is_hover else 1.8
-		draw_circle(pt, s * breath, Color(color.r, color.g, color.b, base_alpha * breath))
+		draw_circle(pt, s * breath, UIColors.with_alpha(color, base_alpha * breath))
 
 	# 连接线
 	if points.size() > 1:
 		for i in range(points.size() - 1):
 			draw_line(points[i], points[i + 1],
-				Color(color.r, color.g, color.b, base_alpha * 0.3), 0.8)
+				UIColors.with_alpha(color, base_alpha * 0.3), 0.8)
 
 func _draw_hover_info(font: Font, vp: Vector2) -> void:
 	if _hover_module.is_empty():
@@ -406,10 +396,10 @@ func _draw_hover_info(font: Font, vp: Vector2) -> void:
 	var info_text := "%s: %s" % [module["name"], module["desc"]]
 	var info_w := 500.0
 	var info_rect := Rect2(Vector2(vp.x / 2.0 - info_w / 2.0, vp.y - 120), Vector2(info_w, 40))
-	draw_rect(info_rect, Color(0.06, 0.04, 0.12, 0.85))
-	draw_rect(info_rect, Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.3), false, 1.0)
+	draw_rect(info_rect, UIColors.with_alpha(UIColors.PANEL_DARK, 0.85))
+	draw_rect(info_rect, UIColors.with_alpha(UIColors.ACCENT, 0.3), false, 1.0)
 	draw_string(font, info_rect.position + Vector2(20, 26),
-		info_text, HORIZONTAL_ALIGNMENT_LEFT, int(info_w - 40), 13, TEXT_COLOR)
+		info_text, HORIZONTAL_ALIGNMENT_LEFT, int(info_w - 40), 13, UIColors.TEXT_PRIMARY)
 
 # ============================================================
 # 输入处理

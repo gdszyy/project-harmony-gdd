@@ -19,11 +19,10 @@ const TOTAL_WIDTH: float = BAR_WIDTH + GLOW_EXTEND * 2.0
 const TOTAL_HEIGHT: float = BAR_HEIGHT + 40.0
 
 # 颜色常量
-const COLOR_CYAN   := Color(0.0, 1.0, 0.831)   # #00FFD4
-const COLOR_YELLOW := Color(1.0, 0.875, 0.4)    # #FFE066
-const COLOR_ORANGE := Color(1.0, 0.533, 0.0)    # #FF8800
-const COLOR_RED    := Color(1.0, 0.133, 0.267)  # #FF2244
-const COLOR_CRYSTAL_WHITE := Color(0.918, 0.902, 1.0)
+var COLOR_CYAN   := UIColors.RESONANCE_CYAN   # #00FFD4
+var COLOR_YELLOW := UIColors.FATIGUE_YELLOW    # #FFE066
+var COLOR_ORANGE := UIColors.DATA_ORANGE    # #FF8800
+const COLOR_RED    := UIColors.ERROR_RED  # #FF2244
 
 # 疲劳等级名称
 const LEVEL_NAMES := {
@@ -99,7 +98,7 @@ func _draw() -> void:
 
 	# 背景条
 	var bg_rect := Rect2(Vector2(bar_x, bar_top), Vector2(BAR_WIDTH, BAR_HEIGHT))
-	draw_rect(bg_rect, Color(0.05, 0.04, 0.08, 0.5))
+	draw_rect(bg_rect, UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5))
 
 	# 填充高度（从底部向上）
 	var fill_height := BAR_HEIGHT * _display_afi
@@ -143,7 +142,7 @@ func _draw() -> void:
 		if _display_afi > 0.6 and _beat_intensity > 0.0:
 			pulse_alpha = 1.0 + _beat_intensity * 0.3
 
-		var seg_color := Color(bar_color, 0.8 * pulse_alpha)
+		var seg_color := UIColors.with_alpha(bar_color, 0.8 * pulse_alpha)
 
 		# 故障效果 (AFI > 0.8)
 		if _display_afi > 0.8 and _beat_intensity > 0.3:
@@ -156,7 +155,7 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(seg_x, y), Vector2(seg_width, seg_height)), seg_color)
 
 	# 辉光效果
-	var glow_color := Color(bar_color, 0.15 * (1.0 + _beat_intensity * 0.3))
+	var glow_color := UIColors.with_alpha(bar_color, 0.15 * (1.0 + _beat_intensity * 0.3))
 	var glow_rect := Rect2(
 		Vector2(bar_x - GLOW_EXTEND * 0.5, fill_top),
 		Vector2(BAR_WIDTH + GLOW_EXTEND, fill_height)
@@ -164,7 +163,7 @@ func _draw() -> void:
 	draw_rect(glow_rect, glow_color)
 
 	# 填充顶部边缘高亮
-	var edge_color := Color(bar_color, 0.9)
+	var edge_color := UIColors.with_alpha(bar_color, 0.9)
 	draw_line(
 		Vector2(bar_x, fill_top),
 		Vector2(bar_x + BAR_WIDTH, fill_top),
@@ -178,7 +177,7 @@ func _draw() -> void:
 		draw_line(
 			Vector2(bar_x - 3, mark_y),
 			Vector2(bar_x + BAR_WIDTH + 3, mark_y),
-			Color(COLOR_CRYSTAL_WHITE, 0.3), 1.0
+			UIColors.with_alpha(UIColors.TEXT_PRIMARY, 0.3), 1.0
 		)
 
 	# 粒子喷发 (AFI > 0.6)
@@ -198,7 +197,7 @@ func _draw_labels(bar_x: float, bar_bottom: float) -> void:
 
 	# 等级名称
 	var level_name: String = LEVEL_NAMES.get(_fatigue_level, "CLEAR")
-	draw_string(font, Vector2(bar_x - 5, bar_bottom + 28), level_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(bar_color, 0.8))
+	draw_string(font, Vector2(bar_x - 5, bar_bottom + 28), level_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(bar_color, 0.8))
 
 func _draw_particles(bar_x: float, fill_top: float, fill_height: float, base_color: Color) -> void:
 	var particle_strength := (_display_afi - 0.6) / 0.4
@@ -210,7 +209,7 @@ func _draw_particles(bar_x: float, fill_top: float, fill_height: float, base_col
 			var px := bar_x + BAR_WIDTH * 0.5 + seed_x * (BAR_WIDTH + 10.0)
 			var py := fill_top + abs(seed_y) * fill_height
 			var p_size := 1.5 + abs(seed_x) * 2.0
-			draw_circle(Vector2(px, py), p_size, Color(base_color, particle_strength * 0.6))
+			draw_circle(Vector2(px, py), p_size, UIColors.with_alpha(base_color, particle_strength * 0.6))
 
 # ============================================================
 # 颜色计算

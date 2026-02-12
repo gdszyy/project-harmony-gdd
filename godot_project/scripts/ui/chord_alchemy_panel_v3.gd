@@ -31,38 +31,25 @@ signal info_hover(title: String, desc: String, color: Color)
 @export var slot_gap: float = 8.0
 
 ## 颜色定义
-const SLOT_EMPTY_BG := Color("141026A0")
-const SLOT_FILLED_BG := Color("1A1433D0")
-const SLOT_HOVER_BG := Color("9D6FFF30")
-const SLOT_DROP_HIGHLIGHT := Color("00FFD466")
-const SLOT_BORDER := Color("9D6FFF40")
-const SLOT_REQUIRED_MARK := Color("FF444460")
+const SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+var SLOT_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+const SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+const SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+const SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+const SLOT_REQUIRED_MARK := UIColors.with_alpha(UIColors.OFFENSE, 0.38)
 
-const SYNTH_BTN_VALID := Color("00FFD4CC")
-const SYNTH_BTN_INVALID := Color("9D6FFF40")
-const SYNTH_BTN_HOVER := Color("00FFD4FF")
-const SYNTH_BTN_TEXT_VALID := Color("FFFFFF")
-const SYNTH_BTN_TEXT_INVALID := Color("9D8FBF80")
+const SYNTH_BTN_VALID := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
+const SYNTH_BTN_INVALID := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+const SYNTH_BTN_HOVER := UIColors.with_alpha(UIColors.ACCENT_2, 1.00)
+var SYNTH_BTN_TEXT_VALID := Color.WHITE
+const SYNTH_BTN_TEXT_INVALID := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
 
-const PREVIEW_VALID_COLOR := Color("00FFD4")
-const PREVIEW_INVALID_COLOR := Color("FF4444")
-const SECTION_TITLE_COLOR := Color("9D8FBF")
+const PREVIEW_VALID_COLOR := UIColors.ACCENT_2
+const PREVIEW_INVALID_COLOR := UIColors.OFFENSE
 
 ## 音符颜色（白键）
-const NOTE_COLORS := {
-	0: Color("00FFD4"), 1: Color("0088FF"), 2: Color("66FF66"),
-	3: Color("8844FF"), 4: Color("FF4444"), 5: Color("FF8800"),
-	6: Color("FF44AA"),
-}
 
 ## 黑键音符颜色（用于和弦构成音模式）
-const BLACK_KEY_COLORS := {
-	7: Color("00BBAA"),   # C#/Db
-	8: Color("0066CC"),   # D#/Eb
-	9: Color("44BB44"),   # F#/Gb
-	10: Color("6622CC"),  # G#/Ab
-	11: Color("CC6600"),  # A#/Bb
-}
 
 ## 黑键音符名称
 const BLACK_KEY_NAMES := {
@@ -127,28 +114,6 @@ const _CHORD_PATTERNS_LEGACY := {
 }
 
 ## 法术形态颜色
-const SPELL_FORM_COLORS := {
-	# 基础和弦法术形态
-	"enhanced_projectile": Color("FFD94D"),
-	"dot_projectile": Color("3366CC"),
-	"explosive_projectile": Color("FF6633"),
-	"shockwave": Color("8822BB"),
-	"magic_circle": Color("FFCC00"),
-	"celestial_strike": Color("CC1111"),
-	"shield_heal": Color("33E666"),
-	"summon_construct": Color("2233BB"),
-	"charged_projectile": Color("D9D9F2"),
-	"slow_field": Color("4D4DBB"),
-	"augmented_burst": Color("FF9933"),
-	"generic_blast": Color("808080"),
-	# 扩展和弦法术形态
-	"storm_field": Color("4488FF"),
-	"holy_domain": Color("FFE066"),
-	"annihilation_ray": Color("FF0044"),
-	"time_rift": Color("AA00FF"),
-	"symphony_storm": Color("00CCFF"),
-	"finale": Color("FF2200"),
-}
 
 ## 白键到半音的映射
 const SEMITONE_MAP := [0, 2, 4, 5, 7, 9, 11]  # C D E F G A B
@@ -173,12 +138,12 @@ static func get_note_display_name(note_idx: int) -> String:
 
 ## 获取音符颜色（白键或黑键）
 static func get_note_color(note_idx: int) -> Color:
-	if NOTE_COLORS.has(note_idx):
-		return NOTE_COLORS[note_idx]
+	if (note_idx >= 0 and note_idx < 7):
+		return UIColors.get_note_color_by_int(note_idx)
 	elif BLACK_KEY_COLORS.has(note_idx):
-		return BLACK_KEY_COLORS[note_idx]
+		return UIColors.get_black_key_color(note_idx)
 	else:
-		return Color(0.5, 0.5, 0.5)
+		return UIColors.TEXT_DIM
 
 # ============================================================
 # 状态
@@ -238,7 +203,7 @@ func _draw() -> void:
 
 	## ===== 标题 =====
 	draw_string(font, Vector2(x, y + 12), "CHORD ALCHEMY",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, SECTION_TITLE_COLOR)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 	y += 20.0
 
 	## ===== 和弦预览 =====
@@ -251,14 +216,14 @@ func _draw() -> void:
 			"%s %s" % [icon, chord_name], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, form_color)
 		var desc: String = _preview.get("desc", "")
 		draw_string(font, Vector2(x, y + 24),
-			desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(form_color.r, form_color.g, form_color.b, 0.7))
-	elif _get_filled_count() >= min_notes_for_chord:
+			desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(form_color, 0.7))
+	elif _get_filled_count() >= MIN_NOTES_FOR_CHORD:
 		draw_string(font, Vector2(x, y + 12),
 			"不和谐组合", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, PREVIEW_INVALID_COLOR)
 	else:
 		var needed := min_notes_for_chord - _get_filled_count()
 		draw_string(font, Vector2(x, y + 12),
-			"还需 %d 个音符..." % needed, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("9D8FBF80"))
+			"还需 %d 个音符..." % needed, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.with_alpha(UIColors.TEXT_HINT, 0.50))
 	y += 30.0
 
 	## ===== 炼成槽 =====
@@ -283,9 +248,9 @@ func _draw() -> void:
 
 		## 炼成成功闪烁
 		if _craft_flash > 0 and _craft_success:
-			bg = bg.lerp(Color("00FFD440"), _craft_flash)
+			bg = bg.lerp(UIColors.with_alpha(UIColors.ACCENT_2, 0.25), _craft_flash)
 		elif _craft_flash > 0 and not _craft_success:
-			bg = bg.lerp(Color("FF444440"), _craft_flash)
+			bg = bg.lerp(UIColors.with_alpha(UIColors.OFFENSE, 0.25), _craft_flash)
 
 		draw_rect(rect, bg)
 
@@ -293,9 +258,9 @@ func _draw() -> void:
 		var border := SLOT_BORDER
 		if is_filled:
 			var note_color: Color = get_note_color(_slots[i])
-			border = Color(note_color.r, note_color.g, note_color.b, 0.7)
+			border = UIColors.with_alpha(note_color, 0.7)
 		if is_drop_hover:
-			border = Color("00FFD4CC")
+			border = UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
 		draw_rect(rect, border, false, 1.0)
 
 		## 内容
@@ -303,7 +268,7 @@ func _draw() -> void:
 			var note_key := _slots[i]
 			var note_color: Color = get_note_color(note_key)
 			## 色块背景
-			draw_rect(rect.grow(-3), Color(note_color.r, note_color.g, note_color.b, 0.25))
+			draw_rect(rect.grow(-3), UIColors.with_alpha(note_color, 0.25))
 			## 音符名称（支持白键和黑键）
 			var name_str: String = get_note_display_name(note_key)
 			draw_string(font,
@@ -370,7 +335,7 @@ func _update_hover(pos: Vector2) -> void:
 		if _can_craft:
 			info_hover.emit("炼成", "点击将音符炼成和弦法术（音符将被永久消耗）", PREVIEW_VALID_COLOR)
 		else:
-			info_hover.emit("炼成", "需要至少 %d 个音符且组合有效" % min_notes_for_chord, Color("9D8FBF"))
+			info_hover.emit("炼成", "需要至少 %d 个音符且组合有效" % MIN_NOTES_FOR_CHORD, UIColors.TEXT_HINT)
 		queue_redraw()
 
 ## 发送槽位信息
@@ -390,7 +355,7 @@ func _emit_slot_info(idx: int) -> void:
 		info_hover.emit(
 			"炼成槽 %d（%s）" % [idx + 1, label],
 			"拖入音符作为和弦原材料",
-			Color("9D8FBF")
+			UIColors.TEXT_HINT
 		)
 
 # ============================================================
@@ -643,11 +608,11 @@ func _create_drag_preview(text: String, color: Color) -> Control:
 	panel.size = sz
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.5)
+	style.bg_color = UIColors.with_alpha(color, 0.5)
 	style.border_color = color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(6)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.6)
+	style.shadow_color = UIColors.with_alpha(color, 0.6)
 	style.shadow_size = 4
 	panel.add_theme_stylebox_override("panel", style)
 

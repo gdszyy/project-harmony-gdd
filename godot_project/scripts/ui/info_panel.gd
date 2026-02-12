@@ -10,10 +10,9 @@ const PANEL_SIZE := Vector2(200, 100)
 const UPDATE_INTERVAL: float = 1.0
 
 # 颜色
-const COLOR_CRYSTAL_WHITE := Color(0.918, 0.902, 1.0)   # #EAE6FF
-const COLOR_ACCENT        := Color(0.616, 0.435, 1.0)   # #9D6FFF
-const COLOR_STARRY_PURPLE := Color(0.078, 0.063, 0.149) # #141026
-const COLOR_LABEL          := Color(0.627, 0.596, 0.784) # #A098C8
+const COLOR_ACCENT        := UIColors.ACCENT   # #9D6FFF
+const COLOR_STARRY_PURPLE := UIColors.PANEL_BG # #141026
+const COLOR_LABEL          := UIColors.TEXT_SECONDARY # #A098C8
 
 # ============================================================
 # 状态
@@ -68,10 +67,10 @@ func _draw() -> void:
 
 	# 面板背景
 	var bg_rect := Rect2(Vector2.ZERO, PANEL_SIZE)
-	draw_rect(bg_rect, Color(COLOR_STARRY_PURPLE, 0.8))
+	draw_rect(bg_rect, UIColors.with_alpha(COLOR_STARRY_PURPLE, 0.8))
 
 	# 边框
-	draw_rect(bg_rect, Color(COLOR_ACCENT, 0.3), false, 1.0)
+	draw_rect(bg_rect, UIColors.with_alpha(COLOR_ACCENT, 0.3), false, 1.0)
 
 	# 数据行
 	var y_start := 18.0
@@ -81,26 +80,26 @@ func _draw() -> void:
 
 	# BPM
 	draw_string(font, Vector2(label_x, y_start), "BPM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, COLOR_LABEL)
-	draw_string(font, Vector2(value_x, y_start), "%d" % int(_bpm), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, COLOR_CRYSTAL_WHITE)
+	draw_string(font, Vector2(value_x, y_start), "%d" % int(_bpm), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UIColors.TEXT_PRIMARY)
 
 	# Time
 	y_start += line_height
 	var minutes := int(_elapsed_time) / 60
 	var seconds := int(_elapsed_time) % 60
 	draw_string(font, Vector2(label_x, y_start), "TIME", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, COLOR_LABEL)
-	draw_string(font, Vector2(value_x, y_start), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, COLOR_CRYSTAL_WHITE)
+	draw_string(font, Vector2(value_x, y_start), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UIColors.TEXT_PRIMARY)
 
 	# Level
 	y_start += line_height
 	draw_string(font, Vector2(label_x, y_start), "LEVEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, COLOR_LABEL)
-	draw_string(font, Vector2(value_x, y_start), "%d" % _player_level, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, COLOR_CRYSTAL_WHITE)
+	draw_string(font, Vector2(value_x, y_start), "%d" % _player_level, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UIColors.TEXT_PRIMARY)
 
 	# Enemies
 	y_start += line_height
 	draw_string(font, Vector2(label_x, y_start), "ENEMIES", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, COLOR_LABEL)
-	var enemy_color := COLOR_CRYSTAL_WHITE
+	var enemy_color := UIColors.TEXT_PRIMARY
 	if _enemy_count > 20:
-		enemy_color = Color(1.0, 0.133, 0.267)  # 高密度警告
+		enemy_color = UIColors.ERROR_RED  # 高密度警告
 	draw_string(font, Vector2(value_x, y_start), "%d" % _enemy_count, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, enemy_color)
 
 # ============================================================

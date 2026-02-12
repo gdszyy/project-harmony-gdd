@@ -35,14 +35,14 @@ const CELL_GAP := 6.0
 const MEASURE_GAP := 14.0
 
 ## 颜色定义（遵循全局 UI 主题）
-const CELL_EMPTY_BG := Color("141026A0")
-const CELL_HOVER_BG := Color("9D6FFF30")
-const CELL_FILLED_BG := Color("1A1433D0")
-const DROP_HIGHLIGHT_COLOR := Color("00FFD466")
-const PLAYHEAD_COLOR := Color("FFFFFF", 0.8)
-const MEASURE_LINE_COLOR := Color("9D6FFF40")
-const BEAT_LABEL_COLOR := Color("9D8FBF99")
-const CELL_BORDER_COLOR := Color("9D6FFF40")
+const CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+const CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+var CELL_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+const DROP_HIGHLIGHT_COLOR := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+var PLAYHEAD_COLOR := UIColors.with_alpha(Color.WHITE, 0.8)
+const MEASURE_LINE_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+const BEAT_LABEL_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.60)
+const CELL_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
 
 ## 撤销/重做
 const MAX_UNDO: int = 32
@@ -100,7 +100,7 @@ func _draw() -> void:
 
 	## 标题
 	draw_string(font, Vector2(start_x, 14), "SEQUENCER  4×4",
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("9D8FBF"))
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UIColors.TEXT_HINT)
 
 	## 绘制每个格子
 	for measure in range(MEASURES):
@@ -163,7 +163,7 @@ func _draw_cell_content(rect: Rect2, slot: Dictionary, font: Font) -> void:
 			var note_color: Color = IntegratedComposer.get_note_color(note_key) if has_node("/root/IntegratedComposer") else _get_note_color_fallback(note_key)
 			## 音符色块背景
 			var inner_rect := rect.grow(-3)
-			var bg := Color(note_color.r, note_color.g, note_color.b, 0.25)
+			var bg := UIColors.with_alpha(note_color, 0.25)
 			draw_rect(inner_rect, bg)
 			## 音符名称
 			var name_str: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
@@ -174,22 +174,22 @@ func _draw_cell_content(rect: Rect2, slot: Dictionary, font: Font) -> void:
 			if slot.has("modifier"):
 				draw_string(font,
 					rect.position + Vector2(rect.size.x - 8, 12),
-					"#", HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, Color("FFD700"))
+					"#", HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, UIColors.GOLD)
 		"chord":
 			## 和弦法术 — 金色标记
-			var chord_color := Color("FFD700")
+			var chord_color := UIColors.GOLD
 			var inner_rect := rect.grow(-3)
-			draw_rect(inner_rect, Color(chord_color.r, chord_color.g, chord_color.b, 0.2))
+			draw_rect(inner_rect, UIColors.with_alpha(chord_color, 0.2))
 			draw_string(font,
 				rect.position + Vector2(rect.size.x / 2.0 - 4, rect.size.y / 2.0 + 5),
 				"♫", HORIZONTAL_ALIGNMENT_CENTER, -1, 18, chord_color)
 		"chord_sustain":
 			## 和弦延续 — 淡金色
-			var sustain_color := Color("FFD70060")
+			var sustain_color := UIColors.with_alpha(UIColors.GOLD, 0.38)
 			draw_rect(rect.grow(-3), sustain_color)
 			draw_string(font,
 				rect.position + Vector2(rect.size.x / 2.0 - 4, rect.size.y / 2.0 + 3),
-				"~", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color("FFD70099"))
+				"~", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, UIColors.with_alpha(UIColors.GOLD, 0.60))
 
 ## 绘制播放头指示器
 func _draw_playhead() -> void:
@@ -258,19 +258,19 @@ func _emit_cell_info(idx: int) -> void:
 				info_hover.emit(
 					"和弦法术 — M%d B%d" % [measure, beat],
 					"和弦法术占据此位置 | 右键清除",
-					Color("FFD700")
+					UIColors.GOLD
 				)
 			_:
 				info_hover.emit(
 					"空位 — M%d B%d" % [measure, beat],
 					"拖入音符或和弦法术",
-					Color("9D8FBF")
+					UIColors.TEXT_HINT
 				)
 	else:
 		info_hover.emit(
 			"空位 — M%d B%d" % [measure, beat],
 			"拖入音符或和弦法术",
-			Color("9D8FBF")
+			UIColors.TEXT_HINT
 		)
 
 # ============================================================
@@ -304,7 +304,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 		}
 	elif slot_type == "chord":
 		var spell_id: String = slot.get("spell_id", "")
-		var preview := _create_drag_preview("♫", Color("FFD700"))
+		var preview := _create_drag_preview("♫", UIColors.GOLD)
 		set_drag_preview(preview)
 		return {
 			"type": "chord_spell",
@@ -514,11 +514,11 @@ func _create_drag_preview(text: String, color: Color) -> Control:
 	panel.size = CELL_SIZE
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(color.r, color.g, color.b, 0.4)
+	style.bg_color = UIColors.with_alpha(color, 0.4)
 	style.border_color = color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(6)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.5)
+	style.shadow_color = UIColors.with_alpha(color, 0.5)
 	style.shadow_size = 4
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -538,8 +538,8 @@ func _create_drag_preview(text: String, color: Color) -> Control:
 ## 音符颜色回退方法（当无法访问 IntegratedComposer 时）
 func _get_note_color_fallback(note_key: int) -> Color:
 	var colors := {
-		0: Color("00FFD4"), 1: Color("0088FF"), 2: Color("66FF66"),
-		3: Color("8844FF"), 4: Color("FF4444"), 5: Color("FF8800"),
-		6: Color("FF44AA"),
+		0: UIColors.ACCENT_2, 1: Color("0088FF"), 2: Color("66FF66"),
+		3: Color("8844FF"), 4: UIColors.OFFENSE, 5: Color("FF8800"),
+		6: UIColors.get_note_color_by_int(6),
 	}
-	return colors.get(note_key, Color(0.5, 0.5, 0.5))
+	return colors.get(note_key, UIColors.TEXT_DIM)

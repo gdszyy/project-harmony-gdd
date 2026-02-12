@@ -49,7 +49,7 @@ const FAMILY_QUADRANTS: Array = [
 		"name": "弹拨系",
 		"name_en": "Plucked",
 		"angle_center": -PI / 2.0,  # 上方 (12点)
-		"color": Color("#4DFFF3"),
+		"color": UIColors.ACCENT_2,
 		"gain_phase": 1,  # ResonanceSlicingManager.Phase.OVERTONE
 		"gain_text": "+50% 瞬态伤害",
 		"timbres": [
@@ -72,7 +72,7 @@ const FAMILY_QUADRANTS: Array = [
 		"name": "打击系",
 		"name_en": "Percussion",
 		"angle_center": 0.0,  # 右方 (3点)
-		"color": Color("#FF8C42"),
+		"color": UIColors.WARNING,
 		"gain_phase": 2,  # ResonanceSlicingManager.Phase.SUB_BASS
 		"gain_text": "x2 击退/眩晕",
 		"timbres": [
@@ -89,7 +89,7 @@ const FAMILY_QUADRANTS: Array = [
 		"name": "拉弦系",
 		"name_en": "Bowed",
 		"angle_center": PI / 2.0,  # 下方 (6点)
-		"color": Color("#9D6FFF"),
+		"color": UIColors.ACCENT,
 		"gain_phase": 0,  # ResonanceSlicingManager.Phase.FUNDAMENTAL
 		"gain_text": "+50% 持续时间",
 		"timbres": [
@@ -106,7 +106,7 @@ const FAMILY_QUADRANTS: Array = [
 		"name": "吹奏系",
 		"name_en": "Wind",
 		"angle_center": PI,  # 左方 (9点)
-		"color": Color("#4DFF80"),
+		"color": UIColors.SUCCESS,
 		"gain_phase": -1,  # 特殊：切换瞬间增益
 		"gain_text": "首击聚焦",
 		"timbres": [
@@ -131,7 +131,7 @@ const CENTER_TIMBRE: Dictionary = {
 	"timbre": MusicData.ChapterTimbre.SYNTHESIZER,
 	"chapter": "Ch7", "name": "合成主脑", "name_en": "Synthesizer",
 	"subtitle": "电子 · 波形变换",
-	"color": Color("#00E6B8"),
+	"color": UIColors.TIMBRE_CENTER,
 	"electronic_name": "Glitch Engine",
 }
 
@@ -318,7 +318,7 @@ func _draw() -> void:
 	var quadrant_half_angle := PI / 2.0 - quadrant_gap
 
 	# 半透明背景遮罩
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.45 * alpha))
+	draw_rect(Rect2(Vector2.ZERO, size), UIColors.with_alpha(Color.BLACK, 0.45 * alpha))
 
 	# ========== 绘制四个象限 ==========
 	for i in range(quadrant_count):
@@ -397,12 +397,12 @@ func _draw() -> void:
 		var text_pos := _center + Vector2.from_angle(q_center) * text_r
 
 		# 系别名称
-		var name_color := q_color if is_selected or is_gain_quadrant else Color(0.7, 0.7, 0.8)
+		var name_color := q_color if is_selected or is_gain_quadrant else UIColors.TEXT_SECONDARY
 		name_color.a = alpha
 		draw_string(font, text_pos + Vector2(-16, -14), q["name"],
 			HORIZONTAL_ALIGNMENT_CENTER, -1, 11, name_color)
 		draw_string(font, text_pos + Vector2(-20, -2), q["name_en"],
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(0.5, 0.5, 0.6, 0.6 * alpha))
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 8, UIColors.with_alpha(UIColors.TEXT_DIM, 0.6 * alpha))
 
 		# 武器列表
 		var timbres: Array = q["timbres"]
@@ -418,7 +418,7 @@ func _draw() -> void:
 			if _is_electronic_variant and is_current:
 				t_name = t_data["electronic_name"]
 
-			var t_color := Color.WHITE if is_unlocked else Color(0.4, 0.4, 0.45)
+			var t_color := Color.WHITE if is_unlocked else UIColors.TEXT_LOCKED
 			if is_t_selected and is_unlocked:
 				t_color = q_color.lightened(0.4)
 			if is_current:
@@ -430,7 +430,7 @@ func _draw() -> void:
 
 			if not is_unlocked:
 				draw_string(font, text_pos + Vector2(24, y_offset), "🔒",
-					HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(0.5, 0.5, 0.55, alpha))
+					HORIZONTAL_ALIGNMENT_CENTER, -1, 8, UIColors.with_alpha(UIColors.TEXT_DIM, alpha))
 
 		# 增益徽章
 		if is_gain_quadrant:
@@ -445,14 +445,14 @@ func _draw() -> void:
 		var angle := (TAU / 24.0) * float(i)
 		center_points.append(_center + Vector2.from_angle(angle) * center_r)
 
-	var center_fill := Color(0.05, 0.05, 0.1, 0.9 * alpha)
+	var center_fill := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9 * alpha)
 	if center_selected:
 		center_fill = CENTER_TIMBRE["color"]
 		center_fill.a = 0.3 * alpha
 	draw_colored_polygon(center_points, center_fill)
 
 	# 中心边框
-	var center_border := CENTER_TIMBRE["color"] if center_selected else Color(0.3, 0.3, 0.4)
+	var center_border := CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_LOCKED
 	center_border.a = 0.6 * alpha
 	for i in range(center_points.size()):
 		var next_idx := (i + 1) % center_points.size()
@@ -460,17 +460,17 @@ func _draw() -> void:
 
 	# 中心文字
 	var center_name := CENTER_TIMBRE["name"]
-	var center_name_color := CENTER_TIMBRE["color"] if center_selected else Color(0.7, 0.7, 0.8)
+	var center_name_color := CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_SECONDARY
 	center_name_color.a = alpha
 	draw_string(font, _center + Vector2(-16, -4), center_name,
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 9, center_name_color)
 	draw_string(font, _center + Vector2(-12, 8), "Ch7",
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.5, 0.5, 0.6, 0.5 * alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 7, UIColors.with_alpha(UIColors.TEXT_DIM, 0.5 * alpha))
 
 	# 电子乐变体状态
 	if _is_electronic_variant:
 		draw_string(font, _center + Vector2(-10, 18), "[电子]",
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.0, 0.9, 0.7, 0.8 * alpha))
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 7, UIColors.with_alpha(UIColors.ACCENT_2, 0.8 * alpha))
 
 	# ========== 选中象限详情面板 ==========
 	if _selected_quadrant >= 0 and _selected_quadrant < quadrant_count:
@@ -480,7 +480,7 @@ func _draw() -> void:
 	var hint_pos := _center + Vector2(0, -wheel_radius * scale_val - 25)
 	draw_string(font, hint_pos + Vector2(-70, 0),
 		"松开 Tab 确认 | E 切换电子变体",
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 9, Color(0.5, 0.5, 0.6, 0.6 * alpha))
+		HORIZONTAL_ALIGNMENT_CENTER, -1, 9, UIColors.with_alpha(UIColors.TEXT_DIM, 0.6 * alpha))
 
 ## 绘制增益徽章
 func _draw_gain_badge(pos: Vector2, text: String, color: Color, alpha: float) -> void:
@@ -489,7 +489,7 @@ func _draw_gain_badge(pos: Vector2, text: String, color: Color, alpha: float) ->
 	var badge_rect := Rect2(pos - badge_size / 2.0, badge_size)
 
 	# 背景
-	var bg_color := Color(0.08, 0.06, 0.15, 0.85 * alpha)
+	var bg_color := UIColors.with_alpha(UIColors.PANEL_BG, 0.85 * alpha)
 	draw_rect(badge_rect, bg_color)
 
 	# 边框
@@ -518,41 +518,41 @@ func _draw_detail_panel(font: Font, alpha: float) -> void:
 	var detail_rect := Rect2(detail_pos + Vector2(-110, -5), Vector2(220, 55))
 
 	# 背景
-	draw_rect(detail_rect, Color(0.0, 0.0, 0.0, 0.75 * alpha))
+	draw_rect(detail_rect, UIColors.with_alpha(Color.BLACK, 0.75 * alpha))
 	var q_color: Color = q["color"]
-	draw_rect(detail_rect, Color(q_color.r, q_color.g, q_color.b, 0.4 * alpha), false, 1.0)
+	draw_rect(detail_rect, UIColors.with_alpha(q_color, 0.4 * alpha), false, 1.0)
 
 	if is_unlocked:
 		# 武器名称
 		draw_string(font, detail_pos + Vector2(-100, 8), t_data["name"] + " — " + t_data["subtitle"],
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.8, 0.8, 0.9, alpha))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 9, UIColors.with_alpha(UIColors.TEXT_PRIMARY, alpha))
 
 		# 章节专属标记
 		if is_chapter_timbre:
 			draw_string(font, detail_pos + Vector2(-100, 22),
 				"★ 当前章节专属 · 无额外疲劳",
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1.0, 0.85, 0.3, alpha))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.GOLD, alpha))
 		else:
 			var fatigue_text := "跨章节使用 · 疲劳 +%.2f/次" % MusicData.CROSS_CHAPTER_TIMBRE_FATIGUE
 			draw_string(font, detail_pos + Vector2(-100, 22), fatigue_text,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.8, 0.5, 0.3, alpha))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.WARNING, alpha))
 
 		# 电子乐变体
 		draw_string(font, detail_pos + Vector2(-100, 36),
 			"电子变体: " + t_data["electronic_name"],
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.0, 0.8, 0.6, 0.7 * alpha))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.ACCENT_2, 0.7 * alpha))
 
 		# 相位增益提示
 		if q["gain_phase"] == _current_phase:
 			draw_string(font, detail_pos + Vector2(-100, 48),
 				"♦ " + q["gain_text"] + " (当前相位增益)",
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1.0, 0.85, 0.3, alpha))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.GOLD, alpha))
 	else:
 		draw_string(font, detail_pos + Vector2(-100, 12), "未解锁",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.5, 0.5, 0.55, alpha))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, UIColors.with_alpha(UIColors.TEXT_DIM, alpha))
 		draw_string(font, detail_pos + Vector2(-100, 28),
 			"进入 " + t_data["chapter"] + " 后自动获得",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.5, 0.5, 0.55, 0.7 * alpha))
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 8, UIColors.with_alpha(UIColors.TEXT_DIM, 0.7 * alpha))
 
 # ============================================================
 # 信号回调

@@ -247,7 +247,7 @@ func _setup_suggestion_label() -> void:
 	_suggestion_label.offset_bottom = -160
 	_suggestion_label.offset_left = -300
 	_suggestion_label.offset_right = 300
-	_suggestion_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	_suggestion_label.add_theme_color_override("font_color", UIColors.ACCENT_2)
 	_suggestion_label.add_theme_font_size_override("font_size", 14)
 	_suggestion_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_suggestion_label)
@@ -258,7 +258,7 @@ func _setup_silence_indicators() -> void:
 		var indicator := Label.new()
 		indicator.name = "SilenceIndicator_%s" % note_names[i]
 		indicator.text = note_names[i]
-		indicator.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.3))
+		indicator.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_DIM, 0.3))
 		indicator.add_theme_font_size_override("font_size", 14)
 		indicator.visible = false
 		indicator.position = Vector2(10 + i * 30, 0)
@@ -270,7 +270,7 @@ func _setup_overload_warning() -> void:
 	_overload_warning = Label.new()
 	_overload_warning.name = "OverloadWarning"
 	_overload_warning.text = "⚠ DENSITY OVERLOAD"
-	_overload_warning.add_theme_color_override("font_color", Color(1.0, 0.3, 0.1))
+	_overload_warning.add_theme_color_override("font_color", UIColors.DANGER)
 	_overload_warning.add_theme_font_size_override("font_size", 18)
 	_overload_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_overload_warning.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -285,7 +285,7 @@ func _setup_progression_label() -> void:
 	_progression_label = Label.new()
 	_progression_label.name = "ProgressionLabel"
 	_progression_label.text = ""
-	_progression_label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.6))
+	_progression_label.add_theme_color_override("font_color", UIColors.SUCCESS)
 	_progression_label.add_theme_font_size_override("font_size", 22)
 	_progression_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_progression_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -298,7 +298,7 @@ func _setup_progression_label() -> void:
 func _setup_mode_label() -> void:
 	_mode_label = Label.new()
 	_mode_label.name = "ModeLabel"
-	_mode_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9, 0.8))
+	_mode_label.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.TEXT_SECONDARY, 0.8))
 	_mode_label.add_theme_font_size_override("font_size", 12)
 	_mode_label.position = Vector2(10, 5)
 	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -308,7 +308,7 @@ func _setup_mode_label() -> void:
 func _setup_crit_label() -> void:
 	_crit_label = Label.new()
 	_crit_label.name = "CritLabel"
-	_crit_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2, 0.9))
+	_crit_label.add_theme_color_override("font_color", UIColors.with_alpha(UIColors.WARNING, 0.9))
 	_crit_label.add_theme_font_size_override("font_size", 14)
 	_crit_label.position = Vector2(10, 22)
 	_crit_label.visible = false
@@ -393,11 +393,11 @@ func _on_recovery_suggestion(message: String) -> void:
 
 		var suggestion_color: Color
 		if _current_fatigue >= 0.8:
-			suggestion_color = Color(1.0, 0.3, 0.2)
+			suggestion_color = UIColors.DANGER
 		elif _current_fatigue >= 0.5:
-			suggestion_color = Color(1.0, 0.8, 0.2)
+			suggestion_color = UIColors.GOLD
 		else:
-			suggestion_color = Color(0.6, 0.9, 1.0)
+			suggestion_color = UIColors.ACCENT_2
 		_suggestion_label.add_theme_color_override("font_color", suggestion_color)
 
 		_suggestion_label.modulate.a = 0.0
@@ -544,8 +544,8 @@ func _on_progression_resolved(progression: Dictionary) -> void:
 	_progression_timer = 3.0
 
 	var tween := create_tween()
-	tween.tween_property(_progression_label, "modulate", Color(1.0, 1.0, 0.5), 0.1)
-	tween.tween_property(_progression_label, "modulate", Color(0.2, 1.0, 0.6), 0.3)
+	tween.tween_property(_progression_label, "modulate", UIColors.GOLD_BRIGHT, 0.1)
+	tween.tween_property(_progression_label, "modulate", UIColors.SUCCESS, 0.3)
 
 	# 同步到新版通知系统
 	if _notification_manager and _notification_manager.has_method("show_info"):
@@ -596,7 +596,7 @@ func _update_silence_indicators() -> void:
 			_silence_indicators[i].visible = true
 			var alpha := 0.3 + sin(game_time * 4.0) * 0.2
 			_silence_indicators[i].add_theme_color_override(
-				"font_color", Color(1.0, 0.2, 0.2, alpha)
+				"font_color", UIColors.with_alpha(UIColors.DANGER, alpha)
 			)
 			var note_name: String = ""
 			if MusicData.get("WHITE_KEY_STATS") != null:
@@ -738,16 +738,16 @@ func _on_beat_tick(_beat_index: int) -> void:
 func _on_rest_cleanse(rest_count: int) -> void:
 	if _progression_label:
 		_progression_label.text = "~ 留白清洗 x%d ~" % rest_count
-		_progression_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+		_progression_label.add_theme_color_override("font_color", UIColors.ACCENT_2)
 		_progression_label.modulate.a = 1.0
 		_progression_timer = 2.0
 
 		var tween := create_tween()
-		tween.tween_property(_progression_label, "modulate", Color(0.4, 0.9, 1.0), 0.15)
-		tween.tween_property(_progression_label, "modulate", Color(0.2, 1.0, 0.6), 0.4)
+		tween.tween_property(_progression_label, "modulate", UIColors.ACCENT_2, 0.15)
+		tween.tween_property(_progression_label, "modulate", UIColors.SUCCESS, 0.4)
 		tween.tween_callback(func():
 			if _progression_label:
-				_progression_label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.6))
+				_progression_label.add_theme_color_override("font_color", UIColors.SUCCESS)
 		)
 
 	var audio_mgr := get_node_or_null("/root/AudioManager")
@@ -781,14 +781,14 @@ func _setup_xp_bar() -> void:
 
 	_xp_bar_bg = ColorRect.new()
 	_xp_bar_bg.name = "XPBarBG"
-	_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7)
+	_xp_bar_bg.color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.7)
 	_xp_bar_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_xp_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_xp_bar_container.add_child(_xp_bar_bg)
 
 	_xp_bar_fill = ColorRect.new()
 	_xp_bar_fill.name = "XPBarFill"
-	_xp_bar_fill.color = Color(0.0, 0.9, 0.8, 0.85)
+	_xp_bar_fill.color = UIColors.with_alpha(UIColors.ACCENT_2, 0.85)
 	_xp_bar_fill.anchor_top = 0.0
 	_xp_bar_fill.anchor_bottom = 1.0
 	_xp_bar_fill.anchor_left = 0.0
@@ -805,9 +805,9 @@ func _setup_xp_bar() -> void:
 	_xp_bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_xp_bar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_xp_bar_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_xp_bar_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
+	_xp_bar_label.add_theme_color_override("font_color", UIColors.with_alpha(Color.WHITE, 0.95))
 	_xp_bar_label.add_theme_font_size_override("font_size", 13)
-	_xp_bar_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	_xp_bar_label.add_theme_color_override("font_shadow_color", UIColors.with_alpha(Color.BLACK, 0.8))
 	_xp_bar_label.add_theme_constant_override("shadow_offset_x", 1)
 	_xp_bar_label.add_theme_constant_override("shadow_offset_y", 1)
 	_xp_bar_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -833,7 +833,7 @@ func _update_xp_bar(delta: float) -> void:
 
 	var player_level: int = GameManager.player_level if GameManager.get("player_level") != null else 1
 	var level_color_t: float = clamp(float(player_level - 1) / 20.0, 0.0, 1.0)
-	var base_color := Color(0.0, 0.9, 0.8).lerp(Color(1.0, 0.85, 0.2), level_color_t)
+	var base_color := UIColors.ACCENT_2.lerp(UIColors.GOLD, level_color_t)
 
 	if _xp_flash_timer > 0.0:
 		_xp_flash_timer -= delta
@@ -843,14 +843,14 @@ func _update_xp_bar(delta: float) -> void:
 	if _levelup_flash_timer > 0.0:
 		_levelup_flash_timer -= delta
 		var flash_intensity: float = clamp(_levelup_flash_timer / 0.5, 0.0, 1.0)
-		base_color = base_color.lerp(Color(1.0, 1.0, 0.5), flash_intensity * 0.8)
+		base_color = base_color.lerp(UIColors.GOLD_BRIGHT, flash_intensity * 0.8)
 		if _xp_bar_bg:
-			_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7).lerp(
-				Color(0.2, 0.2, 0.1, 0.9), flash_intensity * 0.5
+			_xp_bar_bg.color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.7).lerp(
+				UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9), flash_intensity * 0.5
 			)
 	else:
 		if _xp_bar_bg:
-			_xp_bar_bg.color = Color(0.05, 0.05, 0.1, 0.7)
+			_xp_bar_bg.color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.7)
 
 	_xp_bar_fill.color = base_color
 	_update_xp_bar_text()

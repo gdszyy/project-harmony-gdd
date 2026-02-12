@@ -16,15 +16,6 @@ extends CanvasLayer
 # 常量
 # ============================================================
 const PANEL_WIDTH := 340.0
-const BG_COLOR := Color(0.05, 0.03, 0.10, 0.92)
-const HEADER_COLOR := Color(0.08, 0.05, 0.14)
-const SECTION_COLOR := Color(0.6, 0.4, 1.0)
-const ACCENT := Color(0.5, 0.3, 0.9)
-const TEXT_COLOR := Color(0.85, 0.82, 0.90)
-const DIM_COLOR := Color(0.45, 0.42, 0.52)
-const SUCCESS_COLOR := Color(0.3, 0.9, 0.5)
-const WARNING_COLOR := Color(1.0, 0.8, 0.2)
-const DANGER_COLOR := Color(1.0, 0.3, 0.3)
 
 # ============================================================
 # 节点引用
@@ -99,8 +90,8 @@ func _build_ui() -> void:
 	_panel.size = Vector2(PANEL_WIDTH, ProjectSettings.get_setting("display/window/size/viewport_height", 720))
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = BG_COLOR
-	panel_style.border_color = ACCENT * 0.5
+	panel_style.bg_color = UIColors.PRIMARY_BG
+	panel_style.border_color = UIColors.ACCENT * 0.5
 	panel_style.border_width_right = 1
 	_panel.add_theme_stylebox_override("panel", panel_style)
 
@@ -137,7 +128,7 @@ func _build_ui() -> void:
 func _build_header() -> void:
 	var header := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = HEADER_COLOR
+	style.bg_color = UIColors.PANEL_BG
 	style.content_margin_left = 12
 	style.content_margin_right = 12
 	style.content_margin_top = 10
@@ -150,21 +141,21 @@ func _build_header() -> void:
 	var title := Label.new()
 	title.text = "ECHOING CHAMBER"
 	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	title.add_theme_color_override("font_color", UIColors.GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "回响试炼场 · 调试控制台 v4.0"
 	subtitle.add_theme_font_size_override("font_size", 10)
-	subtitle.add_theme_color_override("font_color", DIM_COLOR)
+	subtitle.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(subtitle)
 
 	var hotkeys := Label.new()
 	hotkeys.text = "F1:无敌 F2:疲劳 F3:冻结 F4:碰撞箱 F5:清敌\nF6:重置DPS F7:慢放 F8:波次 F9:全图鉴\nF10:自动施法 F11:章节 F12:3D层 Esc:返回"
 	hotkeys.add_theme_font_size_override("font_size", 9)
-	hotkeys.add_theme_color_override("font_color", DIM_COLOR)
+	hotkeys.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	hotkeys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(hotkeys)
 
@@ -172,7 +163,7 @@ func _build_header() -> void:
 	var back_btn := Button.new()
 	back_btn.text = "← 返回主菜单"
 	back_btn.custom_minimum_size.y = 32
-	_style_action_button(back_btn, WARNING_COLOR)
+	_style_action_button(back_btn, UIColors.WARNING)
 	back_btn.pressed.connect(_on_back_to_menu)
 	vbox.add_child(back_btn)
 
@@ -210,14 +201,14 @@ func _build_debug_toggles() -> void:
 	var time_label := Label.new()
 	time_label.text = "时间缩放:"
 	time_label.add_theme_font_size_override("font_size", 12)
-	time_label.add_theme_color_override("font_color", TEXT_COLOR)
+	time_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	time_hbox.add_child(time_label)
 
 	var time_val_label := Label.new()
 	time_val_label.name = "TimeValLabel"
 	time_val_label.text = "1.0x"
 	time_val_label.add_theme_font_size_override("font_size", 12)
-	time_val_label.add_theme_color_override("font_color", WARNING_COLOR)
+	time_val_label.add_theme_color_override("font_color", UIColors.WARNING)
 
 	var time_slider := HSlider.new()
 	time_slider.min_value = 0.1
@@ -244,7 +235,7 @@ func _build_enemy_spawner() -> void:
 	var type_label := Label.new()
 	type_label.text = "类型:"
 	type_label.add_theme_font_size_override("font_size", 12)
-	type_label.add_theme_color_override("font_color", TEXT_COLOR)
+	type_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	type_label.custom_minimum_size.x = 50
 	type_hbox.add_child(type_label)
 
@@ -265,7 +256,7 @@ func _build_enemy_spawner() -> void:
 	var count_label := Label.new()
 	count_label.text = "数量:"
 	count_label.add_theme_font_size_override("font_size", 12)
-	count_label.add_theme_color_override("font_color", TEXT_COLOR)
+	count_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	count_label.custom_minimum_size.x = 50
 	count_hbox.add_child(count_label)
 
@@ -283,7 +274,7 @@ func _build_enemy_spawner() -> void:
 	var pos_label := Label.new()
 	pos_label.text = "位置:"
 	pos_label.add_theme_font_size_override("font_size", 12)
-	pos_label.add_theme_color_override("font_color", TEXT_COLOR)
+	pos_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	pos_label.custom_minimum_size.x = 50
 	pos_hbox.add_child(pos_label)
 
@@ -303,7 +294,7 @@ func _build_enemy_spawner() -> void:
 	var spawn_btn := Button.new()
 	spawn_btn.text = "生成敌人"
 	spawn_btn.custom_minimum_size.y = 32
-	_style_action_button(spawn_btn, SUCCESS_COLOR)
+	_style_action_button(spawn_btn, UIColors.SUCCESS)
 	spawn_btn.pressed.connect(func():
 		if not _test_chamber: return
 		var types := ["static", "silence", "screech", "pulse", "wall"]
@@ -335,7 +326,7 @@ func _build_enemy_spawner() -> void:
 		btn.text = preset[0]
 		btn.custom_minimum_size = Vector2(0, 28)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_action_button(btn, ACCENT)
+		_style_action_button(btn, UIColors.ACCENT)
 		var preset_name: String = preset[1]
 		btn.pressed.connect(func(): if _test_chamber: _test_chamber.debug_spawn_wave_preset(preset_name))
 		preset_grid.add_child(btn)
@@ -346,7 +337,7 @@ func _build_enemy_spawner() -> void:
 	var clear_btn := Button.new()
 	clear_btn.text = "清除所有敌人 (F5)"
 	clear_btn.custom_minimum_size.y = 28
-	_style_action_button(clear_btn, DANGER_COLOR)
+	_style_action_button(clear_btn, UIColors.DANGER)
 	clear_btn.pressed.connect(func(): if _test_chamber: _test_chamber.debug_clear_all_enemies())
 	_content.add_child(clear_btn)
 
@@ -363,7 +354,7 @@ func _build_chapter_control() -> void:
 	start_chapter_btn.text = "启动章节系统"
 	start_chapter_btn.custom_minimum_size = Vector2(0, 28)
 	start_chapter_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(start_chapter_btn, SUCCESS_COLOR)
+	_style_action_button(start_chapter_btn, UIColors.SUCCESS)
 	start_chapter_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber.debug_start_chapter_system()
 	)
@@ -373,7 +364,7 @@ func _build_chapter_control() -> void:
 	pause_chapter_btn.text = "暂停章节系统"
 	pause_chapter_btn.custom_minimum_size = Vector2(0, 28)
 	pause_chapter_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(pause_chapter_btn, WARNING_COLOR)
+	_style_action_button(pause_chapter_btn, UIColors.WARNING)
 	pause_chapter_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber.debug_pause_chapter_system()
 	)
@@ -383,7 +374,7 @@ func _build_chapter_control() -> void:
 	start_spawner_btn.text = "启动敌人波次"
 	start_spawner_btn.custom_minimum_size = Vector2(0, 28)
 	start_spawner_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(start_spawner_btn, SUCCESS_COLOR)
+	_style_action_button(start_spawner_btn, UIColors.SUCCESS)
 	start_spawner_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber.debug_start_enemy_spawner()
 	)
@@ -393,7 +384,7 @@ func _build_chapter_control() -> void:
 	pause_spawner_btn.text = "暂停敌人波次"
 	pause_spawner_btn.custom_minimum_size = Vector2(0, 28)
 	pause_spawner_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(pause_spawner_btn, WARNING_COLOR)
+	_style_action_button(pause_spawner_btn, UIColors.WARNING)
 	pause_spawner_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber.debug_pause_enemy_spawner()
 	)
@@ -411,7 +402,7 @@ func _build_chapter_control() -> void:
 	cycle_visual_btn.text = "切换章节视觉 (F11)"
 	cycle_visual_btn.custom_minimum_size = Vector2(0, 28)
 	cycle_visual_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(cycle_visual_btn, ACCENT)
+	_style_action_button(cycle_visual_btn, UIColors.ACCENT)
 	cycle_visual_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber._cycle_chapter_visual()
 	)
@@ -421,7 +412,7 @@ func _build_chapter_control() -> void:
 	toggle_3d_btn.text = "切换 3D 层 (F12)"
 	toggle_3d_btn.custom_minimum_size = Vector2(0, 28)
 	toggle_3d_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(toggle_3d_btn, ACCENT)
+	_style_action_button(toggle_3d_btn, UIColors.ACCENT)
 	toggle_3d_btn.pressed.connect(func():
 		if _test_chamber: _test_chamber._toggle_3d_layer()
 	)
@@ -444,7 +435,7 @@ func _build_player_config() -> void:
 		var label := Label.new()
 		label.text = cfg[0] + ":"
 		label.add_theme_font_size_override("font_size", 12)
-		label.add_theme_color_override("font_color", TEXT_COLOR)
+		label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		label.custom_minimum_size.x = 80
 		hbox.add_child(label)
 
@@ -466,7 +457,7 @@ func _build_player_config() -> void:
 	var level_label := Label.new()
 	level_label.text = "等级:"
 	level_label.add_theme_font_size_override("font_size", 12)
-	level_label.add_theme_color_override("font_color", TEXT_COLOR)
+	level_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	level_label.custom_minimum_size.x = 80
 	level_hbox.add_child(level_label)
 
@@ -491,7 +482,7 @@ func _build_spell_config() -> void:
 	var bpm_label := Label.new()
 	bpm_label.text = "BPM:"
 	bpm_label.add_theme_font_size_override("font_size", 12)
-	bpm_label.add_theme_color_override("font_color", TEXT_COLOR)
+	bpm_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	bpm_label.custom_minimum_size.x = 80
 	bpm_hbox.add_child(bpm_label)
 
@@ -512,7 +503,7 @@ func _build_spell_config() -> void:
 	var mode_label := Label.new()
 	mode_label.text = "调式:"
 	mode_label.add_theme_font_size_override("font_size", 12)
-	mode_label.add_theme_color_override("font_color", TEXT_COLOR)
+	mode_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	mode_label.custom_minimum_size.x = 80
 	mode_hbox.add_child(mode_label)
 
@@ -540,7 +531,7 @@ func _build_spell_config() -> void:
 	var unlock_all_btn := Button.new()
 	unlock_all_btn.text = "全部解锁 (F9)"
 	unlock_all_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(unlock_all_btn, WARNING_COLOR)
+	_style_action_button(unlock_all_btn, UIColors.WARNING)
 	unlock_all_btn.pressed.connect(func():
 		if CodexManager: CodexManager.unlock_all()
 		if _test_chamber: _test_chamber._debug_log("已解锁全部图鉴条目")
@@ -550,7 +541,7 @@ func _build_spell_config() -> void:
 	var reset_codex_btn := Button.new()
 	reset_codex_btn.text = "重置图鉴"
 	reset_codex_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(reset_codex_btn, DANGER_COLOR)
+	_style_action_button(reset_codex_btn, UIColors.DANGER)
 	reset_codex_btn.pressed.connect(func():
 		if CodexManager: CodexManager.reset_all()
 		if _test_chamber: _test_chamber._debug_log("图鉴已重置")
@@ -572,9 +563,9 @@ func _build_spell_quick_test() -> void:
 
 	var note_names := ["C", "D", "E", "F", "G", "A", "B"]
 	var note_colors := [
-		Color(1.0, 0.3, 0.3), Color(1.0, 0.6, 0.2), Color(1.0, 1.0, 0.3),
-		Color(0.3, 1.0, 0.3), Color(0.3, 0.8, 1.0), Color(0.5, 0.3, 1.0),
-		Color(0.9, 0.3, 0.9),
+		UIColors.DANGER, UIColors.WARNING, UIColors.GOLD,
+		Color(0.3, 1.0, 0.3), UIColors.SHIELD, Color(0.5, 0.3, 1.0),
+		UIColors.RAINBOW_SEQUENCE[6],
 	]
 	for i in range(7):
 		var btn := Button.new()
@@ -591,7 +582,7 @@ func _build_spell_quick_test() -> void:
 	all_btn.text = "全部"
 	all_btn.custom_minimum_size = Vector2(0, 32)
 	all_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(all_btn, SUCCESS_COLOR)
+	_style_action_button(all_btn, UIColors.SUCCESS)
 	all_btn.pressed.connect(func():
 		if _test_chamber:
 			for j in range(7):
@@ -625,7 +616,7 @@ func _build_spell_quick_test() -> void:
 	var mod_cast_btn := Button.new()
 	mod_cast_btn.text = "施放"
 	mod_cast_btn.custom_minimum_size = Vector2(50, 28)
-	_style_action_button(mod_cast_btn, Color(0.8, 0.5, 1.0))
+	_style_action_button(mod_cast_btn, UIColors.ACCENT)
 	mod_cast_btn.pressed.connect(func():
 		if not _test_chamber: return
 		var mod_idx: int = mod_option.selected
@@ -652,7 +643,7 @@ func _build_spell_quick_test() -> void:
 		btn.text = ct[0]
 		btn.custom_minimum_size = Vector2(0, 28)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_action_button(btn, Color(0.3, 0.7, 1.0))
+		_style_action_button(btn, UIColors.DENSITY_SAFE)
 		var chord_id: int = ct[1]
 		btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_cast_chord(chord_id))
 		chord_grid.add_child(btn)
@@ -666,11 +657,11 @@ func _build_spell_quick_test() -> void:
 	timbre_grid.add_theme_constant_override("v_separation", 4)
 
 	var timbres := [
-		["合成器", 0, Color(0.0, 1.0, 0.8)],
-		["弹拨", 1, Color(0.85, 0.75, 0.3)],
-		["拉弦", 2, Color(0.8, 0.2, 0.3)],
-		["吹奏", 3, Color(0.6, 0.9, 0.7)],
-		["打击", 4, Color(0.9, 0.9, 0.9)],
+		["合成器", 0, UIColors.INSTRUMENT_FAMILY_COLORS[0]],
+		["弹拨", 1, UIColors.INSTRUMENT_FAMILY_COLORS[1]],
+		["拉弦", 2, UIColors.INSTRUMENT_FAMILY_COLORS[2]],
+		["吹奏", 3, UIColors.INSTRUMENT_FAMILY_COLORS[3]],
+		["打击", 4, UIColors.INSTRUMENT_FAMILY_COLORS[4]],
 	]
 	for t in timbres:
 		var btn := Button.new()
@@ -690,7 +681,7 @@ func _build_spell_quick_test() -> void:
 	var auto_check := CheckBox.new()
 	auto_check.text = "自动施法 (F10)"
 	auto_check.add_theme_font_size_override("font_size", 11)
-	auto_check.add_theme_color_override("font_color", TEXT_COLOR)
+	auto_check.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	auto_check.toggled.connect(func(on):
 		if _test_chamber:
 			_test_chamber.auto_fire = on
@@ -702,7 +693,7 @@ func _build_spell_quick_test() -> void:
 	var interval_label := Label.new()
 	interval_label.text = "施法间隔:"
 	interval_label.add_theme_font_size_override("font_size", 11)
-	interval_label.add_theme_color_override("font_color", TEXT_COLOR)
+	interval_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	interval_hbox.add_child(interval_label)
 
 	var interval_spin := SpinBox.new()
@@ -736,7 +727,7 @@ func _build_spell_quick_test() -> void:
 		btn.text = p[0]
 		btn.custom_minimum_size = Vector2(0, 28)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_action_button(btn, Color(0.9, 0.7, 0.2))
+		_style_action_button(btn, UIColors.GOLD)
 		var preset_id: String = p[1]
 		btn.pressed.connect(func():
 			if not _test_chamber: return
@@ -762,7 +753,7 @@ func _build_sequencer_editor() -> void:
 	var note_select_label := Label.new()
 	note_select_label.text = "音符:"
 	note_select_label.add_theme_font_size_override("font_size", 11)
-	note_select_label.add_theme_color_override("font_color", TEXT_COLOR)
+	note_select_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	note_select_hbox.add_child(note_select_label)
 
 	var seq_note_option := OptionButton.new()
@@ -786,7 +777,7 @@ func _build_sequencer_editor() -> void:
 		btn.text = "%d" % (i + 1)
 		btn.custom_minimum_size = Vector2(0, 28)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_action_button(btn, DIM_COLOR)
+		_style_action_button(btn, UIColors.TEXT_DIM)
 		var beat_idx: int = i
 		btn.pressed.connect(func():
 			if not _test_chamber or not SpellcraftSystem: return
@@ -794,15 +785,15 @@ func _build_sequencer_editor() -> void:
 			if selected >= 7:  # 休止符
 				SpellcraftSystem.set_sequencer_rest(beat_idx)
 				btn.text = "%d: -" % (beat_idx + 1)
-				_style_action_button(btn, DIM_COLOR)
+				_style_action_button(btn, UIColors.TEXT_DIM)
 			else:
 				SpellcraftSystem.set_sequencer_note(beat_idx, selected)
 				var names := ["C", "D", "E", "F", "G", "A", "B"]
 				btn.text = "%d: %s" % [beat_idx + 1, names[selected]]
 				var colors := [
-					Color(1.0, 0.3, 0.3), Color(1.0, 0.6, 0.2), Color(1.0, 1.0, 0.3),
-					Color(0.3, 1.0, 0.3), Color(0.3, 0.8, 1.0), Color(0.5, 0.3, 1.0),
-					Color(0.9, 0.3, 0.9),
+					UIColors.DANGER, UIColors.WARNING, UIColors.GOLD,
+					Color(0.3, 1.0, 0.3), UIColors.SHIELD, Color(0.5, 0.3, 1.0),
+					UIColors.RAINBOW_SEQUENCE[6],
 				]
 				_style_action_button(btn, colors[selected])
 				if _test_chamber: _test_chamber._debug_log("序列器 [%d] 已设置" % (beat_idx + 1))
@@ -814,7 +805,7 @@ func _build_sequencer_editor() -> void:
 	var clear_seq_btn := Button.new()
 	clear_seq_btn.text = "清空序列器"
 	clear_seq_btn.custom_minimum_size.y = 28
-	_style_action_button(clear_seq_btn, DANGER_COLOR)
+	_style_action_button(clear_seq_btn, UIColors.DANGER)
 	clear_seq_btn.pressed.connect(func():
 		if SpellcraftSystem:
 			SpellcraftSystem.clear_sequencer()
@@ -824,7 +815,7 @@ func _build_sequencer_editor() -> void:
 			for child in seq_grid.get_children():
 				if child is Button:
 					child.text = "%d" % (idx + 1)
-					_style_action_button(child, DIM_COLOR)
+					_style_action_button(child, UIColors.TEXT_DIM)
 					idx += 1
 	)
 	_content.add_child(clear_seq_btn)
@@ -840,7 +831,7 @@ func _build_sequencer_editor() -> void:
 		var slot_label := Label.new()
 		slot_label.text = "槽%d:" % (slot_i + 1)
 		slot_label.add_theme_font_size_override("font_size", 11)
-		slot_label.add_theme_color_override("font_color", TEXT_COLOR)
+		slot_label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		manual_grid.add_child(slot_label)
 
 		var slot_note := OptionButton.new()
@@ -855,7 +846,7 @@ func _build_sequencer_editor() -> void:
 		var slot_set_btn := Button.new()
 		slot_set_btn.text = "设置"
 		slot_set_btn.custom_minimum_size = Vector2(45, 24)
-		_style_action_button(slot_set_btn, ACCENT)
+		_style_action_button(slot_set_btn, UIColors.ACCENT)
 		var si: int = slot_i
 		slot_set_btn.pressed.connect(func():
 			if not _test_chamber: return
@@ -876,7 +867,7 @@ func _build_sequencer_editor() -> void:
 		trigger_btn.text = "触发槽%d" % (slot_i + 1)
 		trigger_btn.custom_minimum_size = Vector2(0, 28)
 		trigger_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_action_button(trigger_btn, SUCCESS_COLOR)
+		_style_action_button(trigger_btn, UIColors.SUCCESS)
 		var si: int = slot_i
 		trigger_btn.pressed.connect(func(): if _test_chamber: _test_chamber.test_trigger_manual_cast(si))
 		trigger_hbox.add_child(trigger_btn)
@@ -888,8 +879,8 @@ func _build_dps_stats() -> void:
 
 	var stats_panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.04, 0.02, 0.08, 0.9)
-	style.border_color = ACCENT * 0.3
+	style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9)
+	style.border_color = UIColors.ACCENT * 0.3
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -909,11 +900,11 @@ func _build_dps_stats() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	_dps_label = _create_stat_label("当前 DPS: 0.0")
-	_dps_label.add_theme_color_override("font_color", SUCCESS_COLOR)
+	_dps_label.add_theme_color_override("font_color", UIColors.SUCCESS)
 	stats_vbox.add_child(_dps_label)
 
 	_peak_dps_label = _create_stat_label("峰值 DPS: 0.0")
-	_peak_dps_label.add_theme_color_override("font_color", WARNING_COLOR)
+	_peak_dps_label.add_theme_color_override("font_color", UIColors.WARNING)
 	stats_vbox.add_child(_peak_dps_label)
 
 	_total_damage_label = _create_stat_label("总伤害: 0")
@@ -934,7 +925,7 @@ func _build_dps_stats() -> void:
 	var reset_btn := Button.new()
 	reset_btn.text = "重置统计 (F6)"
 	reset_btn.custom_minimum_size.y = 28
-	_style_action_button(reset_btn, ACCENT)
+	_style_action_button(reset_btn, UIColors.ACCENT)
 	reset_btn.pressed.connect(func(): if _test_chamber: _test_chamber._reset_dps())
 	_content.add_child(reset_btn)
 
@@ -944,8 +935,8 @@ func _build_quantize_stats() -> void:
 
 	var stats_panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.04, 0.02, 0.08, 0.9)
-	style.border_color = Color(0.3, 0.6, 0.9) * 0.3
+	style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9)
+	style.border_color = UIColors.SHIELD * 0.3
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -965,7 +956,7 @@ func _build_quantize_stats() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	_quantize_mode_label = _create_stat_label("量化模式: FULL")
-	_quantize_mode_label.add_theme_color_override("font_color", Color(0.3, 0.7, 1.0))
+	_quantize_mode_label.add_theme_color_override("font_color", UIColors.DENSITY_SAFE)
 	stats_vbox.add_child(_quantize_mode_label)
 
 	_quantize_queue_label = _create_stat_label("队列大小: 0")
@@ -984,7 +975,7 @@ func _build_quantize_stats() -> void:
 	full_btn.text = "FULL"
 	full_btn.custom_minimum_size = Vector2(0, 26)
 	full_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(full_btn, Color(0.3, 0.6, 0.9))
+	_style_action_button(full_btn, UIColors.SHIELD)
 	full_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.FULL))
 	mode_hbox.add_child(full_btn)
 
@@ -992,7 +983,7 @@ func _build_quantize_stats() -> void:
 	soft_btn.text = "SOFT"
 	soft_btn.custom_minimum_size = Vector2(0, 26)
 	soft_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(soft_btn, Color(0.6, 0.6, 0.3))
+	_style_action_button(soft_btn, UIColors.GOLD)
 	soft_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.SOFT))
 	mode_hbox.add_child(soft_btn)
 
@@ -1000,7 +991,7 @@ func _build_quantize_stats() -> void:
 	off_btn.text = "OFF"
 	off_btn.custom_minimum_size = Vector2(0, 26)
 	off_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_style_action_button(off_btn, Color(0.6, 0.3, 0.3))
+	_style_action_button(off_btn, UIColors.DANGER)
 	off_btn.pressed.connect(func(): AudioManager.set_quantize_mode(AudioEventQueue.QuantizeMode.OFF))
 	mode_hbox.add_child(off_btn)
 
@@ -1015,11 +1006,11 @@ func _build_log_area() -> void:
 	_log_text.scroll_following = true
 	_log_text.custom_minimum_size = Vector2(0, 150)
 	_log_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_log_text.add_theme_color_override("default_color", DIM_COLOR)
+	_log_text.add_theme_color_override("default_color", UIColors.TEXT_DIM)
 	_log_text.add_theme_font_size_override("normal_font_size", 10)
 
 	var log_style := StyleBoxFlat.new()
-	log_style.bg_color = Color(0.03, 0.02, 0.06, 0.9)
+	log_style.bg_color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.9)
 	log_style.content_margin_left = 6
 	log_style.content_margin_right = 6
 	log_style.content_margin_top = 4
@@ -1032,7 +1023,7 @@ func _build_log_area() -> void:
 	var clear_log_btn := Button.new()
 	clear_log_btn.text = "清除日志"
 	clear_log_btn.custom_minimum_size.y = 24
-	_style_action_button(clear_log_btn, DIM_COLOR)
+	_style_action_button(clear_log_btn, UIColors.TEXT_DIM)
 	clear_log_btn.pressed.connect(func(): if _log_text: _log_text.clear())
 	_content.add_child(clear_log_btn)
 
@@ -1118,14 +1109,14 @@ func _add_section_header(title: String) -> void:
 	var label := Label.new()
 	label.text = "  %s" % title
 	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", SECTION_COLOR)
+	label.add_theme_color_override("font_color", UIColors.ACCENT)
 	_content.add_child(label)
 
 func _add_subsection_header(title: String) -> void:
 	var label := Label.new()
 	label.text = "    %s" % title
 	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", DIM_COLOR)
+	label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_content.add_child(label)
 
 func _create_checkbox(text: String, default: bool) -> CheckBox:
@@ -1133,14 +1124,14 @@ func _create_checkbox(text: String, default: bool) -> CheckBox:
 	cb.text = text
 	cb.button_pressed = default
 	cb.add_theme_font_size_override("font_size", 11)
-	cb.add_theme_color_override("font_color", TEXT_COLOR)
+	cb.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	return cb
 
 func _create_stat_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", TEXT_COLOR)
+	label.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	return label
 
 func _style_action_button(button: Button, accent: Color) -> void:
@@ -1173,8 +1164,8 @@ func _style_action_button(button: Button, accent: Color) -> void:
 
 func _style_toggle_button() -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.04, 0.12, 0.95)
-	style.border_color = ACCENT * 0.5
+	style.bg_color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.95)
+	style.border_color = UIColors.ACCENT * 0.5
 	style.border_width_left = 1
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_right = 6
@@ -1183,10 +1174,10 @@ func _style_toggle_button() -> void:
 	_toggle_button.add_theme_stylebox_override("normal", style)
 
 	var hover := style.duplicate()
-	hover.bg_color = ACCENT * 0.3
+	hover.bg_color = UIColors.ACCENT * 0.3
 	_toggle_button.add_theme_stylebox_override("hover", hover)
 
-	_toggle_button.add_theme_color_override("font_color", ACCENT)
+	_toggle_button.add_theme_color_override("font_color", UIColors.ACCENT)
 	_toggle_button.add_theme_font_size_override("font_size", 14)
 
 # ============================================================

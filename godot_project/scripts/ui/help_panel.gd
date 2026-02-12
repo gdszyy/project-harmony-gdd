@@ -21,16 +21,6 @@ signal tutorial_step_advanced(step: int)
 # ============================================================
 # 常量 — 颜色方案 (§1.2)
 # ============================================================
-const COL_BG := Color("#0A0814F2")
-const COL_PANEL_BG := Color("#141026")
-const COL_ACCENT := Color("#9D6FFF")
-const COL_GOLD := Color("#FFD700")
-const COL_OFFENSE := Color("#FF4444")
-const COL_DEFENSE := Color("#4488FF")
-const COL_CORE := Color("#9D6FFF")
-const COL_TEXT_PRIMARY := Color("#EAE6FF")
-const COL_TEXT_SECONDARY := Color("#A098C8")
-const COL_TEXT_DIM := Color("#6B668A")
 
 # ============================================================
 # 帮助页签配置
@@ -145,7 +135,7 @@ func _build_help_panel() -> void:
 	# 全屏暗色遮罩
 	_overlay = ColorRect.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_overlay.color = COL_BG
+	_overlay.color = UIColors.PRIMARY_BG
 	_overlay.gui_input.connect(_on_overlay_clicked)
 	add_child(_overlay)
 
@@ -159,15 +149,15 @@ func _build_help_panel() -> void:
 	_panel.offset_top = 0; _panel.offset_bottom = 0
 
 	var ps := StyleBoxFlat.new()
-	ps.bg_color = COL_PANEL_BG
-	ps.border_color = COL_ACCENT
+	ps.bg_color = UIColors.PANEL_BG
+	ps.border_color = UIColors.ACCENT
 	for side in ["border_width_left","border_width_right","border_width_top","border_width_bottom"]:
 		ps.set(side, 2)
 	for corner in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
 		ps.set(corner, 12)
 	ps.content_margin_left = 24; ps.content_margin_right = 24
 	ps.content_margin_top = 16; ps.content_margin_bottom = 16
-	ps.shadow_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.15)
+	ps.shadow_color = UIColors.with_alpha(UIColors.ACCENT, 0.15)
 	ps.shadow_size = 8
 	_panel.add_theme_stylebox_override("panel", ps)
 
@@ -180,7 +170,7 @@ func _build_help_panel() -> void:
 	var title := Label.new()
 	title.text = "✦ 机制说明 — 五度圈罗盘 ✦"
 	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", COL_GOLD)
+	title.add_theme_color_override("font_color", UIColors.GOLD)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 
@@ -188,11 +178,11 @@ func _build_help_panel() -> void:
 	close_btn.text = "✕"; close_btn.custom_minimum_size = Vector2(36, 36)
 	close_btn.pressed.connect(hide_panel)
 	var cs := StyleBoxFlat.new()
-	cs.bg_color = Color(0.3, 0.1, 0.1, 0.3)
+	cs.bg_color = UIColors.with_alpha(UIColors.DANGER, 0.3)
 	for c in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
 		cs.set(c, 4)
 	close_btn.add_theme_stylebox_override("normal", cs)
-	close_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	close_btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
 	close_btn.add_theme_color_override("font_hover_color", Color.RED)
 	header.add_child(close_btn)
 	main_vbox.add_child(header)
@@ -200,7 +190,7 @@ func _build_help_panel() -> void:
 	# 分割线
 	var sep := ColorRect.new()
 	sep.custom_minimum_size = Vector2(0, 1)
-	sep.color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.4)
+	sep.color = UIColors.with_alpha(UIColors.ACCENT, 0.4)
 	main_vbox.add_child(sep)
 
 	# 页签栏
@@ -214,18 +204,18 @@ func _build_help_panel() -> void:
 		btn.custom_minimum_size = Vector2(120, 32)
 		btn.pressed.connect(_on_tab_selected.bind(i))
 		var bs := StyleBoxFlat.new()
-		bs.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.1)
-		bs.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+		bs.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.1)
+		bs.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
 		bs.border_width_bottom = 1
 		bs.corner_radius_top_left = 4; bs.corner_radius_top_right = 4
 		bs.content_margin_left = 8; bs.content_margin_right = 8
 		btn.add_theme_stylebox_override("normal", bs)
 		var ba := bs.duplicate()
-		ba.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.25)
-		ba.border_color = COL_ACCENT; ba.border_width_bottom = 2
+		ba.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.25)
+		ba.border_color = UIColors.ACCENT; ba.border_width_bottom = 2
 		btn.add_theme_stylebox_override("disabled", ba)
-		btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
-		btn.add_theme_color_override("font_disabled_color", COL_ACCENT)
+		btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+		btn.add_theme_color_override("font_disabled_color", UIColors.ACCENT)
 		btn.add_theme_font_size_override("font_size", 12)
 		btn.disabled = (i == _current_tab)
 		_tab_bar.add_child(btn)
@@ -261,30 +251,30 @@ func _fill_tab_content(tab_idx: int) -> void:
 func _fill_circle_of_fifths() -> void:
 	_sec("五度圈 (Circle of Fifths)")
 	_para("五度圈是音乐理论中最重要的概念之一，它描述了 12 个音级之间的和谐关系。在《Project Harmony》中，五度圈被具象化为一个古代星盘——你的升级罗盘。")
-	_kv([["顺时针方向","升号方向 (♯)，音色更明亮、锐利",COL_OFFENSE],["逆时针方向","降号方向 (♭)，音色更柔和、温暖",COL_DEFENSE],["中心位置","当前调性的稳定核心",COL_CORE]])
+	_kv([["顺时针方向","升号方向 (♯)，音色更明亮、锐利",UIColors.OFFENSE],["逆时针方向","降号方向 (♭)，音色更柔和、温暖",UIColors.DEFENSE],["中心位置","当前调性的稳定核心",UIColors.ACCENT]])
 	_para("每次升级时，罗盘会激活。你需要先选择一个方向（进攻/防御/核心），然后从该方向提供的 2-3 张升级卡片中选择一张。")
 	_sec("音级与调性")
 	_para("罗盘外圈展示 12 个大调音级（C, G, D, A, E, B, F♯/G♭, D♭, A♭, E♭, B♭, F），按照五度关系排列。当前调性会以高亮标记，相邻音级代表和谐度最高的调性。")
 
 func _fill_three_directions() -> void:
 	_sec("三个升级方向")
-	_dir("进攻方向 (♯ 升号)", COL_OFFENSE, ["提升伤害、攻击速度、弹体效果","对应五度圈顺时针方向","适合追求高输出的玩法风格","升级类型：伤害加成、穿透、暴击、范围扩大"])
-	_dir("防御方向 (♭ 降号)", COL_DEFENSE, ["提升生存能力、护盾、回复","对应五度圈逆时针方向","适合追求稳健生存的玩法风格","升级类型：护盾、生命回复、减伤、控制效果"])
-	_dir("核心方向 (♮ 还原号)", COL_CORE, ["提升基础能力、解锁新机制","对应五度圈中心位置","适合追求全面发展的玩法风格","升级类型：经验加成、冷却缩减、新法术形态、乐理突破"])
+	_dir("进攻方向 (♯ 升号)", UIColors.OFFENSE, ["提升伤害、攻击速度、弹体效果","对应五度圈顺时针方向","适合追求高输出的玩法风格","升级类型：伤害加成、穿透、暴击、范围扩大"])
+	_dir("防御方向 (♭ 降号)", UIColors.DEFENSE, ["提升生存能力、护盾、回复","对应五度圈逆时针方向","适合追求稳健生存的玩法风格","升级类型：护盾、生命回复、减伤、控制效果"])
+	_dir("核心方向 (♮ 还原号)", UIColors.ACCENT, ["提升基础能力、解锁新机制","对应五度圈中心位置","适合追求全面发展的玩法风格","升级类型：经验加成、冷却缩减、新法术形态、乐理突破"])
 
 func _fill_gold_badge() -> void:
 	_sec("金色标识 — 局外解锁")
 	_para("带有金色边框和 ★ 标识的升级卡片，代表它来自「和谐殿堂」的局外解锁系统。这些升级是你在多次游戏中积累的永久成长成果。")
-	_kv([["金色边框","该升级通过局外成长系统解锁",COL_GOLD],["★ 徽章","标记此升级为局外解锁来源",COL_GOLD],["出现条件","需要在和谐殿堂中先解锁对应节点",COL_TEXT_SECONDARY]])
+	_kv([["金色边框","该升级通过局外成长系统解锁",UIColors.GOLD],["★ 徽章","标记此升级为局外解锁来源",UIColors.GOLD],["出现条件","需要在和谐殿堂中先解锁对应节点",UIColors.TEXT_SECONDARY]])
 	_para("局外解锁的升级不会替代普通升级池，而是作为额外选项出现。它们通常比同稀有度的普通升级更强，代表了你作为谐振者的成长。")
 
 func _fill_theory_breakthrough() -> void:
 	_sec("乐理突破 — 特殊事件")
 	_para("「乐理突破」是一种稀有的特殊升级事件，当你在五度圈上达到特定条件时触发。它会直接解锁核心游戏机制，如新的和弦类型、调式切换、节奏型等。")
-	_kv([["触发条件","在特定音级组合上积累足够升级",COL_ACCENT],["视觉表现","金色全屏闪光 + 几何图案粒子效果",COL_GOLD],["效果","永久解锁新的游戏机制",COL_GOLD]])
+	_kv([["触发条件","在特定音级组合上积累足够升级",UIColors.ACCENT],["视觉表现","金色全屏闪光 + 几何图案粒子效果",UIColors.GOLD],["效果","永久解锁新的游戏机制",UIColors.GOLD]])
 	_para("乐理突破事件的 UI 表现具有强烈的仪式感：罗盘会剧烈旋转，中心星云爆发金色光芒，随后展示一张传说级卡片。")
 	_sec("突破类型示例")
-	_kv([["和弦解锁","解锁新的和弦组合方式",COL_ACCENT],["调式切换","获得在战斗中切换调式的能力",COL_ACCENT],["节奏进化","解锁更复杂的节奏型",COL_ACCENT],["音色融合","解锁音色混合技术",COL_ACCENT]])
+	_kv([["和弦解锁","解锁新的和弦组合方式",UIColors.ACCENT],["调式切换","获得在战斗中切换调式的能力",UIColors.ACCENT],["节奏进化","解锁更复杂的节奏型",UIColors.ACCENT],["音色融合","解锁音色混合技术",UIColors.ACCENT]])
 
 # ============================================================
 # 内容辅助函数 (简写)
@@ -294,7 +284,7 @@ func _sec(text: String) -> void:
 	var l := Label.new()
 	l.text = "— %s —" % text
 	l.add_theme_font_size_override("font_size", 16)
-	l.add_theme_color_override("font_color", COL_ACCENT)
+	l.add_theme_color_override("font_color", UIColors.ACCENT)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_container.add_child(l)
 
@@ -302,7 +292,7 @@ func _para(text: String) -> void:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", 13)
-	l.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	l.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_content_container.add_child(l)
 
@@ -315,18 +305,18 @@ func _kv(items: Array) -> void:
 		var kl := Label.new()
 		kl.text = item[0]; kl.custom_minimum_size.x = 120
 		kl.add_theme_font_size_override("font_size", 12)
-		kl.add_theme_color_override("font_color", item[2] if item.size() > 2 else COL_TEXT_SECONDARY)
+		kl.add_theme_color_override("font_color", item[2] if item.size() > 2 else UIColors.TEXT_SECONDARY)
 		grid.add_child(kl)
 		var vl := Label.new()
 		vl.text = item[1]
 		vl.add_theme_font_size_override("font_size", 12)
-		vl.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+		vl.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		vl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(vl)
 	var p := PanelContainer.new()
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.08)
-	s.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.2)
+	s.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.08)
+	s.border_color = UIColors.with_alpha(UIColors.ACCENT, 0.2)
 	s.border_width_left = 2
 	s.corner_radius_top_left = 4; s.corner_radius_bottom_left = 4
 	s.content_margin_left = 16; s.content_margin_right = 16
@@ -338,8 +328,8 @@ func _kv(items: Array) -> void:
 func _dir(title: String, color: Color, points: Array) -> void:
 	var p := PanelContainer.new()
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(color.r, color.g, color.b, 0.08)
-	s.border_color = Color(color.r, color.g, color.b, 0.4)
+	s.bg_color = UIColors.with_alpha(color, 0.08)
+	s.border_color = UIColors.with_alpha(color, 0.4)
 	s.border_width_left = 3
 	s.corner_radius_top_left = 6; s.corner_radius_bottom_left = 6
 	s.content_margin_left = 16; s.content_margin_right = 16
@@ -356,7 +346,7 @@ func _dir(title: String, color: Color, points: Array) -> void:
 		var pl := Label.new()
 		pl.text = "  · %s" % pt
 		pl.add_theme_font_size_override("font_size", 12)
-		pl.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+		pl.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 		pl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		vb.add_child(pl)
 	p.add_child(vb)
@@ -386,7 +376,7 @@ func _build_tutorial_ui() -> void:
 
 	_tutorial_overlay = ColorRect.new()
 	_tutorial_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_tutorial_overlay.color = Color(0, 0, 0, 0.7)
+	_tutorial_overlay.color = UIColors.with_alpha(Color.BLACK, 0.7)
 	add_child(_tutorial_overlay)
 
 	_tutorial_panel = PanelContainer.new()
@@ -398,8 +388,8 @@ func _build_tutorial_ui() -> void:
 	_tutorial_panel.offset_left = 0; _tutorial_panel.offset_right = 0
 
 	var ps := StyleBoxFlat.new()
-	ps.bg_color = Color(COL_PANEL_BG.r, COL_PANEL_BG.g, COL_PANEL_BG.b, 0.95)
-	ps.border_color = COL_ACCENT
+	ps.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.95)
+	ps.border_color = UIColors.ACCENT
 	for side in ["border_width_left","border_width_right","border_width_top","border_width_bottom"]:
 		ps.set(side, 2)
 	for corner in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
@@ -413,13 +403,13 @@ func _build_tutorial_ui() -> void:
 
 	_tutorial_step_label = Label.new()
 	_tutorial_step_label.add_theme_font_size_override("font_size", 11)
-	_tutorial_step_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_tutorial_step_label.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_tutorial_step_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_tutorial_step_label)
 
 	_tutorial_text = Label.new()
 	_tutorial_text.add_theme_font_size_override("font_size", 15)
-	_tutorial_text.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_tutorial_text.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_tutorial_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tutorial_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tutorial_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -433,10 +423,10 @@ func _build_tutorial_ui() -> void:
 	_tutorial_skip_btn.text = "跳过引导"
 	_tutorial_skip_btn.custom_minimum_size = Vector2(100, 32)
 	_tutorial_skip_btn.pressed.connect(_end_tutorial)
-	_tutorial_skip_btn.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_tutorial_skip_btn.add_theme_color_override("font_color", UIColors.TEXT_DIM)
 	_tutorial_skip_btn.add_theme_font_size_override("font_size", 12)
 	var ss := StyleBoxFlat.new()
-	ss.bg_color = Color(0.1, 0.08, 0.15, 0.5)
+	ss.bg_color = UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.5)
 	for c in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
 		ss.set(c, 4)
 	ss.content_margin_left = 12; ss.content_margin_right = 12
@@ -447,11 +437,11 @@ func _build_tutorial_ui() -> void:
 	_tutorial_next_btn.text = "下一步 →"
 	_tutorial_next_btn.custom_minimum_size = Vector2(120, 36)
 	_tutorial_next_btn.pressed.connect(_advance_tutorial)
-	_tutorial_next_btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_tutorial_next_btn.add_theme_color_override("font_color", UIColors.TEXT_PRIMARY)
 	_tutorial_next_btn.add_theme_font_size_override("font_size", 13)
 	var ns := StyleBoxFlat.new()
-	ns.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
-	ns.border_color = COL_ACCENT
+	ns.bg_color = UIColors.with_alpha(UIColors.ACCENT, 0.3)
+	ns.border_color = UIColors.ACCENT
 	for side in ["border_width_left","border_width_right","border_width_top","border_width_bottom"]:
 		ns.set(side, 1)
 	for c in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
@@ -548,18 +538,18 @@ static func create_help_button(callback: Callable) -> Button:
 	btn.custom_minimum_size = Vector2(40, 40)
 	btn.pressed.connect(callback)
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.08, 0.06, 0.15, 0.8)
-	s.border_color = Color("#9D6FFF")
+	s.bg_color = UIColors.with_alpha(UIColors.PANEL_BG, 0.8)
+	s.border_color = UIColors.ACCENT
 	for side in ["border_width_left","border_width_right","border_width_top","border_width_bottom"]:
 		s.set(side, 1)
 	for c in ["corner_radius_top_left","corner_radius_top_right","corner_radius_bottom_left","corner_radius_bottom_right"]:
 		s.set(c, 20)
 	btn.add_theme_stylebox_override("normal", s)
 	var hs := s.duplicate()
-	hs.bg_color = Color(0.15, 0.1, 0.25, 0.9)
-	hs.border_color = Color("#FFD700")
+	hs.bg_color = UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.9)
+	hs.border_color = UIColors.GOLD
 	btn.add_theme_stylebox_override("hover", hs)
-	btn.add_theme_color_override("font_color", Color("#A098C8"))
-	btn.add_theme_color_override("font_hover_color", Color("#FFD700"))
+	btn.add_theme_color_override("font_color", UIColors.TEXT_SECONDARY)
+	btn.add_theme_color_override("font_hover_color", UIColors.GOLD)
 	btn.add_theme_font_size_override("font_size", 18)
 	return btn
