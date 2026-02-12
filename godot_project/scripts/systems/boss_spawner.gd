@@ -280,98 +280,85 @@ func _start_boss_victory_sequence(boss_key: String, on_complete: Callable) -> vo
 	else:
 		on_complete.call()
 
-# ============================================================
-# 章节Boss触发处理
-# ============================================================
-
-func _on_chapter_boss_triggered(chapter_index: int, boss_key: String) -> void:
-	var config = ChapterData.get_chapter_config(chapter_index)
-	var boss_config: Dictionary = config.get("boss", {})
-	spawn_chapter_boss(chapter_index, boss_config)
-
-func _spawn_chapter_boss_instance(boss_key: String, script_path: String, player_pos: Vector2) -> void:
-	var boss: CharacterBody2D = null
-	
-	# 尝试加载Boss脚本
-	var script = _cached_boss_scripts.get(boss_key)
-	if script == null and script_path != "":
-		script = load(script_path)
-		if script:
-			_cached_boss_scripts[boss_key] = script
-	
-	if script:
-		boss = CharacterBody2D.new()
-		boss.set_script(script)
-		_create_boss_nodes(boss)
-	else:
-		# 后备：尝试场景
-		var scene: PackedScene = _cached_boss_scenes.get(boss_key)
-		if scene:
-			boss = scene.instantiate() as CharacterBody2D
-	
-	if boss == null:
-		push_error("BossSpawner: Cannot create boss: %s" % boss_key)
-		return
-	
-	_setup_boss(boss, player_pos, boss_key)
-
-# ============================================================
-# Boss 战警告
-# ============================================================
-
+## Boss 战警告（屏幕震动 + 警告文字）
 func _play_boss_warning(boss_key: String, on_complete: Callable) -> void:
 	boss_intro_started.emit(boss_key)
 	
-	# 通知 EnemySpawner 进入Boss阶段
+	# 清场
 	var spawner := get_tree().get_first_node_in_group("enemy_spawner")
-	if spawner and spawner.has_method("enter_boss_phase"):
-		spawner.enter_boss_phase()
+	if spawner and spawner.has_method("clear_all_enemies"):
+		spawner.clear_all_enemies()
 	
-	# 警告期间等待
-	get_tree().create_timer(boss_warning_duration).timeout.connect(func():
+	# 等待清场延迟后继续
+	get_tree().create_timer(pre_boss_clear_delay).timeout.connect(func():
 		boss_intro_completed.emit(boss_key)
 		on_complete.call()
 	)
 
 # ============================================================
-# Boss 设置（通用）
+# 章节 Boss 生成
+# ============================================================
+
+func _on_chapter_boss_triggered(chapter_index: int, boss_config: Dictionary) -> void:
+	spawn_chapter_boss(chapter_index, boss_config)
+
+func _spawn_chapter_boss_instance(boss_key: String, script_path: String, player_pos: Vector2) -> void:
+	var boss: Node = null
+	
+	# 尝试加载场景
+	var scene_path: String = BOSS_SCENES.get(boss_key, "")
+	if scene_path and ResourceLoader.exists(scene_path):
+		var scene := load(scene_path) as PackedScene
+		if scene:
+			boss = scene.instantiate()
+	
+	# 后备：从脚本创建
+	if boss == null and script_path and ResourceLoader.exists(script_path):
+		var script := load(script_path)
+		if script:
+			boss = CharacterBody2D.new()
+			boss.set_script(script)
+			_create_boss_nodes(boss)
+	
+	if boss == null:
+		push_error("BossSpawner: Cannot create chapter boss: %s (script: %s)" % [boss_key, script_path])
+		return
+	
+	_setup_boss(boss, player_pos, boss_key)
+
+# ============================================================
+# Boss 设置
 # ============================================================
 
 func _setup_boss(boss: Node, player_pos: Vector2, boss_key: String) -> void:
 	_boss_fight_active = true
 	_current_boss = boss
 	
-	# 计算生成位置
-	var angle := randf() * TAU
-	var spawn_pos := player_pos + Vector2.from_angle(angle) * boss_spawn_distance
-	boss.global_position = spawn_pos
+	# 设置位置
+	var spawn_offset := Vector2.RIGHT.rotated(randf() * TAU) * boss_spawn_distance
+	boss.global_position = player_pos + spawn_offset
 	
-	# 难度缩放
-	var difficulty_mult := 1.0 + (_boss_index * 0.3)
-	if _chapter_mode:
-		difficulty_mult += _current_chapter_index * 0.2
-		var chapter_mgr := get_node_or_null("/root/ChapterManager")
-		if chapter_mgr and chapter_mgr.has_method("get_global_difficulty"):
-			difficulty_mult += chapter_mgr.get_global_difficulty() * 0.15
-	
-	var base_hp: float = boss.get("max_hp") if boss.get("max_hp") else 5000.0
-	boss.set("max_hp", base_hp * difficulty_mult)
-	boss.set("current_hp", base_hp * difficulty_mult)
+	# 设置碰撞层
+	if boss is CharacterBody2D:
+		boss.collision_layer = 2
+		boss.collision_mask = 1
 	
 	# 添加到场景
-	add_child(boss)
+	var game_root := get_tree().current_scene
+	if game_root:
+		game_root.add_child(boss)
 	
 	# 连接信号
 	if boss.has_signal("boss_defeated"):
 		boss.boss_defeated.connect(_on_boss_defeated)
-	if boss.has_signal("boss_phase_changed"):
-		boss.boss_phase_changed.connect(_on_boss_phase_changed)
-	if boss.has_signal("enemy_died"):
-		boss.enemy_died.connect(_on_boss_died)
-	if boss.has_signal("boss_summon_minions"):
-		boss.boss_summon_minions.connect(_on_boss_summon_minions)
+	if boss.has_signal("died"):
+		boss.died.connect(_on_boss_died)
+	if boss.has_signal("phase_changed"):
+		boss.phase_changed.connect(_on_boss_phase_changed)
+	if boss.has_signal("summon_minions"):
+		boss.summon_minions.connect(_on_boss_summon_minions)
 	
-	# 入场动画
+	# 播放入场动画
 	_play_boss_intro(boss)
 	
 	# 显示 Boss 血条
@@ -383,41 +370,22 @@ func _setup_boss(boss: Node, player_pos: Vector2, boss_key: String) -> void:
 	var boss_display_name: String = boss.get("boss_name") if boss.get("boss_name") else boss_key
 	boss_fight_started.emit(boss_display_name)
 
-## Issue #115: 计时模式 Boss 设置（额外难度缩放）
+## 计时模式 Boss 设置 (Issue #115)
 func _setup_timed_boss(boss: Node, player_pos: Vector2, boss_key: String, difficulty_bonus: float) -> void:
-	_boss_fight_active = true
-	_current_boss = boss
-
-	# 计算生成位置
-	var angle := randf() * TAU
-	var spawn_pos := player_pos + Vector2.from_angle(angle) * boss_spawn_distance
-	boss.global_position = spawn_pos
-
-	# 难度缩放：基础 + 计时模式额外加成 + DifficultyManager 全局倍率
-	var difficulty_mult := 1.0 + difficulty_bonus
-	var diff_mgr := get_node_or_null("/root/DifficultyManager")
-	if diff_mgr:
-		difficulty_mult *= diff_mgr.get_boss_hp_multiplier()
-
-	var base_hp: float = boss.get("max_hp") if boss.get("max_hp") else 5000.0
-	boss.set("max_hp", base_hp * difficulty_mult)
-	boss.set("current_hp", base_hp * difficulty_mult)
-
-	# 添加到场景
-	add_child(boss)
-
-	# 连接信号
-	if boss.has_signal("boss_defeated"):
-		boss.boss_defeated.connect(_on_boss_defeated)
-	if boss.has_signal("boss_phase_changed"):
-		boss.boss_phase_changed.connect(_on_boss_phase_changed)
-	if boss.has_signal("enemy_died"):
-		boss.enemy_died.connect(_on_boss_died)
-	if boss.has_signal("boss_summon_minions"):
-		boss.boss_summon_minions.connect(_on_boss_summon_minions)
-
-	# 入场动画
-	_play_boss_intro(boss)
+	# 应用难度加成
+	if difficulty_bonus > 0.0 and boss.has_method("apply_difficulty_scaling"):
+		boss.apply_difficulty_scaling(difficulty_bonus)
+	elif difficulty_bonus > 0.0:
+		# 直接修改属性
+		if "max_hp" in boss:
+			boss.max_hp = int(boss.max_hp * (1.0 + difficulty_bonus))
+		if "hp" in boss:
+			boss.hp = boss.max_hp
+		if "contact_damage" in boss:
+			boss.contact_damage = int(boss.contact_damage * (1.0 + difficulty_bonus * 0.5))
+	
+	# 使用通用设置
+	_setup_boss(boss, player_pos, boss_key)
 
 	# 显示 Boss 血条
 	if _boss_health_bar and _boss_health_bar.has_method("show_boss_bar"):
