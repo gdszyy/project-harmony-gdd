@@ -55,7 +55,24 @@ const PANEL_BG := Color("#141026")
 ##   "codex_entry": Dictionary,  # 法典收录数据
 ## }
 
-const TUTORIAL_SEQUENCES: Dictionary = {
+const TUTORIAL_SEQUENCES_PATH := "res://data/tutorials/tutorial_sequences.json"
+var TUTORIAL_SEQUENCES: Dictionary = {}
+
+func _load_tutorial_sequences() -> void:
+	var file := FileAccess.open(TUTORIAL_SEQUENCES_PATH, FileAccess.READ)
+	if file == null:
+		push_error("TutorialSequence: 无法加载教学序列数据: %s" % TUTORIAL_SEQUENCES_PATH)
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_error("TutorialSequence: JSON 解析失败: %s" % json.get_error_message())
+		return
+	TUTORIAL_SEQUENCES = json.data
+	print("[TutorialSequence] 已加载 %d 个教学序列" % TUTORIAL_SEQUENCES.size())
+
+# 以下为原始硬编码数据的备份引用（已迁移至 data/tutorials/tutorial_sequences.json）
+const _TUTORIAL_SEQUENCES_LEGACY: Dictionary = {
 	"FIRST_NOTE_PICKUP": {
 		"id": "FIRST_NOTE_PICKUP",
 		"title": "音符晶片",
@@ -266,6 +283,7 @@ var _hint_manager: Node = null
 func _ready() -> void:
 	layer = 99
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_load_tutorial_sequences()
 	call_deferred("_find_hint_manager")
 	_load_progress()
 

@@ -23,11 +23,12 @@ signal info_hover(title: String, desc: String, color: Color)
 # ============================================================
 # 常量
 # ============================================================
-## 炼成槽配置
-const MAX_SLOTS: int = 6
-const MIN_NOTES_FOR_CHORD: int = 3
-const SLOT_SIZE := Vector2(48, 48)
-const SLOT_GAP := 8.0
+## 炼成槽配置 — @export 支持编辑器实时调整
+@export_group("Alchemy Slots")
+@export var max_slots: int = 6
+@export var min_notes_for_chord: int = 3
+@export var slot_size: Vector2 = Vector2(48, 48)
+@export var slot_gap: float = 8.0
 
 ## 颜色定义
 const SLOT_EMPTY_BG := Color("141026A0")
@@ -81,9 +82,27 @@ const BLACK_KEY_SEMITONE_MAP := {
 	11: 10, # A#/Bb
 }
 
-## 和弦类型识别表（半音音程模式 → 和弦信息）
-## 包含基础和弦（3-4音）和扩展和弦（5-7音）
-const CHORD_PATTERNS := {
+## 和弦类型识别表 — 从 JSON 配置文件加载
+const CHORD_PATTERNS_PATH := "res://data/upgrades/chord_patterns.json"
+var CHORD_PATTERNS: Dictionary = {}
+
+func _load_chord_patterns() -> void:
+	var file := FileAccess.open(CHORD_PATTERNS_PATH, FileAccess.READ)
+	if file == null:
+		push_error("ChordAlchemyPanelV3: 无法加载和弦配方数据: %s" % CHORD_PATTERNS_PATH)
+		CHORD_PATTERNS = _CHORD_PATTERNS_LEGACY.duplicate(true)
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_error("ChordAlchemyPanelV3: JSON 解析失败: %s" % json.get_error_message())
+		CHORD_PATTERNS = _CHORD_PATTERNS_LEGACY.duplicate(true)
+		return
+	CHORD_PATTERNS = json.data
+	print("[ChordAlchemyPanelV3] 已加载 %d 个和弦配方" % CHORD_PATTERNS.size())
+
+# 以下为原始硬编码数据的备份引用（已迁移至 data/upgrades/chord_patterns.json）
+const _CHORD_PATTERNS_LEGACY := {
 	# === 基础三和弦 (3音) ===
 	"0,4,7": { "name": "大三和弦", "spell_form": "enhanced_projectile", "desc": "强化弹体：弹体体积+50%，伤害+40%", "icon": "▲" },
 	"0,3,7": { "name": "小三和弦", "spell_form": "dot_projectile", "desc": "DOT弹体：命中后持续伤害", "icon": "💧" },
@@ -188,14 +207,15 @@ var _craft_success: bool = false
 # ============================================================
 
 func _ready() -> void:
+	_load_chord_patterns()
 	## 初始化炼成槽
 	_slots.clear()
-	for i in range(MAX_SLOTS):
+	for i in range(max_slots):
 		_slots.append(-1)
 
 	## 计算最小尺寸
-	var slots_w := MAX_SLOTS * (SLOT_SIZE.x + SLOT_GAP)
-	var total_h := 20 + SLOT_SIZE.y + 20 + 30 + 30 + 10  # 标题 + 槽 + 预览 + 按钮 + 留白
+	var slots_w := max_slots * (slot_size.x + slot_gap)
+	var total_h := 20 + slot_size.y + 20 + 30 + 30 + 10  # 标题 + 槽 + 预览 + 按钮 + 留白
 	custom_minimum_size = Vector2(slots_w + 20, total_h)
 
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -232,20 +252,20 @@ func _draw() -> void:
 		var desc: String = _preview.get("desc", "")
 		draw_string(font, Vector2(x, y + 24),
 			desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(form_color.r, form_color.g, form_color.b, 0.7))
-	elif _get_filled_count() >= MIN_NOTES_FOR_CHORD:
+	elif _get_filled_count() >= min_notes_for_chord:
 		draw_string(font, Vector2(x, y + 12),
 			"不和谐组合", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, PREVIEW_INVALID_COLOR)
 	else:
-		var needed := MIN_NOTES_FOR_CHORD - _get_filled_count()
+		var needed := min_notes_for_chord - _get_filled_count()
 		draw_string(font, Vector2(x, y + 12),
 			"还需 %d 个音符..." % needed, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("9D8FBF80"))
 	y += 30.0
 
 	## ===== 炼成槽 =====
 	var slots_start_x := x
-	for i in range(MAX_SLOTS):
-		var slot_x := slots_start_x + i * (SLOT_SIZE.x + SLOT_GAP)
-		var rect := Rect2(Vector2(slot_x, y), SLOT_SIZE)
+	for i in range(max_slots):
+		var slot_x := slots_start_x + i * (slot_size.x + slot_gap)
+		var rect := Rect2(Vector2(slot_x, y), slot_size)
 		_slot_rects.append(rect)
 
 		var is_filled := _slots[i] >= 0
@@ -291,15 +311,15 @@ func _draw() -> void:
 				name_str, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, note_color)
 		else:
 			## 必需标记（前3个槽位）
-			if i < MIN_NOTES_FOR_CHORD:
+			if i < min_notes_for_chord:
 				draw_string(font,
 					rect.position + Vector2(rect.size.x / 2.0 - 2, rect.size.y / 2.0 + 4),
 					"*", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, SLOT_REQUIRED_MARK)
 
-	y += SLOT_SIZE.y + 12.0
+	y += slot_size.y + 12.0
 
 	## ===== 合成按钮 =====
-	var btn_w := MAX_SLOTS * (SLOT_SIZE.x + SLOT_GAP) - SLOT_GAP
+	var btn_w := max_slots * (slot_size.x + slot_gap) - slot_gap
 	_synth_btn_rect = Rect2(Vector2(slots_start_x, y), Vector2(btn_w, 28))
 
 	var btn_color := SYNTH_BTN_VALID if _can_craft else SYNTH_BTN_INVALID
@@ -308,7 +328,7 @@ func _draw() -> void:
 	draw_rect(_synth_btn_rect, btn_color)
 	draw_rect(_synth_btn_rect, SLOT_BORDER, false, 1.0)
 
-	var btn_text := "✦ 炼成 SYNTHESIZE" if _can_craft else "需要 %d+ 个有效音符" % MIN_NOTES_FOR_CHORD
+	var btn_text := "✦ 炼成 SYNTHESIZE" if _can_craft else "需要 %d+ 个有效音符" % min_notes_for_chord
 	var btn_text_color := SYNTH_BTN_TEXT_VALID if _can_craft else SYNTH_BTN_TEXT_INVALID
 	draw_string(font,
 		_synth_btn_rect.position + Vector2(_synth_btn_rect.size.x / 2.0 - 50, 19),
@@ -350,7 +370,7 @@ func _update_hover(pos: Vector2) -> void:
 		if _can_craft:
 			info_hover.emit("炼成", "点击将音符炼成和弦法术（音符将被永久消耗）", PREVIEW_VALID_COLOR)
 		else:
-			info_hover.emit("炼成", "需要至少 %d 个音符且组合有效" % MIN_NOTES_FOR_CHORD, Color("9D8FBF"))
+			info_hover.emit("炼成", "需要至少 %d 个音符且组合有效" % min_notes_for_chord, Color("9D8FBF"))
 		queue_redraw()
 
 ## 发送槽位信息
@@ -366,7 +386,7 @@ func _emit_slot_info(idx: int) -> void:
 			color
 		)
 	else:
-		var label := "必需" if idx < MIN_NOTES_FOR_CHORD else "可选"
+		var label := "必需" if idx < min_notes_for_chord else "可选"
 		info_hover.emit(
 			"炼成槽 %d（%s）" % [idx + 1, label],
 			"拖入音符作为和弦原材料",
@@ -487,7 +507,7 @@ func _update_preview() -> void:
 	_preview = {}
 	_can_craft = false
 
-	if notes.size() < MIN_NOTES_FOR_CHORD:
+	if notes.size() < min_notes_for_chord:
 		queue_redraw()
 		return
 
@@ -503,7 +523,7 @@ func _update_preview() -> void:
 		if not unique_notes.has(n):
 			unique_notes.append(n)
 
-	if unique_notes.size() < MIN_NOTES_FOR_CHORD:
+	if unique_notes.size() < min_notes_for_chord:
 		queue_redraw()
 		return
 
@@ -573,7 +593,7 @@ func _execute_alchemy() -> void:
 	)
 
 	## 清空炼成槽（音符已消耗，不返回库存）
-	for i in range(MAX_SLOTS):
+	for i in range(max_slots):
 		_slots[i] = -1
 	_preview = {}
 	_can_craft = false
@@ -587,7 +607,7 @@ func _execute_alchemy() -> void:
 
 ## 归还未使用的音符到库存（关闭面板时调用）
 func return_unused_notes() -> void:
-	for i in range(MAX_SLOTS):
+	for i in range(max_slots):
 		if _slots[i] >= 0:
 			NoteInventory.unequip_note(_slots[i])
 			_slots[i] = -1
@@ -614,7 +634,7 @@ func refresh() -> void:
 ## 创建拖拽预览控件
 func _create_drag_preview(text: String, color: Color) -> Control:
 	var preview := Control.new()
-	var sz := SLOT_SIZE
+	var sz := slot_size
 	preview.custom_minimum_size = sz
 	preview.size = sz
 

@@ -1,0 +1,178 @@
+{
+  "FIRST_NOTE_PICKUP": {
+    "id": "FIRST_NOTE_PICKUP",
+    "title": "音符晶片",
+    "trigger": "FIRST_NOTE_PICKUP",
+    "steps": [
+      {
+        "text": "你拾取了第一枚音符晶片！音符是你施法的弹药。",
+        "highlight": "NoteInventoryUI",
+        "arrow": true,
+        "bubble": "查看你的音符库存",
+        "completion": "auto",
+        "auto_delay": 5.0
+      },
+      {
+        "text": "不同音符拥有不同属性。白键音符是基础攻击，黑键音符可修饰强化。",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 5.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "音符晶片系统",
+      "description": "音符晶片是施法的核心弹药。白键音符提供基础攻击，黑键音符可修饰并强化法术效果。"
+    }
+  },
+  "FIRST_SPELL_CAST": {
+    "id": "FIRST_SPELL_CAST",
+    "title": "施法入门",
+    "trigger": "FIRST_SPELL_CAST",
+    "steps": [
+      {
+        "text": "按下键盘白键（A S D F G H J）施放音符法术！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "spell_cast",
+        "auto_delay": 0.0
+      },
+      {
+        "text": "很好！每个音符的弹幕轨迹和伤害类型各不相同。多尝试不同组合！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 4.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "基础施法",
+      "description": "使用键盘白键施放音符法术，每个音符拥有独特的弹幕轨迹和伤害属性。"
+    }
+  },
+  "FATIGUE_FIRST_HIGH": {
+    "id": "FATIGUE_FIRST_HIGH",
+    "title": "听感疲劳警告",
+    "trigger": "FATIGUE_FIRST_HIGH",
+    "steps": [
+      {
+        "text": "警告！你的听感疲劳度已超过 60%！",
+        "highlight": "FatigueBar",
+        "arrow": true,
+        "bubble": "注意疲劳指示器",
+        "completion": "auto",
+        "auto_delay": 4.0
+      },
+      {
+        "text": "重复使用相同音符会累积疲劳。疲劳过高时法术威力大幅下降！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 5.0
+      },
+      {
+        "text": "多变换音符组合来保持新鲜感，降低疲劳积累。",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 4.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "听感疲劳系统",
+      "description": "重复使用相同音符会累积听感疲劳，导致法术威力下降。多变换音符组合可有效降低疲劳。"
+    }
+  },
+  "FIRST_CHORD_BUILD": {
+    "id": "FIRST_CHORD_BUILD",
+    "title": "和弦构建",
+    "trigger": "FIRST_CHORD_BUILD",
+    "steps": [
+      {
+        "text": "你构建了第一个和弦！同时按下多个音符键可释放和弦法术。",
+        "highlight": "IntegratedComposer",
+        "arrow": true,
+        "bubble": "在编曲台查看和弦效果",
+        "completion": "auto",
+        "auto_delay": 5.0
+      },
+      {
+        "text": "和弦法术的威力远超单音。不同和弦组合会产生不同的战斗效果！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 5.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "和弦构建系统",
+      "description": "同时按下多个音符键可构建和弦法术，威力远超单音。不同和弦组合产生不同战斗效果。"
+    }
+  },
+  "FIRST_UPGRADE": {
+    "id": "FIRST_UPGRADE",
+    "title": "五度圈罗盘",
+    "trigger": "FIRST_UPGRADE",
+    "steps": [
+      {
+        "text": "升级了！五度圈罗盘已开启。",
+        "highlight": "CircleOfFifthsUpgradeV3",
+        "arrow": true,
+        "bubble": "在罗盘上选择升级路径",
+        "completion": "auto",
+        "auto_delay": 5.0
+      },
+      {
+        "text": "每次选择都会影响你的战斗风格。仔细考虑每条路径的效果！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 4.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "五度圈罗盘升级",
+      "description": "升级时通过五度圈罗盘选择升级路径，每次选择都会影响战斗风格和能力发展方向。"
+    }
+  },
+  "FIRST_BOSS_ENCOUNTER": {
+    "id": "FIRST_BOSS_ENCOUNTER",
+    "title": "Boss 战斗",
+    "trigger": "FIRST_BOSS_ENCOUNTER",
+    "steps": [
+      {
+        "text": "Boss 出现了！注意观察 Boss 的攻击模式。",
+        "highlight": "BossHPBar",
+        "arrow": true,
+        "bubble": "Boss 血条",
+        "completion": "auto",
+        "auto_delay": 4.0
+      },
+      {
+        "text": "Boss 通常有特殊的弱点机制。尝试不同的音符组合来寻找最佳应对策略！",
+        "highlight": "",
+        "arrow": false,
+        "bubble": "",
+        "completion": "auto",
+        "auto_delay": 5.0
+      }
+    ],
+    "codex_entry": {
+      "category": "tutorial",
+      "title": "Boss 战斗指南",
+      "description": "Boss 拥有独特的攻击模式和弱点机制，需要灵活运用不同音符组合来应对。"
+    }
+  }
+}

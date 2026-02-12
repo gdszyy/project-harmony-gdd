@@ -29,14 +29,15 @@ signal tutorial_completed()
 signal tutorial_step_advanced(step: int)
 
 # ============================================================
-# 常量 — HUD 状态面板配置
+# HUD 状态面板布局 — @export 支持编辑器实时调整
 # ============================================================
-const PANEL_WIDTH := 220.0
-const BAR_WIDTH := 160.0
-const BAR_HEIGHT := 10.0
-const BAR_GAP := 6.0
-const LABEL_WIDTH := 50.0
-const PANEL_PADDING := 8.0
+@export_group("HUD Layout")
+@export var panel_width: float = 220.0
+@export var bar_width: float = 160.0
+@export var bar_height: float = 10.0
+@export var bar_gap: float = 6.0
+@export var label_width: float = 50.0
+@export var panel_padding: float = 8.0
 
 # ============================================================
 # 常量 — 颜色方案 (与 §1.2 对齐)
@@ -244,14 +245,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
-	var y := PANEL_PADDING
-	var x := PANEL_PADDING
+	var y := panel_padding
+	var x := panel_padding
 
 	var content_height := _calculate_content_height()
-	var panel_height := PANEL_PADDING * 2 + 16 + content_height * _collapse_progress
+	var panel_height := panel_padding * 2 + 16 + content_height * _collapse_progress
 
 	# 面板背景
-	var panel_rect := Rect2(Vector2.ZERO, Vector2(PANEL_WIDTH, panel_height))
+	var panel_rect := Rect2(Vector2.ZERO, Vector2(panel_width, panel_height))
 	draw_rect(panel_rect, BG_COLOR)
 	draw_rect(panel_rect, BORDER_COLOR, false, 1.0)
 
@@ -272,9 +273,9 @@ func _draw() -> void:
 		_get_dissonance_color(_display_dissonance),
 		"%.1f" % _display_dissonance, content_alpha)
 	if _dissonance_flash > 0:
-		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT))
+		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width, bar_height))
 		draw_rect(flash_rect, Color(1.0, 0.3, 0.1, _dissonance_flash * 0.3))
-	y += BAR_HEIGHT + BAR_GAP
+	y += bar_height + bar_gap
 
 	# 2. 听感疲劳
 	var fatigue_color: Color = FATIGUE_COLORS.get(_fatigue_level, FATIGUE_COLORS[0])
@@ -284,13 +285,13 @@ func _draw() -> void:
 		fatigue_color, "%d%% [%s]" % [int(_display_fatigue * 100), level_name], content_alpha)
 	if _fatigue_level >= 3:
 		var flash_alpha := sin(_time * 5.0) * 0.15 + 0.15
-		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH * _display_fatigue, BAR_HEIGHT))
+		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width * _display_fatigue, bar_height))
 		draw_rect(flash_rect, Color(1.0, 0.0, 0.0, flash_alpha * content_alpha))
 	if _fatigue_penalty < 0.99:
 		var penalty_text := "DMG ×%.0f%%" % (_fatigue_penalty * 100)
-		draw_string(font, Vector2(x + LABEL_WIDTH + BAR_WIDTH + 5, y + BAR_HEIGHT), penalty_text,
+		draw_string(font, Vector2(x + label_width + bar_width + 5, y + bar_height), penalty_text,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1.0, 0.4, 0.2, 0.8 * content_alpha))
-	y += BAR_HEIGHT + BAR_GAP
+	y += bar_height + bar_gap
 
 	# 3. 密度过载
 	var density_color := DENSITY_SAFE_COLOR
@@ -304,33 +305,33 @@ func _draw() -> void:
 	_draw_bar_section(font, x, y, "DENSITY", _display_density,
 		density_color, density_label, content_alpha)
 	if _overload_flash > 0:
-		var flash_rect := Rect2(Vector2(x + LABEL_WIDTH, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT))
+		var flash_rect := Rect2(Vector2(x + label_width, y + 1), Vector2(bar_width, bar_height))
 		draw_rect(flash_rect, Color(1.0, 0.15, 0.1, _overload_flash * 0.4 * content_alpha))
 	if _accuracy_penalty > 0.01:
-		draw_string(font, Vector2(x + LABEL_WIDTH + BAR_WIDTH + 5, y + BAR_HEIGHT),
+		draw_string(font, Vector2(x + label_width + bar_width + 5, y + bar_height),
 			"Accuracy -%.0f%%" % (_accuracy_penalty * 100),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1.0, 0.3, 0.1, 0.8 * content_alpha))
-	y += BAR_HEIGHT + BAR_GAP
+	y += bar_height + bar_gap
 
 	# 4. 护盾值
 	if GameManager.max_shield_hp > 0:
 		_draw_bar_section(font, x, y, "SHIELD", _display_shield,
 			SHIELD_COLOR, "%d/%d" % [int(GameManager.shield_hp), int(GameManager.max_shield_hp)], content_alpha)
-		y += BAR_HEIGHT + BAR_GAP
+		y += bar_height + bar_gap
 
 	# 5. 暴击率
 	if _show_crit:
 		var crit_ratio := clampf(_crit_chance / 0.3, 0.0, 1.0)
 		_draw_bar_section(font, x, y, "CRIT", crit_ratio,
 			CRIT_COLOR, "%.0f%%" % (_crit_chance * 100), content_alpha)
-		y += BAR_HEIGHT + BAR_GAP
+		y += bar_height + bar_gap
 
 	# 6. 单音寂静
 	if not _silenced_notes.is_empty():
 		y += 2
 		draw_string(font, Vector2(x, y + 9), "SILENCED:", HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
 			Color(LABEL_COLOR.r, LABEL_COLOR.g, LABEL_COLOR.b, content_alpha))
-		var note_x := x + LABEL_WIDTH
+		var note_x := x + label_width
 		for entry in _silenced_notes:
 			if entry is Dictionary:
 				var note_key: int = entry.get("note", -1)
@@ -350,31 +351,31 @@ func _draw() -> void:
 
 func _draw_bar_section(font: Font, x: float, y: float, label: String,
 		ratio: float, bar_color: Color, value_text: String, alpha: float) -> void:
-	draw_string(font, Vector2(x, y + BAR_HEIGHT - 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+	draw_string(font, Vector2(x, y + bar_height - 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
 		Color(LABEL_COLOR.r, LABEL_COLOR.g, LABEL_COLOR.b, alpha))
 
-	var bar_x := x + LABEL_WIDTH
-	draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT)),
+	var bar_x := x + label_width
+	draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(bar_width, bar_height)),
 		Color(0.08, 0.06, 0.12, 0.5 * alpha))
 
 	var fill_ratio := clampf(ratio, 0.0, 1.0)
 	if fill_ratio > 0.001:
-		draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH * fill_ratio, BAR_HEIGHT)),
+		draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(bar_width * fill_ratio, bar_height)),
 			Color(bar_color.r, bar_color.g, bar_color.b, bar_color.a * alpha))
-		var glow_x := bar_x + BAR_WIDTH * fill_ratio - 2
+		var glow_x := bar_x + bar_width * fill_ratio - 2
 		if glow_x > bar_x:
-			draw_rect(Rect2(Vector2(glow_x, y + 1), Vector2(3, BAR_HEIGHT)),
+			draw_rect(Rect2(Vector2(glow_x, y + 1), Vector2(3, bar_height)),
 				Color(bar_color.r, bar_color.g, bar_color.b, 0.3 * alpha))
 
 	# 疲劳阈值标记线
 	if label == "FATIGUE":
 		for threshold_level in FatigueManager.thresholds:
 			var threshold: float = FatigueManager.thresholds[threshold_level]
-			draw_line(Vector2(bar_x + BAR_WIDTH * threshold, y + 1),
-				Vector2(bar_x + BAR_WIDTH * threshold, y + 1 + BAR_HEIGHT),
+			draw_line(Vector2(bar_x + bar_width * threshold, y + 1),
+				Vector2(bar_x + bar_width * threshold, y + 1 + bar_height),
 				Color(1, 1, 1, 0.2 * alpha), 1.0)
 
-	draw_string(font, Vector2(bar_x + BAR_WIDTH + 4, y + BAR_HEIGHT - 1), value_text,
+	draw_string(font, Vector2(bar_x + bar_width + 4, y + bar_height - 1), value_text,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 7,
 		Color(VALUE_COLOR.r, VALUE_COLOR.g, VALUE_COLOR.b, alpha))
 
@@ -387,13 +388,13 @@ func _get_dissonance_color(value: float) -> Color:
 		return DISSONANCE_MID_COLOR.lerp(DISSONANCE_HIGH_COLOR, clampf((value - 5.0) / 5.0, 0.0, 1.0))
 
 func _calculate_content_height() -> float:
-	var height := BAR_HEIGHT + BAR_GAP + 2  # 不和谐度
-	height += BAR_HEIGHT + BAR_GAP           # 疲劳
-	height += BAR_HEIGHT + BAR_GAP           # 密度
+	var height := bar_height + bar_gap + 2  # 不和谐度
+	height += bar_height + bar_gap           # 疲劳
+	height += bar_height + bar_gap           # 密度
 	if GameManager.max_shield_hp > 0:
-		height += BAR_HEIGHT + BAR_GAP
+		height += bar_height + bar_gap
 	if _show_crit:
-		height += BAR_HEIGHT + BAR_GAP
+		height += bar_height + bar_gap
 	if not _silenced_notes.is_empty():
 		height += 20
 	return height

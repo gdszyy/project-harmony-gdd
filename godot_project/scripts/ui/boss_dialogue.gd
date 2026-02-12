@@ -67,12 +67,29 @@ var _displayed_chars: int = 0
 var _type_timer: float = 0.0
 
 # ============================================================
-# Boss 对话数据
+# Boss 对话数据 — 从 JSON 配置文件加载
 # ============================================================
 ## 每个 Boss 的对话内容
 ## 结构: { boss_key: { "intro": [...], "victory": [...] } }
 ## 每条对话: { "speaker": String, "text": String, "emotion": String }
-const BOSS_DIALOGUES: Dictionary = {
+const BOSS_DIALOGUES_PATH := "res://data/dialogues/boss_dialogues.json"
+var BOSS_DIALOGUES: Dictionary = {}
+
+func _load_boss_dialogues() -> void:
+	var file := FileAccess.open(BOSS_DIALOGUES_PATH, FileAccess.READ)
+	if file == null:
+		push_error("BossDialogue: 无法加载对话数据: %s" % BOSS_DIALOGUES_PATH)
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_error("BossDialogue: JSON 解析失败: %s" % json.get_error_message())
+		return
+	BOSS_DIALOGUES = json.data
+	print("[BossDialogue] 已加载 %d 个 Boss 对话数据" % BOSS_DIALOGUES.size())
+
+# 以下为原始硬编码数据的备份引用（已迁移至 data/dialogues/boss_dialogues.json）
+const _BOSS_DIALOGUES_LEGACY: Dictionary = {
 	# ================================================================
 	# 第一章 Boss：律动尊者·毕达哥拉斯
 	# 音乐史背景：古希腊，万物皆数，宇宙和谐的数学秩序
@@ -327,6 +344,7 @@ const BOSS_DIALOGUES: Dictionary = {
 
 func _ready() -> void:
 	layer = 100  # 确保在最顶层
+	_load_boss_dialogues()
 	_build_ui()
 	_hide_dialogue()
 	set_process(false)

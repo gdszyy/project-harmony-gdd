@@ -35,44 +35,47 @@ signal upgrade_cancelled
 enum Phase { INACTIVE, DIRECTION_SELECT, CARD_SELECT, THEORY_BREAKTHROUGH }
 
 # ============================================================
-# 常量 — 五度圈布局
+# 常量 — 五度圈音级序列
 # ============================================================
 const CIRCLE_KEYS := ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"]
 const MINOR_KEYS := ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm"]
 const CIRCLE_SIZE: int = 12
 
-## 罗盘几何参数
-const COMPASS_OUTER_RADIUS: float = 200.0    ## 外圈大调音级环半径
-const COMPASS_MIDDLE_RADIUS: float = 165.0   ## 中圈关系小调环半径
-const COMPASS_INNER_RADIUS: float = 130.0    ## 内圈连接线半径
-const COMPASS_CORE_RADIUS: float = 80.0      ## 核心星云区半径
-const KEY_LABEL_RADIUS: float = 220.0        ## 大调标签半径
-const MINOR_LABEL_RADIUS: float = 180.0      ## 小调标签半径
-const TICK_LENGTH: float = 15.0              ## 刻度线长度
+# ============================================================
+# 布局参数 — @export 支持编辑器实时调整
+# ============================================================
+@export_group("Compass Layout")
+@export var compass_outer_radius: float = 200.0    ## 外圈大调音级环半径
+@export var compass_middle_radius: float = 165.0   ## 中圈关系小调环半径
+@export var compass_inner_radius: float = 130.0    ## 内圈连接线半径
+@export var compass_core_radius: float = 80.0      ## 核心星云区半径
+@export var key_label_radius: float = 220.0        ## 大调标签半径
+@export var minor_label_radius: float = 180.0      ## 小调标签半径
+@export var tick_length: float = 15.0              ## 刻度线长度
 
-## 方向符文参数
-const RUNE_RADIUS: float = 280.0             ## 符文距中心距离
-const RUNE_SIZE: float = 50.0                ## 符文图标大小
-const RUNE_HOVER_SCALE: float = 1.1          ## 悬停放大
+@export_group("Direction Runes")
+@export var rune_radius: float = 280.0             ## 符文距中心距离
+@export var rune_size: float = 50.0                ## 符文图标大小
+@export var rune_hover_scale: float = 1.1          ## 悬停放大
 
-## 升级卡片参数
-const CARD_WIDTH: float = 240.0
-const CARD_HEIGHT: float = 320.0
-const CARD_SPACING: float = 20.0
-const CARD_HOVER_SCALE: float = 1.15
-const CARD_HOVER_OFFSET_Y: float = -8.0
-const OPTIONS_PER_DIRECTION: int = 3
+@export_group("Upgrade Cards")
+@export var card_width: float = 240.0
+@export var card_height: float = 320.0
+@export var card_spacing: float = 20.0
+@export var card_hover_scale: float = 1.15
+@export var card_hover_offset_y: float = -8.0
+@export var options_per_direction: int = 3
 
-## 乐理突破参数
-const BREAKTHROUGH_CHANCE: float = 0.08
-const BREAKTHROUGH_CARD_WIDTH: float = 320.0
-const BREAKTHROUGH_CARD_HEIGHT: float = 440.0
-const BREAKTHROUGH_RAY_COUNT: int = 24
+@export_group("Theory Breakthrough")
+@export var breakthrough_chance: float = 0.08
+@export var breakthrough_card_width: float = 320.0
+@export var breakthrough_card_height: float = 440.0
+@export var breakthrough_ray_count: int = 24
 
-## 动效参数
-const ANIM_STANDARD: float = 0.3
-const ANIM_EMPHASIS: float = 0.5
-const ANIM_CARD_STAGGER: float = 0.1
+@export_group("Animation")
+@export var anim_standard: float = 0.3
+@export var anim_emphasis: float = 0.5
+@export var anim_card_stagger: float = 0.1
 
 # ============================================================
 # 常量 — 颜色体系 (严格遵循 UI 设计文档 §1.2)
@@ -109,11 +112,66 @@ const RARITY_COLORS := {
 	"legendary": Color(1.0, 0.85, 0.2),
 }
 
+## ============================================================
+# 升级数据库 — 从 JSON 配置文件加载
 # ============================================================
-# 升级池 — 按方向分类
-# ============================================================
+const UPGRADE_DB_PATH := "res://data/upgrades/upgrade_database.json"
+var _upgrade_db_loaded: bool = false
+var OFFENSE_UPGRADES: Array = []
+var CORE_UPGRADES: Array = []
+var DEFENSE_UPGRADES: Array = []
+var BREAKTHROUGH_EVENTS: Array = []
 
-const OFFENSE_UPGRADES := [
+## 加载升级数据库
+func _load_upgrade_database() -> void:
+	var file := FileAccess.open(UPGRADE_DB_PATH, FileAccess.READ)
+	if file == null:
+		push_error("CircleOfFifthsUpgradeV3: 无法加载升级数据库: %s" % UPGRADE_DB_PATH)
+		_use_legacy_data()
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_error("CircleOfFifthsUpgradeV3: JSON 解析失败: %s" % json.get_error_message())
+		_use_legacy_data()
+		return
+	var data: Dictionary = json.data
+	OFFENSE_UPGRADES = _resolve_timbre_enums(data.get("offense_upgrades", []))
+	CORE_UPGRADES = _resolve_timbre_enums(data.get("core_upgrades", []))
+	DEFENSE_UPGRADES = _resolve_timbre_enums(data.get("defense_upgrades", []))
+	BREAKTHROUGH_EVENTS = data.get("breakthrough_events", [])
+	_upgrade_db_loaded = true
+	print("[CircleOfFifthsUpgradeV3] 已加载升级数据库: %d/%d/%d + %d 突破" % [
+		OFFENSE_UPGRADES.size(), CORE_UPGRADES.size(), DEFENSE_UPGRADES.size(), BREAKTHROUGH_EVENTS.size()])
+
+## 将 JSON 中的音色字符串转换为 MusicData.ChapterTimbre 枚举值
+func _resolve_timbre_enums(upgrades: Array) -> Array:
+	var timbre_map := {
+		"LYRE": MusicData.ChapterTimbre.LYRE,
+		"ORGAN": MusicData.ChapterTimbre.ORGAN,
+		"HARPSICHORD": MusicData.ChapterTimbre.HARPSICHORD,
+		"FORTEPIANO": MusicData.ChapterTimbre.FORTEPIANO,
+		"TUTTI": MusicData.ChapterTimbre.TUTTI,
+		"SYNTHESIZER": MusicData.ChapterTimbre.SYNTHESIZER,
+	}
+	for upgrade in upgrades:
+		if upgrade.has("timbre") and upgrade["timbre"] is String:
+			var key: String = upgrade["timbre"]
+			if timbre_map.has(key):
+				upgrade["timbre"] = timbre_map[key]
+	return upgrades
+
+## 回退：使用内联备份数据
+func _use_legacy_data() -> void:
+	OFFENSE_UPGRADES = _OFFENSE_UPGRADES_LEGACY.duplicate(true)
+	CORE_UPGRADES = _CORE_UPGRADES_LEGACY.duplicate(true)
+	DEFENSE_UPGRADES = _DEFENSE_UPGRADES_LEGACY.duplicate(true)
+	BREAKTHROUGH_EVENTS = _BREAKTHROUGH_EVENTS_LEGACY.duplicate(true)
+	_upgrade_db_loaded = true
+	push_warning("[CircleOfFifthsUpgradeV3] 使用内联备份数据")
+
+# 以下为原始硬编码数据的备份引用（已迁移至 data/upgrades/upgrade_database.json）
+const _OFFENSE_UPGRADES_LEGACY := [
 	{
 		"id": "dmg_boost_all", "category": "note_stat", "rarity": "common",
 		"name": "音波增幅", "desc": "当前调性音符 DMG +0.5",
@@ -194,7 +252,7 @@ const OFFENSE_UPGRADES := [
 	},
 ]
 
-const CORE_UPGRADES := [
+const _CORE_UPGRADES_LEGACY := [
 	{
 		"id": "note_acquire_random", "category": "note_acquire", "rarity": "common",
 		"name": "随机音符", "desc": "获得1个随机音符",
@@ -245,7 +303,7 @@ const CORE_UPGRADES := [
 	},
 ]
 
-const DEFENSE_UPGRADES := [
+const _DEFENSE_UPGRADES_LEGACY := [
 	{
 		"id": "max_hp", "category": "survival", "rarity": "common",
 		"name": "生命强化", "desc": "最大生命值 +25",
@@ -317,7 +375,7 @@ const DEFENSE_UPGRADES := [
 # ============================================================
 # 乐理突破事件池
 # ============================================================
-const BREAKTHROUGH_EVENTS := [
+const _BREAKTHROUGH_EVENTS_LEGACY := [
 	{
 		"id": "bt_seventh_chords", "name": "七和弦觉醒",
 		"desc": "解锁七和弦系列：属七、大七、小七、减七和弦",
@@ -395,6 +453,7 @@ var _tutorial_step: int = -1  ## -1 = 无引导
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_load_upgrade_database()
 	GameManager.game_state_changed.connect(_on_game_state_changed)
 
 func _process(delta: float) -> void:
@@ -589,7 +648,7 @@ func _should_trigger_breakthrough() -> bool:
 			break
 	if not has_available:
 		return false
-	return randf() < BREAKTHROUGH_CHANCE
+	return randf() < breakthrough_chance
 
 func _is_breakthrough_acquired(event_id: String) -> bool:
 	for upgrade in GameManager.acquired_upgrades:
@@ -615,7 +674,7 @@ func _select_direction(direction: String) -> void:
 			target_rotation = PI / 6.0   ## 逆时针偏移
 		"core":
 			target_rotation = 0.0
-	tween.tween_property(self, "_compass_rotation_offset", target_rotation, ANIM_STANDARD)\
+	tween.tween_property(self, "_compass_rotation_offset", target_rotation, anim_standard)\
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.chain().tween_callback(_setup_card_select.bind(direction))
 
@@ -645,7 +704,7 @@ func _generate_options_for_direction(direction: String) -> void:
 
 	# 随机选择
 	pool.shuffle()
-	for i in range(mini(OPTIONS_PER_DIRECTION, pool.size())):
+	for i in range(mini(options_per_direction, pool.size())):
 		_current_options.append(pool[i])
 
 	# 章节词条插入（15%概率替换一个选项）
@@ -764,13 +823,13 @@ func _play_card_confirm_animation(card_index: int) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	# 背景淡出
-	tween.tween_property(self, "_appear_progress", 0.0, ANIM_STANDARD)\
+	tween.tween_property(self, "_appear_progress", 0.0, anim_standard)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	tween.chain().tween_callback(_deactivate_compass)
 
 func _play_breakthrough_confirm_animation() -> void:
 	var tween := create_tween()
-	tween.tween_property(self, "_appear_progress", 0.0, ANIM_EMPHASIS)\
+	tween.tween_property(self, "_appear_progress", 0.0, anim_emphasis)\
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 	tween.tween_callback(_deactivate_compass)
 
@@ -840,13 +899,13 @@ func _draw_nebula_core(alpha: float) -> void:
 	# 核心区域深色背景
 	var core_color := COL_PANEL_BG
 	core_color.a = 0.95 * alpha
-	draw_circle(_center, COMPASS_CORE_RADIUS * scale, core_color)
+	draw_circle(_center, compass_core_radius * scale, core_color)
 
 	# 星云效果 — 多层同心圆模拟旋转星云
 	var layers := 5
 	for i in range(layers):
 		var t := float(i) / float(layers)
-		var r := COMPASS_CORE_RADIUS * scale * (0.3 + t * 0.7)
+		var r := compass_core_radius * scale * (0.3 + t * 0.7)
 		var nebula_color := COL_ACCENT
 		nebula_color.a = (0.08 - t * 0.015) * alpha
 		var offset_angle := _nebula_rotation + t * PI * 0.5
@@ -856,7 +915,7 @@ func _draw_nebula_core(alpha: float) -> void:
 	# 核心边缘辉光
 	var glow_color := COL_ACCENT
 	glow_color.a = 0.25 * alpha * _current_key_glow
-	draw_arc(_center, COMPASS_CORE_RADIUS * scale, 0, TAU, 48, glow_color, 3.0)
+	draw_arc(_center, compass_core_radius * scale, 0, TAU, 48, glow_color, 3.0)
 
 # ============================================================
 # 绘制 — 连接线网络
@@ -867,8 +926,8 @@ func _draw_connection_web(alpha: float) -> void:
 	for i in range(CIRCLE_SIZE):
 		var angle_a := _key_index_to_angle(i) + _compass_rotation_offset
 		var angle_b := _key_index_to_angle((i + 1) % CIRCLE_SIZE) + _compass_rotation_offset
-		var pos_a := _center + Vector2(cos(angle_a), sin(angle_a)) * COMPASS_INNER_RADIUS * scale
-		var pos_b := _center + Vector2(cos(angle_b), sin(angle_b)) * COMPASS_INNER_RADIUS * scale
+		var pos_a := _center + Vector2(cos(angle_a), sin(angle_a)) * compass_inner_radius * scale
+		var pos_b := _center + Vector2(cos(angle_b), sin(angle_b)) * compass_inner_radius * scale
 
 		var line_color := COL_ACCENT
 		# 高亮当前调性相邻的连接线
@@ -888,14 +947,14 @@ func _draw_outer_ring(font: Font, alpha: float) -> void:
 	# 外圈环线
 	var ring_color := COL_ACCENT
 	ring_color.a = 0.3 * alpha
-	draw_arc(_center, COMPASS_OUTER_RADIUS * scale, 0, TAU, 64, ring_color, 1.5)
+	draw_arc(_center, compass_outer_radius * scale, 0, TAU, 64, ring_color, 1.5)
 
 	# 12个音级刻度和标签
 	for i in range(CIRCLE_SIZE):
 		var angle := _key_index_to_angle(i) + _compass_rotation_offset
-		var outer_pos := _center + Vector2(cos(angle), sin(angle)) * COMPASS_OUTER_RADIUS * scale
-		var inner_pos := _center + Vector2(cos(angle), sin(angle)) * (COMPASS_OUTER_RADIUS - TICK_LENGTH) * scale
-		var label_pos := _center + Vector2(cos(angle), sin(angle)) * KEY_LABEL_RADIUS * scale
+		var outer_pos := _center + Vector2(cos(angle), sin(angle)) * compass_outer_radius * scale
+		var inner_pos := _center + Vector2(cos(angle), sin(angle)) * (compass_outer_radius - tick_length) * scale
+		var label_pos := _center + Vector2(cos(angle), sin(angle)) * key_label_radius * scale
 
 		var is_current := (i == _current_key_index)
 
@@ -949,12 +1008,12 @@ func _draw_middle_ring(font: Font, alpha: float) -> void:
 	# 中圈环线（更淡）
 	var ring_color := COL_ACCENT
 	ring_color.a = 0.15 * alpha
-	draw_arc(_center, COMPASS_MIDDLE_RADIUS * scale, 0, TAU, 48, ring_color, 1.0)
+	draw_arc(_center, compass_middle_radius * scale, 0, TAU, 48, ring_color, 1.0)
 
 	# 12个关系小调标签
 	for i in range(CIRCLE_SIZE):
 		var angle := _key_index_to_angle(i) + _compass_rotation_offset
-		var label_pos := _center + Vector2(cos(angle), sin(angle)) * MINOR_LABEL_RADIUS * scale
+		var label_pos := _center + Vector2(cos(angle), sin(angle)) * minor_label_radius * scale
 
 		var label_color := COL_TEXT_SECONDARY
 		label_color.a = 0.5 * alpha
@@ -995,7 +1054,7 @@ func _draw_title(font: Font, alpha: float) -> void:
 	tc.a = title_alpha
 	var title_text := "LEVEL UP"
 	var title_width := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24).x
-	draw_string(font, Vector2(_center.x - title_width / 2.0, _center.y - COMPASS_OUTER_RADIUS - 60),
+	draw_string(font, Vector2(_center.x - title_width / 2.0, _center.y - compass_outer_radius - 60),
 		title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, tc)
 
 	# 副标题
@@ -1014,7 +1073,7 @@ func _draw_title(font: Font, alpha: float) -> void:
 
 	subtitle_color.a = title_alpha * 0.8
 	var sub_width := font.get_string_size(subtitle, HORIZONTAL_ALIGNMENT_CENTER, -1, 13).x
-	draw_string(font, Vector2(_center.x - sub_width / 2.0, _center.y - COMPASS_OUTER_RADIUS - 38),
+	draw_string(font, Vector2(_center.x - sub_width / 2.0, _center.y - compass_outer_radius - 38),
 		subtitle, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, subtitle_color)
 
 # ============================================================
@@ -1041,14 +1100,14 @@ func _draw_direction_runes(font: Font) -> void:
 			continue
 
 		var angle: float = dir_info["angle_offset"]
-		var rune_center := _center + Vector2(cos(angle), sin(angle)) * RUNE_RADIUS * _appear_progress
+		var rune_center := _center + Vector2(cos(angle), sin(angle)) * rune_radius * _appear_progress
 		var dir_color: Color = DIRECTION_COLORS.get(dir_key, COL_TEXT_PRIMARY)
 		var is_hover := (_hover_direction == dir_key)
 		var pulse := sin(_rune_pulse[i]) * 0.1 + 0.9
 
 		# 悬停放大
-		var rune_scale := progress * (RUNE_HOVER_SCALE if is_hover else 1.0)
-		var rune_r := RUNE_SIZE * rune_scale
+		var rune_scale := progress * (rune_hover_scale if is_hover else 1.0)
+		var rune_r := rune_size * rune_scale
 
 		# 存储悬停区域
 		_direction_hover_areas[dir_key] = { "center": rune_center, "radius": rune_r * 1.5 }
@@ -1115,7 +1174,7 @@ func _draw_direction_trail(direction: String, color: Color, alpha: float) -> voi
 			continue
 		var idx := (_current_key_index + step_dir * (s + 1) + CIRCLE_SIZE) % CIRCLE_SIZE
 		var angle := _key_index_to_angle(idx) + _compass_rotation_offset
-		var pos := _center + Vector2(cos(angle), sin(angle)) * COMPASS_OUTER_RADIUS * _appear_progress
+		var pos := _center + Vector2(cos(angle), sin(angle)) * compass_outer_radius * _appear_progress
 
 		var trail_color := color
 		trail_color.a = 0.4 * t * alpha * (1.0 - float(s) / float(steps))
@@ -1138,14 +1197,14 @@ func _draw_upgrade_cards(font: Font) -> void:
 	var back_alpha := clampf(_phase_transition * 2.0, 0.0, 1.0)
 	var back_text := "[Right-click / ESC to go back]"
 	var back_width := font.get_string_size(back_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 10).x
-	draw_string(font, Vector2(_center.x - back_width / 2.0, _center.y + COMPASS_OUTER_RADIUS + 200),
+	draw_string(font, Vector2(_center.x - back_width / 2.0, _center.y + compass_outer_radius + 200),
 		back_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10,
 		Color(COL_TEXT_SECONDARY.r, COL_TEXT_SECONDARY.g, COL_TEXT_SECONDARY.b, 0.5 * back_alpha))
 
 	# 卡片弧形排列
-	var total_width := card_count * (CARD_WIDTH + CARD_SPACING) - CARD_SPACING
+	var total_width := card_count * (card_width + card_spacing) - card_spacing
 	var start_x := _center.x - total_width / 2.0
-	var base_y := _center.y - CARD_HEIGHT / 2.0 + 20.0
+	var base_y := _center.y - card_height / 2.0 + 20.0
 
 	for i in range(card_count):
 		var progress := _card_appear[i] if i < _card_appear.size() else 0.0
@@ -1154,13 +1213,13 @@ func _draw_upgrade_cards(font: Font) -> void:
 			continue
 
 		var is_hover := (_hover_card == i)
-		var card_scale := progress * (CARD_HOVER_SCALE if is_hover else 1.0)
-		var hover_y := CARD_HOVER_OFFSET_Y if is_hover else 0.0
+		var card_scale := progress * (card_hover_scale if is_hover else 1.0)
+		var hover_y := card_hover_offset_y if is_hover else 0.0
 
-		var card_w := CARD_WIDTH * card_scale
-		var card_h := CARD_HEIGHT * card_scale
-		var card_x := start_x + i * (CARD_WIDTH + CARD_SPACING) + (CARD_WIDTH - card_w) / 2.0
-		var card_y := base_y + hover_y + (CARD_HEIGHT - card_h) / 2.0
+		var card_w := card_width * card_scale
+		var card_h := card_height * card_scale
+		var card_x := start_x + i * (card_width + card_spacing) + (card_width - card_w) / 2.0
+		var card_y := base_y + hover_y + (card_height - card_h) / 2.0
 
 		var card_rect := Rect2(Vector2(card_x, card_y), Vector2(card_w, card_h))
 		_card_rects.append(card_rect)
@@ -1328,8 +1387,8 @@ func _draw_breakthrough_event(font: Font) -> void:
 	draw_rect(Rect2(Vector2.ZERO, get_viewport_rect().size), dark_overlay)
 
 	# 中心金色光线放射 (§7.2)
-	for r in range(BREAKTHROUGH_RAY_COUNT):
-		var ray_angle := float(r) / float(BREAKTHROUGH_RAY_COUNT) * TAU + _time * 0.3
+	for r in range(breakthrough_ray_count):
+		var ray_angle := float(r) / float(breakthrough_ray_count) * TAU + _time * 0.3
 		var ray_length := 400.0 * progress * pulse
 		var ray_end := _center + Vector2(cos(ray_angle), sin(ray_angle)) * ray_length
 		var ray_color := COL_HOLY_GOLD
@@ -1339,7 +1398,7 @@ func _draw_breakthrough_event(font: Font) -> void:
 	# 中心星云加速旋转（金色）
 	for i in range(8):
 		var t := float(i) / 8.0
-		var r := COMPASS_CORE_RADIUS * progress * (0.5 + t * 0.5)
+		var r := compass_core_radius * progress * (0.5 + t * 0.5)
 		var nebula_color := COL_HOLY_GOLD
 		nebula_color.a = (0.1 - t * 0.01) * progress * pulse
 		var offset_angle := _time * 2.0 + t * PI * 0.5
@@ -1347,8 +1406,8 @@ func _draw_breakthrough_event(font: Font) -> void:
 		draw_arc(_center + offset, r, 0, TAU, 48, nebula_color, 2.0)
 
 	# 突破卡片 (§7.2 — 更大尺寸)
-	var card_w := BREAKTHROUGH_CARD_WIDTH * progress
-	var card_h := BREAKTHROUGH_CARD_HEIGHT * progress
+	var card_w := breakthrough_card_width * progress
+	var card_h := breakthrough_card_height * progress
 	var card_pos := Vector2(_center.x - card_w / 2.0, _center.y - card_h / 2.0 + 20)
 	var card_rect := Rect2(card_pos, Vector2(card_w, card_h))
 	_breakthrough_rect = card_rect

@@ -60,9 +60,28 @@ const MODULE_NAMES := {
 }
 
 # ============================================================
-# 技能树数据
+# 技能树数据 — 从 JSON 配置文件加载
 # ============================================================
-const SKILL_TREES := {
+const SKILL_TREES_PATH := "res://data/skill_trees/skill_trees.json"
+var SKILL_TREES: Dictionary = {}
+
+func _load_skill_trees() -> void:
+	var file := FileAccess.open(SKILL_TREES_PATH, FileAccess.READ)
+	if file == null:
+		push_error("MetaProgressionVisualizer: 无法加载技能树数据: %s" % SKILL_TREES_PATH)
+		SKILL_TREES = _SKILL_TREES_LEGACY.duplicate(true)
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_error("MetaProgressionVisualizer: JSON 解析失败: %s" % json.get_error_message())
+		SKILL_TREES = _SKILL_TREES_LEGACY.duplicate(true)
+		return
+	SKILL_TREES = json.data
+	print("[MetaProgressionVisualizer] 已加载 %d 个技能树模块" % SKILL_TREES.size())
+
+# 以下为原始硬编码数据的备份引用（已迁移至 data/skill_trees/skill_trees.json）
+const _SKILL_TREES_LEGACY := {
 	"instrument": {
 		"layout": "vertical",  # 垂直推杆
 		"nodes": [
@@ -124,10 +143,11 @@ const SKILL_TREES := {
 }
 
 # ============================================================
-# 节点尺寸
+# 布局参数 — @export 支持编辑器实时调整
 # ============================================================
-const NODE_RADIUS := 32.0
-const NODE_RADIUS_HOVER := 38.0
+@export_group("Node Layout")
+@export var node_radius: float = 32.0
+@export var node_radius_hover: float = 38.0
 
 # ============================================================
 # 状态
@@ -154,6 +174,7 @@ var _bg_stars: Array[Dictionary] = []
 # ============================================================
 
 func _ready() -> void:
+	_load_skill_trees()
 	_meta = get_node_or_null("/root/MetaProgressionManager")
 	_generate_bg_stars(120)
 	visible = false
@@ -585,7 +606,7 @@ func _draw_nodes(font: Font, module_color: Color) -> void:
 		var pos: Vector2 = _node_positions[nid]
 		var state: String = _node_states.get(nid, "locked")
 		var is_hover := (_hover_node == nid)
-		var radius := NODE_RADIUS_HOVER if is_hover else NODE_RADIUS
+		var radius := node_radius_hover if is_hover else node_radius
 
 		# 绘制节点
 		match state:
@@ -730,7 +751,7 @@ func _draw_unlock_animations(module_color: Color) -> void:
 		var progress: float = anim["progress"]
 
 		# 冲击波
-		var ring_r := NODE_RADIUS * (1.0 + progress * 3.0)
+		var ring_r := node_radius * (1.0 + progress * 3.0)
 		var ring_alpha := (1.0 - progress) * 0.6
 		draw_arc(pos, ring_r, 0, TAU, 48,
 			Color(CYAN.r, CYAN.g, CYAN.b, ring_alpha), 2.5)
@@ -738,7 +759,7 @@ func _draw_unlock_animations(module_color: Color) -> void:
 		# 放射粒子
 		for i in range(8):
 			var angle := float(i) * TAU / 8.0 + progress * 0.5
-			var dist := NODE_RADIUS * (0.5 + progress * 2.0)
+			var dist := node_radius * (0.5 + progress * 2.0)
 			var pt := pos + Vector2(cos(angle), sin(angle)) * dist
 			var pt_alpha := (1.0 - progress) * 0.5
 			draw_circle(pt, 3.0 * (1.0 - progress),
@@ -824,7 +845,7 @@ func _gui_input(event: InputEvent) -> void:
 		_hover_node = ""
 		for nid in _node_positions:
 			var pos: Vector2 = _node_positions[nid]
-			if pos.distance_to(event.position) <= NODE_RADIUS_HOVER:
+			if pos.distance_to(event.position) <= node_radius_hover:
 				_hover_node = nid
 				break
 

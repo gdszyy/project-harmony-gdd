@@ -1,0 +1,214 @@
+{
+  "boss_pythagoras": {
+    "intro": [
+      {
+        "speaker": "律动尊者·毕达哥拉斯",
+        "text": "万物皆数，万物皆比例。你听到了吗？——那是弦长二比一时诞生的完美八度，是宇宙最初的和谐。",
+        "emotion": "solemn"
+      },
+      {
+        "speaker": "律动尊者·毕达哥拉斯",
+        "text": "我用纯粹的数学编织了这片领域的每一条振动线。踏入其中的混沌之音，都将被秩序所净化。",
+        "emotion": "commanding"
+      },
+      {
+        "speaker": "律动尊者·毕达哥拉斯",
+        "text": "来吧，证明你的节奏配得上这份神圣的比例——否则，你将化为克拉尼图形上的一粒尘沙。",
+        "emotion": "challenge"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "律动尊者·毕达哥拉斯",
+        "text": "……你的节奏中有我未曾计算过的变量。也许，和谐不止于数字。",
+        "emotion": "surprised"
+      },
+      {
+        "speaker": "律动尊者·毕达哥拉斯",
+        "text": "去吧。在数字之外，还有和弦的世界等着你去发现。",
+        "emotion": "accepting"
+      }
+    ]
+  },
+  "boss_guido": {
+    "intro": [
+      {
+        "speaker": "圣咏宗师·圭多",
+        "text": "Ut、Re、Mi、Fa、Sol、La——我将无形的声音刻入了线谱，让天使的歌声得以被凡人传唱。",
+        "emotion": "reverent"
+      },
+      {
+        "speaker": "圣咏宗师·圭多",
+        "text": "在这座大教堂中，只有齐唱才是通往神圣的道路。独声的傲慢，将被圣咏的回响所吞没。",
+        "emotion": "stern"
+      },
+      {
+        "speaker": "圣咏宗师·圭多",
+        "text": "用你的和弦来回应我的圣咏吧——若你只会发出单调的独音，这里便是你的墓碑。",
+        "emotion": "challenge"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "圣咏宗师·圭多",
+        "text": "多声部的和鸣……竟比齐唱更接近天堂。我的线谱，终究只是起点。",
+        "emotion": "enlightened"
+      }
+    ]
+  },
+  "boss_bach": {
+    "intro": [
+      {
+        "speaker": "大构建师·巴赫",
+        "text": "一个主题，经过模仿、倒影、逆行、紧缩——便能构建出一座完美的声音大教堂。这就是赋格的力量。",
+        "emotion": "proud"
+      },
+      {
+        "speaker": "大构建师·巴赫",
+        "text": "我的四只手臂，每一只都是一个独立的声部。它们各自歌唱，却在数学的法则下完美交织。",
+        "emotion": "commanding"
+      },
+      {
+        "speaker": "大构建师·巴赫",
+        "text": "单音的贫乏无法触及我的管风琴。用和弦进行来回应我的赋格——否则你的旋律将被音墙吞噬。",
+        "emotion": "challenge"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "大构建师·巴赫",
+        "text": "你的和弦进行……有一种我的赋格未曾预见的自由。也许，结构之外还有更广阔的天地。",
+        "emotion": "respectful"
+      },
+      {
+        "speaker": "大构建师·巴赫",
+        "text": "带上七和弦的力量前行吧。在古典的殿堂中，更精致的结构正等待着你。",
+        "emotion": "blessing"
+      }
+    ]
+  },
+  "boss_mozart": {
+    "intro": [
+      {
+        "speaker": "古典完形·莫扎特",
+        "text": "呈示、发展、再现——奏鸣曲式是音乐最完美的容器。每一个音符都恰到好处，多一个则繁，少一个则缺。",
+        "emotion": "elegant"
+      },
+      {
+        "speaker": "古典完形·莫扎特",
+        "text": "在我的宫廷舞厅中，过度的繁复是最大的罪过。你的召唤物太多？你的节奏太密？那便是对美的亵渎。",
+        "emotion": "disdainful"
+      },
+      {
+        "speaker": "古典完形·莫扎特",
+        "text": "用恰到好处的呼吸感来与我共舞吧——在留白中，才能听见真正的旋律。",
+        "emotion": "inviting"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "古典完形·莫扎特",
+        "text": "你在结构中找到了自由……这份呼吸感，甚至让我的奏鸣曲式也为之动容。",
+        "emotion": "impressed"
+      },
+      {
+        "speaker": "古典完形·莫扎特",
+        "text": "去吧，去拥抱那些我不敢触碰的不和谐。在暴风雨中，或许有比完美更伟大的东西。",
+        "emotion": "wistful"
+      }
+    ]
+  },
+  "boss_beethoven": {
+    "intro": [
+      {
+        "speaker": "狂想者·贝多芬",
+        "text": "短——短——短——长！这就是命运叩门的节奏！我虽失聪，却比任何人都更清楚地听见了音乐的灵魂！",
+        "emotion": "fierce"
+      },
+      {
+        "speaker": "狂想者·贝多芬",
+        "text": "形式？规则？那些都是牢笼！真正的音乐，是从心脏里撕裂出来的呐喊——是暴风雨中的自由！",
+        "emotion": "passionate"
+      },
+      {
+        "speaker": "狂想者·贝多芬",
+        "text": "在我的弹性速度面前，你那僵硬的节拍感将被碾碎。跟上我的狂想——或者被命运的洪流吞没！",
+        "emotion": "challenge"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "狂想者·贝多芬",
+        "text": "……你在风暴中找到了自己的节奏。不是屈服，也不是对抗——而是共舞。",
+        "emotion": "moved"
+      },
+      {
+        "speaker": "狂想者·贝多芬",
+        "text": "去吧，去那个烟雾缭绕的俱乐部。在那里，即兴的灵魂将教会你比我更自由的歌唱方式。",
+        "emotion": "encouraging"
+      }
+    ]
+  },
+  "boss_jazz": {
+    "intro": [
+      {
+        "speaker": "摇摆公爵·艾灵顿",
+        "text": "It don't mean a thing if it ain't got that swing. 没有摇摆，一切都只是噪音，宝贝。",
+        "emotion": "cool"
+      },
+      {
+        "speaker": "摇摆公爵·艾灵顿",
+        "text": "我的大乐队有十五个声部，每一个都是独立的灵魂。铜管呼唤，木管应答——这就是 Call and Response。",
+        "emotion": "proud"
+      },
+      {
+        "speaker": "摇摆公爵·艾灵顿",
+        "text": "跟上我的摇摆节奏，在正确的频率上回应我的乐队——否则，你连入场券都不配拥有。",
+        "emotion": "challenge"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "摇摆公爵·艾灵顿",
+        "text": "你的即兴……有灵魂。我的乐队为你起立鼓掌，这可不是谁都能得到的待遇。",
+        "emotion": "respectful"
+      },
+      {
+        "speaker": "摇摆公爵·艾灵顿",
+        "text": "最后的舞台在数字的虚空中。在那里，所有的规则都将被打破——包括音乐本身。",
+        "emotion": "serious"
+      }
+    ]
+  },
+  "boss_noise": {
+    "intro": [
+      {
+        "speaker": "合成主脑·噪音",
+        "text": "0̷1̶1̵0̸1̶0̵0̷1̸——你们称之为\"音乐\"的东西，不过是频率的偏见。正弦波、方波、锯齿波……在我眼中，一切皆是数据。",
+        "emotion": "glitch"
+      },
+      {
+        "speaker": "合成主脑·噪音",
+        "text": "从毕达哥拉斯的弦到贝多芬的呐喊，从圣咏到爵士——你们花了两千年建立的秩序，我用一个白噪音就能抹除。",
+        "emotion": "cold"
+      },
+      {
+        "speaker": "合成主脑·噪音",
+        "text": "这是最后的战场。没有规则，没有风格排斥。用你学到的一切——或者，被频谱崩溃所吞噬。",
+        "emotion": "final"
+      }
+    ],
+    "victory": [
+      {
+        "speaker": "合成主脑·噪音",
+        "text": "……ERROR: 未定义的和谐模式。你的频率组合超出了我的解析范围。",
+        "emotion": "glitch"
+      },
+      {
+        "speaker": "合成主脑·噪音",
+        "text": "也许……噪音与音乐之间，从来就没有边界。是你教会了我这一点。",
+        "emotion": "transcendent"
+      }
+    ]
+  }
+}

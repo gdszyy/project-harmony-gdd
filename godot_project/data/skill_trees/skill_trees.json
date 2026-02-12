@@ -1,0 +1,226 @@
+{
+  "instrument": {
+    "layout": "vertical",
+    "nodes": [
+      {
+        "id": "stage_presence",
+        "name": "舞台定力",
+        "desc": "初始最大生命值 +10/级",
+        "cost": 20,
+        "max_level": 10,
+        "layer": 0,
+        "slot": 0,
+        "prereqs": []
+      },
+      {
+        "id": "acoustic_pressure",
+        "name": "基础声压",
+        "desc": "法术基础伤害 +2%/级",
+        "cost": 25,
+        "max_level": 10,
+        "layer": 0,
+        "slot": 1,
+        "prereqs": []
+      },
+      {
+        "id": "rhythmic_sense",
+        "name": "节拍敏锐度",
+        "desc": "完美判定窗口 +15ms/级",
+        "cost": 30,
+        "max_level": 5,
+        "layer": 0,
+        "slot": 2,
+        "prereqs": []
+      },
+      {
+        "id": "pickup_range",
+        "name": "拾音范围",
+        "desc": "吸附范围 +20px/级",
+        "cost": 15,
+        "max_level": 8,
+        "layer": 0,
+        "slot": 3,
+        "prereqs": []
+      },
+      {
+        "id": "upbeat_velocity",
+        "name": "起拍速度",
+        "desc": "投射物速度 +3%/级",
+        "cost": 20,
+        "max_level": 8,
+        "layer": 0,
+        "slot": 4,
+        "prereqs": []
+      }
+    ]
+  },
+  "theory": {
+    "layout": "radial",
+    "nodes": [
+      {
+        "id": "black_key_tracking",
+        "name": "D# 追踪",
+        "desc": "解锁 D# 追踪修饰符",
+        "cost": 40,
+        "max_level": 1,
+        "layer": 0,
+        "slot": 0,
+        "prereqs": []
+      },
+      {
+        "id": "black_key_echo",
+        "name": "G# 回响",
+        "desc": "解锁 G# 回响修饰符",
+        "cost": 40,
+        "max_level": 1,
+        "layer": 0,
+        "slot": 1,
+        "prereqs": []
+      },
+      {
+        "id": "black_key_scatter",
+        "name": "A# 散射",
+        "desc": "解锁 A# 散射修饰符",
+        "cost": 50,
+        "max_level": 1,
+        "layer": 1,
+        "slot": 0,
+        "prereqs": [
+          "black_key_echo"
+        ]
+      },
+      {
+        "id": "chord_tension",
+        "name": "紧张度理论",
+        "desc": "解锁减三/增三和弦",
+        "cost": 60,
+        "max_level": 1,
+        "layer": 1,
+        "slot": 1,
+        "prereqs": []
+      },
+      {
+        "id": "chord_seventh",
+        "name": "七和弦解析",
+        "desc": "解锁属七/大七/小七/减七",
+        "cost": 80,
+        "max_level": 1,
+        "layer": 2,
+        "slot": 0,
+        "prereqs": [
+          "chord_tension"
+        ]
+      },
+      {
+        "id": "legend_chapter",
+        "name": "传说乐章许可",
+        "desc": "提升扩展和弦出现概率",
+        "cost": 120,
+        "max_level": 1,
+        "layer": 3,
+        "slot": 0,
+        "prereqs": [
+          "chord_seventh"
+        ]
+      }
+    ]
+  },
+  "modes": {
+    "layout": "constellation",
+    "nodes": [
+      {
+        "id": "ionian",
+        "name": "伊奥尼亚",
+        "desc": "[均衡者] C大调，全套白键",
+        "cost": 0,
+        "max_level": 1,
+        "layer": 0,
+        "slot": 0,
+        "prereqs": []
+      },
+      {
+        "id": "dorian",
+        "name": "多利亚",
+        "desc": "[民谣诗人] 小调色彩，自带回响",
+        "cost": 80,
+        "max_level": 1,
+        "layer": 1,
+        "slot": 0,
+        "prereqs": [
+          "ionian"
+        ]
+      },
+      {
+        "id": "pentatonic",
+        "name": "五声音阶",
+        "desc": "[东方行者] CDEGA，伤害+20%",
+        "cost": 60,
+        "max_level": 1,
+        "layer": 1,
+        "slot": 1,
+        "prereqs": [
+          "ionian"
+        ]
+      },
+      {
+        "id": "blues",
+        "name": "布鲁斯",
+        "desc": "[爵士乐手] 不和谐→暴击转化",
+        "cost": 100,
+        "max_level": 1,
+        "layer": 2,
+        "slot": 0,
+        "prereqs": [
+          "dorian"
+        ]
+      }
+    ]
+  },
+  "denoise": {
+    "layout": "ring",
+    "nodes": [
+      {
+        "id": "auditory_tolerance",
+        "name": "听觉耐受",
+        "desc": "单调值累积 -5%/级",
+        "cost": 35,
+        "max_level": 3,
+        "layer": 0,
+        "slot": 0,
+        "prereqs": []
+      },
+      {
+        "id": "reverb_damping",
+        "name": "混响消除",
+        "desc": "密度恢复 +10%/级",
+        "cost": 35,
+        "max_level": 3,
+        "layer": 0,
+        "slot": 1,
+        "prereqs": []
+      },
+      {
+        "id": "perfect_pitch",
+        "name": "绝对音感",
+        "desc": "不和谐腐蚀 -1HP/级",
+        "cost": 40,
+        "max_level": 3,
+        "layer": 0,
+        "slot": 2,
+        "prereqs": []
+      },
+      {
+        "id": "rest_aesthetics",
+        "name": "休止符美学",
+        "desc": "休止符清除效率 +15%/级",
+        "cost": 30,
+        "max_level": 3,
+        "layer": 1,
+        "slot": 0,
+        "prereqs": [
+          "auditory_tolerance"
+        ]
+      }
+    ]
+  }
+}

@@ -30,6 +30,18 @@ const DANGER := Color("#FF4D4D")
 const LOCKED_COLOR := Color("#6B668A")
 
 # ============================================================
+# 布局参数 — @export 支持编辑器实时调整
+# ============================================================
+@export_group("Layout")
+@export var star_count: int = 200
+@export var viewport_width: float = 1920.0
+@export var viewport_height: float = 1080.0
+@export var fragment_panel_width: float = 240.0
+@export var fragment_panel_height: float = 44.0
+@export var panel_corner_radius: int = 8
+@export var panel_content_margin: float = 16.0
+
+# ============================================================
 # 四大模块定义
 # ============================================================
 const MODULES := {
@@ -94,7 +106,7 @@ var _stars: Array[Dictionary] = []
 func _ready() -> void:
 	_meta = get_node_or_null("/root/MetaProgressionManager")
 	_load_state()
-	_generate_stars(200)
+	_generate_stars(star_count)
 	_build_ui_overlay()
 
 	if _meta:
@@ -125,7 +137,7 @@ func _generate_stars(count: int) -> void:
 	_stars.clear()
 	for i in range(count):
 		_stars.append({
-			"pos": Vector2(randf() * 1920.0, randf() * 1080.0),
+			"pos": Vector2(randf() * viewport_width, randf() * viewport_height),
 			"size": randf_range(0.5, 2.5),
 			"speed": randf_range(0.1, 0.5),
 			"phase": randf() * TAU,
@@ -147,17 +159,17 @@ func _build_ui_overlay() -> void:
 	frag_style.border_width_bottom = 1
 	frag_style.border_width_left = 1
 	frag_style.border_width_right = 1
-	frag_style.corner_radius_top_left = 8
-	frag_style.corner_radius_top_right = 8
-	frag_style.corner_radius_bottom_left = 8
-	frag_style.corner_radius_bottom_right = 8
-	frag_style.content_margin_left = 16
-	frag_style.content_margin_right = 16
+	frag_style.corner_radius_top_left = panel_corner_radius
+	frag_style.corner_radius_top_right = panel_corner_radius
+	frag_style.corner_radius_bottom_left = panel_corner_radius
+	frag_style.corner_radius_bottom_right = panel_corner_radius
+	frag_style.content_margin_left = int(panel_content_margin)
+	frag_style.content_margin_right = int(panel_content_margin)
 	frag_style.content_margin_top = 8
 	frag_style.content_margin_bottom = 8
 	frag_panel.add_theme_stylebox_override("panel", frag_style)
-	frag_panel.position = Vector2(1920 - 260, 16)
-	frag_panel.size = Vector2(240, 44)
+	frag_panel.position = Vector2(viewport_width - 260, 16)
+	frag_panel.size = Vector2(fragment_panel_width, fragment_panel_height)
 	add_child(frag_panel)
 
 	var frag_hbox := HBoxContainer.new()

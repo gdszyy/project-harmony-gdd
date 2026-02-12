@@ -26,18 +26,18 @@ signal wheel_closed()
 # 配置
 # ============================================================
 
-## 轮盘半径
-const WHEEL_RADIUS: float = 150.0
-## 内圈半径
-const INNER_RADIUS: float = 40.0
-## 打开/关闭动画时间
-const ANIM_DURATION: float = 0.15
+## 轮盘布局与动画 — @export 支持编辑器实时调整
+@export_group("Wheel Layout")
+@export var wheel_radius: float = 150.0        ## 轮盘半径
+@export var inner_radius: float = 40.0         ## 内圈半径
+@export var quadrant_count: int = 4            ## 象限数量
+@export var quadrant_gap: float = 0.06         ## 象限间隙角度
+
+@export_group("Animation")
+@export var anim_duration: float = 0.15        ## 打开/关闭动画时间
+
 ## 触发按键
 const TRIGGER_KEY: Key = KEY_TAB
-## 象限数量
-const QUADRANT_COUNT: int = 4
-## 象限间隙角度
-const QUADRANT_GAP: float = 0.06
 
 # ============================================================
 # 四大音色系别象限配置
@@ -183,9 +183,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _is_open:
-		_open_progress = min(1.0, _open_progress + delta / ANIM_DURATION)
+		_open_progress = min(1.0, _open_progress + delta / anim_duration)
 	else:
-		_open_progress = max(0.0, _open_progress - delta / ANIM_DURATION)
+		_open_progress = max(0.0, _open_progress - delta / anim_duration)
 		if _open_progress <= 0.0 and visible:
 			visible = false
 
@@ -241,7 +241,7 @@ func _close_wheel() -> void:
 	Engine.time_scale = 1.0
 
 	# 确认选择
-	if _selected_quadrant >= 0 and _selected_quadrant < QUADRANT_COUNT:
+	if _selected_quadrant >= 0 and _selected_quadrant < quadrant_count:
 		var quadrant: Dictionary = FAMILY_QUADRANTS[_selected_quadrant]
 		var timbres: Array = quadrant["timbres"]
 		if _selected_timbre_in_quadrant >= 0 and _selected_timbre_in_quadrant < timbres.size():
@@ -275,15 +275,15 @@ func _update_selection(mouse_pos: Vector2) -> void:
 	_mouse_distance = to_mouse.length()
 	_mouse_angle = to_mouse.angle()
 
-	if _mouse_distance < INNER_RADIUS:
+	if _mouse_distance < inner_radius:
 		_selected_quadrant = 4  # 中心
 		return
 
 	# 确定选中象限
 	_selected_quadrant = -1
-	var quadrant_half_angle := PI / 2.0 - QUADRANT_GAP
+	var quadrant_half_angle := PI / 2.0 - quadrant_gap
 
-	for i in range(QUADRANT_COUNT):
+	for i in range(quadrant_count):
 		var q: Dictionary = FAMILY_QUADRANTS[i]
 		var q_center: float = q["angle_center"]
 		var diff := _angle_diff(_mouse_angle, q_center)
@@ -293,7 +293,7 @@ func _update_selection(mouse_pos: Vector2) -> void:
 			var timbres: Array = q["timbres"]
 			if timbres.size() > 1:
 				# 多武器象限：根据径向距离选择
-				var radial_t := clamp((_mouse_distance - INNER_RADIUS) / (WHEEL_RADIUS - INNER_RADIUS), 0.0, 1.0)
+				var radial_t := clamp((_mouse_distance - inner_radius) / (wheel_radius - inner_radius), 0.0, 1.0)
 				_selected_timbre_in_quadrant = int(radial_t * float(timbres.size()))
 				_selected_timbre_in_quadrant = min(_selected_timbre_in_quadrant, timbres.size() - 1)
 			else:
@@ -315,21 +315,21 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var scale_val := _open_progress
 	var alpha := _open_progress
-	var quadrant_half_angle := PI / 2.0 - QUADRANT_GAP
+	var quadrant_half_angle := PI / 2.0 - quadrant_gap
 
 	# 半透明背景遮罩
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.0, 0.0, 0.0, 0.45 * alpha))
 
 	# ========== 绘制四个象限 ==========
-	for i in range(QUADRANT_COUNT):
+	for i in range(quadrant_count):
 		var q: Dictionary = FAMILY_QUADRANTS[i]
 		var is_selected := (i == _selected_quadrant)
 		var q_color: Color = q["color"]
 		var q_center: float = q["angle_center"]
 		var angle_start := q_center - quadrant_half_angle
 		var angle_end := q_center + quadrant_half_angle
-		var outer_r := WHEEL_RADIUS * scale_val
-		var inner_r := INNER_RADIUS * scale_val
+		var outer_r := wheel_radius * scale_val
+		var inner_r := inner_radius * scale_val
 
 		if is_selected:
 			outer_r *= 1.08
@@ -438,7 +438,7 @@ func _draw() -> void:
 			_draw_gain_badge(badge_pos, q["gain_text"], q_color, alpha)
 
 	# ========== 中心圆（合成主脑） ==========
-	var center_r := INNER_RADIUS * scale_val
+	var center_r := inner_radius * scale_val
 	var center_selected := (_selected_quadrant == 4)
 	var center_points := PackedVector2Array()
 	for i in range(24):
@@ -473,11 +473,11 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.0, 0.9, 0.7, 0.8 * alpha))
 
 	# ========== 选中象限详情面板 ==========
-	if _selected_quadrant >= 0 and _selected_quadrant < QUADRANT_COUNT:
+	if _selected_quadrant >= 0 and _selected_quadrant < quadrant_count:
 		_draw_detail_panel(font, alpha)
 
 	# ========== 快捷键提示 ==========
-	var hint_pos := _center + Vector2(0, -WHEEL_RADIUS * scale_val - 25)
+	var hint_pos := _center + Vector2(0, -wheel_radius * scale_val - 25)
 	draw_string(font, hint_pos + Vector2(-70, 0),
 		"松开 Tab 确认 | E 切换电子变体",
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 9, Color(0.5, 0.5, 0.6, 0.6 * alpha))
@@ -514,7 +514,7 @@ func _draw_detail_panel(font: Font, alpha: float) -> void:
 	var is_unlocked: bool = t_data["timbre"] in _unlocked_timbres
 	var is_chapter_timbre: bool = t_data["timbre"] == _current_chapter_timbre
 
-	var detail_pos := _center + Vector2(0, WHEEL_RADIUS * _open_progress + 35)
+	var detail_pos := _center + Vector2(0, wheel_radius * _open_progress + 35)
 	var detail_rect := Rect2(detail_pos + Vector2(-110, -5), Vector2(220, 55))
 
 	# 背景

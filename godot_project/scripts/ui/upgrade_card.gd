@@ -71,13 +71,14 @@ const DIRECTION_SYMBOLS := {
 }
 
 # ============================================================
-# 常量 — 布局 (§5.1)
+# 布局参数 (§5.1) — @export 支持编辑器实时调整
 # ============================================================
-const CARD_WIDTH: float = 240.0
-const CARD_HEIGHT: float = 320.0
-const CARD_CORNER_RADIUS: int = 12
-const ICON_SIZE: float = 64.0
-const TOP_BAR_HEIGHT: float = 4.0
+@export_group("Layout")
+@export var card_width: float = 240.0
+@export var card_height: float = 320.0
+@export var card_corner_radius: int = 12
+@export var icon_size: float = 64.0
+@export var top_bar_height: float = 4.0
 
 # ============================================================
 # 状态
@@ -104,7 +105,7 @@ var _rarity_label: Label = null
 # ============================================================
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	custom_minimum_size = Vector2(card_width, card_height)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_card_ui()
 
@@ -204,10 +205,10 @@ func _build_card_ui() -> void:
 	# 面板样式
 	var style := StyleBoxFlat.new()
 	style.bg_color = COL_BG
-	style.corner_radius_top_left = CARD_CORNER_RADIUS
-	style.corner_radius_top_right = CARD_CORNER_RADIUS
-	style.corner_radius_bottom_left = CARD_CORNER_RADIUS
-	style.corner_radius_bottom_right = CARD_CORNER_RADIUS
+	style.corner_radius_top_left = card_corner_radius
+	style.corner_radius_top_right = card_corner_radius
+	style.corner_radius_bottom_left = card_corner_radius
+	style.corner_radius_bottom_right = card_corner_radius
 	style.border_color = COL_ACCENT
 	style.border_width_left = 1
 	style.border_width_right = 1
@@ -224,13 +225,13 @@ func _build_card_ui() -> void:
 
 	# 顶部方向色条
 	_top_bar = ColorRect.new()
-	_top_bar.custom_minimum_size = Vector2(0, TOP_BAR_HEIGHT)
+	_top_bar.custom_minimum_size = Vector2(0, top_bar_height)
 	_top_bar.color = COL_ACCENT
 	vbox.add_child(_top_bar)
 
 	# 图标区域
 	var icon_center := CenterContainer.new()
-	icon_center.custom_minimum_size.y = ICON_SIZE + 16
+	icon_center.custom_minimum_size.y = icon_size + 16
 
 	_icon_label = Label.new()
 	_icon_label.text = "♮"

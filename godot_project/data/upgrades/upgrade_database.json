@@ -1,0 +1,475 @@
+{
+  "offense_upgrades": [
+    {
+      "id": "note_damage",
+      "category": "note_stat",
+      "rarity": "common",
+      "name": "音符强化",
+      "desc": "当前调性音符伤害 +1",
+      "stat": "damage",
+      "value": 1.0,
+      "tags": [
+        "进攻",
+        "强化"
+      ]
+    },
+    {
+      "id": "note_speed",
+      "category": "note_stat",
+      "rarity": "common",
+      "name": "音速提升",
+      "desc": "当前调性音符弹速 +0.5",
+      "stat": "speed",
+      "value": 0.5,
+      "tags": [
+        "进攻",
+        "强化"
+      ]
+    },
+    {
+      "id": "chord_power",
+      "category": "chord_mastery",
+      "rarity": "rare",
+      "name": "和弦威力",
+      "desc": "所有和弦伤害倍率 +0.1x",
+      "type": "chord_power",
+      "value": 0.1,
+      "tags": [
+        "进攻",
+        "和弦"
+      ]
+    },
+    {
+      "id": "bpm_boost",
+      "category": "rhythm_mastery",
+      "rarity": "rare",
+      "name": "节奏加速",
+      "desc": "基础 BPM +5",
+      "type": "bpm_boost",
+      "value": 5.0,
+      "tags": [
+        "进攻",
+        "节奏"
+      ]
+    },
+    {
+      "id": "perfect_beat_bonus",
+      "category": "special",
+      "rarity": "epic",
+      "name": "完美节奏",
+      "desc": "节拍对齐施法伤害 +25%",
+      "type": "perfect_beat_bonus",
+      "value": 0.25,
+      "tags": [
+        "进攻",
+        "节奏"
+      ]
+    },
+    {
+      "id": "chord_progression_boost",
+      "category": "special",
+      "rarity": "epic",
+      "name": "和声进行",
+      "desc": "和弦进行效果 +50%",
+      "type": "chord_progression_boost",
+      "value": 0.5,
+      "tags": [
+        "进攻",
+        "和弦"
+      ]
+    },
+    {
+      "id": "modifier_pierce",
+      "category": "modifier_mastery",
+      "rarity": "rare",
+      "name": "穿透精通",
+      "desc": "穿透效果增强，穿透数 +1",
+      "type": "modifier_boost",
+      "modifier": 0,
+      "value": 1,
+      "tags": [
+        "进攻",
+        "修饰符"
+      ]
+    },
+    {
+      "id": "modifier_split",
+      "category": "modifier_mastery",
+      "rarity": "rare",
+      "name": "分裂精通",
+      "desc": "分裂弹体数量 +1",
+      "type": "modifier_boost",
+      "modifier": 2,
+      "value": 1,
+      "tags": [
+        "进攻",
+        "修饰符"
+      ]
+    },
+    {
+      "id": "timbre_harmonic_amp",
+      "category": "timbre_mastery",
+      "rarity": "common",
+      "name": "泛音增幅",
+      "desc": "里拉琴共鸣伤害 +10%",
+      "type": "timbre_boost",
+      "timbre": "LYRE",
+      "value": 0.1,
+      "tags": [
+        "进攻",
+        "音色"
+      ]
+    },
+    {
+      "id": "timbre_counterpoint_acc",
+      "category": "timbre_mastery",
+      "rarity": "rare",
+      "name": "对位精度",
+      "desc": "羽管键琴对位弹体伤害 60% → 70%",
+      "type": "timbre_boost",
+      "timbre": "HARPSICHORD",
+      "value": 0.1,
+      "tags": [
+        "进攻",
+        "音色"
+      ]
+    },
+    {
+      "id": "timbre_velocity_master",
+      "category": "timbre_mastery",
+      "rarity": "rare",
+      "name": "力度大师",
+      "desc": "钢琴 forte 伤害倍率 1.5 → 1.8",
+      "type": "timbre_boost",
+      "timbre": "FORTEPIANO",
+      "value": 0.3,
+      "tags": [
+        "进攻",
+        "音色"
+      ]
+    },
+    {
+      "id": "rhythm_even_boost",
+      "category": "rhythm_mastery",
+      "rarity": "rare",
+      "name": "连射精通",
+      "desc": "连射节奏型弹体数量 +1",
+      "type": "rhythm_boost",
+      "rhythm": 0,
+      "value": 1,
+      "tags": [
+        "进攻",
+        "节奏"
+      ]
+    },
+    {
+      "id": "rhythm_triplet_boost",
+      "category": "rhythm_mastery",
+      "rarity": "rare",
+      "name": "三连精通",
+      "desc": "三连发伤害倍率 +0.2x",
+      "type": "rhythm_boost",
+      "rhythm": 4,
+      "value": 0.2,
+      "tags": [
+        "进攻",
+        "节奏"
+      ]
+    }
+  ],
+  "core_upgrades": [
+    {
+      "id": "note_acquire_random",
+      "category": "note_acquire",
+      "rarity": "common",
+      "name": "随机音符",
+      "desc": "获得1个随机音符",
+      "type": "random_note",
+      "value": 1,
+      "tags": [
+        "核心",
+        "音符"
+      ]
+    },
+    {
+      "id": "note_acquire_specific",
+      "category": "note_acquire",
+      "rarity": "rare",
+      "name": "指定音符",
+      "desc": "获得1个当前调性根音",
+      "type": "specific_note",
+      "value": 1,
+      "tags": [
+        "核心",
+        "音符"
+      ]
+    },
+    {
+      "id": "all_boost",
+      "category": "note_stat",
+      "rarity": "epic",
+      "name": "全维强化",
+      "desc": "当前调性音符所有参数 +0.25",
+      "stat": "all",
+      "value": 0.25,
+      "tags": [
+        "核心",
+        "强化"
+      ]
+    },
+    {
+      "id": "timbre_switch_free",
+      "category": "timbre_mastery",
+      "rarity": "epic",
+      "name": "音色自如",
+      "desc": "音色切换不再产生疲劳",
+      "type": "timbre_switch_free",
+      "tags": [
+        "核心",
+        "音色"
+      ]
+    },
+    {
+      "id": "extended_unlock",
+      "category": "chord_mastery",
+      "rarity": "legendary",
+      "name": "扩展和弦解锁",
+      "desc": "解锁5-6音扩展和弦",
+      "type": "extended_unlock",
+      "tags": [
+        "核心",
+        "和弦"
+      ]
+    },
+    {
+      "id": "multi_modifier",
+      "category": "special",
+      "rarity": "legendary",
+      "name": "复合修饰",
+      "desc": "允许同时应用2个黑键修饰符",
+      "type": "multi_modifier",
+      "tags": [
+        "核心",
+        "修饰符"
+      ]
+    },
+    {
+      "id": "timbre_waveform_fusion",
+      "category": "timbre_mastery",
+      "rarity": "epic",
+      "name": "波形融合",
+      "desc": "合成主脑可同时激活两种波形",
+      "type": "timbre_boost",
+      "timbre": "SYNTHESIZER",
+      "value": 1,
+      "tags": [
+        "核心",
+        "音色"
+      ]
+    },
+    {
+      "id": "note_acquire_double",
+      "category": "note_acquire",
+      "rarity": "rare",
+      "name": "音符丰收",
+      "desc": "获得2个随机音符",
+      "type": "random_note",
+      "value": 2,
+      "tags": [
+        "核心",
+        "音符"
+      ]
+    }
+  ],
+  "defense_upgrades": [
+    {
+      "id": "max_hp",
+      "category": "survival",
+      "rarity": "common",
+      "name": "生命强化",
+      "desc": "最大生命值 +25",
+      "type": "max_hp",
+      "value": 25.0,
+      "tags": [
+        "防御",
+        "生存"
+      ]
+    },
+    {
+      "id": "dodge",
+      "category": "survival",
+      "rarity": "rare",
+      "name": "闪避本能",
+      "desc": "基础闪避率 +3%",
+      "type": "dodge",
+      "value": 0.03,
+      "tags": [
+        "防御",
+        "生存"
+      ]
+    },
+    {
+      "id": "monotony_resist",
+      "category": "fatigue_resist",
+      "rarity": "rare",
+      "name": "单调耐受",
+      "desc": "单调值累积速率 -10%",
+      "type": "monotony_resist",
+      "value": 0.1,
+      "tags": [
+        "防御",
+        "疲劳"
+      ]
+    },
+    {
+      "id": "dissonance_decay",
+      "category": "fatigue_resist",
+      "rarity": "rare",
+      "name": "不和谐消散",
+      "desc": "不和谐值自然衰减 +0.5/秒",
+      "type": "dissonance_decay",
+      "value": 0.5,
+      "tags": [
+        "防御",
+        "疲劳"
+      ]
+    },
+    {
+      "id": "density_resist",
+      "category": "fatigue_resist",
+      "rarity": "rare",
+      "name": "密度耐受",
+      "desc": "密度疲劳累积速率 -10%",
+      "type": "density_resist",
+      "value": 0.1,
+      "tags": [
+        "防御",
+        "疲劳"
+      ]
+    },
+    {
+      "id": "modifier_homing",
+      "category": "modifier_mastery",
+      "rarity": "rare",
+      "name": "追踪精通",
+      "desc": "追踪速度 +50%",
+      "type": "modifier_boost",
+      "modifier": 1,
+      "value": 0.5,
+      "tags": [
+        "防御",
+        "修饰符"
+      ]
+    },
+    {
+      "id": "modifier_echo",
+      "category": "modifier_mastery",
+      "rarity": "rare",
+      "name": "回响精通",
+      "desc": "回响次数 +1",
+      "type": "modifier_boost",
+      "modifier": 3,
+      "value": 1,
+      "tags": [
+        "防御",
+        "修饰符"
+      ]
+    },
+    {
+      "id": "timbre_voice_extend",
+      "category": "timbre_mastery",
+      "rarity": "common",
+      "name": "声部扩展",
+      "desc": "管风琴最大声部层 +1（5 层）",
+      "type": "timbre_boost",
+      "timbre": "ORGAN",
+      "value": 1,
+      "tags": [
+        "防御",
+        "音色"
+      ]
+    },
+    {
+      "id": "timbre_emotion_resonance",
+      "category": "timbre_mastery",
+      "rarity": "rare",
+      "name": "情感共鸣",
+      "desc": "管弦全奏情感强度递增速度 +50%",
+      "type": "timbre_boost",
+      "timbre": "TUTTI",
+      "value": 0.5,
+      "tags": [
+        "防御",
+        "音色"
+      ]
+    },
+    {
+      "id": "rhythm_rest_boost",
+      "category": "rhythm_mastery",
+      "rarity": "rare",
+      "name": "蓄力精通",
+      "desc": "休止符蓄力加成 +0.3/个",
+      "type": "rhythm_boost",
+      "rhythm": 5,
+      "value": 0.3,
+      "tags": [
+        "防御",
+        "节奏"
+      ]
+    },
+    {
+      "id": "electronic_variant_unlock",
+      "category": "timbre_mastery",
+      "rarity": "rare",
+      "name": "电子乐变体",
+      "desc": "将当前音色武器切换为电子乐变体（疲劳 -50%）",
+      "type": "electronic_variant",
+      "tags": [
+        "防御",
+        "音色"
+      ]
+    }
+  ],
+  "breakthrough_events": [
+    {
+      "id": "bt_seventh_chords",
+      "name": "七和弦觉醒",
+      "desc": "解锁七和弦系列：属七、大七、小七、减七和弦",
+      "type": "unlock_seventh_chords",
+      "rarity": "legendary",
+      "icon": "VII"
+    },
+    {
+      "id": "bt_extended_chords",
+      "name": "扩展和弦领悟",
+      "desc": "解锁5-6音扩展和弦：九和弦、十一和弦、十三和弦",
+      "type": "extended_unlock",
+      "rarity": "legendary",
+      "icon": "EXT"
+    },
+    {
+      "id": "bt_black_key_mastery",
+      "name": "黑键精通",
+      "desc": "黑键修饰符效果翻倍，解锁双重修饰",
+      "type": "black_key_mastery",
+      "rarity": "legendary",
+      "icon": "#b"
+    },
+    {
+      "id": "bt_chord_progression",
+      "name": "和声进行觉醒",
+      "desc": "解锁和弦功能转换系统：T→D→T 循环产生额外效果",
+      "type": "chord_progression_unlock",
+      "rarity": "legendary",
+      "icon": "I-V"
+    },
+    {
+      "id": "bt_modal_interchange",
+      "name": "调式交替",
+      "desc": "允许在同一局内切换调式，每次切换获得临时增益",
+      "type": "modal_interchange",
+      "rarity": "legendary",
+      "icon": "M↔"
+    }
+  ]
+}
