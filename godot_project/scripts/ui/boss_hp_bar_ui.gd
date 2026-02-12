@@ -71,6 +71,7 @@ var _visible_target: bool = false
 # ============================================================
 
 func _ready() -> void:
+	add_to_group("boss_health_bar")
 	_build_ui()
 	visible = false
 
@@ -224,6 +225,39 @@ func set_phase(phase_index: int) -> void:
 		_phase_label.text = "阶段: %s" % _phase_names[phase_index]
 
 	phase_changed.emit(phase_index)
+
+## 兼容接口：供 boss_spawner.gd 通过 get_first_node_in_group("boss_health_bar") 调用
+## 内部委托给 setup_boss() 和 update_hp()，桥接旧版 boss_health_bar.gd 的调用约定
+func show_boss_bar(boss_node: Node) -> void:
+	if boss_node == null:
+		return
+
+	# 从 boss_node 获取显示数据
+	var b_name: String = boss_node.get("boss_name") if boss_node.get("boss_name") else "Boss"
+	var chapter: int = 1
+	var b_max_hp: float = boss_node.get("max_hp") if boss_node.get("max_hp") else 1000.0
+	var b_current_hp: float = boss_node.get("current_hp") if boss_node.get("current_hp") else b_max_hp
+	var phase_names: Array = []
+
+	# 尝试从 boss_bar_data 获取更丰富的信息
+	if boss_node.has_method("get_boss_bar_data"):
+		var data: Dictionary = boss_node.get_boss_bar_data()
+		b_name = data.get("name", b_name)
+		b_max_hp = data.get("max_hp", b_max_hp)
+		b_current_hp = data.get("hp", b_current_hp)
+		var total_phases: int = data.get("total_phases", 1)
+		for i in range(total_phases):
+			phase_names.append("Phase %d" % (i + 1))
+
+	# 尝试从 ChapterManager 获取当前章节
+	var chapter_mgr := Engine.get_singleton("ChapterManager") if Engine.has_singleton("ChapterManager") else null
+	if chapter_mgr == null:
+		chapter_mgr = boss_node.get_tree().root.get_node_or_null("ChapterManager")
+	if chapter_mgr and chapter_mgr.has_method("get_current_chapter_index"):
+		chapter = clampi(chapter_mgr.get_current_chapter_index() + 1, 1, 5)
+
+	setup_boss(b_name, chapter, b_max_hp, phase_names)
+	update_hp(b_current_hp, b_max_hp)
 
 ## 隐藏血条
 func hide_boss_bar() -> void:

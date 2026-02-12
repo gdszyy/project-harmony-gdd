@@ -157,6 +157,32 @@ func _start_normal_game() -> void:
 	if class_mgr and class_mgr.has_method("apply_class"):
 		class_mgr.apply_class()
 
+	# Issue #115: 初始化新手引导系统
+	var tutorial_mgr := get_node_or_null("/root/TutorialManager")
+	if tutorial_mgr and tutorial_mgr.should_show_tutorial():
+		tutorial_mgr.start_tutorial()
+
+	# Issue #115: 初始化随机变异器系统
+	var mutator_mgr := get_node_or_null("/root/MutatorManager")
+	if mutator_mgr:
+		mutator_mgr.roll_mutators()
+
+	# Issue #115: 加载变异器 HUD
+	var mutator_hud_script := load("res://scripts/ui/mutator_hud.gd")
+	if mutator_hud_script:
+		var mutator_hud := CanvasLayer.new()
+		mutator_hud.name = "MutatorHUD"
+		mutator_hud.set_script(mutator_hud_script)
+		add_child(mutator_hud)
+
+	# Issue #115: 加载里程碑 HUD
+	var milestone_hud_script := load("res://scripts/ui/milestone_hud.gd")
+	if milestone_hud_script:
+		var milestone_hud := CanvasLayer.new()
+		milestone_hud.name = "MilestoneHUD"
+		milestone_hud.set_script(milestone_hud_script)
+		add_child(milestone_hud)
+
 func _process_normal_game(delta: float) -> void:
 	# 游戏结束延迟跳转
 	if _game_over_timer >= 0.0:

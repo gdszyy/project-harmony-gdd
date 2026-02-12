@@ -1,0 +1,59 @@
+graph TD
+    subgraph MODE["调式选择界面 — 天体调音仪 (Celestial Orrery)"]
+        direction TB
+        
+        subgraph ORRERY["中央: 天体调音仪"]
+            direction TB
+            SELECTED["🔮 当前选中\nIonian (伊奥尼亚)\n[均衡者]"]
+            
+            subgraph RING["外环: 调式符文"]
+                M1(("Ionian\n✓"))
+                M2(("Dorian\n✓"))
+                M3(("Phrygian\n🔒"))
+                M4(("Lydian\n🔒"))
+                M5(("Locrian\n🔒"))
+                M6(("Pentatonic\n✓"))
+                M7(("Blues\n🔒"))
+            end
+            
+            subgraph CORE_DISPLAY["核心: 音阶结构"]
+                SCALE["C D E F G A B\n● ● ● ● ● ● ●\n(全部亮起 = 7音)"]
+            end
+        end
+        
+        subgraph INFO["右侧: 信息面板"]
+            TITLE["Ionian (伊奥尼亚)\n[均衡者]"]
+            DESC["C大调音阶, 初始拥有全套白键\n最经典的音阶, 适合新手入门"]
+            
+            subgraph PROS_CONS["优劣势对比"]
+                PROS["✅ 优势\n━━━━━━━━━━━━\n和谐度高\n资源管理容易\n和弦构建灵活"]
+                CONS["❌ 劣势\n━━━━━━━━━━━━\n爆发力中等\n无特殊被动\n缺乏风格特色"]
+            end
+        end
+        
+        BTN["▶ 奏响序曲 (Play Overture)"]
+    end
+    
+    SELECTED --> SCALE
+    M1 --> SELECTED
+    
+    style SELECTED fill:#9D6FFF,stroke:#EAE6FF,stroke-width:3px,color:#EAE6FF
+    style M1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style M2 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style M3 fill:#141026,stroke:#A098C8,stroke-width:1px,color:#A098C8
+    style M4 fill:#141026,stroke:#A098C8,stroke-width:1px,color:#A098C8
+    style M5 fill:#141026,stroke:#A098C8,stroke-width:1px,color:#A098C8
+    style M6 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style M7 fill:#141026,stroke:#A098C8,stroke-width:1px,color:#A098C8
+    style SCALE fill:#141026,stroke:#00FFD4,stroke-width:2px,color:#00FFD4
+    style TITLE fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style DESC fill:#141026,stroke:none,color:#A098C8
+    style PROS fill:#141026,stroke:#66FFB2,stroke-width:1px,color:#66FFB2
+    style CONS fill:#141026,stroke:#FF2244,stroke-width:1px,color:#FF2244
+    style BTN fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style MODE fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style ORRERY fill:#0A0814,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style RING fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style CORE_DISPLAY fill:#141026,stroke:#00FFD4,stroke-width:1px,color:#EAE6FF
+    style INFO fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style PROS_CONS fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF

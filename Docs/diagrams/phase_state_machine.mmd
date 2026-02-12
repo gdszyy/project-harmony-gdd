@@ -1,0 +1,37 @@
+stateDiagram-v2
+    direction LR
+    
+    [*] --> Fundamental : 游戏开始
+    
+    Fundamental --> Overtone : 按键切换\n消耗10能量
+    Fundamental --> SubBass : 按键切换\n消耗10能量
+    
+    Overtone --> Fundamental : 按键切换 / 能量耗尽
+    Overtone --> SubBass : 按键切换\n消耗10能量
+    
+    SubBass --> Fundamental : 按键切换 / 能量耗尽
+    SubBass --> Overtone : 按键切换\n消耗10能量
+    
+    state Fundamental {
+        [*] --> F_Active
+        F_Active : 🟣 全频相位
+        F_Active : 能量恢复中
+        F_Active : 疲劳降低中
+        F_Active : HUD原色调
+    }
+    
+    state Overtone {
+        [*] --> O_Active
+        O_Active : 🔵 高通相位
+        O_Active : 能量持续消耗 5/秒
+        O_Active : 偏移疲劳增长
+        O_Active : HUD冷色调
+    }
+    
+    state SubBass {
+        [*] --> S_Active
+        S_Active : 🟠 低通相位
+        S_Active : 能量持续消耗 5/秒
+        S_Active : 偏移疲劳增长
+        S_Active : HUD暖色调
+    }

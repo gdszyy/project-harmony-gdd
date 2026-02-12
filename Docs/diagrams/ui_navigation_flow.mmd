@@ -1,0 +1,52 @@
+graph TD
+    subgraph NAV["和谐殿堂 UI 导航流程"]
+        MAIN_MENU["主菜单\nMain Menu"]
+        
+        HALL["和谐殿堂\nHall of Harmony"]
+        
+        IT["乐器调优\nInstrument Tuning"]
+        TA["乐理研习\nTheory Archives"]
+        MM["调式风格\nMode Mastery"]
+        AT["声学降噪\nAcoustic Treatment"]
+        
+        PROGRESS["进度与成就\nProgress & Achievements"]
+        
+        MODE_SELECT["调式选择\nMode Selection"]
+        
+        GAMEPLAY["局内游戏\nIn-Run Gameplay"]
+        
+        RUN_RESULTS["单局结算\nRun Results"]
+        
+        MAIN_MENU -->|"进入殿堂"| HALL
+        
+        HALL -->|"点击星宿"| IT
+        HALL -->|"点击星宿"| TA
+        HALL -->|"点击星宿"| MM
+        HALL -->|"点击星宿"| AT
+        HALL -->|"点击命运交响诗"| PROGRESS
+        HALL -->|"开始演奏"| MODE_SELECT
+        
+        IT -->|"返回"| HALL
+        TA -->|"返回"| HALL
+        MM -->|"返回"| HALL
+        AT -->|"返回"| HALL
+        PROGRESS -->|"返回"| HALL
+        
+        MODE_SELECT -->|"奏响序曲"| GAMEPLAY
+        MODE_SELECT -->|"返回"| HALL
+        
+        GAMEPLAY -->|"游戏结束"| RUN_RESULTS
+        RUN_RESULTS -->|"回归殿堂"| HALL
+    end
+    
+    style MAIN_MENU fill:#141026,stroke:#A098C8,stroke-width:2px,color:#EAE6FF
+    style HALL fill:#9D6FFF,stroke:#EAE6FF,stroke-width:3px,color:#EAE6FF
+    style IT fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style TA fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style MM fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style AT fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style PROGRESS fill:#141026,stroke:#FFD700,stroke-width:2px,color:#EAE6FF
+    style MODE_SELECT fill:#141026,stroke:#00FFD4,stroke-width:2px,color:#EAE6FF
+    style GAMEPLAY fill:#0A0814,stroke:#00FFD4,stroke-width:2px,color:#00FFD4
+    style RUN_RESULTS fill:#141026,stroke:#FFD700,stroke-width:2px,color:#EAE6FF
+    style NAV fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF

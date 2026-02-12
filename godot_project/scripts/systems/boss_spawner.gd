@@ -1,7 +1,7 @@
 ## boss_spawner.gd
-## Boss 生成管理器 v3.0 — 叙事对话 + 环境装饰 + BGM 集成版 (Issue #114)
+## Boss 生成管理器 v3.1 — 章节系统 + 计时模式 + 叙事对话 + 环境装饰 + BGM 集成版
 ## 负责 Boss 的生成时机、入场动画、Boss 战流程管理。
-## 与 ChapterManager 协作，根据当前章节配置生成对应的最终 Boss。
+## 与 ChapterManager / TimedMilestoneManager 协作。
 ##
 ## v3.0 新增 (Issue #114):
 ##   - 集成 BossDialogue 叙事对话系统（战前引入 + 战后胜利）
@@ -9,9 +9,14 @@
 ##   - 集成 BossBGMController Boss 战 BGM 变体
 ##   - Boss 阶段切换时联动环境和 BGM 变化
 ##
-## 两种模式：
+## v3.1 新增 (Issue #115):
+##   - 计时模式：由 TimedMilestoneManager 触发，在 5/10/15/20 分钟里程碑生成 Boss
+##   - 与 DifficultyManager 联动的 Boss HP 缩放
+##
+## 三种模式：
 ##   - 传统模式：每 N 波触发 Boss 战
 ##   - 章节模式：由 ChapterManager 触发，生成章节对应 Boss
+##   - 计时模式：由 TimedMilestoneManager 触发，在5/10/15/20分钟里程碑生成 Boss (Issue #115)
 extends Node
 
 # ============================================================
@@ -81,9 +86,9 @@ var _current_boss_key: String = ""
 # ============================================================
 # Issue #114: 子系统引用
 # ============================================================
-var _boss_dialogue: BossDialogue = null
-var _boss_arena_decorator: BossArenaDecorator = null
-var _boss_bgm_controller: BossBGMController = null
+var _boss_dialogue = null  ## BossDialogue
+var _boss_arena_decorator = null  ## BossArenaDecorator
+var _boss_bgm_controller = null  ## BossBGMController
 
 # ============================================================
 # 生命周期
@@ -117,21 +122,30 @@ func _preload_boss_scenes() -> void:
 ## Issue #114: 初始化 Boss 战体验子系统
 func _init_boss_experience_systems() -> void:
 	# 1. 叙事对话系统
-	_boss_dialogue = BossDialogue.new()
-	_boss_dialogue.name = "BossDialogue"
-	add_child(_boss_dialogue)
+	var BossDialogueScript = load("res://scripts/ui/boss_dialogue.gd")
+	if BossDialogueScript:
+		_boss_dialogue = Node.new()
+		_boss_dialogue.set_script(BossDialogueScript)
+		_boss_dialogue.name = "BossDialogue"
+		add_child(_boss_dialogue)
 	
 	# 2. 环境装饰系统
-	_boss_arena_decorator = BossArenaDecorator.new()
-	_boss_arena_decorator.name = "BossArenaDecorator"
-	add_child(_boss_arena_decorator)
+	var BossArenaScript = load("res://scripts/systems/boss_arena_decorator.gd")
+	if BossArenaScript:
+		_boss_arena_decorator = Node.new()
+		_boss_arena_decorator.set_script(BossArenaScript)
+		_boss_arena_decorator.name = "BossArenaDecorator"
+		add_child(_boss_arena_decorator)
 	
 	# 3. BGM 变体控制器
-	_boss_bgm_controller = BossBGMController.new()
-	_boss_bgm_controller.name = "BossBGMController"
-	add_child(_boss_bgm_controller)
+	var BossBGMScript = load("res://scripts/systems/boss_bgm_controller.gd")
+	if BossBGMScript:
+		_boss_bgm_controller = Node.new()
+		_boss_bgm_controller.set_script(BossBGMScript)
+		_boss_bgm_controller.name = "BossBGMController"
+		add_child(_boss_bgm_controller)
 	
-	print("[BossSpawner] Issue #114: Boss 战体验子系统已初始化 (对话/环境/BGM)")
+	print("[BossSpawner] v3.1: Boss 战体验子系统已初始化 (对话/环境/BGM)")
 
 # ============================================================
 # 公共接口
@@ -189,6 +203,35 @@ func spawn_chapter_boss(chapter_index: int, boss_config: Dictionary) -> void:
 		)
 	)
 
+## 计时模式：由 TimedMilestoneManager 触发 (Issue #115)
+func spawn_timed_boss(boss_key: String, player_pos: Vector2, difficulty_bonus: float = 0.0) -> void:
+	if _boss_fight_active:
+		return
+
+	_chapter_mode = false
+	_current_boss_key = boss_key
+
+	# Issue #114 + #115: 先播放 Boss 战警告，再走入场序列
+	_play_boss_warning(boss_key, func():
+		_start_boss_intro_sequence(boss_key, func():
+			# 警告结束后生成 Boss
+			var scene: PackedScene = _cached_boss_scenes.get(boss_key)
+			if scene:
+				var boss := scene.instantiate()
+				_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
+			else:
+				# 后备：从代码生成
+				var BossScript = load("res://scripts/entities/enemies/boss_dissonant_conductor.gd")
+				if BossScript:
+					var boss := CharacterBody2D.new()
+					boss.set_script(BossScript)
+					_create_boss_nodes(boss)
+					_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
+				else:
+					push_error("BossSpawner: Cannot create timed boss: %s" % boss_key)
+		)
+	)
+
 # ============================================================
 # Issue #114: Boss 入场完整序列
 # ============================================================
@@ -196,15 +239,15 @@ func spawn_chapter_boss(chapter_index: int, boss_config: Dictionary) -> void:
 ## Boss 入场序列：对话 → 环境 → BGM → 生成
 func _start_boss_intro_sequence(boss_key: String, on_complete: Callable) -> void:
 	# 步骤 1: 激活环境装饰（与对话并行，提前营造氛围）
-	if _boss_arena_decorator:
+	if _boss_arena_decorator and _boss_arena_decorator.has_method("activate_boss_arena"):
 		_boss_arena_decorator.activate_boss_arena(boss_key)
 	
 	# 步骤 2: 启动 Boss BGM 变体
-	if _boss_bgm_controller:
+	if _boss_bgm_controller and _boss_bgm_controller.has_method("enter_boss_bgm"):
 		_boss_bgm_controller.enter_boss_bgm(boss_key)
 	
 	# 步骤 3: 播放战前叙事对话
-	if _boss_dialogue and _boss_dialogue.has_dialogue(boss_key, "intro"):
+	if _boss_dialogue and _boss_dialogue.has_method("has_dialogue") and _boss_dialogue.has_dialogue(boss_key, "intro"):
 		_boss_dialogue.dialogue_completed.connect(
 			func(_bk: String, _dt: String):
 				on_complete.call(),
@@ -222,7 +265,7 @@ func _start_boss_intro_sequence(boss_key: String, on_complete: Callable) -> void
 
 ## Boss 击败后的胜利序列：对话 → 清理
 func _start_boss_victory_sequence(boss_key: String, on_complete: Callable) -> void:
-	if _boss_dialogue and _boss_dialogue.has_dialogue(boss_key, "victory"):
+	if _boss_dialogue and _boss_dialogue.has_method("has_dialogue") and _boss_dialogue.has_dialogue(boss_key, "victory"):
 		_boss_dialogue.dialogue_completed.connect(
 			func(_bk: String, _dt: String):
 				on_complete.call(),
@@ -237,98 +280,85 @@ func _start_boss_victory_sequence(boss_key: String, on_complete: Callable) -> vo
 	else:
 		on_complete.call()
 
-# ============================================================
-# 章节Boss触发处理
-# ============================================================
-
-func _on_chapter_boss_triggered(chapter_index: int, boss_key: String) -> void:
-	var config = ChapterData.get_chapter_config(chapter_index)
-	var boss_config: Dictionary = config.get("boss", {})
-	spawn_chapter_boss(chapter_index, boss_config)
-
-func _spawn_chapter_boss_instance(boss_key: String, script_path: String, player_pos: Vector2) -> void:
-	var boss: CharacterBody2D = null
-	
-	# 尝试加载Boss脚本
-	var script = _cached_boss_scripts.get(boss_key)
-	if script == null and script_path != "":
-		script = load(script_path)
-		if script:
-			_cached_boss_scripts[boss_key] = script
-	
-	if script:
-		boss = CharacterBody2D.new()
-		boss.set_script(script)
-		_create_boss_nodes(boss)
-	else:
-		# 后备：尝试场景
-		var scene: PackedScene = _cached_boss_scenes.get(boss_key)
-		if scene:
-			boss = scene.instantiate() as CharacterBody2D
-	
-	if boss == null:
-		push_error("BossSpawner: Cannot create boss: %s" % boss_key)
-		return
-	
-	_setup_boss(boss, player_pos, boss_key)
-
-# ============================================================
-# Boss 战警告
-# ============================================================
-
+## Boss 战警告（屏幕震动 + 警告文字）
 func _play_boss_warning(boss_key: String, on_complete: Callable) -> void:
 	boss_intro_started.emit(boss_key)
 	
-	# 通知 EnemySpawner 进入Boss阶段
+	# 清场
 	var spawner := get_tree().get_first_node_in_group("enemy_spawner")
-	if spawner and spawner.has_method("enter_boss_phase"):
-		spawner.enter_boss_phase()
+	if spawner and spawner.has_method("clear_all_enemies"):
+		spawner.clear_all_enemies()
 	
-	# 警告期间等待
-	get_tree().create_timer(boss_warning_duration).timeout.connect(func():
+	# 等待清场延迟后继续
+	get_tree().create_timer(pre_boss_clear_delay).timeout.connect(func():
 		boss_intro_completed.emit(boss_key)
 		on_complete.call()
 	)
 
 # ============================================================
-# Boss 设置（通用）
+# 章节 Boss 生成
+# ============================================================
+
+func _on_chapter_boss_triggered(chapter_index: int, boss_config: Dictionary) -> void:
+	spawn_chapter_boss(chapter_index, boss_config)
+
+func _spawn_chapter_boss_instance(boss_key: String, script_path: String, player_pos: Vector2) -> void:
+	var boss: Node = null
+	
+	# 尝试加载场景
+	var scene_path: String = BOSS_SCENES.get(boss_key, "")
+	if scene_path and ResourceLoader.exists(scene_path):
+		var scene := load(scene_path) as PackedScene
+		if scene:
+			boss = scene.instantiate()
+	
+	# 后备：从脚本创建
+	if boss == null and script_path and ResourceLoader.exists(script_path):
+		var script := load(script_path)
+		if script:
+			boss = CharacterBody2D.new()
+			boss.set_script(script)
+			_create_boss_nodes(boss)
+	
+	if boss == null:
+		push_error("BossSpawner: Cannot create chapter boss: %s (script: %s)" % [boss_key, script_path])
+		return
+	
+	_setup_boss(boss, player_pos, boss_key)
+
+# ============================================================
+# Boss 设置
 # ============================================================
 
 func _setup_boss(boss: Node, player_pos: Vector2, boss_key: String) -> void:
 	_boss_fight_active = true
 	_current_boss = boss
 	
-	# 计算生成位置
-	var angle := randf() * TAU
-	var spawn_pos := player_pos + Vector2.from_angle(angle) * boss_spawn_distance
-	boss.global_position = spawn_pos
+	# 设置位置
+	var spawn_offset := Vector2.RIGHT.rotated(randf() * TAU) * boss_spawn_distance
+	boss.global_position = player_pos + spawn_offset
 	
-	# 难度缩放
-	var difficulty_mult := 1.0 + (_boss_index * 0.3)
-	if _chapter_mode:
-		difficulty_mult += _current_chapter_index * 0.2
-		var chapter_mgr := get_node_or_null("/root/ChapterManager")
-		if chapter_mgr and chapter_mgr.has_method("get_global_difficulty"):
-			difficulty_mult += chapter_mgr.get_global_difficulty() * 0.15
-	
-	var base_hp: float = boss.get("max_hp") if boss.get("max_hp") else 5000.0
-	boss.set("max_hp", base_hp * difficulty_mult)
-	boss.set("current_hp", base_hp * difficulty_mult)
+	# 设置碰撞层
+	if boss is CharacterBody2D:
+		boss.collision_layer = 2
+		boss.collision_mask = 1
 	
 	# 添加到场景
-	add_child(boss)
+	var game_root := get_tree().current_scene
+	if game_root:
+		game_root.add_child(boss)
 	
 	# 连接信号
 	if boss.has_signal("boss_defeated"):
 		boss.boss_defeated.connect(_on_boss_defeated)
-	if boss.has_signal("boss_phase_changed"):
-		boss.boss_phase_changed.connect(_on_boss_phase_changed)
-	if boss.has_signal("enemy_died"):
-		boss.enemy_died.connect(_on_boss_died)
-	if boss.has_signal("boss_summon_minions"):
-		boss.boss_summon_minions.connect(_on_boss_summon_minions)
+	if boss.has_signal("died"):
+		boss.died.connect(_on_boss_died)
+	if boss.has_signal("phase_changed"):
+		boss.phase_changed.connect(_on_boss_phase_changed)
+	if boss.has_signal("summon_minions"):
+		boss.summon_minions.connect(_on_boss_summon_minions)
 	
-	# 入场动画
+	# 播放入场动画
 	_play_boss_intro(boss)
 	
 	# 显示 Boss 血条
@@ -337,6 +367,32 @@ func _setup_boss(boss: Node, player_pos: Vector2, boss_key: String) -> void:
 	
 	boss_spawned.emit(boss)
 	
+	var boss_display_name: String = boss.get("boss_name") if boss.get("boss_name") else boss_key
+	boss_fight_started.emit(boss_display_name)
+
+## 计时模式 Boss 设置 (Issue #115)
+func _setup_timed_boss(boss: Node, player_pos: Vector2, boss_key: String, difficulty_bonus: float) -> void:
+	# 应用难度加成
+	if difficulty_bonus > 0.0 and boss.has_method("apply_difficulty_scaling"):
+		boss.apply_difficulty_scaling(difficulty_bonus)
+	elif difficulty_bonus > 0.0:
+		# 直接修改属性
+		if "max_hp" in boss:
+			boss.max_hp = int(boss.max_hp * (1.0 + difficulty_bonus))
+		if "hp" in boss:
+			boss.hp = boss.max_hp
+		if "contact_damage" in boss:
+			boss.contact_damage = int(boss.contact_damage * (1.0 + difficulty_bonus * 0.5))
+	
+	# 使用通用设置
+	_setup_boss(boss, player_pos, boss_key)
+
+	# 显示 Boss 血条
+	if _boss_health_bar and _boss_health_bar.has_method("show_boss_bar"):
+		_boss_health_bar.show_boss_bar(boss)
+
+	boss_spawned.emit(boss)
+
 	var boss_display_name: String = boss.get("boss_name") if boss.get("boss_name") else boss_key
 	boss_fight_started.emit(boss_display_name)
 
@@ -427,11 +483,11 @@ func _on_boss_died(_pos: Vector2, _xp: int, _type: String) -> void:
 ## Issue #114: Boss 阶段切换时联动环境和 BGM
 func _on_boss_phase_changed(phase_index: int, phase_name: String) -> void:
 	# 通知环境装饰系统
-	if _boss_arena_decorator:
+	if _boss_arena_decorator and _boss_arena_decorator.has_method("on_boss_phase_changed"):
 		_boss_arena_decorator.on_boss_phase_changed(phase_index)
 	
 	# 通知 BGM 控制器
-	if _boss_bgm_controller:
+	if _boss_bgm_controller and _boss_bgm_controller.has_method("on_boss_phase_changed"):
 		_boss_bgm_controller.on_boss_phase_changed(phase_index)
 	
 	print("[BossSpawner] Boss 阶段切换: %d (%s)" % [phase_index, phase_name])
@@ -453,9 +509,9 @@ func _end_boss_fight(victory: bool) -> void:
 		_boss_health_bar.hide_boss_bar()
 	
 	# Issue #114: 清理 Boss 战体验子系统
-	if _boss_arena_decorator:
+	if _boss_arena_decorator and _boss_arena_decorator.has_method("deactivate_boss_arena"):
 		_boss_arena_decorator.deactivate_boss_arena()
-	if _boss_bgm_controller:
+	if _boss_bgm_controller and _boss_bgm_controller.has_method("exit_boss_bgm"):
 		_boss_bgm_controller.exit_boss_bgm()
 	
 	if victory:

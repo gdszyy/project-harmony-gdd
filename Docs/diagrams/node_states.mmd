@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Locked: 初始状态
+    Locked --> Unlockable: 前置节点已解锁
+    Unlockable --> Unlocked: 消耗共鸣碎片
+    Unlocked --> [*]: 永久生效
+    
+    state Locked {
+        [*] --> locked_idle: 暗淡虚线轮廓
+        locked_idle --> locked_hover: 鼠标悬停
+        locked_hover --> locked_idle: 鼠标离开
+        locked_hover --> locked_reject: 点击(碎片不足)
+        locked_reject --> locked_idle: 闪烁红色后恢复
+    }
+    
+    state Unlockable {
+        [*] --> unlockable_idle: 强调色辉光脉冲
+        unlockable_idle --> unlockable_hover: 鼠标悬停
+        unlockable_hover --> unlockable_idle: 鼠标离开
+        unlockable_hover --> unlockable_confirm: 点击并按住
+        unlockable_confirm --> unlockable_idle: 松开(取消)
+    }
+    
+    state Unlocked {
+        [*] --> unlocked_idle: 谐振青/圣光金填充
+        unlocked_idle --> unlocked_hover: 鼠标悬停
+        unlocked_hover --> unlocked_idle: 鼠标离开
+    }
