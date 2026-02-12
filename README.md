@@ -1,9 +1,9 @@
 # Project Harmony - 游戏设计文档库
 
-**版本：** 2.5.2 (Live Document)
-**最后更新：** 2026年2月10日
-**最新设计：** [关卡与Boss整合设计文档 v3.0](Docs/关卡与Boss整合设计文档_v3.0.md) — 全七章波次级精确设计，遵循"环境即教程"原则
-**最新修复：** [v5.0 代码审查与修复报告](Archive/Reports/BUG_FIX_REPORT_v5.0_2026_02_08.md) — 修复 8 个问题，涵盖护盾系统、受击反馈、和谐殿堂、图鉴解锁
+**版本：** 2.6.0 (Live Document)
+**最后更新：** 2026年2月12日
+**最新实现：** [OPT07 召唤系统音乐性深化](Docs/Optimization_Modules/OPT07_SummoningSystemMusicality.md) — 将召唤系统升华为空间化音序器，每种构造体对应独立音乐声部
+**最新设计：** [关卡与Boss整合设计文档 v3.0](Docs/关卡与Boss整合设计文档_v3.0.md) — 全七章波次级精确设计，遵循“环境即教程”原则
 
 ---
 
@@ -50,21 +50,25 @@ project-harmony-gdd/
 │   ├── black_key_dual_role_v5.png
 │   ├── chord_spell_form_v5.png
 │   └── generalized_progression_v5.png
-├── Docs/                   # 专项设计文档与技术文档
-│   ├── 关卡与Boss整合设计文档_v3.0.md  # [最新] v3.0 波次级精确设计
-│   ├── AestheticFatigueSystem_Documentation.md
-│   ├── ART_IMPLEMENTATION_FRAMEWORK.md  # [v2.0] 美术框架实施方案
-│   ├── Art_And_VFX_Direction.md  # [v2.1] 美术与VFX方向
-│   ├── Spell_Visual_Enhancement_Design.md # [v2.0] 法术系统视觉增强设计
-│   ├── ProjectHarmony_Documentation_Map.md  # 文档关联图
-│   ├── Audio_Design_Guide.md
-│   ├── Enemy_System_Design.md
-│   ├── MetaProgressionSystem_Documentation.md
-│   ├── Numerical_Design_Documentation.md
-│   ├── ResonanceSlicing_System_Design.md  # 频谱相位系统（共鸣切片）
-│   ├── SummoningSystem_Documentation.md
-│   ├── TimbreSystem_Documentation.md
-│   └── Archive/            # 历史设计文档
+    ├── Docs/                   # 专项设计文档与技术文档
+    │   ├── 关卡与Boss整合设计文档_v3.0.md  # [最新] v3.0 波次级精确设计
+    │   ├── AestheticFatigueSystem_Documentation.md
+    │   ├── ART_IMPLEMENTATION_FRAMEWORK.md  # [v2.0] 美术框架实施方案
+    │   ├── Art_And_VFX_Direction.md  # [v2.1] 美术与VFX方向
+    │   ├── Spell_Visual_Enhancement_Design.md # [v2.0] 法术系统视觉增强设计
+    │   ├── ProjectHarmony_Documentation_Map.md  # 文档关联图
+    │   ├── Audio_Design_Guide.md
+    │   ├── Enemy_System_Design.md
+    │   ├── MetaProgressionSystem_Documentation.md
+    │   ├── Numerical_Design_Documentation.md
+    │   ├── ResonanceSlicing_System_Design.md  # 频谱相位系统（共鸣切片）
+    │   ├── SummoningSystem_Documentation.md
+    │   ├── TimbreSystem_Documentation.md
+    │   ├── Optimization_Modules/  # 优化模块设计与实现
+    │   │   ├── OPT01_GlobalDynamicHarmonyConductor.md
+    │   │   ├── OPT05_RezStyleInputQuantization.md
+    │   │   └── OPT07_SummoningSystemMusicality.md  # [已实现]
+    │   └── Archive/            # 历史设计文档
 │       ├── 关卡与Boss机制设计文档.md (v2.0)
 │       ├── Design_Update_Proposal_v1.md
 │       ├── Art_Direction_Resonance_Horizon.md

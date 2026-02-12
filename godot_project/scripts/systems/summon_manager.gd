@@ -12,6 +12,11 @@
 ##   - 共鸣网络 (Resonance Network)：同类型构造体连线增益
 ##   - 玩家指挥 (Conducting)：弹体击中构造体触发激励
 ##   - 音色行为修饰：弹拨系追踪泡泫、拉弦系减速力场、吹奏系穿透、打击系击退
+##
+## OPT07 集成：
+##   - 每个构造体自动挂载 SummonAudioController
+##   - 音频控制器通过 SummonAudioProfile 配置独立音色
+##   - 支持 BgmManager 的和声上下文 API 和十六分音符信号
 extends Node
 
 # ============================================================
@@ -834,7 +839,8 @@ func _on_construct_expired(construct_id: int) -> void:
 
 ## 构造体被激励回调
 func _on_construct_excited(construct_id: int) -> void:
-	# 可在此处添加全局激励效果（如音效、UI 反馈）
+	# OPT07: 激励时的音频反馈已由构造体内置的 SummonAudioController 处理
+	# 此处可添加全局级别的激励反馈（如屏幕闪烁、全局音量短暂提升）
 	pass
 
 ## 玩家弹体击中构造体时调用（由 ProjectileManager 调用）
@@ -874,5 +880,6 @@ func get_active_constructs_info() -> Array[Dictionary]:
 			"measures_remaining": construct.measures_remaining,
 			"color": construct._config.get("color", Color.WHITE),
 			"linked_count": construct._linked_constructs.size(),
+		"audio_info": construct.get_audio_info() if construct.has_method("get_audio_info") else {},
 		})
 	return info

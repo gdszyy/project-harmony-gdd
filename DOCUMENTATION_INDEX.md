@@ -95,7 +95,7 @@ graph TD
 | **OPT04_ChapterTonalityEvolution.md** | **章节调性演化**。定义各章节的音乐调性变化和叙事弧线。 | 设计稿 | 策划、音频 |
 | **OPT05_RezStyleInputQuantization.md** | **Rez 式输入量化错觉**。将游戏音效自动对齐到十六分音符网格，创造“人人都是节奏大师”的错觉。 | **✅ 已实现** | 策划、程序 |
 | **OPT06_SpatialAudioInformationDelivery.md** | **空间音频信息传递**。利用空间化音频传递游戏信息。 | 设计稿 | 程序、音频 |
-| **OPT07_SummoningSystemMusicality.md** | **召唤系统音乐性**。增强召唤系统的音乐表现力。 | 设计稿 | 策划、程序 |
+| **OPT07_SummoningSystemMusicality.md** | **召唤系统音乐性深化**。将召唤系统升华为空间化音序器，每种构造体对应独立音乐声部。 | **✅ 已实现** | 策划、程序 |
 | **OPT08_ProceduralTimbreSynthesis.md** | **程序化音色合成**。为音色武器系统引入实时减法合成器引擎，实现“所听即所见”。 | **✅ 已实现** | 程序、音频 |
 
 ## 4. 归档

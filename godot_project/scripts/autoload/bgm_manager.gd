@@ -33,6 +33,12 @@ signal sixteenth_tick(sixteenth_index: int)
 ## OPT01: 全局和声上下文变更信号 — 广播当前和弦根音、类型和音符列表
 signal harmony_context_changed(chord_root: int, chord_type: int, chord_notes: Array)
 
+## === OPT07: 召唤系统音乐性深化 ===
+## 十六分音符级别的节拍信号（供召唤物音频控制器使用）
+signal sixteenth_tick()
+## 和声上下文变更信号（根音、和弦类型、组成音）
+signal harmony_context_changed(root: int, type: int, notes: Array)
+
 # ============================================================
 # 常量
 # ============================================================
@@ -746,6 +752,9 @@ func _tick_sixteenth() -> void:
 			elif note_idx < BASS_NOTES.size():
 				_trigger_sample("bass", "bass_%d" % note_idx)
 
+	# ---- OPT07: 发射十六分音符信号 ----
+	sixteenth_tick.emit()
+
 	# ---- 更新计数器 ----
 	_current_sixteenth += 1
 
@@ -759,8 +768,9 @@ func _tick_sixteenth() -> void:
 	if step == 0 and _current_sixteenth > 1:
 		_current_measure += 1
 		bgm_measure_synced.emit(_current_measure)
-		# OPT01: 和声指挥官接管和弦切换，不再使用固定循环
-		# 旧逻辑: _update_pad_chord() — 已由 _on_harmony_measure_synced() 替代
+			# OPT01: 和声指挥官接管和弦切换，不再使用固定循环
+			# 旧逻辑: _update_pad_chord() — 已由 _on_harmony_measure_synced() 替代
+			# OPT07: 和声上下文现由 OPT01 和声指挥官统一管理
 
 # ============================================================
 # 采样触发
