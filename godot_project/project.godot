@@ -97,6 +97,9 @@ global_time={ "type": "float", "value": 0.0 }
 beat_phase={ "type": "float", "value": 0.0 }
 chapter_color={ "type": "vec3", "value": "Vector3(0, 1, 0.8)" }
 beat_glow_extra={ "type": "float", "value": 0.0 }
+worm_position={ "type": "vec3", "value": "Vector3(0, 0, 0)" }
+worm_corruption_radius={ "type": "float", "value": 40.0 }
+worm_corruption_fade={ "type": "float", "value": 1.0 }
 
 [audio]
 

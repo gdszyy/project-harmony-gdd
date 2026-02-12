@@ -1,26 +1,39 @@
-[gd_scene load_steps=4 format=3 uid="uid://wall_enemy_001"]
+[gd_scene load_steps=9 format=3 uid="uid://wall_enemy_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/enemy_wall.gd" id="1_wall"]
-[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_glitch"]
+[ext_resource type="Shader" path="res://shaders/wall_eq_spectrum.gdshader" id="2_eq_spectrum"]
+[ext_resource type="Shader" path="res://shaders/wall_honeycomb_shield.gdshader" id="3_honeycomb"]
+[ext_resource type="Shader" path="res://shaders/wall_cracks.gdshader" id="4_cracks"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
-radius = 28.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
-radius = 32.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
-shader = ExtResource("2_glitch")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eq_spectrum"]
+shader = ExtResource("2_eq_spectrum")
 shader_parameter/glitch_intensity = 0.03
 shader_parameter/hp_ratio = 1.0
 shader_parameter/beat_energy = 0.0
 shader_parameter/is_stunned = 0.0
 shader_parameter/base_tint = Color(0.4, 0.35, 0.5, 1)
-shader_parameter/scanline_density = 30.0
-shader_parameter/scanline_strength = 0.1
 shader_parameter/chromatic_offset = 0.5
-shader_parameter/noise_speed = 1.0
 shader_parameter/pixel_size = 2.0
+shader_parameter/spectrum_strength = 1.5
+shader_parameter/eq_color = Color(1, 0.5, 0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_honeycomb"]
+shader = ExtResource("3_honeycomb")
+shader_parameter/shield_strength = 1.0
+shader_parameter/shield_activation = 1.0
+shader_parameter/shield_color = Color(0.5, 0.8, 1, 1)
+shader_parameter/line_thickness = 0.05
+shader_parameter/grid_scale = 10.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cracks"]
+shader = ExtResource("4_cracks")
+shader_parameter/crack_intensity = 1.0
+shader_parameter/crack_color = Color(1, 0.1, 0, 1)
+shader_parameter/crack_scale = 8.0
+shader_parameter/crack_width = 0.03
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 28.0
 
 [node name="EnemyWall" type="CharacterBody2D"]
 collision_layer = 2
@@ -42,9 +55,23 @@ quake_radius = 150.0
 quake_damage = 12.0
 
 [node name="EnemyVisual" type="Polygon2D" parent="."]
-material = SubResource("ShaderMaterial_glitch")
+material = SubResource("ShaderMaterial_eq_spectrum")
 color = Color(0.4, 0.35, 0.5, 1)
 polygon = PackedVector2Array(-24, -20, -8, -26, 8, -26, 24, -20, 26, -6, 26, 6, 24, 20, 8, 26, -8, 26, -24, 20, -26, 6, -26, -6)
+
+[node name="ShieldVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_honeycomb")
+polygon = PackedVector2Array(-28, -23, -9, -30, 9, -30, 28, -23, 30, -7, 30, 7, 28, 23, 9, 30, -9, 30, -28, 23, -30, 7, -30, -7)
+
+[node name="CracksVisual" type="Polygon2D" parent="."]
+visible = false
+material = SubResource("ShaderMaterial_cracks")
+polygon = PackedVector2Array(-24, -20, -8, -26, 8, -26, 24, -20, 26, -6, 26, 6, 24, 20, 8, 26, -8, 26, -24, 20, -26, 6, -26, -6)
+
+[node name="HighPassVisual" type="Line2D" parent="."]
+visible = false
+width = 2.0
+default_color = Color(1, 1, 1, 0.8)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_body")
@@ -54,4 +81,4 @@ collision_layer = 2
 collision_mask = 1
 
 [node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
-shape = SubResource("CircleShape2D_damage")
+shape = SubResource("CircleShape2D_body")

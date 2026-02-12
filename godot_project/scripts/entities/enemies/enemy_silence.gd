@@ -19,11 +19,23 @@ extends "res://scripts/entities/enemy_base.gd"
 @export var aura_pulse_speed: float = 2.0
 
 # ============================================================
+# 相位变体
+# ============================================================
+## 0 = Normal, 1 = Overtone (高通), 2 = Sub-Bass (低通)
+@export var phase_shift_type: int = 0
+
+# ============================================================
+# 节点引用
+# ============================================================
+@onready var _distortion_aura: Node2D = $DistortionAura
+@onready var _overtone_visual: Polygon2D = $OvertoneVisual
+@onready var _sub_bass_particles: CPUParticles2D = $SubBassParticles
+
+# ============================================================
 # 内部状态
 # ============================================================
 var _player_in_aura: bool = false
 var _aura_timer: float = 0.0
-var _aura_visual_scale: float = 1.0
 var _rotation_speed: float = 0.3  ## 缓慢旋转
 
 # ============================================================
@@ -39,11 +51,16 @@ func _on_enemy_ready() -> void:
 	knockback_resistance = 0.7
 	# 不受弱拍限制（沉默无处不在）
 	move_on_offbeat = false
-	# 深色基调
-	base_color = Color(0.15, 0.05, 0.25, 0.85)
+	
+	# 核心视觉为纯黑色
+	base_color = Color.BLACK
+	
 	# 低故障基础值（沉默是"平静"的恐怖）
 	base_glitch_intensity = 0.02
 	max_glitch_intensity = 0.5
+
+	# 根据相位初始化视觉
+	apply_phase_shift(phase_shift_type)
 
 # ============================================================
 # 每帧逻辑
@@ -51,7 +68,7 @@ func _on_enemy_ready() -> void:
 
 func _on_enemy_process(delta: float) -> void:
 	_check_silence_aura(delta)
-	_update_aura_visual(delta)
+	_update_visuals(delta)
 
 func _check_silence_aura(delta: float) -> void:
 	if _target == null:
@@ -69,23 +86,20 @@ func _check_silence_aura(delta: float) -> void:
 	else:
 		_aura_timer = 0.0
 
-func _update_aura_visual(delta: float) -> void:
+func _update_visuals(delta: float) -> void:
 	if _sprite == null:
 		return
 
-	# 缓慢旋转（漩涡感）
+	# 核心多边形缓慢旋转
 	_sprite.rotation += _rotation_speed * delta
 
-	# 光环脉冲（呼吸效果）
-	_aura_visual_scale = 1.0 + sin(Time.get_ticks_msec() * 0.001 * aura_pulse_speed) * 0.1
-
-	# 当玩家在光环内时，视觉变化
-	if _player_in_aura:
-		# 光环扩张 + 颜色加深
-		_aura_visual_scale *= 1.15
-		_sprite.modulate = _sprite.modulate.lerp(Color(0.1, 0.0, 0.2, 0.9), 0.1)
-	else:
-		_sprite.modulate = _sprite.modulate.lerp(base_color, 0.05)
+	# 根据相位更新视觉效果
+	match phase_shift_type:
+		1: # Overtone
+			_overtone_visual.rotation += delta * 2.0
+			_overtone_visual.material.set_shader_parameter("time_offset", Time.get_ticks_msec() * 0.001)
+		2: # Sub-Bass
+			pass # 粒子效果是自动的
 
 # ============================================================
 # 移动逻辑：缓慢但坚定地追踪
@@ -121,7 +135,7 @@ func _on_beat(_beat_index: int) -> void:
 
 func _on_contact_with_player() -> void:
 	if FatigueManager and FatigueManager.has_method("add_external_fatigue"):
-		FatigueManager.add_external_fatigue(0.15)
+			FatigueManager.add_external_fatigue(0.15)
 
 # ============================================================
 # 死亡效果：沉默消散 — 缓慢内爆
@@ -131,7 +145,32 @@ func _on_death_effect() -> void:
 	# Silence 死亡时释放被吞噬的声音能量
 	# 短暂降低附近区域的疲劳度（奖励玩家击杀它）
 	if FatigueManager and FatigueManager.has_method("reduce_fatigue"):
-		FatigueManager.reduce_fatigue(0.1)
+			FatigueManager.reduce_fatigue(0.1)
+
+# ============================================================
+# 相位变体实现
+# ============================================================
+
+## 应用指定的相位变体效果
+func apply_phase_shift(type: int) -> void:
+	phase_shift_type = type
+
+	# 重置所有相位视觉
+	_overtone_visual.visible = false
+	_sub_bass_particles.emitting = false
+	var base_material = _distortion_aura.material as ShaderMaterial
+	if base_material:
+		base_material.set_shader_parameter("distortion_amount", 0.05)
+
+	match phase_shift_type:
+		0: # Normal
+			pass # 默认状态
+		1: # Overtone (高通)
+			_overtone_visual.visible = true
+		2: # Sub-Bass (低通)
+			if base_material:
+				base_material.set_shader_parameter("distortion_amount", 0.2) # 大幅增加扭曲
+			_sub_bass_particles.emitting = true
 
 # ============================================================
 # 接口：检查玩家是否在静音光环内（供 SpellcraftSystem 查询）

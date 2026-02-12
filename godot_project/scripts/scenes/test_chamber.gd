@@ -3,7 +3,7 @@
 ##
 ## v2.0 变更：
 ## - 集成 RenderBridge3D 实现 2.5D 混合渲染（与 main_game 视觉风格一致）
-## - 替换 Polygon2D 玩家视觉为 PlayerVisualEnhanced（正十二面体 + 金环）
+## - 替换 Polygon2D 玩家视觉为 PlayerVisualEnhanced（正十二面体 + 金环）+ HarmonicAvatarManager (3D 程序化化身)
 ## - 添加 ChapterManager 支持章节视觉切换测试
 ## - 添加地面 Shader（pulsing_grid.gdshader 脉冲网格）
 ## - 敌人生成时自动注册 3D 代理（精英独立代理 / 普通 MultiMesh 批量渲染）
@@ -31,7 +31,8 @@
 ##   TestChamber (Node2D)
 ##     ├── Ground (背景 + pulsing_grid Shader)
 ##     ├── Player (玩家)
-##     │   └── PlayerVisualEnhanced (正十二面体 + 金环 + 粒子)
+##     │   ├── PlayerVisualEnhanced (正十二面体 + 金环 + 粒子, 2D 层)
+##     │   └── HarmonicAvatarManager (程序化调式化身, 3D 层 via RenderBridge3D)
 ##     ├── EnemyContainer (敌人容器)
 ##     ├── ProjectileManager (弹体管理)
 ##     ├── ChapterManager (章节管理 — 支持视觉切换测试)

@@ -152,7 +152,7 @@ func _apply_visual_style() -> void:
 	if player == null:
 		return
 	
-	# 查找视觉增强器并应用颜色
+	# --- 2D 视觉增强器（旧系统，保持向后兼容） ---
 	var visual_enhancer = player.get_node_or_null("PlayerVisualEnhanced")
 	if visual_enhancer == null:
 		visual_enhancer = player.get_node_or_null("PlayerVisual")
@@ -163,6 +163,22 @@ func _apply_visual_style() -> void:
 			visual_config.get("secondary_color", Color.GRAY),
 			visual_config.get("particle_color", Color.WHITE)
 		)
+	
+	# --- 3D 谐振调式化身 (Issue #59) ---
+	# HarmonicAvatarManager 会自动监听 class_applied 信号并切换调式。
+	# 但如果玩家已有 HarmonicAvatarManager 引用，也可以直接通知。
+	if player.has_method("get_harmonic_avatar"):
+		var avatar: HarmonicAvatarManager = player.get_harmonic_avatar()
+		if avatar:
+			# 根据职业 ID 映射到调式 ID
+			var mode_map: Dictionary = {
+				"ionian": 0,
+				"dorian": 0,
+				"pentatonic": 2,
+				"blues": 1,
+			}
+			var target_mode: int = mode_map.get(current_class_id, 0)
+			avatar.switch_mode(target_mode)
 
 # ============================================================
 # 被动能力

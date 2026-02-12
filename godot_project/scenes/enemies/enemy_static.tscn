@@ -1,7 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://static_enemy_001"]
+[gd_scene load_steps=6 format=3 uid="uid://static_enemy_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/enemy_static.gd" id="1_static"]
-[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_glitch"]
+[ext_resource type="Shader" path="res://shaders/enemy_static_glitch.gdshader" id="2_glitch"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 12.0
@@ -21,8 +21,10 @@ shader_parameter/scanline_strength = 0.2
 shader_parameter/chromatic_offset = 1.5
 shader_parameter/noise_speed = 4.0
 shader_parameter/pixel_size = 1.0
+shader_parameter/datamosh_intensity = 0.3
+shader_parameter/jitter_amplitude = 1.5
 
-[node name="EnemyStatic" type="CharacterBody2D"]
+[node name="EnemyStatic" type="CharacterBody2D" groups=["enemies"]]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_static")
@@ -34,11 +36,13 @@ quantized_fps = 16.0
 collision_radius = 12.0
 knockback_resistance = 0.0
 base_color = Color(1, 0.2, 0.3, 1)
+polygon_base_radius = 12.0
+polygon_vertices_count = 7
+polygon_irregularity = 0.4
 
 [node name="EnemyVisual" type="Polygon2D" parent="."]
 material = SubResource("ShaderMaterial_glitch")
 color = Color(1, 0.2, 0.3, 1)
-polygon = PackedVector2Array(-10, -8, -3, -12, 5, -10, 12, -4, 9, 5, 4, 11, -6, 10, -11, 3)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_body")

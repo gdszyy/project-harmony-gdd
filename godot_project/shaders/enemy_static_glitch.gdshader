@@ -1,10 +1,9 @@
 shader_type canvas_item;
 
-// 敌人故障 Shader — Glitch Art 视觉效果
-// 应用于所有敌人的 Polygon2D / Sprite2D
-// 通过 uniform 参数控制故障强度、颜色偏移、扫描线等
+// enemy_static_glitch.gdshader
+// 继承自 enemy_glitch.gdshader，并为 Static 敌人添加了 Datamosh 和顶点抖动效果。
 
-// === 控制参数 ===
+// === 基础故障参数 (从 enemy_glitch 继承) ===
 uniform float glitch_intensity : hint_range(0.0, 1.0) = 0.0;
 uniform float hp_ratio : hint_range(0.0, 1.0) = 1.0;
 uniform float beat_energy : hint_range(0.0, 1.0) = 0.0;
@@ -12,29 +11,35 @@ uniform float is_stunned : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 base_tint : source_color = vec4(1.0, 0.2, 0.3, 1.0);
 uniform vec4 glitch_color : source_color = vec4(1.0, 0.0, 0.67, 1.0);
 
-// === 故障效果参数 ===
+// === 基础效果参数 (从 enemy_glitch 继承) ===
 uniform float scanline_density : hint_range(10.0, 200.0) = 80.0;
 uniform float scanline_strength : hint_range(0.0, 1.0) = 0.3;
 uniform float chromatic_offset : hint_range(0.0, 10.0) = 2.0;
 uniform float noise_speed : hint_range(0.0, 10.0) = 3.0;
 uniform float pixel_size : hint_range(1.0, 16.0) = 1.0;
 
-// 伪随机噪声
+// === Static 专属效果 ===
+uniform float datamosh_intensity : hint_range(0.0, 1.0) = 0.0;
+uniform float jitter_amplitude : hint_range(0.0, 5.0) = 1.0;
+
+// 伪随机噪声 (从 enemy_glitch 复制)
 float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+// === 顶点着色器: 实现顶点抖动 ===
+void vertex() {
+	float time = TIME * noise_speed * 2.0;
+	// 结合 glitch_intensity 和 is_stunned 来控制抖动
+	float current_jitter = jitter_amplitude * max(glitch_intensity, is_stunned * 2.0);
+	
+	// 高频、小幅度的抖动
+	VERTEX.x += (hash(vec2(time * 10.0, VERTEX.y)) - 0.5) * current_jitter;
+	VERTEX.y += (hash(vec2(time * 10.0, VERTEX.x)) - 0.5) * current_jitter;
 }
 
+
+// === 片段着色器: 实现 Datamosh 和其他效果 ===
 void fragment() {
     vec2 uv = UV;
     float time = TIME * noise_speed;
@@ -43,8 +48,25 @@ void fragment() {
     // 眩晕时故障加剧
     intensity = max(intensity, is_stunned * 0.6);
 
+    // === Datamosh (数据花块) ===
+	vec2 mosh_uv = uv;
+	if (datamosh_intensity > 0.0) {
+		float block_size = mix(64.0, 16.0, datamosh_intensity);
+		vec2 block_grid = floor(uv * block_size);
+		float block_hash = hash(block_grid + floor(time * 5.0));
+
+		// 随机选择一些块进行位移
+		if (block_hash > mix(1.0, 0.85, datamosh_intensity)) {
+			float shift_hash = hash(block_grid + 10.0);
+			vec2 shift_direction = vec2(hash(block_grid.yx) - 0.5, shift_hash - 0.5) * 2.0;
+			float shift_amount = hash(block_grid + floor(time * 5.0 + 20.0)) * 0.2 * datamosh_intensity;
+			mosh_uv += shift_direction * shift_amount;
+		}
+	}
+	uv = mosh_uv;
+
     // === 像素化 ===
-    float pix = max(1.0, pixel_size * intensity);
+    float pix = max(1.0, pixel_size);
     if (pix > 1.5) {
         uv = floor(uv * (1.0 / pix) * 64.0) / 64.0 * pix;
     }
@@ -67,9 +89,6 @@ void fragment() {
     // 如果没有纹理（纯 Polygon2D），使用顶点颜色
     if (color.a < 0.01) {
         color = COLOR;
-        // 对纯色也应用色差偏移效果
-        color.r = COLOR.r + ca_offset * 2.0 * sin(time);
-        color.b = COLOR.b - ca_offset * 2.0 * cos(time);
     }
 
     // === 扫描线 ===
@@ -84,7 +103,6 @@ void fragment() {
     }
 
     // === HP 相关效果 ===
-    // 低 HP 时颜色偏向白色（信号崩溃）
     if (hp_ratio < 0.5) {
         float white_blend = (0.5 - hp_ratio) * 1.2;
         color.rgb = mix(color.rgb, vec3(1.0), white_blend * 0.5);

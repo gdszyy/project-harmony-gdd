@@ -41,6 +41,12 @@ var _scattered: bool = false
 var _choir_lines: Array[Line2D] = []
 ## 圣咏吟唱视觉相位
 var _chant_phase: float = 0.0
+## 能量链 Shader Material（Issue #65 增强）
+var _energy_link_shader: ShaderMaterial = null
+## 领袖脉冲光环节点（Issue #65 增强）
+var _leader_pulse_ring: Polygon2D = null
+## 领袖脉冲光环相位
+var _leader_pulse_phase: float = 0.0
 
 # ============================================================
 # 初始化
@@ -63,6 +69,46 @@ func _on_enemy_ready() -> void:
 		max_hp *= 1.5
 		current_hp = max_hp
 		base_color = Color(1.0, 0.8, 0.3)
+	
+	# Issue #65: 初始化能量链 Shader
+	_setup_energy_link_shader()
+	
+	# Issue #65: 领袖视觉区分
+	if is_choir_leader:
+		_setup_leader_visuals()
+
+## Issue #65: 初始化能量链 Shader Material
+func _setup_energy_link_shader() -> void:
+	var shader_res = load("res://shaders/choir_energy_link.gdshader")
+	if shader_res:
+		_energy_link_shader = ShaderMaterial.new()
+		_energy_link_shader.shader = shader_res
+		_energy_link_shader.set_shader_parameter("flow_speed", 2.0)
+		_energy_link_shader.set_shader_parameter("link_intensity", 1.5)
+		_energy_link_shader.set_shader_parameter("beat_energy", 0.0)
+
+## Issue #65: 领袖视觉区分 — 增大 scale、增强 emission、添加脉冲光环
+func _setup_leader_visuals() -> void:
+	# 领袖 scale 增大 1.3 倍
+	scale = Vector2(1.3, 1.3)
+	
+	# 领袖 shader emission 更强
+	if _sprite and _sprite.material is ShaderMaterial:
+		_sprite.material.set_shader_parameter("base_tint", Color(1.0, 0.85, 0.35, 1.0))
+	
+	# 领袖独特的脉冲光环效果（半透明圆环）
+	_leader_pulse_ring = Polygon2D.new()
+	_leader_pulse_ring.name = "LeaderPulseRing"
+	_leader_pulse_ring.z_index = -1
+	var ring_points := PackedVector2Array()
+	var ring_segments := 24
+	var ring_radius := 22.0
+	for i in range(ring_segments):
+		var angle := float(i) / ring_segments * TAU
+		ring_points.append(Vector2(cos(angle), sin(angle)) * ring_radius)
+	_leader_pulse_ring.polygon = ring_points
+	_leader_pulse_ring.color = Color(1.0, 0.8, 0.3, 0.3)
+	add_child(_leader_pulse_ring)
 
 # ============================================================
 # 编队管理
@@ -75,6 +121,9 @@ func setup_as_leader(members: Array[Node2D]) -> void:
 	max_hp *= 1.5
 	current_hp = max_hp
 	base_color = Color(1.0, 0.8, 0.3)
+	
+	# Issue #65: 应用领袖视觉
+	_setup_leader_visuals()
 	
 	# 为成员分配编队位置
 	var count := members.size()
@@ -129,6 +178,24 @@ func _on_enemy_process(delta: float) -> void:
 	if is_choir_leader:
 		_check_formation()
 		_update_choir_lines()
+		
+		# Issue #65: 更新领袖脉冲光环
+		_update_leader_pulse(delta)
+		
+		# Issue #65: 更新能量链 shader uniform
+		if _energy_link_shader:
+			var beat_e := (sin(_chant_phase * 3.0) + 1.0) * 0.5
+			_energy_link_shader.set_shader_parameter("beat_energy", beat_e)
+
+## Issue #65: 更新领袖脉冲光环效果
+func _update_leader_pulse(delta: float) -> void:
+	if not _leader_pulse_ring:
+		return
+	_leader_pulse_phase += delta * 3.0
+	var pulse := (sin(_leader_pulse_phase) + 1.0) * 0.5
+	var ring_scale := 1.0 + pulse * 0.3
+	_leader_pulse_ring.scale = Vector2(ring_scale, ring_scale)
+	_leader_pulse_ring.color.a = 0.15 + pulse * 0.25
 
 func _update_choir_lines() -> void:
 	# 清理旧连线
@@ -140,13 +207,16 @@ func _update_choir_lines() -> void:
 	if not is_choir_leader or _scattered:
 		return
 	
-	# 绘制编队连线
+	# Issue #65: 绘制编队连线（使用能量链 shader）
 	for member in choir_members:
 		if not is_instance_valid(member) or member == self or member.get("_is_dead"):
 			continue
 		var line := Line2D.new()
-		line.width = 2.0
-		line.default_color = Color(0.8, 0.65, 0.3, 0.4)
+		line.width = 6.0  # Issue #65: 增加线条宽度
+		line.default_color = Color(0.6, 0.1, 0.1, 0.8)  # 暗红色基调
+		# Issue #65: 应用能量链 shader
+		if _energy_link_shader:
+			line.material = _energy_link_shader
 		line.add_point(global_position)
 		line.add_point(member.global_position)
 		get_parent().add_child(line)
@@ -183,7 +253,7 @@ func _calculate_movement_direction() -> Vector2:
 			return (_target.global_position - global_position).normalized()
 		return Vector2.ZERO
 
-## 编队散开
+## Issue #65: 增强版编队散开 — 能量链断裂动画 + 闪光效果
 func _scatter() -> void:
 	if _scattered:
 		return
@@ -193,11 +263,31 @@ func _scatter() -> void:
 	# 散开时短暂加速
 	move_speed *= 1.5
 	
-	# 视觉：闪烁表示散开
+	# Issue #65: 能量链断裂动画（线条快速收缩并消失）
+	for line in _choir_lines:
+		if is_instance_valid(line):
+			var line_tween := line.create_tween()
+			line_tween.tween_property(line, "width", 0.0, 0.15).set_trans(Tween.TRANS_EXPO)
+			line_tween.tween_callback(line.queue_free)
+	_choir_lines.clear()
+	
+	# Issue #65: 散开时的闪光效果
 	if _sprite:
 		var tween := create_tween()
+		tween.tween_property(_sprite, "modulate", Color(1.0, 0.9, 0.5, 1.0), 0.05)
 		tween.tween_property(_sprite, "modulate", Color.WHITE, 0.1)
 		tween.tween_property(_sprite, "modulate", base_color, 0.3)
+
+## Issue #65: 提供获取 sprite 的方法（供管理器使用）
+func get_sprite() -> Node2D:
+	return _sprite
+
+## Issue #65: 播放闪光效果（供外部调用）
+func play_flash_effect() -> void:
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "modulate", Color.WHITE, 0.08)
+		tween.tween_property(_sprite, "modulate", base_color, 0.25)
 
 # ============================================================
 # 伤害处理：齐唱护盾
@@ -295,6 +385,12 @@ func _on_death_effect() -> void:
 			if is_instance_valid(member) and member != self and not member.get("_is_dead"):
 				if member.has_method("_scatter"):
 					member._scatter()
+	
+	# Issue #65: 领袖脉冲光环消失动画
+	if _leader_pulse_ring:
+		var pulse_tween := create_tween()
+		pulse_tween.tween_property(_leader_pulse_ring, "modulate:a", 0.0, 0.2)
+		pulse_tween.tween_callback(_leader_pulse_ring.queue_free)
 	
 	# 清理连线
 	for line in _choir_lines:
