@@ -1,0 +1,49 @@
+stateDiagram-v2
+    [*] --> SplashScreen: 启动游戏
+    SplashScreen --> MainMenu: 自动/点击跳过
+
+    state MainMenu {
+        [*] --> Idle
+        Idle --> StartGame: 点击"开始游戏"
+        Idle --> ContinueGame: 点击"继续游戏"
+        Idle --> Settings: 点击"设置"
+        Idle --> Codex: 点击"图鉴"
+        Idle --> ExitConfirm: 点击"退出"
+    }
+
+    MainMenu --> GameLoading: 开始游戏/继续游戏
+    GameLoading --> Gameplay: 加载完成
+
+    state Gameplay {
+        [*] --> Playing
+        Playing --> PauseMenu: 按下 ESC
+    }
+
+    state PauseMenu {
+        [*] --> PauseIdle
+        PauseIdle --> ResumeGame: 点击"继续"
+        PauseIdle --> PauseSettings: 点击"设置"
+        PauseIdle --> ReturnMainConfirm: 点击"返回主菜单"
+    }
+
+    PauseMenu --> Playing: 继续游戏
+    PauseMenu --> MainMenu: 确认返回主菜单
+
+    state Settings {
+        [*] --> AudioTab
+        AudioTab --> VideoTab: 切换Tab
+        AudioTab --> ControlTab: 切换Tab
+        VideoTab --> AudioTab: 切换Tab
+        VideoTab --> ControlTab: 切换Tab
+        ControlTab --> AudioTab: 切换Tab
+        ControlTab --> VideoTab: 切换Tab
+    }
+
+    Settings --> MainMenu: 返回(从主菜单进入)
+    Settings --> PauseMenu: 返回(从暂停菜单进入)
+
+    MainMenu --> Codex: 打开图鉴
+    Codex --> MainMenu: 返回
+
+    ExitConfirm --> MainMenu: 取消
+    ExitConfirm --> [*]: 确认退出
