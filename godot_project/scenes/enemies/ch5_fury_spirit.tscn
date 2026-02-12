@@ -1,0 +1,52 @@
+[gd_scene load_steps=4 format=3 uid="uid://ch5_fury_spirit_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/chapter_enemies/ch5_fury_spirit.gd" id="1_fury"]
+[ext_resource type="Shader" path="res://shaders/fury_spirit_lightning.gdshader" id="2_lightning"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 16.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 22.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lightning"]
+shader = ExtResource("2_lightning")
+shader_parameter/glitch_intensity = 0.08
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/music_intensity = 0.5
+shader_parameter/charge_progress = 0.0
+shader_parameter/base_tint = Color(0.7, 0.8, 1.0, 1)
+shader_parameter/lightning_frequency = 8.0
+shader_parameter/lightning_brightness = 1.5
+shader_parameter/arc_glow_intensity = 1.0
+shader_parameter/core_pulse_speed = 3.0
+shader_parameter/noise_scale = 15.0
+
+[node name="FurySpirit" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_fury")
+max_hp = 120.0
+move_speed = 90.0
+contact_damage = 12.0
+xp_value = 18
+quantized_fps = 14.0
+collision_radius = 16.0
+knockback_resistance = 0.3
+base_color = Color(0.7, 0.8, 1.0, 1)
+base_glitch_intensity = 0.08
+max_glitch_intensity = 0.7
+
+[node name="EnemyVisual" type="Node2D" parent="."]
+material = SubResource("ShaderMaterial_lightning")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")
