@@ -9,6 +9,7 @@ uniform float hp_ratio : hint_range(0.0, 1.0) = 1.0;
 uniform float beat_energy : hint_range(0.0, 1.0) = 0.0;
 uniform float is_stunned : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 base_tint : source_color = vec4(1.0, 0.2, 0.3, 1.0);
+uniform vec4 glitch_color : source_color = vec4(1.0, 0.0, 0.67, 1.0);
 uniform float chromatic_offset : hint_range(0.0, 10.0) = 2.0;
 uniform float pixel_size : hint_range(1.0, 16.0) = 1.0;
 
@@ -59,6 +60,7 @@ void fragment() {
 
     // 组合颜色
     final_color.rgb *= base_tint.rgb; // 应用基础色调
+    color.rgb = mix(color.rgb, glitch_color.rgb, glitch_intensity * 0.3);
     final_color.rgb += emission; // 叠加 EQ 发光效果
 
     // 节拍脉冲

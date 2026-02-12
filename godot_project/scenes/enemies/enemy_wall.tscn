@@ -1,4 +1,4 @@
-# [gd_scene load_steps=8 format=3 uid="uid://wall_enemy_001"]
+[gd_scene load_steps=9 format=3 uid="uid://wall_enemy_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/enemy_wall.gd" id="1_wall"]
 [ext_resource type="Shader" path="res://shaders/wall_eq_spectrum.gdshader" id="2_eq_spectrum"]
@@ -61,7 +61,7 @@ polygon = PackedVector2Array(-24, -20, -8, -26, 8, -26, 24, -20, 26, -6, 26, 6, 
 
 [node name="ShieldVisual" type="Polygon2D" parent="."]
 material = SubResource("ShaderMaterial_honeycomb")
-polygon = PackedVector2Array(-28, -23, -9, -30, 9, -30, 28, -23, 30, -7, 30, 7, 28, 23, 9, 30, -9, 30, -28, 23, -30, 7, -30, -7) # Slightly larger polygon for shield
+polygon = PackedVector2Array(-28, -23, -9, -30, 9, -30, 28, -23, 30, -7, 30, 7, 28, 23, 9, 30, -9, 30, -28, 23, -30, 7, -30, -7)
 
 [node name="CracksVisual" type="Polygon2D" parent="."]
 visible = false
@@ -81,4 +81,4 @@ collision_layer = 2
 collision_mask = 1
 
 [node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
-shape = SubResource("CircleShape2D_body") # Use same shape as body for simplicity
+shape = SubResource("CircleShape2D_body")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://screech_enemy_001"]
+[gd_scene load_steps=5 format=3 uid="uid://screech_enemy_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/enemy_screech.gd" id="1_screech"]
 [ext_resource type="Shader" path="res://shaders/enemy_screech_glitch.gdshader" id="2_screech_glitch"]

@@ -11,6 +11,7 @@ uniform float hp_ratio : hint_range(0.0, 1.0) = 1.0;
 uniform float beat_energy : hint_range(0.0, 1.0) = 0.0;
 uniform float is_stunned : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 base_tint : source_color = vec4(1.0, 0.2, 0.3, 1.0);
+uniform vec4 glitch_color : source_color = vec4(1.0, 0.0, 0.67, 1.0);
 
 // === 故障效果参数 ===
 uniform float scanline_density : hint_range(10.0, 200.0) = 80.0;
@@ -111,6 +112,7 @@ void fragment() {
 
     // === 应用基础色调 ===
     color.rgb *= base_tint.rgb;
+    color.rgb = mix(color.rgb, glitch_color.rgb, glitch_intensity * 0.3);
 
     // === 尖端高亮 ===
     // v_local_pos_y 是从 vertex shader 传来的局部坐标 Y 值
