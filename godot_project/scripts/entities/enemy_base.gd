@@ -119,6 +119,7 @@ func _ready() -> void:
 	_find_player()
 	_connect_beat_signals()
 	_register_audio_signals()
+	_setup_visual_enhancer()  # Issue #52: 集成视觉增强器
 	_on_enemy_ready()
 
 ## 子类重写此方法以执行额外的初始化
@@ -546,3 +547,19 @@ func is_alive() -> bool:
 ## 获取当前故障强度（供 Shader 使用）
 func get_glitch_intensity() -> float:
 	return _glitch_intensity
+
+# ============================================================
+# 视觉增强器集成 (Issue #52)
+# ============================================================
+
+## 初始化 EnemyVisualEnhancer
+## 如果场景中尚未挂载 EnemyVisualEnhancer，则动态创建并添加
+func _setup_visual_enhancer() -> void:
+	# 检查是否已存在 EnemyVisualEnhancer 子节点
+	for child in get_children():
+		if child is EnemyVisualEnhancer:
+			return  # 已存在，无需重复创建
+	# 动态创建 EnemyVisualEnhancer 并挂载
+	var enhancer := EnemyVisualEnhancer.new()
+	enhancer.name = "EnemyVisualEnhancer"
+	add_child(enhancer)

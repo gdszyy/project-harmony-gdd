@@ -116,14 +116,25 @@ func _create_boss_aura() -> void:
 
 func _connect_boss_signals() -> void:
 	if _boss_ref:
-		if _boss_ref.has_signal("phase_changed"):
-			_boss_ref.phase_changed.connect(_on_boss_phase_changed)
-		if _boss_ref.has_signal("special_attack_started"):
-			_boss_ref.special_attack_started.connect(_on_special_attack)
+		# Issue #52: 修复信号名称，使用 boss_base.gd 中定义的 boss_phase_changed 信号
+		if _boss_ref.has_signal("boss_phase_changed"):
+			_boss_ref.boss_phase_changed.connect(_on_boss_phase_changed_signal)
+		if _boss_ref.has_signal("boss_attack_started"):
+			_boss_ref.boss_attack_started.connect(_on_special_attack)
+		if _boss_ref.has_signal("boss_enraged"):
+			_boss_ref.boss_enraged.connect(_on_boss_enraged)
 
 # ============================================================
 # Boss 阶段切换
 # ============================================================
+
+## 从 boss_phase_changed(phase_index, phase_name) 信号调用 (Issue #52)
+func _on_boss_phase_changed_signal(phase_index: int, _phase_name: String) -> void:
+	_on_boss_phase_changed(phase_index)
+
+## 从 boss_enraged(enrage_level) 信号调用 (Issue #52)
+func _on_boss_enraged(_enrage_level: int) -> void:
+	_enter_enrage_visual()
 
 func _on_boss_phase_changed(new_phase: int) -> void:
 	var old_phase := _current_boss_phase

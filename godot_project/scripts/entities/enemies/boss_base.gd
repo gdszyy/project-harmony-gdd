@@ -139,9 +139,24 @@ func _on_enemy_ready() -> void:
 	# 子类额外初始化
 	_on_boss_ready()
 
+	# 集成 Boss 视觉增强器 (Issue #52)
+	_setup_boss_visual_enhancer()
+
 ## 子类重写：Boss 专属初始化
 func _on_boss_ready() -> void:
 	pass
+
+## 初始化 BossVisualEnhancer (Issue #52)
+func _setup_boss_visual_enhancer() -> void:
+	# 检查是否已存在 BossVisualEnhancer 子节点
+	for child in get_children():
+		if child is BossVisualEnhancer:
+			return  # 已存在，无需重复创建
+	# 动态创建 BossVisualEnhancer 并挂载
+	var enhancer := BossVisualEnhancer.new()
+	enhancer.name = "BossVisualEnhancer"
+	enhancer.aura_color = base_color
+	add_child(enhancer)
 
 ## 子类重写：定义 Boss 的所有阶段
 ## 每个阶段是一个 Dictionary：

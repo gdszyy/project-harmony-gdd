@@ -72,7 +72,7 @@ func _connect_beat_signal() -> void:
 	if gm and gm.has_signal("beat_tick"):
 		gm.beat_tick.connect(_on_beat_tick)
 
-func _on_beat_tick() -> void:
+func _on_beat_tick(_beat_index: int = 0) -> void:
 	if beat_pulse_enabled:
 		_beat_pulse_timer = 1.0
 	_on_beat_visual()

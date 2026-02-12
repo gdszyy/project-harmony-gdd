@@ -70,6 +70,9 @@ func _ready() -> void:
 	# 应用局外升级的拾取范围加成
 	_apply_meta_pickup_range()
 
+	# 集成视觉增强器 (Issue #52)
+	_setup_visual_enhancer()
+
 func _physics_process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
 		return
@@ -94,6 +97,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		SpellcraftSystem.trigger_manual_cast(1)
 	elif event.is_action_pressed("manual_cast_3"):
 		SpellcraftSystem.trigger_manual_cast(2)
+
+	# 频谱相位切换输入 (Issue #50 — Resonance Slicing)
+	if event.is_action_pressed("phase_overtone"):
+		SpellcraftSystem.switch_to_overtone()
+	elif event.is_action_pressed("phase_sub_bass"):
+		SpellcraftSystem.switch_to_sub_bass()
+	elif event.is_action_pressed("phase_fundamental"):
+		SpellcraftSystem.switch_to_fundamental()
 
 
 # ============================================================
@@ -207,3 +218,29 @@ func _apply_meta_pickup_range() -> void:
 			elif shape is RectangleShape2D:
 				shape.size += Vector2(bonus_range, bonus_range)
 			break
+
+# ============================================================
+# 视觉增强器集成 (Issue #52)
+# ============================================================
+
+## 初始化 PlayerVisualEnhancer
+## 如果场景中尚未挂载 PlayerVisualEnhancer，则动态创建并添加
+func _setup_visual_enhancer() -> void:
+	# 检查是否已存在 PlayerVisualEnhancer 子节点
+	for child in get_children():
+		if child is PlayerVisualEnhancer:
+			return  # 已存在，无需重复创建
+
+	# 检查 PlayerVisualEnhanced 子节点中是否已有
+	if _visual:
+		for child in _visual.get_children():
+			if child is PlayerVisualEnhancer:
+				return
+
+	# 动态创建 PlayerVisualEnhancer 并挂载到视觉节点下
+	var enhancer := PlayerVisualEnhancer.new()
+	enhancer.name = "PlayerVisualEnhancer"
+	if _visual:
+		_visual.add_child(enhancer)
+	else:
+		add_child(enhancer)
