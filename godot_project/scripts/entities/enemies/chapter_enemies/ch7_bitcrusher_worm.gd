@@ -77,11 +77,13 @@ var _body_shader: Shader = null
 
 func _on_enemy_ready() -> void:
 	enemy_type = EnemyType.PULSE
-	max_hp = 120.0
-	current_hp = 120.0
-	move_speed = 65.0
-	contact_damage = 12.0
-	xp_value = 15
+	# 注意：这些值会被 enemy_spawner._apply_difficulty_scaling() 用
+	# CHAPTER_ENEMY_STATS 中的值覆盖，此处设置为默认回退值
+	max_hp = 100.0
+	current_hp = 100.0
+	move_speed = 50.0
+	contact_damage = 14.0
+	xp_value = 13
 
 	quantized_fps = 8.0
 	_quantize_interval = 1.0 / quantized_fps
@@ -92,6 +94,11 @@ func _on_enemy_ready() -> void:
 	base_glitch_intensity = 0.1
 	max_glitch_intensity = 0.8
 	collision_radius = 14.0
+
+	# 隐藏 spawner 创建的默认 EnemyVisual（我们使用自己的程序化视觉体系）
+	# _sprite 由 enemy_base.gd 的 @onready 引用 $EnemyVisual
+	if _sprite:
+		_sprite.visible = false
 
 	# 预加载身体段着色器
 	_body_shader = load("res://shaders/bitcrush_worm_body.gdshader")

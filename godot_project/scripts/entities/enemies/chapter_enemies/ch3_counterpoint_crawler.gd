@@ -74,6 +74,14 @@ var _metal_shader: Shader = null
 
 func _on_enemy_ready() -> void:
 	enemy_type = EnemyType.PULSE
+	# 注意：这些值会被 enemy_spawner._apply_difficulty_scaling() 用
+	# CHAPTER_ENEMY_STATS 中的值覆盖，此处设置为默认回退值
+	max_hp = 70.0
+	current_hp = 70.0
+	move_speed = 45.0
+	contact_damage = 10.0
+	xp_value = 9
+	collision_radius = 14.0
 	quantized_fps = 8.0
 	_quantize_interval = 1.0 / quantized_fps
 	knockback_resistance = 0.4
@@ -83,6 +91,10 @@ func _on_enemy_ready() -> void:
 	base_color = Color(0.7, 0.5, 0.2)
 	base_glitch_intensity = 0.08
 	max_glitch_intensity = 0.6
+
+	# 隐藏 spawner 创建的默认 EnemyVisual（我们使用自己的程序化视觉体系）
+	if _sprite:
+		_sprite.visible = false
 
 	# 初始化炮塔HP
 	_turret_current_hp = turret_hp
