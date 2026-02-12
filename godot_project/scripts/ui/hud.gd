@@ -53,6 +53,14 @@ var _dps_overlay: CanvasLayer = null
 var _fatigue_filter: ColorRect = null
 ## 建议文字标签
 var _suggestion_label: Label = null
+
+# ============================================================
+# v3.1: 疲劳滤镜控制器 & 恢复建议 UI
+# ============================================================
+## 疲劳滤镜视觉控制器（AFI → Shader uniform 实时映射）
+var _fatigue_filter_controller: Node = null
+## 恢复建议 UI 控制器（FatigueManager → Toast 通知）
+var _recovery_suggestion_ui: Node = null
 ## 单音寂静指示器
 var _silence_indicators: Array[Label] = []
 ## 密度过载警告标签（旧版，新版由 NotificationManager 处理）
@@ -95,6 +103,8 @@ func _ready() -> void:
 	_setup_legacy_ui()
 	_setup_fatigue_filter()
 	_connect_global_signals()
+	_setup_fatigue_filter_controller()  # v3.1
+	_setup_recovery_suggestion_ui()     # v3.1
 
 	hud_ready.emit()
 
@@ -105,9 +115,12 @@ func _process(delta: float) -> void:
 	if _ammo_ring == null:
 		_ammo_ring = get_tree().get_first_node_in_group("ammo_ring")
 
-	# 疲劳滤镜更新
+	# 疲劳滤镜更新 (v3.1: 优先使用控制器，回退到旧版逻辑)
 	_current_fatigue = FatigueManager.current_afi if FatigueManager.get("current_afi") != null else _current_fatigue
-	_update_fatigue_filter()
+	if _fatigue_filter_controller:
+		_fatigue_filter_controller.update(delta)
+	else:
+		_update_fatigue_filter()
 
 	# 建议文字淡出
 	_update_suggestion(delta)
@@ -677,6 +690,39 @@ func _update_fatigue_filter() -> void:
 	if FatigueManager.get("is_density_overloaded") and FatigueManager.is_density_overloaded:
 		density_overload = 1.0 - FatigueManager.current_density_damage_multiplier
 	mat.set_shader_parameter("density_overload", density_overload)
+
+# ============================================================
+# v3.1: 疲劳滤镜控制器初始化
+# ============================================================
+
+func _setup_fatigue_filter_controller() -> void:
+	var controller_script := load("res://scripts/ui/fatigue_filter_controller.gd")
+	if controller_script and _fatigue_filter:
+		_fatigue_filter_controller = Node.new()
+		_fatigue_filter_controller.set_script(controller_script)
+		_fatigue_filter_controller.name = "FatigueFilterController"
+		add_child(_fatigue_filter_controller)
+		_fatigue_filter_controller.initialize(_fatigue_filter)
+	else:
+		push_warning("HUD: FatigueFilterController 初始化失败，回退到旧版滤镜更新逻辑")
+
+# ============================================================
+# v3.1: 恢复建议 UI 初始化
+# ============================================================
+
+func _setup_recovery_suggestion_ui() -> void:
+	var suggestion_script := load("res://scripts/ui/recovery_suggestion_ui.gd")
+	if suggestion_script:
+		_recovery_suggestion_ui = Node.new()
+		_recovery_suggestion_ui.set_script(suggestion_script)
+		_recovery_suggestion_ui.name = "RecoverySuggestionUI"
+		add_child(_recovery_suggestion_ui)
+
+		# 获取 Toast 通知系统引用
+		var toast_system := get_node_or_null("/root/ToastNotification")
+		_recovery_suggestion_ui.initialize(toast_system, _suggestion_label)
+	else:
+		push_warning("HUD: RecoverySuggestionUI 初始化失败")
 
 # ============================================================
 # 节拍响应

@@ -367,13 +367,28 @@ func trigger_manual_cast(slot_index: int) -> void:
 	# ★ Issue #100: 添加密度过载惩罚
 	enhanced_slot["density_damage_multiplier"] = FatigueManager.get_density_damage_multiplier()
 
+	# v3.1: 手动施法槽中的和弦也要检查不和谐值生命腐蚀
+	var slot_type: String = slot.get("type", "empty")
+	if slot_type == "chord":
+		var chord_type = slot.get("chord_type", -1)
+		if chord_type >= 0:
+			var raw_dissonance = MusicTheoryEngine.get_chord_dissonance(chord_type)
+			var mode_dissonance_mult := ModeSystem.get_dissonance_multiplier()
+			var corrosion_damage := FatigueManager.apply_dissonance_corrosion(raw_dissonance, mode_dissonance_mult)
+			if corrosion_damage > 0.0:
+				var dissonance = raw_dissonance * mode_dissonance_mult
+				ModeSystem.on_dissonance_applied(dissonance)
+				dissonance_corrosion_triggered.emit({"dissonance": dissonance, "damage": corrosion_damage})
+			enhanced_slot["dissonance"] = raw_dissonance * mode_dissonance_mult
+
 	_execute_spell(enhanced_slot)
 	
 	# ★ Issue #100: 记录疲劳事件
 	FatigueManager.record_spell({
 		"time": GameManager.game_time,
 		"note": note,
-		"is_chord": slot.get("type", "empty") == "chord",
+		"is_chord": slot_type == "chord",
+		"chord_type": slot.get("chord_type", -1) if slot_type == "chord" else -1,
 	})
 	
 	# 设置冷却（PD→D 效果可能已缩减冷却）
@@ -814,15 +829,16 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	# ★ 不和谐度处理：不和谐法术直接扣血（生命腐蚀）
 	var raw_dissonance = MusicTheoryEngine.get_chord_dissonance(chord_type)
 	# 应用调式不和谐度倍率（五声音阶减半）
-	var dissonance = raw_dissonance * ModeSystem.get_dissonance_multiplier()
-	if dissonance > 2.0:
-		GameManager.apply_dissonance_damage(dissonance)
+	var mode_dissonance_mult := ModeSystem.get_dissonance_multiplier()
+	var dissonance = raw_dissonance * mode_dissonance_mult
+
+	# v3.1: 通过 FatigueManager 统一接口处理不和谐腐蚀（AFI 联动伤害放大）
+	var corrosion_damage := FatigueManager.apply_dissonance_corrosion(raw_dissonance, mode_dissonance_mult)
+	if corrosion_damage > 0.0:
 		# 布鲁斯被动：不和谐度转化为暴击率
 		ModeSystem.on_dissonance_applied(dissonance)
-		# ★ 关键交互：不和谐法术缓解单调值（因为引入了变化）
-		FatigueManager.reduce_monotony_from_dissonance(dissonance)
 		# ★ 发射不和谐腐蚀信号（供视觉特效管理器监听）
-		dissonance_corrosion_triggered.emit({"dissonance": dissonance})
+		dissonance_corrosion_triggered.emit({"dissonance": dissonance, "damage": corrosion_damage})
 
 	# 扩展和弦额外疲劳
 	var extra_fatigue: float = MusicData.EXTENDED_CHORD_FATIGUE.get(chord_type, 0.0)

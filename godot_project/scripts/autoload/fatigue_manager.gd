@@ -21,6 +21,10 @@ signal note_silenced(note: MusicData.WhiteKey, duration: float)
 signal note_unsilenced(note: MusicData.WhiteKey)
 ## 新增：密度过载信号 — 当密度过载状态变化时发出
 signal density_overload_changed(is_overloaded: bool, accuracy_penalty: float)
+## 新增 v3.1：AFI 值变化信号 — 每次 AFI 值更新时发出，供滤镜控制器实时响应
+signal afi_changed(afi_value: float, fatigue_tier: int)
+## 新增 v3.1：不和谐腐蚀信号 — 和弦施放时不和谐度超过阈值触发
+signal dissonance_corrosion_applied(dissonance: float, damage: float)
 
 # ============================================================
 # 配置
@@ -188,6 +192,7 @@ func record_spell(event: Dictionary) -> Dictionary:
 
 	# 计算 AFI
 	var result := _calculate_afi(current_time)
+	var prev_afi := current_afi
 	current_afi = result["afi"]
 
 	# 判定疲劳等级
@@ -195,6 +200,11 @@ func record_spell(event: Dictionary) -> Dictionary:
 	if new_level != current_level:
 		current_level = new_level
 		fatigue_level_changed.emit(current_level)
+
+	# v3.1: 发射 AFI 变化信号（供疲劳滤镜控制器实时响应）
+	if abs(current_afi - prev_afi) > 0.001:
+		var tier := _get_fatigue_tier(current_afi)
+		afi_changed.emit(current_afi, tier)
 
 	# 计算惩罚
 	result["level"] = current_level
@@ -772,6 +782,7 @@ func _note_int_to_white_key(note: int) -> int:
 
 ## 外部疲劳注入（供 Silence 敌人等调用）
 func add_external_fatigue(amount: float) -> void:
+	var prev_afi := current_afi
 	current_afi = clampf(current_afi + amount, 0.0, 1.0)
 
 	# 重新判定疲劳等级
@@ -779,6 +790,11 @@ func add_external_fatigue(amount: float) -> void:
 	if new_level != current_level:
 		current_level = new_level
 		fatigue_level_changed.emit(current_level)
+
+	# v3.1: 发射 AFI 变化信号
+	if abs(current_afi - prev_afi) > 0.001:
+		var tier := _get_fatigue_tier(current_afi)
+		afi_changed.emit(current_afi, tier)
 
 	# 发出更新信号
 	var result := {
@@ -882,12 +898,18 @@ func get_current_fatigue() -> float:
 
 ## 减少疲劳度（击杀 Silence 敌人的奖励）
 func reduce_fatigue(amount: float) -> void:
+	var prev_afi := current_afi
 	current_afi = clampf(current_afi - amount, 0.0, 1.0)
 
 	var new_level := _determine_level(current_afi)
 	if new_level != current_level:
 		current_level = new_level
 		fatigue_level_changed.emit(current_level)
+
+	# v3.1: 发射 AFI 变化信号
+	if abs(current_afi - prev_afi) > 0.001:
+		var tier := _get_fatigue_tier(current_afi)
+		afi_changed.emit(current_afi, tier)
 
 	var result := {
 		"afi": current_afi,
@@ -917,3 +939,66 @@ func reset() -> void:
 	current_density_damage_multiplier = 1.0
 	# 重置留白计数器
 	_consecutive_rest_count = 0
+	# v3.1: 发射重置后的 AFI 信号
+	afi_changed.emit(0.0, 0)
+
+# ============================================================
+# v3.1: AFI Tier 辅助方法
+# ============================================================
+
+## 根据 AFI 值返回疲劳等级 Tier (0-3)
+## Tier 0: AFI < 0.3 — 正常画面
+## Tier 1: 0.3 ≤ AFI < 0.5 — 低疲劳（轻微暖色偏移 + 微弱暗角）
+## Tier 2: 0.5 ≤ AFI < 0.7 — 中疲劳（色差 + 噪点 + 扫描线）
+## Tier 3: AFI ≥ 0.7 — 高疲劳（去饱和 + 故障 + 警告边框）
+func _get_fatigue_tier(afi: float) -> int:
+	if afi >= 0.7:
+		return 3
+	elif afi >= 0.5:
+		return 2
+	elif afi >= 0.3:
+		return 1
+	else:
+		return 0
+
+## 获取当前疲劳 Tier（供外部查询）
+func get_fatigue_tier() -> int:
+	return _get_fatigue_tier(current_afi)
+
+# ============================================================
+# v3.1: 不和谐值生命腐蚀接口
+# ============================================================
+
+## 不和谐腐蚀伤害阈值：不和谐度超过此值时触发生命腐蚀
+const DISSONANCE_CORROSION_THRESHOLD: float = 2.0
+## 不和谐腐蚀基础伤害倍率（与 AFI 联动）
+const DISSONANCE_CORROSION_AFI_MULT: float = 1.5
+
+## 计算并应用不和谐腐蚀伤害
+## 返回实际造成的伤害值，如果未触发则返回 0.0
+func apply_dissonance_corrosion(raw_dissonance: float, mode_multiplier: float = 1.0) -> float:
+	var effective_dissonance := raw_dissonance * mode_multiplier
+	if effective_dissonance <= DISSONANCE_CORROSION_THRESHOLD:
+		return 0.0
+
+	# 基础伤害 = 不和谐度 × 每点伤害
+	var base_damage := effective_dissonance
+
+	# AFI 联动：疲劳度越高，不和谐腐蚀伤害越大
+	var afi_amplifier := 1.0 + current_afi * DISSONANCE_CORROSION_AFI_MULT
+	base_damage *= afi_amplifier
+
+	# 委托 GameManager 执行实际伤害
+	GameManager.apply_dissonance_damage(effective_dissonance)
+
+	# 发射腐蚀信号
+	dissonance_corrosion_applied.emit(effective_dissonance, base_damage)
+
+	# 不和谐法术缓解单调值（因为引入了变化）
+	reduce_monotony_from_dissonance(effective_dissonance)
+
+	return base_damage
+
+## 获取恢复建议列表（供外部查询）
+func get_recovery_suggestions() -> Array[String]:
+	return _generate_suggestions()
