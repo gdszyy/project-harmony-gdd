@@ -1,107 +1,417 @@
-# Project Harmony UI 验收报告
+# Project Harmony — UI 模块全面验收报告
 
-**版本:** 1.0
-**日期:** 2026年02月12日
-**验收工程师:** Manus
+**版本:** 2.0
+**日期:** 2026-02-12
+**验收工程师:** Manus AI
+**验收范围:** `Docs/UI_Design_Module[1-7]_*.md` 设计文档 + `godot_project/scripts/ui/` 全部代码
 
 ---
 
 ## 1. 验收概述
 
-本次验收旨在对 `gdszyy/project-harmony-gdd` 仓库中已完成的7个核心UI模块进行全面的质量保证（QA）审查。我们通过对设计文档、源代码和场景文件的交叉比对，系统性地评估了**设计文档完整性**、**代码实现完整性**和**全局UI主题一致性**三个核心维度。
+### 1.1. 目的与方法
 
-### 1.1. 验收范围
+本次验收旨在对 `gdszyy/project-harmony-gdd` 仓库中已完成的 7 个核心 UI 模块进行全面质量保证（QA）审查。审查方法包括：逐一阅读 7 份 UI 设计文档，提取每个模块的功能需求、颜色规范、信号定义和交互行为；逐一审查 `godot_project/scripts/ui/` 目录下的 55 个 GDScript 文件（不含 `archive/` 子目录），验证其与设计文档的对应关系；以 `godot_project/scripts/autoload/ui_colors.gd` 中定义的全局颜色规范为基准，进行全局一致性检查。
 
-- **设计文档**: `Docs/` 目录下的7份 `UI_Design_Module*.md` 文件。
-- **UI代码**: `godot_project/scripts/ui/` 目录下的所有GDScript脚本（`.gd`），`godot_project/scripts/visual/ui_theme_manager.gd`，以及相关的UI着色器（`.gdshader`）。
-- **UI场景与主题**: `godot_project/scenes/ui/` 目录下的所有场景文件（`.tscn`）及 `godot_project/themes/GlobalTheme.tres` 主题文件。
+验收的三个核心维度为：**设计文档完整性**、**代码实现完整性**、**全局一致性**（重点关注 `#141026` 背景色、`#9D6FFF` 强调色、`#EAE6FF` 文本色）。
 
-### 1.2. 验收方法
+### 1.2. 总体评估
 
-1.  **文档分析**: 并行解析7个UI设计文档，提取每个模块的设计规范、组件列表、交互要求和主题规范。
-2.  **代码审查**: 并行审查按模块划分的UI代码，分析功能实现、代码质量、信号使用、主题应用和硬编码情况。
-3.  **交叉验证**: 对比分析文档与代码的差异，识别设计缺失、实现偏差、命名不一致和主题实现混乱等问题。
-4.  **问题分级与报告生成**: 将所有发现的问题按 `Critical`, `Major`, `Minor` 三个等级进行分类，汇总成本报告，并提供具体修复建议。
+本次 UI 系统验收的总体结论为 **部分通过 (Partial Pass)**。项目展现了极高的完成度和卓越的设计与工程质量。7 个核心 UI 模块的设计文档详尽，代码实现健壮且功能覆盖全面。然而，验收过程中发现了系统性的全局一致性问题，主要集中在**颜色系统的分裂**和**命名规范的缺失**。
 
-### 1.3. 核心结论
+| 评估维度 | 状态 | 评分 | 说明 |
+| :--- | :---: | :---: | :--- |
+| 设计文档完整性 | ⚠️ | 70/100 | 功能描述详尽，但普遍缺失可访问性章节，且存在部分失效的图片资源引用。 |
+| 代码实现完整性 | ✅ | 82/100 | 核心功能基本实现，文件命名与文档有偏差但功能可追溯。 |
+| 全局一致性 | ❌ | 45/100 | 颜色系统严重分裂，命名极度不统一，`UIColors` 自动加载几乎未被使用。 |
 
-项目UI模块功能实现度较高，尤其在动态视觉效果和与核心玩法的机制耦合方面表现出色。然而，项目在**代码规范与架构层面存在严重问题**，主要体现在UI主题管理的混乱和大量硬编码，这将对项目后期的维护、迭代和团队协作构成巨大挑战。
+| 模块 | 设计文档 | 代码实现 | 一致性 | 最终结论 |
+| :--- | :---: | :---: | :---: | :---: |
+| Module 1: Main Menu | PASS | PASS | PASS | **PASS** |
+| Module 2: Battle HUD | PASS | PASS | PARTIAL | **PARTIAL** |
+| Module 3: Integrated Composer | PASS (Minor) | PASS | PARTIAL | **PARTIAL** |
+| Module 4: Circle of Fifths | PASS | PASS | PARTIAL | **PARTIAL** |
+| Module 5: Hall of Harmony | PASS | PASS | PARTIAL | **PARTIAL** |
+| Module 6: Resonance Slicing | PARTIAL | PASS | PARTIAL | **PARTIAL** |
+| Module 7: Tutorial & Aux | PASS (Minor) | PASS | PARTIAL | **PARTIAL** |
 
-| 评估维度 | 状态 | 核心结论 |
+### 1.3. 问题统计
+
+| 严重程度 | 数量 | 说明 |
+| :--- | :---: | :--- |
+| **Critical** | 2 | 颜色系统分裂、音符颜色体系冲突 |
+| **Major** | 10 | 命名不统一、图片缺失、文件结构偏差、硬编码颜色等 |
+| **Minor** | 7 | 可访问性缺失、文档细节不全、旧版文件残留等 |
+
+---
+
+## 2. 全局一致性审查
+
+本节聚焦于跨模块的系统性问题，这些问题影响整个项目的代码质量和视觉一致性。
+
+### 2.1. [C-01] 颜色系统分裂 — Critical
+
+项目中存在一个全局颜色定义文件 `godot_project/scripts/autoload/ui_colors.gd`，其中定义了完整的调色板（`PANEL_BG`、`ACCENT`、`TEXT_PRIMARY` 等）和辅助方法（`with_alpha()`、`get_rarity_color()` 等）。然而，在 55 个 UI 脚本中，**54 个文件未引用 `UIColors` 自动加载单例**，而是各自定义了本地颜色常量。这意味着全局颜色规范形同虚设，任何颜色变更都需要逐文件手动修改。
+
+> **修复建议:** 立即停止在各 UI 脚本中定义本地颜色常量。所有颜色必须从 `UIColors` 自动加载单例中获取。对现有 55 个脚本进行批量重构，将所有本地 `const` 颜色替换为 `UIColors.XXX` 的引用。
+
+### 2.2. [C-02] 音符颜色体系完全冲突 — Critical
+
+项目中存在两套完全不同的音符颜色定义，且均在代码中被使用：
+
+| 音符 | `ui_colors.gd` (彩虹色系) | Module 3 设计文档 (主题色系) | 实际代码使用 |
+| :--- | :--- | :--- | :--- |
+| C | `#FF6B6B` (红) | `#00FFD4` (谐振青) | 代码使用主题色系 |
+| D | `#FF8C42` (橙) | `#0088FF` (疾风蓝) | 代码使用主题色系 |
+| E | `#FFD700` (黄) | `#66FF66` (翠叶绿) | 代码使用主题色系 |
+| F | `#4DFF80` (绿) | `#8844FF` (深渊紫) | 代码使用主题色系 |
+| G | `#4DFFF3` (青) | `#FF4444` (烈焰红) | 代码使用主题色系 |
+| A | `#4D8BFF` (蓝) | `#FF8800` (烈日橙) | 代码使用主题色系 |
+| B | `#9D6FFF` (紫) | `#FF44AA` (霓虹粉) | 代码使用主题色系 |
+
+`integrated_composer.gd`、`note_inventory_ui.gd`、`sequencer_ui.gd` 等核心文件均使用 Module 3 设计文档中的主题色系，而 `ui_colors.gd` 中的彩虹色系从未被引用。
+
+> **修复建议:** 召开设计决策会议确定最终方案。鉴于代码实际使用的是主题色系，建议将 `ui_colors.gd` 中的 `NOTE_COLORS` 更新为与 Module 3 一致的主题色系，并删除冗余定义。
+
+### 2.3. [M-01] 颜色常量命名极度不统一 — Major
+
+同一颜色在不同文件中使用了多达 11 种不同的常量名称。以下是三个核心颜色的命名变体统计：
+
+**`#EAE6FF` (晶体白/文本色) — 11 种命名:**
+
+| 常量名 | 使用文件数 | 示例文件 |
+| :--- | :---: | :--- |
+| `COLOR_CRYSTAL_WHITE` | 8 | `hp_bar.gd`, `damage_number.gd` |
+| `COL_TEXT_PRIMARY` | 7 | `circle_of_fifths_upgrade_v3.gd`, `codex_ui.gd` |
+| `TEXT_PRIMARY` | 7 | `context_hint.gd`, `loading_screen.gd` |
+| `TEXT_COLOR` | 5 | `hall_of_harmony.gd`, `skill_node.gd` |
+| `COLOR_TITLE` | 2 | `pause_menu.gd`, `settings_menu.gd` |
+| 其他 6 种 | 各 1 | `THEME_TEXT_COLOR`, `COUNT_COLOR`, `SPELL_NAME_COLOR` 等 |
+
+**`#141026` (星空紫/背景色) — 9 种命名:**
+
+| 常量名 | 使用文件数 | 示例文件 |
+| :--- | :---: | :--- |
+| `PANEL_BG` | 7 | `loading_screen.gd`, `toast_notification.gd` |
+| `COL_PANEL_BG` | 4 | `circle_of_fifths_upgrade_v3.gd`, `codex_ui.gd` |
+| `COLOR_STARRY_PURPLE` | 4 | `hp_bar.gd`, `manual_cast_slot.gd` |
+| 其他 6 种 | 各 1-2 | `SLOT_EMPTY_BG`, `COL_BG`, `CELL_EMPTY_BG` 等 |
+
+**`#9D6FFF` (强调色) — 23 种命名:**
+
+| 常量名 | 使用文件数 | 示例文件 |
+| :--- | :---: | :--- |
+| `COL_ACCENT` | 7 | `upgrade_card.gd`, `theory_breakthrough_popup.gd` |
+| `ACCENT_COLOR` | 6 | `toast_notification.gd`, `tooltip_system.gd` |
+| `ACCENT` | 5 | `hall_of_harmony.gd`, `run_results_screen.gd` |
+| `COLOR_ACCENT` | 3 | `manual_cast_slot.gd`, `settings_menu.gd` |
+| 其他 19 种 | 各 1-2 | `SLOT_HOVER_BG`, `CARD_BORDER`, `THEME_ACCENT_COLOR` 等 |
+
+> **修复建议:** 在全局重构（C-01）时，统一所有颜色常量命名。建议使用 `UIColors` 中已定义的名称作为标准。
+
+### 2.4. [M-02] 颜色构造函数格式混乱 — Major
+
+项目中同时存在三种 `Color()` 构造方式，且部分文件混用多种格式：
+
+| 格式 | 示例 | 使用文件数 |
+| :--- | :--- | :---: |
+| `Color("#HEX")` | `Color("#9D6FFF")` | 26 |
+| `Color("HEX")` (无 `#`) | `Color("9D6FFF")` | 6 |
+| `Color(r, g, b)` (浮点) | `Color(0.616, 0.435, 1.0)` | 42 |
+
+> **修复建议:** 统一使用 `Color("#HEX")` 格式，提高可读性和 grep 可搜索性。
+
+### 2.5. [M-03] "谐振青"颜色值不一致 — Major
+
+设计文档中"谐振青"定义为 `#00FFD4`，但 5 个文件使用了不同的色值 `#00E5FF`：
+
+| 文件 | 使用的色值 | 应为 |
 | :--- | :--- | :--- |
-| **设计文档完整性** | ⚠️ **中等** | 文档总体质量尚可，但存在关键信息缺失（如模块4未定义脚本）、内容与实现脱节（模块1的SceneManager）、命名不一致等问题。 |
-| **代码实现完整性** | ⚠️ **中等** | 大部分核心功能已实现，但存在部分文档功能缺失（如确认对话框）、废弃代码残留、以及大量脚本没有对应的场景文件等问题。 |
-| **全局UI主题一致性** | ❌ **严重不足** | 这是最严重的问题。项目同时存在三种主题管理方案（`GlobalTheme.tres`, `UIColors` Autoload, 硬编码）且三者严重割裂，导致UI风格碎片化，维护成本极高。 |
+| `hall_of_harmony.gd` | `#00E5FF` | `#00FFD4` |
+| `meta_progression_visualizer.gd` | `#00E5FF` | `#00FFD4` |
+| `mode_selection_screen.gd` | `#00E5FF` | `#00FFD4` |
+| `run_results_screen.gd` | `#00E5FF` | `#00FFD4` |
+| `skill_node.gd` | `#00E5FF` | `#00FFD4` |
+
+> **修复建议:** 将上述 5 个文件中的 `#00E5FF` 统一替换为 `#00FFD4`，与设计文档保持一致。
+
+### 2.6. [M-04] 部分 UI 脚本使用大量硬编码颜色 — Major
+
+`boss_dialogue.gd` 和 `hud.gd` 中存在大量直接硬编码的 `Color(r, g, b)` 值，未使用任何命名常量，导致无法追溯其设计意图。例如：
+
+```gdscript
+# boss_dialogue.gd
+style.bg_color = Color(0.05, 0.03, 0.08, 0.92)   # 接近 #141026 但不完全一致
+style.border_color = Color(0.6, 0.3, 0.9, 0.8)    # 接近 #9D6FFF 但不完全一致
+
+# hud.gd
+_suggestion_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))  # 未定义的颜色
+_overload_warning.add_theme_color_override("font_color", Color(1.0, 0.3, 0.1))  # 未定义的颜色
+```
+
+> **修复建议:** 审查这两个文件，将所有硬编码颜色替换为 `UIColors` 中的对应常量。如果 `UIColors` 中缺少相应颜色，应先在其中添加，再进行引用。
 
 ---
 
-## 2. 全局性问题与建议
+## 3. 逐模块审查
 
-全局性问题是本次验收发现的重中之重，它们跨越所有UI模块，对项目的健康度影响最大。
+### 3.1. Module 1 — 主菜单与导航系统 (MainMenu)
 
-### 2.1. UI主题管理混乱 (Critical)
+**设计文档:** `Docs/UI_Design_Module1_MainMenu.md`
 
-**问题描述:**
+**文档完整性评估:** 文档内容详尽，涵盖了主菜单、暂停菜单、设置菜单的布局、颜色规范、按钮动效和转场效果。提供了完整的 Mermaid 状态流程图和概念图。所有引用的 6 张图片均存在于 `Docs/diagrams/` 目录中。
 
-项目当前存在三种完全独立且互不兼容的UI主题管理方式，导致了灾难性的架构混乱：
+**代码文件映射:**
 
-1.  **`GlobalTheme.tres` 主题文件**: 项目在 `project.godot` 中定义了全局主题，但该主题仅被少数几个场景（主菜单、暂停菜单）直接使用。绝大多数UI场景和脚本都忽略了它的存在。
-2.  **`UIColors` Autoload 单例**: 项目中存在一个 `UIColors.gd` 单例，其中定义了一套完整、规范的全局调色板，覆盖了背景、文本、稀有度、音符等。然而，在全部55个UI脚本中，**仅有1个脚本 (`tutorial_hint_manager.gd`) 真正使用了它**。
-3.  **大规模硬编码**: **高达95%的UI脚本（52/55）** 内部都存在硬编码的颜色值。`ACCENT` (主题色), `PANEL_BG` (面板背景色) 等核心颜色在数十个文件中被重复定义。更严重的是，`NOTE_COLORS` (音符颜色) 在多个模块中被重复定义且**颜色值完全不一致**，与 `UIColors` 中的标准也不同，这直接破坏了游戏核心机制的视觉统一性。
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `main_menu.gd` | `scripts/scenes/main_menu.gd` | ⚠️ 路径偏差 |
+| `pause_menu.tscn` | `scenes/pause_menu.tscn` + `scripts/ui/pause_menu.gd` | ✅ |
+| `settings_menu.tscn` | `scenes/settings_menu.tscn` + `scripts/ui/settings_menu.gd` | ✅ |
+| `SceneManager.gd` | 不存在（功能分散在 `game_manager.gd`） | ⚠️ 缺失 |
+| `glitch_transition.gdshader` | `shaders/glitch_transition.gdshader` | ✅ |
+| `scanline_glow.gdshader` | `shaders/scanline_glow.gdshader` | ✅ |
+| `waveform.gdshader` | `shaders/waveform.gdshader` | ✅ |
+| — | `scripts/ui/ui_transition_manager.gd` | ✅ 额外实现 |
 
-**修复建议:**
+**颜色一致性:** `main_menu.gd` 正确使用了 `#EAE6FF`（标题）、`#9D6FFF`（强调）、`#141026`（面板背景）。`pause_menu.gd` 缺少 `#141026` 和 `#9D6FFF` 的显式定义，仅使用了近似的浮点值 `Color(0.039, 0.031, 0.078, 0.5)` 作为遮罩色。
 
-必须立即进行大规模重构，统一UI主题管理，消除混乱。建议步骤如下：
+**模块特有问题:**
 
-1.  **确立 `UIColors` 为唯一颜色来源**: 强制要求所有UI脚本和场景**必须**通过 `UIColors.get_rarity_color()` 或 `UIColors.ACCENT` 等方式获取颜色，严禁任何形式的本地颜色定义和硬编码。
-2.  **全面移除硬编码**: 审查所有UI脚本，删除所有本地的 `const Color` 定义和 `Color(...)` 硬编码值，替换为对 `UIColors` 的调用。
-3.  **重构 `GlobalTheme.tres`**: 编辑 `GlobalTheme.tres` 文件，使其内部的颜色值也全部引用自 `UIColors` Autoload。这能确保通过编辑器设置的UI控件也能遵循全局调色板。
-4.  **推广 `GlobalTheme`**: 对于未使用代码进行样式覆盖的UI控件，应在场景文件中将其 `theme` 属性设置为 `GlobalTheme.tres`。
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M1-01 | Major | `main_menu.gd` 位于 `scripts/scenes/` 而非 `scripts/ui/`，与其他 UI 脚本的组织方式不一致。 |
+| M1-02 | Major | 设计文档中提及的 `SceneManager.gd` 不存在，其场景切换功能由 `ui_transition_manager.gd` 和 `game_manager.gd` 分担。建议更新文档。 |
+| M1-03 | Minor | `pause_menu.gd` 未定义 `#9D6FFF` 强调色常量，按钮悬停效果使用了通用的 `modulate` 亮度调整而非主题色。 |
 
-### 2.2. 大量硬编码的布局与逻辑值 (Major)
+### 3.2. Module 2 — 战斗信息中枢 (BattleHUD)
 
-**问题描述:**
+**设计文档:** `Docs/UI_Design_Module2_BattleHUD.md`
 
-除了颜色，UI的布局参数（尺寸、位置、间距）、动画参数（时长、曲线）和部分游戏逻辑（如升级数据库、教学序列）也大量硬编码在各个脚本的常量中。这使得UI的响应式布局调整、动画节奏的全局变更以及游戏数值的迭代变得极为困难，每次调整都需要深入代码进行修改。
+**文档完整性评估:** 文档极为详尽，定义了 11 个子组件的完整颜色规范、动画行为和信号。所有颜色均提供了十六进制色值。
 
-**修复建议:**
+**代码文件映射:**
 
-1.  **导出为 `@export` 变量**: 将独立的UI组件（如`upgrade_card.gd`）中的布局和动画参数（如`ANIM_STANDARD`）声明为 `@export` 变量，允许在编辑器中针对不同实例进行微调。
-2.  **创建配置资源**: 对于全局性的或复杂的数据结构（如五度圈的升级数据库、教学序列），应将其从代码中剥离，创建为自定义资源（`Resource`）或JSON文件。代码在启动时加载这些配置文件，而不是将数据硬编码在自身内部。
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `hp_bar.gd` | `hp_bar.gd` | ✅ |
+| `fatigue_meter.gd` | `fatigue_meter.gd` | ✅ |
+| `sequencer_ring.gd` | `sequencer_ui.gd` | ⚠️ 重命名 |
+| `hud.gd` | `hud.gd` | ✅ |
+| `DamageNumberManager.gd` | `damage_number.gd` + `damage_number_pool.gd` | ⚠️ 拆分 |
+| `boss_hp_bar_ui.gd` | `boss_hp_bar_ui.gd` | ✅ |
+| `ammo_ring.gd` | `ammo_ring_hud.gd` | ⚠️ 重命名 |
+| `summon_hud.gd` | `summon_hud.gd` | ✅ |
+| `SummonCard.gd` | 不存在（功能合并到 `summon_hud.gd`） | ⚠️ 合并 |
+| `rhythm_indicator.gd` | `rhythm_indicator.gd` | ✅ |
+| `NotificationManager.gd` | `notification_manager.gd` | ✅ |
 
-### 2.3. 性能问题：不必要的 `queue_redraw()` (Major)
+**颜色一致性:** `hp_bar.gd` 正确使用了 `#141026` 和 `#EAE6FF`。`boss_hp_bar_ui.gd` 使用了 Boss 主题化的独立颜色体系（如 `Color(0.0, 1.0, 0.831)` 谐振青），这些颜色未在 `UIColors` 中定义但符合设计文档的 Boss 主题化需求。`hud.gd` 存在大量硬编码颜色（见 M-04）。
 
-**问题描述:**
+**模块特有问题:**
 
-多个进行自定义绘制的复杂UI组件（如 `hall_of_harmony.gd`, `circle_of_fifths_upgrade_v3.gd`）在 `_process` 函数中**无条件**调用 `queue_redraw()`。这意味着即使用户没有任何操作，界面也在以每秒60次的频率持续重绘，造成了不必要的CPU资源浪费，可能在低端设备上引发性能问题。
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M2-01 | Major | `sequencer_ring.gd` 已更名为 `sequencer_ui.gd`，设计文档未同步更新。 |
+| M2-02 | Major | `DamageNumberManager.gd` 被拆分为 `damage_number.gd`（单个数字逻辑）和 `damage_number_pool.gd`（对象池管理），设计文档未反映此架构变更。 |
+| M2-03 | Minor | `SummonCard.gd` 作为独立文件不存在，其卡片渲染逻辑已合并到 `summon_hud.gd` 中。 |
 
-**修复建议:**
+### 3.3. Module 3 — 一体化编曲台 (IntegratedComposer)
 
-引入“脏标记 (dirty flag)”机制。仅在UI状态发生变化时（如鼠标悬停、数据更新、动画插值）设置一个 `is_dirty = true` 的标志，并在 `_process` 中检查此标志，仅当为 `true` 时才调用 `queue_redraw()` 并将其重置为 `false`。
+**设计文档:** `Docs/UI_Design_Module3_IntegratedComposer.md`
+
+**文档完整性评估:** 文档定义了完整的三栏布局、拖拽交互流程和音符颜色编码系统。但文档引用的 3 张图片资源全部缺失。
+
+**代码文件映射:**
+
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `integrated_composer.gd` | `integrated_composer.gd` | ✅ |
+| `IntegratedComposer.tscn` | `scenes/ui/integrated_composer.tscn` | ✅ |
+| — | `note_inventory_ui.gd` | ✅ 子组件 |
+| — | `sequencer_ui.gd` | ✅ 子组件 |
+| — | `chord_alchemy_panel_v3.gd` | ✅ 子组件 |
+| — | `spellbook_panel_v3.gd` | ✅ 子组件 |
+| — | `manual_slot_config_v3.gd` | ✅ 子组件 |
+
+**颜色一致性:** `integrated_composer.gd` 正确使用了三个核心颜色，但采用了无 `#` 的格式（`Color("141026CC")`）。音符颜色使用了 Module 3 设计文档中的主题色系，与 `ui_colors.gd` 中的定义冲突（见 C-02）。
+
+**模块特有问题:**
+
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M3-01 | Major | 设计文档引用的 3 张图片全部缺失：`Assets/integrated_composer_layout.png`、`Assets/drag_drop_flow.png`、`Assets/godot_scene_tree.png`。 |
+| M3-02 | Minor | `integrated_composer.gd` 使用 `Color("HEX")` 格式（无 `#`），与大多数文件的 `Color("#HEX")` 格式不一致。同样的问题存在于 `chord_alchemy_panel_v3.gd`、`manual_slot_config_v3.gd`、`note_inventory_ui.gd`、`sequencer_ui.gd`、`spellbook_panel_v3.gd` 中。 |
+
+### 3.4. Module 4 — 五度圈罗盘升级系统 (CircleOfFifths)
+
+**设计文档:** `Docs/UI_Design_Module4_CircleOfFifths.md`
+
+**文档完整性评估:** 文档极为详尽（可能是 7 个模块中最完整的），定义了罗盘几何参数、方向色系、升级卡片规范、乐理突破事件和完整的交互流程。所有引用的 6 张图片均存在于 `Assets/UI_Module4/` 目录中。但文档**未指定具体的 GDScript 文件名**。
+
+**代码文件映射:**
+
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| (未指定) | `circle_of_fifths_upgrade_v3.gd` (1550 行) | ✅ 核心实现 |
+| (未指定) | `upgrade_card.gd` | ✅ |
+| (未指定) | `theory_breakthrough_popup.gd` | ✅ |
+| (未指定) | `codex_ui.gd` (1327 行) | ✅ |
+| (未指定) | `codex_unlock_popup.gd` | ✅ |
+| (未指定) | `game_mechanics_panel.gd` (1068 行) | ✅ |
+| (未指定) | `help_panel.gd` | ✅ |
+
+**颜色一致性:** `circle_of_fifths_upgrade_v3.gd` 的颜色定义是所有模块中最规范的，严格遵循了设计文档 §1.2 的颜色体系，并在注释中标注了对应的文档章节号。
+
+**模块特有问题:**
+
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M4-01 | Minor | 设计文档未指定具体的 GDScript 文件名，导致无法直接验证文件对应关系。建议在文档中补充"实现文件"章节。 |
+
+### 3.5. Module 5 — 和谐殿堂 (HallOfHarmony)
+
+**设计文档:** `Docs/UI_Design_Module5_HallOfHarmony.md`
+
+**文档完整性评估:** 文档涵盖了星图导航、技能树、单局结算和调式选择四大子系统。但颜色定义部分存在缺陷：多次使用颜色名称（如"谐振青"、"圣光金"）而未提供十六进制色值。
+
+**代码文件映射:**
+
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `HallOfHarmony.gd` | `hall_of_harmony.gd` | ✅ |
+| `SkillNode.gd` | `skill_node.gd` | ✅ |
+| `MetaProgressionManager.gd` | `scripts/autoload/meta_progression_manager.gd` | ✅ |
+| — | `meta_progression_visualizer.gd` | ✅ 额外实现 |
+| — | `mode_selection_screen.gd` | ✅ 额外实现 |
+| — | `run_results_screen.gd` | ✅ 额外实现 |
+
+**颜色一致性:** `hall_of_harmony.gd` 使用了错误的"谐振青"色值 `#00E5FF`（应为 `#00FFD4`）。`skill_node.gd` 同样使用了 `#00E5FF`。
+
+**模块特有问题:**
+
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M5-01 | Major | `hall_of_harmony.gd` 和 `skill_node.gd` 中"谐振青"使用了 `#00E5FF` 而非设计文档标准的 `#00FFD4`。 |
+| M5-02 | Minor | 设计文档中多次引用"谐振青"、"圣光金"、"治愈绿"、"错误红"等颜色名称，但未在颜色规范表中提供对应的十六进制色值。 |
+| M5-03 | Minor | 设计文档中字体规范仅注明"遵循 `GlobalTheme.tres`"，未提供具体字体文件名或资源路径。 |
+
+### 3.6. Module 6 — 谐振切片系统 (ResonanceSlicing)
+
+**设计文档:** `Docs/UI_Design_Module6_ResonanceSlicing.md`
+
+**文档完整性评估:** 文档非常详尽，定义了三相位系统的完整颜色体系（高通 `#4DFFF3`、全频 `#9D6FFF`、低通 `#FF8C42`）、能量条分级、疲劳指示器和全屏过渡效果。所有引用的 6 张图片均存在。
+
+**代码文件映射:**
+
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `phase_indicator.gd` | `phase_indicator_ui.gd` | ⚠️ 重命名 |
+| `phase_energy_ring.gd` | `phase_energy_bar.gd` | ⚠️ 重命名 |
+| `spectrum_offset_fatigue_bar.gd` | `spectral_fatigue_indicator.gd` | ⚠️ 重命名 |
+| `gain_hint_panel.gd` | `phase_gain_hint.gd` | ⚠️ 重命名 |
+| `phase_transition_effect.gd` | `phase_transition_overlay.gd` | ⚠️ 重命名 |
+| — | `phase_hud_tint_manager.gd` | ✅ 额外实现 |
+| — | `timbre_wheel_ui.gd` | ✅ 额外实现 |
+
+**颜色一致性:** 所有文件正确使用了三相位颜色体系。`phase_energy_bar.gd` 正确使用了 `#EAE6FF` 作为满能量颜色。`phase_gain_hint.gd` 正确使用了 `#141026` 作为面板背景。
+
+**模块特有问题:**
+
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M6-01 | Major | 设计文档中提及的 5 个文件名与实际代码文件名全部不一致（均已重命名），建议更新设计文档以反映当前实现。 |
+| M6-02 | Minor | 设计文档 §8.3 中对"受影响的 HUD 元素"（如血条波形频率变化）的描述缺少具体数值参数。 |
+
+### 3.7. Module 7 — 教学引导与辅助 UI (TutorialAux)
+
+**设计文档:** `Docs/UI_Design_Module7_TutorialAux.md`
+
+**文档完整性评估:** 文档涵盖了教学提示系统、加载画面、游戏结束界面、通用弹窗、Toast 通知和工具提示等多个子系统。文档未引用任何图片资源。
+
+**代码文件映射:**
+
+| 设计文档提及 | 实际代码文件 | 状态 |
+| :--- | :--- | :---: |
+| `TutorialManager.gd` | `scripts/systems/tutorial_manager.gd` + `scripts/ui/tutorial_hint_manager.gd` + `scripts/ui/tutorial_sequence.gd` | ⚠️ 拆分 |
+| `ui_colors.gd` | `scripts/autoload/ui_colors.gd` | ✅ |
+| `run_results_screen.gd` | `run_results_screen.gd` | ✅ |
+| `NotificationManager.gd` | `notification_manager.gd` | ✅ |
+| `tooltip_controller.gd` | `tooltip_system.gd` | ⚠️ 重命名 |
+| — | `loading_screen.gd` | ✅ |
+| — | `dialog_system.gd` | ✅ |
+| — | `toast_notification.gd` | ✅ |
+| — | `context_hint.gd` | ✅ |
+
+**颜色一致性:** 本模块的所有文件均正确使用了三个核心颜色。`loading_screen.gd` 和 `tutorial_hint_manager.gd` 的颜色定义规范，均包含 `#141026`、`#9D6FFF`、`#EAE6FF`。
+
+**模块特有问题:**
+
+| ID | 严重程度 | 描述 |
+| :--- | :--- | :--- |
+| M7-01 | Major | 设计文档中的 `TutorialManager.gd` 在实际代码中被拆分为三个文件：`tutorial_manager.gd`（系统层）、`tutorial_hint_manager.gd`（UI 提示）和 `tutorial_sequence.gd`（序列控制）。文档未反映此架构。 |
+| M7-02 | Minor | 设计文档提到"谐振法典"和"一体化编曲台"的集成，但未提供跨模块交互的详细说明或链接。 |
 
 ---
 
-## 3. 问题详细列表
+## 4. 代码质量评估
 
-| ID | 严重性 | 模块/文件 | 问题描述 | 修复建议 |
-| :- | :--- | :--- | :--- | :--- |
-| **THEME-01** | **Critical** | 全局 | **UI主题管理灾难**: 同时存在三种主题方案（GlobalTheme, UIColors, 硬编码）且严重割裂，95%的脚本使用硬编码颜色。 | **立即重构**。确立`UIColors`为唯一颜色来源，移除所有硬编码颜色，并重构`GlobalTheme.tres`以使用`UIColors`。 |
-| **THEME-02** | **Critical** | 多个模块 | **核心颜色定义不一致**: `NOTE_COLORS` 在 `UIColors`, `ammo_ring_hud.gd`, `chord_alchemy_panel_v3.gd` 等多个文件中定义且颜色值完全不同。 | 统一使用 `UIColors.get_note_color()`，删除所有本地的 `NOTE_COLORS` 定义。 |
-| **ARCH-01** | **Major** | 全局 | **大量硬编码**: UI布局、动画时长、升级数据库等被大量硬编码在脚本中，难以维护和调整。 | 将布局参数 `@export` 化，将大型数据结构（如升级数据库）迁移到外部JSON或资源文件中。 |
-| **PERF-01** | **Major** | Module4, Module5 | **不必要的持续重绘**: 在 `_process` 中无条件调用 `queue_redraw()`，造成CPU资源浪费。 | 引入“脏标记”机制，仅在UI状态变化时才调用 `queue_redraw()`。 |
-| **DOC-01** | **Major** | Module1 | **设计文档与实现严重脱节**: 文档要求的 `SceneManager.gd` 和 `waveform.gdshader` 均缺失。 | 更新设计文档，明确 `UITransitionManager.gd` 是场景切换的实现，并补充缺失的 `waveform.gdshader` 或从文档中移除。 |
-| **IMPL-01** | **Major** | Module7 | **核心功能缺失**: 设计文档要求的 `ConfirmationDialog` (通用确认弹窗) 在代码和场景中均未实现。 | 根据设计文档，创建 `ConfirmationDialog.tscn` 场景及其对应的 `confirmation_dialog.gd` 脚本。 |
-| **IMPL-02** | **Major** | 多个脚本 | **大量脚本没有对应的场景文件**: `boss_dialogue.gd`, `difficulty_select_ui.gd`, `debug_panel.gd` 等多个脚本没有独立的 `.tscn` 文件，可能被内嵌在其他场景中，导致模块化程度降低。 | 为功能独立且复杂的UI脚本创建独立的场景文件（`.tscn`），并通过实例化的方式在其他地方使用。 |
-| **CODE-01** | **Minor** | Module4 | **存在未使用代码**: `circle_of_fifths_upgrade_v3.gd` 中存在未使用的变量 `_tutorial_step` 和未触发的信号 `upgrade_cancelled`。 | 移除这些废弃的变量和信号，保持代码整洁。 |
-| **CODE-02** | **Minor** | Module6 | **文件名不一致**: 设计文档中的脚本名（如 `phase_energy_ring.gd`）与实际文件名（`phase_energy_bar.gd`）存在细微差异。 | 统一代码和文档中的命名，建议以代码为准，更新文档。 |
-| **CODE-03** | **Minor** | Module7 | **文件名不一致**: 文档中的 `tooltip_controller.gd` 实际实现为 `tooltip_system.gd`。 | 统一命名，建议更新文档以匹配现有代码。 |
+### 4.1. 代码质量亮点
+
+尽管存在上述一致性问题，项目的代码质量在以下方面表现优秀：
+
+- **注释与文档:** 几乎所有脚本头部都有详细的注释，说明了其功能、设计文档来源和节点结构，可读性极强。
+- **代码规范:** 代码遵循了 GDScript 风格指南，命名清晰，结构合理。
+- **健壮性:** 广泛使用了 `get_node_or_null`, `has_signal`, `is_connected` 等防御性编程技术，有效避免了常见的空引用错误。
+- **信号连接:** 与 `GameManager`, `FatigueManager`, `ResonanceSlicingManager` 等核心单例的信号连接均已正确实现。
+
+### 4.2. 代码规模统计
+
+本次验收审查覆盖了 `godot_project/scripts/ui/` 目录下的全部 **55 个 GDScript 文件**，总计 **24,087 行代码**。
 
 ---
 
-## 4. 总结
+## 5. 修复优先级路线图
 
-`Project Harmony` 的UI系统在功能和视觉表现上达到了很高的水准，展现了开发团队卓越的技术实力和艺术追求。然而，当前的代码架构，特别是UI主题管理的混乱，已成为项目健康发展的“技术债务”和巨大隐患。
+### 第一阶段：Critical（立即修复）
 
-我们**强烈建议**项目组暂停新功能的开发，集中资源进行一次彻底的架构重构，**优先解决 `THEME-01` 和 `ARCH-01` 两个核心问题**。通过建立统一、规范的UI开发标准，将极大地提升团队的开发效率，降低维护成本，并为项目未来的长期迭代奠定坚实的基础。
+1. **统一颜色系统（C-01）:** 重构所有 55 个 UI 脚本，移除本地颜色常量，统一引用 `UIColors` 自动加载单例。
+2. **解决音符颜色冲突（C-02）:** 确定最终音符颜色方案，更新 `ui_colors.gd` 并同步所有相关代码。
 
-本次验收中发现的问题均已详细记录，希望能为项目的下一步优化提供清晰的指引。
+### 第二阶段：Major（一周内修复）
+
+3. **统一颜色命名（M-01）:** 在全局重构时，统一所有颜色常量的命名规范。
+4. **统一颜色格式（M-02）:** 强制使用 `Color("#HEX")` 格式。
+5. **修正谐振青色值（M-03）:** 将 5 个文件中的 `#00E5FF` 替换为 `#00FFD4`。
+6. **消除硬编码颜色（M-04）:** 审查 `boss_dialogue.gd` 和 `hud.gd`。
+7. **同步设计文档（M1-02, M2-01, M2-02, M6-01, M7-01）:** 更新设计文档中的文件名和架构描述，使其与当前代码一致。
+8. **补充缺失图片（M3-01）:** 找到或重新生成 Module 3 缺失的 3 张布局图。
+
+### 第三阶段：Minor（两周内修复）
+
+9. **补充可访问性设计:** 为所有模块添加 A11y 章节。
+10. **完善文档细节（M5-02, M5-03, M6-02）:** 补充缺失的颜色色值、字体规范等。
+
+---
+
+## 6. 附录：全局颜色规范参考
+
+以下是 `ui_colors.gd` 中定义的核心调色板，作为本次验收的基准：
+
+| 常量名 | 色值 | 用途 |
+| :--- | :--- | :--- |
+| `PRIMARY_BG` | `#0A0814` | 主背景色（深渊黑） |
+| `PANEL_BG` | `#141026` | 面板/卡片背景色（星空紫） |
+| `ACCENT` | `#9D6FFF` | 主强调色（霓虹紫） |
+| `ACCENT_2` | `#4DFFF3` | 次强调色（谐振青） |
+| `GOLD` | `#FFD700` | 金色/传说级 |
+| `SUCCESS` | `#4DFF80` | 成功/治疗 |
+| `DANGER` | `#FF4D4D` | 危险/伤害 |
+| `WARNING` | `#FF8C42` | 警告 |
+| `TEXT_PRIMARY` | `#EAE6FF` | 文本主色（晶体白） |
+| `TEXT_SECONDARY` | `#A098C8` | 文本次色 |
+| `TEXT_DIM` | `#6B668A` | 文本暗色（禁用/锁定） |
+
+---
+
+*报告结束。如有疑问，请联系验收工程师。*
