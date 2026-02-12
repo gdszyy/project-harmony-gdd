@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://phase_energy_bar_001"]
+[ext_resource type="Script" path="res://scripts/ui/phase_energy_bar.gd" id="1_energy_bar"]
+[node name="PhaseEnergyBar" type="Control"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -55.0
+offset_top = -185.0
+offset_right = 55.0
+offset_bottom = -75.0
+mouse_filter = 2
+script = ExtResource("1_energy_bar")

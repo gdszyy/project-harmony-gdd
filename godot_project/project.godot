@@ -38,6 +38,7 @@ TutorialManager="*res://scripts/systems/tutorial_manager.gd"
 MutatorManager="*res://scripts/systems/mutator_manager.gd"
 TimedMilestoneManager="*res://scripts/systems/timed_milestone_manager.gd"
 UITransitionManager="*res://scripts/ui/ui_transition_manager.gd"
+ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
 
 [display]
 

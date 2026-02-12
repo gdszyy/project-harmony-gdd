@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://phase_hud_tint_001"]
+[ext_resource type="Script" path="res://scripts/ui/phase_hud_tint_manager.gd" id="1_tint_mgr"]
+[node name="PhaseHudTintManager" type="Node"]
+script = ExtResource("1_tint_mgr")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3 uid="uid://main_game"]
+[gd_scene load_steps=43 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -33,6 +33,12 @@
 [ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
 [ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
 [ext_resource type="PackedScene" uid="uid://tutorial_hint_001" path="res://scenes/ui/tutorial_hint.tscn" id="37_tutorial"]
+[ext_resource type="PackedScene" uid="uid://phase_indicator_001" path="res://scenes/ui/phase_indicator.tscn" id="38_phase_ind"]
+[ext_resource type="PackedScene" uid="uid://phase_energy_bar_001" path="res://scenes/ui/phase_energy_bar.tscn" id="39_energy_bar"]
+[ext_resource type="PackedScene" uid="uid://spectral_fatigue_001" path="res://scenes/ui/spectral_fatigue_indicator.tscn" id="40_spectral"]
+[ext_resource type="PackedScene" uid="uid://phase_transition_001" path="res://scenes/ui/phase_transition_overlay.tscn" id="41_transition"]
+[ext_resource type="PackedScene" uid="uid://phase_gain_hint_001" path="res://scenes/ui/phase_gain_hint.tscn" id="42_gain_hint"]
+[ext_resource type="Script" path="res://scripts/ui/phase_hud_tint_manager.gd" id="43_tint_mgr"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -284,6 +290,19 @@ offset_top = -100.0
 offset_right = 200.0
 offset_bottom = 100.0
 script = ExtResource("29_codex_popup")
+
+[node name="PhaseEnergyBar" parent="HUD" instance=ExtResource("39_energy_bar")]
+
+[node name="PhaseIndicator" parent="HUD" instance=ExtResource("38_phase_ind")]
+
+[node name="SpectralFatigueIndicator" parent="HUD" instance=ExtResource("40_spectral")]
+
+[node name="PhaseGainHint" parent="HUD" instance=ExtResource("42_gain_hint")]
+
+[node name="PhaseTransitionOverlay" parent="HUD" instance=ExtResource("41_transition")]
+
+[node name="PhaseHudTintManager" type="Node" parent="HUD"]
+script = ExtResource("43_tint_mgr")
 
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false
