@@ -23,6 +23,7 @@ extends Node
 ## 当空间音频参数发生显著变化时发出（供调试面板使用）
 signal spatial_params_changed(params: Dictionary)
 ## 当状态音效被应用或移除时发出
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal state_fx_changed(state: String, active: bool)
 
 # ============================================================

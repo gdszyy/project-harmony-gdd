@@ -33,6 +33,7 @@ GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.g
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
 TutorialHintManager="*res://scripts/ui/tutorial_hint_manager.gd"
 UIColors="*res://scripts/autoload/ui_colors.gd"
+SignalBridge="*res://scripts/autoload/signal_bridge.gd"
 
 [display]
 

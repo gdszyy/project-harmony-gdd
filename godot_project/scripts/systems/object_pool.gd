@@ -19,7 +19,9 @@ class_name ObjectPool
 # ============================================================
 # 信号
 # ============================================================
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal pool_exhausted(pool_name: String)
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal pool_expanded(pool_name: String, new_size: int)
 
 # ============================================================

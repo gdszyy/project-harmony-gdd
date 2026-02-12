@@ -16,6 +16,7 @@ extends Node2D
 # ============================================================
 # 信号
 # ============================================================
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal visual_effect_spawned(effect_type: String, position: Vector2)
 
 # ============================================================

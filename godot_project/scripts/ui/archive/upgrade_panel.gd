@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## upgrade_panel.gd
 ## 升级选择面板
 ## 肉鸽升级选择界面，每次升级提供3个选项

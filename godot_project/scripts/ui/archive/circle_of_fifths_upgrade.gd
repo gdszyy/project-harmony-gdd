@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## circle_of_fifths_upgrade.gd
 ## 五度圈罗盘升级系统
 ## 用音乐理论驱动的罗盘界面替代传统三选一卡片

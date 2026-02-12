@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## manual_slot_config.gd
 ## 手动施法槽配置 UI
 ## 允许玩家从音符库存或法术书中拖拽法术到手动施法槽（1/2/3键）

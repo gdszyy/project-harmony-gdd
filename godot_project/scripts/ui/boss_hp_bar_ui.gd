@@ -13,7 +13,9 @@ extends Control
 # ============================================================
 # 信号
 # ============================================================
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal boss_defeated()
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal phase_changed(phase_index: int)
 
 # ============================================================

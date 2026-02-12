@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## 和弦构建器面板（v1.0 — 全新交互组件）
 ##
 ## 提供可视化的和弦编辑体验：

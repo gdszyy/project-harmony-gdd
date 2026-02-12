@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## spellbook_ui.gd
 ## 法术书 UI 面板
 ## 展示所有已合成的和弦法术，支持拖拽到序列器或手动施法槽

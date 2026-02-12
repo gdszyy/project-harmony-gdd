@@ -1,3 +1,5 @@
+## DEPRECATED: This file has been archived and is no longer actively used.
+## Signals defined here are not connected. Retained for reference only.
 ## chord_alchemy_panel.gd
 ## 和弦炼成台 UI
 ## 玩家将3个以上音符放入炼成槽，系统自动识别和弦类型并合成"和弦法术"

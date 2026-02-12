@@ -18,6 +18,7 @@ extends Node
 # ============================================================
 # 信号
 # ============================================================
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal pool_stats_updated(stats: Dictionary)
 
 # ============================================================

@@ -23,9 +23,11 @@ extends Node
 # ============================================================
 
 ## 当一批音效事件在节拍点被处理时发出
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal events_flushed(event_count: int)
 
 ## 当量化模式改变时发出
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal quantize_mode_changed(new_mode: QuantizeMode)
 
 # ============================================================

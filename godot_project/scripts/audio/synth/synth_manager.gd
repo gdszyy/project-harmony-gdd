@@ -25,12 +25,15 @@ extends Node
 # ============================================================
 
 ## 合成器音符播放时发出
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal synth_note_played(frequency: float, timbre: int)
 
 ## 合成器音符停止时发出
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal synth_note_stopped(voice_index: int)
 
 ## 合成模式变更
+## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal synthesis_mode_changed(enabled: bool)
 
 # ============================================================
