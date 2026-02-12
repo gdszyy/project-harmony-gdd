@@ -241,14 +241,14 @@ func _resolve_pitch() -> int:
 func _get_current_chord() -> Dictionary:
 	if BGMManager.has_method("get_current_chord"):
 		return BGMManager.get_current_chord()
-	# 回退：使用默认 Am 和弦
-	return {"root": 9, "type": 0, "notes": [9, 0, 4]}
+	# 回退：使用默认 C 大三和弦 (OPT04 Ch1 Ionian)
+	return {"root": 0, "type": 0, "notes": [0, 4, 7]}
 
 func _get_current_scale() -> Array:
 	if BGMManager.has_method("get_current_scale"):
 		return BGMManager.get_current_scale()
-	# 回退：A 自然小调
-	return [9, 11, 0, 2, 4, 5, 7]
+	# 回退：C 大调 (OPT04 Ch1 Ionian)
+	return [0, 2, 4, 5, 7, 9, 11]
 
 # ============================================================
 # 持续型播放

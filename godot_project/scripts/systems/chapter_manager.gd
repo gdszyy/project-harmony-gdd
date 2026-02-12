@@ -252,6 +252,11 @@ func _start_chapter(chapter_index: int) -> void:
 	# === 激活章节专属音色武器 (v2.0 — Issue #38) ===
 	GameManager.activate_chapter_timbre(chapter_index)
 	
+	# === OPT04: 直接通知 BgmManager 切换章节调式 ===
+	var tonality_key: int = _chapter_config.get("tonality", chapter_index)
+	if BgmManager and BgmManager.has_method("set_tonality"):
+		BgmManager.set_tonality(tonality_key)
+	
 	var chapter_name: String = _chapter_config.get("name", "未知章节")
 	chapter_started.emit(_current_chapter, chapter_name)
 	

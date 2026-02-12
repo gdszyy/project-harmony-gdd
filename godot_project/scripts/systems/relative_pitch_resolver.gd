@@ -213,8 +213,8 @@ static func _get_current_scale() -> Array[int]:
 		if bgm_node and bgm_node.has_method("get_current_scale"):
 			return bgm_node.get_current_scale()
 
-	# 最终回退：返回 A 自然小调默认音阶
-	return [9, 11, 0, 2, 4, 5, 7]
+	# 最终回退：返回 C 大调默认音阶 (OPT04 Ch1 Ionian)
+	return [0, 2, 4, 5, 7, 9, 11]
 
 ## 获取当前和弦信息 (从 BgmManager 查询)
 static func _get_current_chord() -> Dictionary:
@@ -228,8 +228,8 @@ static func _get_current_chord() -> Dictionary:
 		if bgm_node and bgm_node.has_method("get_current_chord"):
 			return bgm_node.get_current_chord()
 
-	# 最终回退：返回 Am 默认和弦
-	return {"root": 9, "type": 1, "notes": [9, 0, 4]}
+	# 最终回退：返回 C 大三和弦 (OPT04 Ch1 Ionian)
+	return {"root": 0, "type": 0, "notes": [0, 4, 7]}
 
 ## 将音高类吸附到最近的和弦音
 ## pitch_class: 待吸附的音高类 (0-11)

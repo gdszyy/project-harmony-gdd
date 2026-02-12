@@ -1265,6 +1265,10 @@ func _cycle_chapter_visual() -> void:
 	if _chapter_manager and _chapter_manager.has_method("force_chapter_visual"):
 		_chapter_manager.force_chapter_visual(_current_test_chapter)
 	_on_chapter_started(_current_test_chapter, "Chapter %d" % _current_test_chapter)
+	# OPT04: 同步切换章节调式
+	var tonality_key: int = _current_test_chapter + 1
+	if BgmManager and BgmManager.has_method("set_tonality"):
+		BgmManager.set_tonality(tonality_key)
 	_debug_log("章节视觉切换: Chapter %d" % _current_test_chapter)
 
 ## 切换 3D 渲染层

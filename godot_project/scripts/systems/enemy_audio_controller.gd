@@ -166,7 +166,7 @@ func _resolve_target_pitch() -> int:
 	var scale: Array = _bgm.get_current_scale() if _bgm.has_method("get_current_scale") else []
 	var chord: Dictionary = _bgm.get_current_chord() if _bgm.has_method("get_current_chord") else {}
 	var chord_notes: Array = chord.get("notes", [])
-	var chord_root: int = chord.get("root", 9)
+	var chord_root: int = chord.get("root", 0)  # OPT04: 默认回退 C (Ch1 Ionian)
 
 	match profile.pitch_strategy:
 		"random_scale":

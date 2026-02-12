@@ -135,13 +135,13 @@ var _is_muffled: bool = false
 # ============================================================
 
 ## 当前和弦根音 (MIDI 音高类, 0-11)
-var current_chord_root: int = 9  ## A (默认 Am)
+var current_chord_root: int = 0  ## C (默认 C大调, OPT04 Ch1 Ionian)
 ## 当前和弦类型
-var current_chord_type: int = MusicData.ChordType.MINOR  ## 默认小三和弦
+var current_chord_type: int = MusicData.ChordType.MAJOR  ## 默认大三和弦 (OPT04 Ch1)
 ## 当前和弦包含的所有音高类
-var current_chord_notes: Array[int] = [9, 0, 4]  ## A, C, E
+var current_chord_notes: Array[int] = [0, 4, 7]  ## C, E, G (OPT04 Ch1 Ionian)
 ## 当前全局音阶 (由章节调式决定)
-var current_scale: Array[int] = [9, 11, 0, 2, 4, 5, 7]  ## A 自然小调
+var current_scale: Array[int] = [0, 2, 4, 5, 7, 9, 11]  ## C 大调 (OPT04 Ch1 Ionian)
 
 ## 缓存的待切换和弦 (等待小节边界)
 var _pending_chord: Dictionary = {}
@@ -157,7 +157,7 @@ var _markov_matrix: Dictionary = {}
 # ============================================================
 
 ## 当前调式信息
-var _current_tonal_mode_name: String = "Aeolian"  ## 默认 A 自然小调
+var _current_tonal_mode_name: String = "Ionian"  ## 默认 Ch1 C 大调
 var _current_tonal_mode: int = -1  ## MusicData.TonalMode 枚举值, -1 = 未启用
 var _current_tonality_chapter_id: int = 0  ## 当前调性对应的章节 ID
 var _is_tonality_transitioning: bool = false  ## 是否正在进行调式过渡
@@ -210,11 +210,31 @@ func _connect_signals() -> void:
 		MusicTheoryEngine.chord_identified.connect(_on_player_chord_identified)
 	bgm_measure_synced.connect(_on_harmony_measure_synced)
 	# OPT04: 连接章节管理器的章节开始信号
+	_connect_chapter_manager_signal()
+
+func _connect_chapter_manager_signal() -> void:
 	var chapter_mgr = get_node_or_null("/root/ChapterManager")
 	if chapter_mgr == null and get_tree():
 		chapter_mgr = get_tree().get_first_node_in_group("chapter_manager")
 	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
-		chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
+		if not chapter_mgr.chapter_started.is_connected(_on_chapter_started_tonality):
+			chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
+			print("[TonalityEvolution] 已连接 ChapterManager.chapter_started 信号")
+	else:
+		# ChapterManager 可能还未初始化，延迟重试
+		if get_tree():
+			get_tree().create_timer(0.5).timeout.connect(_connect_chapter_manager_signal_deferred)
+
+func _connect_chapter_manager_signal_deferred() -> void:
+	var chapter_mgr = get_node_or_null("/root/ChapterManager")
+	if chapter_mgr == null and get_tree():
+		chapter_mgr = get_tree().get_first_node_in_group("chapter_manager")
+	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
+		if not chapter_mgr.chapter_started.is_connected(_on_chapter_started_tonality):
+			chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
+			print("[TonalityEvolution] (延迟) 已连接 ChapterManager.chapter_started 信号")
+	else:
+		push_warning("[TonalityEvolution] 未找到 ChapterManager，章节调性进化将不会自动触发，请手动调用 set_tonality()")
 
 func _init_default_patterns() -> void:
 	## Hi-Hat 默认模式：八分音符 (每隔一个十六分音符)
@@ -1091,25 +1111,80 @@ func _on_game_state_changed(new_state: GameManager.GameState) -> void:
 # ============================================================
 
 ## 初始化和声指挥官
+## OPT04: 尝试根据当前章节加载对应的调式，如果无章节信息则默认使用 Ch1 (Ionian/C大调)
 func _init_harmony_conductor() -> void:
-	# 加载马尔可夫链矩阵 (默认 A 自然小调)
-	_markov_matrix = MusicData.MARKOV_MATRIX_A_MINOR
-	current_scale = MusicData.SCALE_A_MINOR.duplicate()
-	# 初始和弦: Am
-	current_chord_root = 9
-	current_chord_type = MusicData.ChordType.MINOR
-	current_chord_notes = _calculate_chord_notes(current_chord_root, current_chord_type)
 	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
+	# OPT04: 尝试获取当前章节并加载对应调式
+	var chapter_id: int = _get_initial_chapter_id()
+	var config: Dictionary = MusicData.CHAPTER_TONALITY_MAP.get(chapter_id, {})
+	if not config.is_empty():
+		# 使用章节调式配置
+		var raw_scale: Array = config.get("scale", [])
+		current_scale = []
+		for note in raw_scale:
+			current_scale.append(int(note))
+		var matrix_key: String = config.get("markov_matrix_key", "")
+		var matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get(matrix_key, {})
+		_markov_matrix = matrix if not matrix.is_empty() else MusicData.MARKOV_MATRIX_A_MINOR
+		var root: int = config.get("root", 0)
+		if root >= 0:
+			current_chord_root = root
+			# 查找该根音在矩阵中的和弦类型
+			var root_entry: Dictionary = _markov_matrix.get(root, {})
+			if root_entry.has(root):
+				current_chord_type = root_entry[root].get("type", MusicData.ChordType.MAJOR)
+			else:
+				current_chord_type = MusicData.ChordType.MAJOR
+		else:
+			# Chromatic 模式，默认 C
+			current_chord_root = 0
+			current_chord_type = MusicData.ChordType.MAJOR
+		_current_tonal_mode_name = config.get("name", "Ionian")
+		_current_tonal_mode = config.get("mode", MusicData.TonalMode.IONIAN)
+		_current_tonality_chapter_id = chapter_id
+		print("[HarmonyConductor] 初始化调式: %s (Ch%d)" % [_current_tonal_mode_name, chapter_id])
+	else:
+		# 回退: 使用 Ch1 Ionian 作为默认
+		current_scale = [0, 2, 4, 5, 7, 9, 11]  # C 大调
+		var ch1_matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get("ch1_ionian", {})
+		_markov_matrix = ch1_matrix if not ch1_matrix.is_empty() else MusicData.MARKOV_MATRIX_A_MINOR
+		current_chord_root = 0  # C
+		current_chord_type = MusicData.ChordType.MAJOR
+		_current_tonal_mode_name = "Ionian"
+		_current_tonal_mode = MusicData.TonalMode.IONIAN
+		_current_tonality_chapter_id = 1
+		print("[HarmonyConductor] 初始化默认调式: Ionian (Ch1)")
+	current_chord_notes = _calculate_chord_notes(current_chord_root, current_chord_type)
 
 ## 重置和声指挥官状态 (游戏开始/重启时调用)
+## OPT04: 重置时回到 Ch1 Ionian 调式，而非旧的 A 小调
 func _reset_harmony_conductor() -> void:
-	current_chord_root = 9  # A
-	current_chord_type = MusicData.ChordType.MINOR
-	current_chord_notes = [9, 0, 4]  # Am: A, C, E
-	current_scale = MusicData.SCALE_A_MINOR.duplicate()
 	_pending_chord = {}
 	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
-	_markov_matrix = MusicData.MARKOV_MATRIX_A_MINOR
+	_is_tonality_transitioning = false
+	# OPT04: 重置到 Ch1 Ionian (C大调)
+	var ch1_config: Dictionary = MusicData.CHAPTER_TONALITY_MAP.get(1, {})
+	if not ch1_config.is_empty():
+		var raw_scale: Array = ch1_config.get("scale", [0, 2, 4, 5, 7, 9, 11])
+		current_scale = []
+		for note in raw_scale:
+			current_scale.append(int(note))
+		var matrix_key: String = ch1_config.get("markov_matrix_key", "ch1_ionian")
+		var matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get(matrix_key, {})
+		_markov_matrix = matrix if not matrix.is_empty() else MusicData.MARKOV_MATRIX_A_MINOR
+		current_chord_root = ch1_config.get("root", 0)
+		current_chord_type = MusicData.ChordType.MAJOR
+	else:
+		current_scale = [0, 2, 4, 5, 7, 9, 11]  # C 大调
+		var ch1_matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get("ch1_ionian", {})
+		_markov_matrix = ch1_matrix if not ch1_matrix.is_empty() else MusicData.MARKOV_MATRIX_A_MINOR
+		current_chord_root = 0  # C
+		current_chord_type = MusicData.ChordType.MAJOR
+	current_chord_notes = _calculate_chord_notes(current_chord_root, current_chord_type)
+	_current_tonal_mode_name = "Ionian"
+	_current_tonal_mode = MusicData.TonalMode.IONIAN
+	_current_tonality_chapter_id = 1
+	print("[HarmonyConductor] 重置调式: Ionian (Ch1)")
 
 ## 响应玩家和弦输入 (由 MusicTheoryEngine.chord_identified 触发)
 func _on_player_chord_identified(chord_type: int, root_note: int) -> void:
@@ -1407,6 +1482,17 @@ func _complete_tonality_transition(new_config: Dictionary, new_scale: Array[int]
 	tonality_changed.emit(_current_tonality_chapter_id, _current_tonal_mode_name, current_scale)
 	print("[TonalityEvolution] 调式过渡完成: %s (Ch%d)" % [
 		_current_tonal_mode_name, _current_tonality_chapter_id])
+
+## 获取初始章节 ID（从 ChapterManager 查询，回退为 1）
+func _get_initial_chapter_id() -> int:
+	var chapter_mgr = get_node_or_null("/root/ChapterManager")
+	if chapter_mgr == null and get_tree():
+		chapter_mgr = get_tree().get_first_node_in_group("chapter_manager")
+	if chapter_mgr and chapter_mgr.has_method("get_current_chapter"):
+		var ch: int = chapter_mgr.get_current_chapter()
+		if ch > 0:
+			return ch
+	return 1  # 默认 Ch1
 
 ## 手动设置调式（用于测试或特殊场景）
 func set_tonality(chapter_id: int) -> void:

@@ -403,6 +403,11 @@ func _cycle_chapter_visual() -> void:
 	elif _chapter_manager and _chapter_manager.has_signal("chapter_started"):
 		_chapter_manager.chapter_started.emit(_current_test_chapter, chapter_name)
 
+	# OPT04: 直接通知 BgmManager 切换章节调式 (测试场景保障)
+	var tonality_key: int = _current_test_chapter + 1  # 章节索引从0开始，调式键从1开始
+	if BgmManager and BgmManager.has_method("set_tonality"):
+		BgmManager.set_tonality(tonality_key)
+
 	# 更新 3D 渲染层的章节视觉
 	if _render_bridge and _render_bridge.has_method("update_player_light_color"):
 		var chapter_colors := [

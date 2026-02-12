@@ -1,7 +1,7 @@
 # Project Harmony — 开发待办清单 (TODO)
 
 > **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
-> 最后更新时间：2026-02-12 v8.2 (OPT02 相对音高系统实现)
+> 最后更新时间：2026-02-12 v8.3 (OPT04 章节调性进化系统实现 + 全局回退值统一更新)
 
 ---
 
@@ -38,7 +38,7 @@
 | Boss 系统 | ✅ 脚本完成 | 70% | 七大Boss脚本+场景文件已创建，待完善战前叙事/专属BGM/环境装饰 |
 | 视觉/Shader | ✅ 核心完成 | 98% | 疲劳滤镜、弹体发光、七大层级视觉增强、修饰符VFX、音色弹体、频谱相位、惩罚效果、和弦进行VFX |
 | UI 系统 | ✅ 核心完成 | 97% | HUD全面完善 + 统一调色板 + 按钮交互增强 + 面板动画 + Boss血条主题化 + 序列器交互优化 + 和弦构建器 |
-| 音频系统 | ✅ 核心完成 | 96% | 音符合成、ADSR、音色、寂静/过载/暴击/清洗音效、BGM/SFX占位资源、**和声指挥官+相对音高+召唤物音频** |
+| 音频系统 | ✅ 核心完成 | 97% | 音符合成、ADSR、音色、寂静/过载/暴击/清洗音效、BGM/SFX占位资源、**和声指挥官+相对音高+召唤物音频+章节调性进化** |
 | 局外成长 | ✅ 核心完成 | 90% | 乐器调优、乐理研习、声学降噪、调式选择（调式已有实际影响） |
 | 游戏流程 | ✅ 核心完成 | 85% | 完整流程 + 碰撞层配置 + 调式集成 |
 
@@ -194,7 +194,7 @@
 
 ### 待完成 🔲
 
-- [ ] 调性感知：根据当前调式动态调整和弦功能判定
+- [x] 调性感知：根据当前调式动态调整和弦功能判定 (OPT04 已实现)
 - [ ] 更精确的和弦转位识别
 
 ---
@@ -432,6 +432,12 @@
   - AudioManager 集成：_on_spell_cast 和 _on_chord_cast 接入相对音高，确保法术音效与 BGM 和谐
   - SpellcraftSystem 扩展：spell_data 新增 pitch_degree 和 white_key 字段
   - MusicData 新增 WHITE_KEY_PITCH_DEGREE、DEGREE_FUNCTION_ROLES、SCALE_DEFINITIONS、build_scale()
+- [x] **OPT04: 章节调性进化系统** (Chapter-Based Tonality Evolution) — *v8.2 新增*
+  - 7章调式演进: Ionian → Dorian → Mixolydian → Phrygian → Locrian → Blues → Chromatic
+  - 共同音过渡算法: 旧音阶与新音阶的共同音作为 2 小节过渡桥梁
+  - 7套独立马尔可夫链矩阵: 每种调式独立的和声进行概率
+  - ChapterManager 直接调用 BgmManager.set_tonality() 确保可靠切换
+  - 所有回退值从 A 小调统一更新为 C 大调 (Ch1 Ionian)
 
 - [x] **召唤物音频配置资源** (summon_audio_profile.gd) — *OPT07 新增*
   - 7种构造体音色配置（Pluck/Delay Echo/Gate Pulse/Sweep/Sub-Bass/Pad/Hi-hat）
