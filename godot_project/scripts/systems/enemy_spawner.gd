@@ -194,7 +194,17 @@ func _preload_enemy_scenes() -> void:
 			push_warning("EnemySpawner: Failed to load scene: " + scene_path)
 
 func _preload_chapter_scripts() -> void:
-	# 预加载章节特色敌人脚本
+	# 优先预加载章节特色敌人场景文件（Issue #90）
+	for type_name in ChapterData.ENEMY_SCENE_PATHS:
+		var scene_path: String = ChapterData.ENEMY_SCENE_PATHS[type_name]
+		if scene_path != "" and not _loaded_scenes.has(type_name):
+			var scene := load(scene_path) as PackedScene
+			if scene:
+				_loaded_scenes[type_name] = scene
+			else:
+				push_warning("EnemySpawner: Failed to load chapter enemy scene: " + scene_path)
+	
+	# 预加载章节特色敌人脚本（作为场景加载失败时的回退）
 	for type_name in ChapterData.ENEMY_SCRIPT_PATHS:
 		var path: String = ChapterData.ENEMY_SCRIPT_PATHS[type_name]
 		if path != "" and not _loaded_scripts.has(type_name):
@@ -204,7 +214,17 @@ func _preload_chapter_scripts() -> void:
 			else:
 				push_warning("EnemySpawner: Failed to load chapter enemy script: " + path)
 	
-	# 预加载精英脚本
+	# 优先预加载精英敌人场景文件（Issue #90）
+	for type_name in ChapterData.ELITE_SCENE_PATHS:
+		var scene_path: String = ChapterData.ELITE_SCENE_PATHS[type_name]
+		if scene_path != "" and not _loaded_scenes.has(type_name):
+			var scene := load(scene_path) as PackedScene
+			if scene:
+				_loaded_scenes[type_name] = scene
+			else:
+				push_warning("EnemySpawner: Failed to load elite scene: " + scene_path)
+	
+	# 预加载精英脚本（作为场景加载失败时的回退）
 	for type_name in ChapterData.ELITE_SCRIPT_PATHS:
 		var path: String = ChapterData.ELITE_SCRIPT_PATHS[type_name]
 		if path != "" and not _loaded_scripts.has(type_name):
@@ -946,9 +966,11 @@ func _instantiate_from_script(type_name: String) -> CharacterBody2D:
 ## 章节特色敌人拥有自定义程序化视觉，其 _on_enemy_ready() 会自行创建视觉节点并设置 _sprite
 ## 因此对这些敌人仅创建碰撞体和伤害区域，跳过通用 EnemyVisual
 const CUSTOM_VISUAL_ENEMIES: Array = [
+	"ch3_counterpoint_crawler",
 	"ch4_minuet_dancer",
 	"ch5_fury_spirit",
 	"ch6_walking_bass",
+	"ch7_bitcrusher_worm",
 ]
 func _create_enemy_nodes(enemy: Node, type_name: String) -> void:
 	var is_elite = ChapterData.is_elite_enemy(type_name)

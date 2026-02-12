@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://ch7_frequency_overlord_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/elites/ch7_frequency_overlord.gd" id="1_script"]
+[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_shader"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 24.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 28.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
+shader = ExtResource("2_shader")
+shader_parameter/glitch_intensity = 0.12
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_stunned = 0.0
+shader_parameter/base_tint = Color(0.1, 0.9, 0.6, 1)
+shader_parameter/scanline_density = 60.0
+shader_parameter/scanline_strength = 0.3
+shader_parameter/chromatic_offset = 2.5
+shader_parameter/noise_speed = 3.0
+shader_parameter/pixel_size = 1.0
+
+[node name="FrequencyOverlord" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_script")
+max_hp = 700.0
+move_speed = 40.0
+contact_damage = 15.0
+xp_value = 65
+collision_radius = 24.0
+base_color = Color(0.1, 0.9, 0.6, 1)
+elite_name = "频率霸主"
+elite_title = "Frequency Overlord"
+
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.1, 0.9, 0.6, 1)
+polygon = PackedVector2Array(0.0, -28.8, 18.7, -10.8, 24.9, 14.4, 0.0, 21.6, -24.9, 14.4, -18.7, -10.8)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")

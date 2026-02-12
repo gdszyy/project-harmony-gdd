@@ -413,17 +413,47 @@ func _on_boss_defeated_signal() -> void:
 	on_boss_defeated()
 
 func _spawn_elite(elite_type: String) -> void:
-	var script_path: String = ChapterData.ELITE_SCRIPT_PATHS.get(elite_type, "")
-	if script_path.is_empty():
-		return
+	var elite_node: Node2D = null
 	
-	var elite_script = load(script_path)
-	if elite_script == null:
-		push_warning("ChapterManager: Failed to load elite script '%s'" % script_path)
-		return
+	# Issue #90: 优先从场景文件实例化（确保正确的根节点类型和子节点结构）
+	var scene_path: String = ChapterData.ELITE_SCENE_PATHS.get(elite_type, "")
+	if not scene_path.is_empty():
+		var scene := load(scene_path) as PackedScene
+		if scene:
+			elite_node = scene.instantiate()
 	
-	var elite_node: Node2D = Node2D.new()
-	elite_node.set_script(elite_script)
+	# 回退：从脚本实例化（使用 CharacterBody2D 而非 Node2D）
+	if elite_node == null:
+		var script_path: String = ChapterData.ELITE_SCRIPT_PATHS.get(elite_type, "")
+		if script_path.is_empty():
+			return
+		var elite_script = load(script_path)
+		if elite_script == null:
+			push_warning("ChapterManager: Failed to load elite script '%s'" % script_path)
+			return
+		elite_node = CharacterBody2D.new()
+		elite_node.set_script(elite_script)
+		# 为脚本实例化的精英创建必要子节点
+		var col := CollisionShape2D.new()
+		col.name = "CollisionShape2D"
+		var shape := CircleShape2D.new()
+		shape.radius = 18.0
+		col.shape = shape
+		elite_node.add_child(col)
+		var visual := Node2D.new()
+		visual.name = "EnemyVisual"
+		elite_node.add_child(visual)
+		var damage_area := Area2D.new()
+		damage_area.name = "DamageArea"
+		damage_area.collision_layer = 2
+		damage_area.collision_mask = 1
+		var da_col := CollisionShape2D.new()
+		var da_shape := CircleShape2D.new()
+		da_shape.radius = 22.0
+		da_col.shape = da_shape
+		damage_area.add_child(da_col)
+		elite_node.add_child(damage_area)
+	
 	elite_node.name = "Elite_%s_%d" % [elite_type, _elites_spawned_this_chapter]
 	elite_node.add_to_group("elites")
 	elite_node.add_to_group("enemies")

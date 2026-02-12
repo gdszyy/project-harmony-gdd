@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://ch6_bebop_virtuoso_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/elites/ch6_bebop_virtuoso.gd" id="1_script"]
+[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_shader"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 20.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 24.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
+shader = ExtResource("2_shader")
+shader_parameter/glitch_intensity = 0.12
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_stunned = 0.0
+shader_parameter/base_tint = Color(0.6, 0.3, 0.7, 1)
+shader_parameter/scanline_density = 60.0
+shader_parameter/scanline_strength = 0.3
+shader_parameter/chromatic_offset = 2.5
+shader_parameter/noise_speed = 3.0
+shader_parameter/pixel_size = 1.0
+
+[node name="BebopVirtuoso" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_script")
+max_hp = 600.0
+move_speed = 55.0
+contact_damage = 13.0
+xp_value = 55
+collision_radius = 20.0
+base_color = Color(0.6, 0.3, 0.7, 1)
+elite_name = "比波普大师"
+elite_title = "Bebop Virtuoso"
+
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.6, 0.3, 0.7, 1)
+polygon = PackedVector2Array(0.0, -24.0, 15.6, -9.0, 20.8, 12.0, 0.0, 18.0, -20.8, 12.0, -15.6, -9.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")

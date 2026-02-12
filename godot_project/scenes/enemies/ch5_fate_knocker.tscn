@@ -1,0 +1,53 @@
+[gd_scene load_steps=6 format=3 uid="uid://ch5_fate_knocker_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/chapter_enemies/ch5_fate_knocker.gd" id="1_script"]
+[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_shader"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 14.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 18.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
+shader = ExtResource("2_shader")
+shader_parameter/glitch_intensity = 0.1
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_stunned = 0.0
+shader_parameter/base_tint = Color(0.6, 0.15, 0.15, 1)
+shader_parameter/scanline_density = 60.0
+shader_parameter/scanline_strength = 0.25
+shader_parameter/chromatic_offset = 2.0
+shader_parameter/noise_speed = 3.0
+shader_parameter/pixel_size = 1.0
+
+[node name="FateKnocker" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_script")
+max_hp = 90.0
+move_speed = 40.0
+contact_damage = 15.0
+xp_value = 10
+quantized_fps = 8.0
+collision_radius = 14.0
+knockback_resistance = 0.6
+base_color = Color(0.6, 0.15, 0.15, 1)
+base_glitch_intensity = 0.1
+max_glitch_intensity = 0.7
+
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.6, 0.15, 0.15, 1)
+polygon = PackedVector2Array(-14, -10, 0, -16, 14, -10, 14, 10, 0, 16, -14, 10)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")

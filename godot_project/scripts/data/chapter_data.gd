@@ -763,6 +763,62 @@ const ENEMY_SCRIPT_PATHS: Dictionary = {
 	"ch7_glitch_phantom":    "res://scripts/entities/enemies/chapter_enemies/ch7_glitch_phantom.gd",
 }
 
+# ============================================================
+# 敌人场景路径映射（章节特色敌人 + 精英）
+# ============================================================
+const ENEMY_SCENE_PATHS: Dictionary = {
+	# 第一章特色
+	"ch1_grid_static":       "res://scenes/enemies/ch1_grid_static.tscn",
+	"ch1_metronome_pulse":   "res://scenes/enemies/ch1_metronome_pulse.tscn",
+	
+	# 第二章特色
+	"ch2_choir":             "res://scenes/enemies/ch2_choir.tscn",
+	"ch2_scribe":            "res://scenes/enemies/ch2_scribe.tscn",
+	
+	# 第三章特色
+	"ch3_counterpoint_crawler": "res://scenes/enemies/ch3_counterpoint_crawler.tscn",
+	
+	# 第四章特色（已有）
+	"ch4_minuet_dancer":     "res://scenes/enemies/ch4_minuet_dancer.tscn",
+	
+	# 第五章特色
+	"ch5_fate_knocker":      "res://scenes/enemies/ch5_fate_knocker.tscn",
+	"ch5_crescendo_surge":   "res://scenes/enemies/ch5_crescendo_surge.tscn",
+	"ch5_fury_spirit":       "res://scenes/enemies/ch5_fury_spirit.tscn",
+	
+	# 第六章特色
+	"ch6_walking_bass":      "res://scenes/enemies/ch6_walking_bass.tscn",
+	"ch6_scat_singer":       "res://scenes/enemies/ch6_scat_singer.tscn",
+	
+	# 第七章特色
+	"ch7_bitcrusher_worm":   "res://scenes/enemies/ch7_bitcrusher_worm.tscn",
+	"ch7_glitch_phantom":    "res://scenes/enemies/ch7_glitch_phantom.tscn",
+}
+
+const ELITE_SCENE_PATHS: Dictionary = {
+	# 第一章精英
+	"ch1_harmony_guardian":   "res://scenes/enemies/ch1_harmony_guardian.tscn",
+	"ch1_frequency_sentinel": "res://scenes/enemies/ch1_frequency_sentinel.tscn",
+	
+	# 第二章精英
+	"ch2_cantor_commander":   "res://scenes/enemies/ch2_cantor_commander.tscn",
+	
+	# 第三章精英
+	"ch3_fugue_weaver":       "res://scenes/enemies/ch3_fugue_weaver.tscn",
+	
+	# 第四章精英
+	"ch4_court_kapellmeister": "res://scenes/enemies/ch4_court_kapellmeister.tscn",
+	
+	# 第五章精英
+	"ch5_symphony_commander": "res://scenes/enemies/ch5_symphony_commander.tscn",
+	
+	# 第六章精英
+	"ch6_bebop_virtuoso":     "res://scenes/enemies/ch6_bebop_virtuoso.tscn",
+	
+	# 第七章精英
+	"ch7_frequency_overlord": "res://scenes/enemies/ch7_frequency_overlord.tscn",
+}
+
 const ELITE_SCRIPT_PATHS: Dictionary = {
 	# 第一章精英
 	"ch1_harmony_guardian":   "res://scripts/entities/enemies/elites/ch1_harmony_guardian.gd",
