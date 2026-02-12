@@ -1,8 +1,14 @@
 ## enemy_spawner.gd
-## 敌人生成管理器 v3.0 — 章节系统集成版
+## 敌人生成管理器 v3.1 — 对象池完全集成版 (Issue #116)
 ## 基于波次系统和 BPM 节奏的敌人生成。
 ## 支持：基础敌人场景 + 章节特色敌人脚本 + 精英/小Boss 脚本
 ## 与 ChapterManager 协作，根据当前章节配置动态调整敌人池和波次模板。
+##
+## Issue #116 变更：
+## - 所有敌人类型（基础、章节特色、精英）优先通过对象池获取
+## - 章节切换时自动预热对应章节的敌人池
+## - 敌人死亡后统一归还对象池（不再 queue_free）
+## - 动态池注册：首次遇到未池化的敌人类型时自动创建池
 ##
 ## 生成模式：
 ##   - 传统模式（无章节）：使用原有权重系统
@@ -35,9 +41,9 @@ var _loaded_scenes: Dictionary = {}
 ## 缓存已加载的脚本（章节特色敌人 + 精英）
 var _loaded_scripts: Dictionary = {}
 
-## 对象池管理器引用 (Issue #55)
+## 对象池管理器引用 (Issue #55, Issue #116)
 var _pool_manager: Node = null
-## 对象池支持的敌人类型（基础五种）
+## Issue #116: 所有敌人类型都支持对象池（不再限制为基础五种）
 const POOLED_ENEMY_TYPES: Array = ["static", "silence", "screech", "pulse", "wall"]
 
 # ============================================================
@@ -142,6 +148,10 @@ var _scripted_event_index: int = 0
 var _scripted_enemies: Array[Node2D] = []  # 剧本波次生成的敌人
 var _last_spawned_enemy: Node2D = null  # 最后生成的敌人（用于 SPAWN_ESCORT）
 
+## Issue #116: 对象池命中统计
+var _pool_hits: int = 0
+var _pool_misses: int = 0
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -201,6 +211,8 @@ func _preload_chapter_scripts() -> void:
 			var scene := load(scene_path) as PackedScene
 			if scene:
 				_loaded_scenes[type_name] = scene
+				# Issue #116: 自动注册到对象池
+				_register_to_pool(type_name, scene)
 			else:
 				push_warning("EnemySpawner: Failed to load chapter enemy scene: " + scene_path)
 	
@@ -221,6 +233,8 @@ func _preload_chapter_scripts() -> void:
 			var scene := load(scene_path) as PackedScene
 			if scene:
 				_loaded_scenes[type_name] = scene
+				# Issue #116: 自动注册到对象池
+				_register_to_pool(type_name, scene)
 			else:
 				push_warning("EnemySpawner: Failed to load elite scene: " + scene_path)
 	
@@ -239,6 +253,21 @@ func _connect_signals() -> void:
 		GameManager.beat_tick.connect(_on_global_beat)
 
 # ============================================================
+# Issue #116: 对象池自动注册
+# ============================================================
+
+## 将场景自动注册到 PoolManager（如果尚未注册）
+func _register_to_pool(type_name: String, scene: PackedScene) -> void:
+	if _pool_manager == null:
+		return
+	if not _pool_manager.has_method("has_enemy_pool"):
+		return
+	if _pool_manager.has_enemy_pool(type_name):
+		return
+	if _pool_manager.has_method("register_enemy_pool"):
+		_pool_manager.register_enemy_pool(type_name, scene)
+
+# ============================================================
 # 章节模式接口（由 ChapterManager 调用）
 # ============================================================
 
@@ -252,6 +281,10 @@ func set_chapter_mode(chapter_index: int, config: Dictionary) -> void:
 	
 	# 预加载章节脚本
 	_preload_chapter_scripts()
+	
+	# Issue #116: 预热章节敌人池
+	if _pool_manager and _pool_manager.has_method("warmup_chapter"):
+		_pool_manager.warmup_chapter(chapter_index)
 	
 	# 重置波次
 	_current_wave = 0
@@ -597,7 +630,6 @@ func _get_difficulty_multipliers() -> Dictionary:
 		var chapter_mgr := get_node_or_null("/root/ChapterManager")
 		if chapter_mgr and chapter_mgr.has_method("get_difficulty_multiplier"):
 			return chapter_mgr.get_difficulty_multiplier()
-	
 	return {
 		"hp": pow(hp_scale_per_level, _difficulty_level),
 		"speed": pow(speed_scale_per_level, _difficulty_level),
@@ -878,7 +910,7 @@ func _spawn_chapter_elite() -> void:
 	elite_spawned.emit(elite_type, spawn_pos)
 
 # ============================================================
-# 敌人实例化（统一入口）
+# 敌人实例化（统一入口）— Issue #116 重构：全面对象池优先
 # ============================================================
 
 func _spawn_enemy(player_pos: Vector2, type_name: String) -> void:
@@ -889,17 +921,34 @@ func _spawn_enemy_at(spawn_pos: Vector2, type_name: String) -> void:
 	var enemy: CharacterBody2D = null
 	var from_pool: bool = false
 	
-	# 1. 优先尝试从对象池获取 (Issue #55)
-	if _pool_manager and type_name in POOLED_ENEMY_TYPES:
-		enemy = _pool_manager.acquire_enemy(type_name) as CharacterBody2D
-		if enemy:
-			from_pool = true
+	# Issue #116: 统一对象池获取策略
+	# 1. 优先尝试从对象池获取（所有已注册类型）
+	if _pool_manager:
+		# 基础五种使用 POOLED_ENEMY_TYPES 映射
+		if type_name in POOLED_ENEMY_TYPES:
+			enemy = _pool_manager.acquire_enemy(type_name) as CharacterBody2D
+			if enemy:
+				from_pool = true
+				_pool_hits += 1
+			else:
+				_pool_misses += 1
+		# 章节特色和精英敌人：检查是否有对应池
+		elif _pool_manager.has_method("has_enemy_pool") and _pool_manager.has_enemy_pool(type_name):
+			enemy = _pool_manager.acquire_enemy(type_name) as CharacterBody2D
+			if enemy:
+				from_pool = true
+				_pool_hits += 1
+			else:
+				_pool_misses += 1
 	
 	# 2. 尝试从预加载场景实例化（基础五种）
 	if enemy == null:
 		var scene: PackedScene = _loaded_scenes.get(type_name)
 		if scene:
 			enemy = scene.instantiate() as CharacterBody2D
+			# Issue #116: 首次实例化时自动注册到对象池
+			if _pool_manager and not from_pool:
+				_register_to_pool(type_name, scene)
 	
 	# 3. 尝试从脚本实例化（章节特色 + 精英）
 	if enemy == null:
@@ -1054,18 +1103,24 @@ func _apply_elite_bonus(enemy: CharacterBody2D, _type_name: String) -> void:
 	elite_spawned.emit(_type_name, enemy.global_position)
 
 # ============================================================
-# 敌人管理
+# 敌人管理 — Issue #116: 统一对象池回收
 # ============================================================
 
 func _on_enemy_died(pos: Vector2, xp: int, enemy_type: String) -> void:
 	# 经验值由 xp_pickup 拾取时添加，不在此处重复添加
 	_spawn_xp_pickup(pos, xp, enemy_type)
 	
-	# 尝试将死亡敌人归还对象池 (Issue #55)
+	# Issue #116: 统一归还对象池
 	_return_dead_enemy_to_pool(enemy_type)
 
 func _cleanup_dead_enemies() -> void:
-	_active_enemies = _active_enemies.filter(func(e): return is_instance_valid(e))
+	var still_alive: Array[Node2D] = []
+	for e in _active_enemies:
+		if is_instance_valid(e):
+			still_alive.append(e)
+		# Issue #116: 无效引用的敌人不需要额外处理，
+		# 它们要么已被 queue_free（非池化），要么已被归还池（池化）
+	_active_enemies = still_alive
 
 # ============================================================
 # 经验值拾取物
@@ -1116,12 +1171,17 @@ func get_wave_progress() -> float:
 	return 1.0 - (_wave_timer / wave_duration)
 
 ## 清除所有活跃敌人（章节过渡时使用）
+## Issue #116: 优先归还对象池而非 queue_free
 func clear_all_enemies() -> void:
 	for enemy in _active_enemies:
 		if is_instance_valid(enemy):
 			var from_pool: bool = enemy.get_meta("from_pool", false)
 			var pool_type: String = enemy.get_meta("pool_type", "")
-			if from_pool and _pool_manager and pool_type != "":
+			if _pool_manager and pool_type != "":
+				# Issue #116: 无论是否来自池，都尝试归还
+				# 如果池不存在，release 会 fallback 到 queue_free
+				_pool_manager.release_enemy(pool_type, enemy)
+			elif from_pool and _pool_manager and pool_type != "":
 				_pool_manager.release_enemy(pool_type, enemy)
 			else:
 				enemy.queue_free()
@@ -1129,7 +1189,7 @@ func clear_all_enemies() -> void:
 	_wave_spawn_budget = 0
 
 # ============================================================
-# 对象池集成 (Issue #55)
+# 对象池集成 (Issue #55, Issue #116)
 # ============================================================
 
 ## 初始化对象池管理器引用
@@ -1145,11 +1205,11 @@ func _init_pool_manager() -> void:
 		if parent:
 			_pool_manager = parent.get_node_or_null("PoolManager")
 	if _pool_manager:
-		print("EnemySpawner: PoolManager connected (Issue #55)")
+		print("EnemySpawner: PoolManager connected (Issue #55, #116)")
 	else:
 		push_warning("EnemySpawner: PoolManager not found, falling back to instantiate/queue_free")
 
-## 将死亡敌人归还对象池
+## Issue #116: 将死亡敌人归还对象池（增强版：支持所有敌人类型）
 func _return_dead_enemy_to_pool(enemy_type: String) -> void:
 	if _pool_manager == null:
 		return
@@ -1162,17 +1222,31 @@ func _return_dead_enemy_to_pool(enemy_type: String) -> void:
 		var is_dead: bool = enemy.get("_is_dead") if enemy.get("_is_dead") != null else false
 		if not is_dead:
 			continue
-		var from_pool: bool = enemy.get_meta("from_pool", false)
 		var pool_type: String = enemy.get_meta("pool_type", "")
-		if from_pool and pool_type == enemy_type:
+		if pool_type == enemy_type:
 			to_return.append(enemy)
 	
 	for enemy in to_return:
 		_active_enemies.erase(enemy)
-		_pool_manager.release_enemy(enemy_type, enemy)
+		var pool_type: String = enemy.get_meta("pool_type", "")
+		# Issue #116: 尝试归还到对象池
+		if _pool_manager.has_method("has_enemy_pool") and _pool_manager.has_enemy_pool(pool_type):
+			_pool_manager.release_enemy(pool_type, enemy)
+		elif pool_type in POOLED_ENEMY_TYPES:
+			_pool_manager.release_enemy(pool_type, enemy)
+		else:
+			# 无对应池，直接释放
+			enemy.queue_free()
 
 ## 获取对象池统计信息（供性能监控使用）
 func get_pool_stats() -> Dictionary:
 	if _pool_manager and _pool_manager.has_method("get_all_stats"):
 		return _pool_manager.get_all_stats()
 	return {}
+
+## Issue #116: 获取对象池命中率
+func get_pool_hit_rate() -> float:
+	var total := _pool_hits + _pool_misses
+	if total == 0:
+		return 0.0
+	return float(_pool_hits) / float(total)
