@@ -1,0 +1,40 @@
+graph TB
+    subgraph Wheel["音色轮盘 (Tab 激活)"]
+        direction TB
+        
+        subgraph Top["上方象限 — 弹拨系 Plucked"]
+            P1["里拉琴 Lyre"]
+            P2["羽管键琴 Harpsichord"]
+            PG["高通增益: 瞬态伤害+50%"]
+        end
+        
+        subgraph Right["右方象限 — 打击系 Percussion"]
+            D1["钢琴 Fortepiano"]
+            DG["低通增益: 击退/眩晕x2"]
+        end
+        
+        subgraph Bottom["下方象限 — 拉弦系 Bowed"]
+            B1["管弦全奏 Tutti"]
+            BG["全频增益: 持续时间+50%"]
+        end
+        
+        subgraph Left["左方象限 — 吹奏系 Wind"]
+            W1["管风琴 Organ"]
+            W2["萨克斯 Saxophone"]
+            WG["切换增益: 首击触发聚焦"]
+        end
+        
+        CENTER["当前武器<br/>+ 电子乐变体切换"]
+    end
+    
+    CENTER --- Top
+    CENTER --- Right
+    CENTER --- Bottom
+    CENTER --- Left
+
+    style Wheel fill:#141026,stroke:#9D6FFF,color:#EAE6FF
+    style Top fill:#1a2a3a,stroke:#4DFFF3,color:#EAE6FF
+    style Right fill:#2a1a1a,stroke:#FF8C42,color:#EAE6FF
+    style Bottom fill:#1a1a2a,stroke:#9D6FFF,color:#EAE6FF
+    style Left fill:#1a2a1a,stroke:#4DFF80,color:#EAE6FF
+    style CENTER fill:#2a1f4d,stroke:#9D6FFF,color:#EAE6FF

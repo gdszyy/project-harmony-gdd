@@ -1,0 +1,42 @@
+graph TD
+    subgraph Screen["游戏屏幕 (1920x1080)"]
+        direction TB
+        
+        subgraph TopLeft["左上角"]
+            HP["血条 (谐振完整度)<br/>弧形正弦波"]
+            AFI["听感疲劳条 (AFI)<br/>垂直光条"]
+            SOF["频谱偏移疲劳条<br/>破碎辉光条"]
+        end
+        
+        subgraph TopRight["右上角"]
+            BPM["BPM 显示"]
+            TIME["时间/关卡信息"]
+            ENEMY["敌人计数"]
+        end
+        
+        subgraph Center["屏幕中央"]
+            PLAYER["玩家角色"]
+            SEQ["序列器环形刻度<br/>(围绕玩家)"]
+        end
+        
+        subgraph BottomCenter["底部中央 — 频谱相位驾驶舱"]
+            RING["相位能量环<br/>(流动光粒圆环)"]
+            TRI["三相位指示器<br/>(三扇区圆环)"]
+            GAIN["增益提示面板<br/>(动态滑入)"]
+        end
+        
+        subgraph Overlay["叠加层 (按键激活)"]
+            WHEEL["音色轮盘<br/>(四象限)"]
+        end
+    end
+
+    AFI --> SOF
+    TRI --> RING
+    PLAYER --> TRI
+
+    style Screen fill:#141026,stroke:#9D6FFF,color:#EAE6FF
+    style TopLeft fill:#1a1433,stroke:#9D6FFF,color:#EAE6FF
+    style TopRight fill:#1a1433,stroke:#9D6FFF,color:#EAE6FF
+    style Center fill:#1a1433,stroke:#9D6FFF,color:#EAE6FF
+    style BottomCenter fill:#2a1f4d,stroke:#9D6FFF,color:#EAE6FF
+    style Overlay fill:#0d0a1a,stroke:#9D6FFF,color:#EAE6FF
