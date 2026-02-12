@@ -338,10 +338,11 @@ func _on_difficulty_pressed() -> void:
 		)
 
 func _on_tutorial_pressed() -> void:
-	# Issue #115: 启动教程模式
+	# Issue #115: 启动教程模式（强制重新开始教程）
 	var tutorial_mgr := get_node_or_null("/root/TutorialManager")
 	if tutorial_mgr:
 		tutorial_mgr.tutorial_enabled = true
+		tutorial_mgr._is_completed = false  # 允许重新开始
 	GameManager.is_test_mode = false
 	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
 
