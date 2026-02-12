@@ -1,27 +1,31 @@
 # Project Harmony — 开发待办清单 (TODO)
 
 > **重要规范**：每次对代码或设计文档进行修改后，**必须同步更新本文件**以反映最新的开发状态。  
-> 最后更新时间：2026-02-12 v8.3 (OPT04 章节调性进化系统实现 + 全局回退值统一更新)
+> 最后更新时间：2026-02-12 v9.0 (项目文档同步与TODO全面更新 — Issue #94)
 
 ---
 
 ## 目录
 
 1. [核心系统状态总览](#核心系统状态总览)
-2. [法术构建系统 (SpellcraftSystem)](#法术构建系统-spellcraftsystem)
-3. [听感疲劳系统 (FatigueManager)](#听感疲劳系统-fatiguemanager)
-4. [调式系统 (ModeSystem)](#调式系统-modesystem)
-5. [音乐理论引擎 (MusicTheoryEngine)](#音乐理论引擎-musictheoryengine)
-6. [弹体系统 (ProjectileManager)](#弹体系统-projectilemanager)
-7. [敌人系统 (EnemySpawner)](#敌人系统-enemyspawner)
-8. [Boss 系统](#boss-系统)
-9. [视觉与 Shader](#视觉与-shader)
-10. [UI 系统](#ui-系统)
-11. [音频系统](#音频系统)
-12. [局外成长 (SaveManager)](#局外成长-savemanager)
-13. [游戏流程](#游戏流程)
-14. [性能优化](#性能优化)
-15. [待设计/待讨论](#待设计待讨论)
+2. [第一章垂直切片开发状态](#第一章垂直切片开发状态)
+3. [法术构建系统 (SpellcraftSystem)](#法术构建系统-spellcraftsystem)
+4. [听感疲劳系统 (FatigueManager)](#听感疲劳系统-fatiguemanager)
+5. [调式系统 (ModeSystem)](#调式系统-modesystem)
+6. [音乐理论引擎 (MusicTheoryEngine)](#音乐理论引擎-musictheoryengine)
+7. [弹体系统 (ProjectileManager)](#弹体系统-projectilemanager)
+8. [敌人系统 (EnemySpawner)](#敌人系统-enemyspawner)
+9. [Boss 系统](#boss-系统)
+10. [精英敌人系统](#精英敌人系统)
+11. [章节敌人系统](#章节敌人系统)
+12. [视觉与 Shader](#视觉与-shader)
+13. [UI 系统](#ui-系统)
+14. [音频系统](#音频系统)
+15. [局外成长 (SaveManager)](#局外成长-savemanager)
+16. [游戏流程](#游戏流程)
+17. [性能优化](#性能优化)
+18. [技术债务](#技术债务)
+19. [待设计/待讨论](#待设计待讨论)
 
 ---
 
@@ -35,12 +39,50 @@
 | 音乐理论引擎 | ✅ 完成 | 95% | 和弦识别、功能判定、进行分析、不和谐度计算均已实现 |
 | 弹体系统 | ✅ 核心完成 | 85% | MultiMesh渲染、修饰符、和弦弹体、摇摆弹道、拖尾效果 |
 | 敌人系统 | ✅ 核心完成 | 75% | 5种基础敌人已实现，需要更多敌人变体 |
-| Boss 系统 | ✅ 脚本完成 | 70% | 七大Boss脚本+场景文件已创建，待完善战前叙事/专属BGM/环境装饰 |
+| Boss 系统 | ✅ 脚本+场景完成 | 75% | 7个Boss脚本(.gd)+7个场景文件(.tscn)均已创建，待完善战前叙事/专属BGM/环境装饰 |
+| 精英敌人 | ⚠️ 脚本完成 | 40% | 8个精英脚本(.gd)已创建，但全部缺少场景文件(.tscn) |
+| 章节敌人 | ⚠️ 部分完成 | 45% | 13个脚本已创建，仅有 3 个有场景文件，10个缺失 |
 | 视觉/Shader | ✅ 核心完成 | 98% | 疲劳滤镜、弹体发光、七大层级视觉增强、修饰符VFX、音色弹体、频谱相位、惩罚效果、和弦进行VFX |
 | UI 系统 | ✅ 核心完成 | 97% | HUD全面完善 + 统一调色板 + 按钮交互增强 + 面板动画 + Boss血条主题化 + 序列器交互优化 + 和弦构建器 |
 | 音频系统 | ✅ 核心完成 | 97% | 音符合成、ADSR、音色、寂静/过载/暴击/清洗音效、BGM/SFX占位资源、**和声指挥官+相对音高+召唤物音频+章节调性进化** |
 | 局外成长 | ✅ 核心完成 | 90% | 乐器调优、乐理研习、声学降噪、调式选择（调式已有实际影响） |
 | 游戏流程 | ✅ 核心完成 | 85% | 完整流程 + 碰撞层配置 + 调式集成 |
+
+---
+
+## 第一章垂直切片开发状态
+
+> *基于《Chapter1_Dev_Plan.md》的垂直切片开发已于 2026-02-10 完成。*
+
+### 已完成 ✅
+
+- [x] **Milestone 1: 核心系统改造** — *2026-02-10 完成*
+  - 创建 `WaveData.gd` 资源类型
+  - 改造 `EnemySpawner.gd` 增加剧本模式（`play_scripted_wave()` / `resume_random_spawning()` / `_process_scripted_wave()`）
+  - 改造 `ChapterManager.gd` 增加剧本调度器
+  - 改造 `enemy_base.gd` 增加 `initialize_scripted()` 方法
+  - 在 `ChapterData.gd` 中为 CH1 配置 `scripted_waves` 调度表
+- [x] **Milestone 2-4: 波次实现** — *2026-02-10 完成*
+  - 6个剧本波次数据文件（`wave_1_1.gd` ~ `wave_1_6.gd`）
+  - 分别对应“初识节拍”、“音符差异”、“完美卡拍”、“休止符的力量”、“附点节奏”、“综合运用”
+- [x] **Milestone 5: Boss 战** — *2026-02-10 完成*
+  - 完整重写 `boss_pythagoras.gd`
+  - 两阶段设计（简单图形/复杂图形）
+  - 六种攻击模式：八度共振/五度震荡/节拍考验/四度叠加/不和谐脉冲/终焉和弦
+  - 和谐护盾机制 + 风格排斥（噪音惩罚）系统
+  - 克拉尼图形视觉系统
+- [x] **美术资源** — *2026-02-10 完成*
+  - `ChladniPattern.gdshader`（克拉尼图形Shader）
+  - `RhythmIndicator.gd`（节拍指示器UI）
+  - `TutorialHintManager.gd`（非侵入式教学提示管理器）
+
+### 待完成 🔲
+
+- [ ] 为 `RhythmIndicator.gd` 创建对应的 `.tscn` 场景文件
+- [ ] 为 `TutorialHintManager.gd` 创建对应的 `.tscn` 场景文件
+- [ ] 精细调优 `ChladniPattern.gdshader` 的视觉参数
+- [ ] 为 Boss 毕达哥拉斯设计专属的多层旋转光环精灵/动画
+- [ ] 集成测试所有视觉效果在 60 FPS 下的性能表现
 
 ---
 
@@ -288,6 +330,71 @@
 
 ---
 
+## 精英敌人系统
+
+> *8个精英敌人脚本已创建，但全部缺少场景文件(.tscn)，无法在游戏中实例化。*
+
+### 已完成 ✅ (脚本)
+
+- [x] `elite_base.gd` — 精英敌人基类框架
+- [x] `ch1_frequency_sentinel.gd` — 第一章精英：频率哨兵
+- [x] `ch1_harmony_guardian.gd` — 第一章精英：和声守卫者
+- [x] `ch2_cantor_commander.gd` — 第二章精英：唱诗班指挥官
+- [x] `ch3_fugue_weaver.gd` — 第三章精英：赋格织者
+- [x] `ch4_court_kapellmeister.gd` — 第四章精英：宫廷乐长
+- [x] `ch5_symphony_commander.gd` — 第五章精英：交响指挥官
+- [x] `ch6_bebop_virtuoso.gd` — 第六章精英：Bebop大师
+- [x] `ch7_frequency_overlord.gd` — 第七章精英：频率霸主
+
+### 待完成 🔲 (场景文件补全)
+
+| 精英敌人 | 脚本(.gd) | 场景(.tscn) | 状态 |
+|------|------|------|------|
+| ch1_frequency_sentinel | ✅ | ❌ 缺失 | 需补全 |
+| ch1_harmony_guardian | ✅ | ❌ 缺失 | 需补全 |
+| ch2_cantor_commander | ✅ | ❌ 缺失 | 需补全 |
+| ch3_fugue_weaver | ✅ | ❌ 缺失 | 需补全 |
+| ch4_court_kapellmeister | ✅ | ❌ 缺失 | 需补全 |
+| ch5_symphony_commander | ✅ | ❌ 缺失 | 需补全 |
+| ch6_bebop_virtuoso | ✅ | ❌ 缺失 | 需补全 |
+| ch7_frequency_overlord | ✅ | ❌ 缺失 | 需补全 |
+
+---
+
+## 章节敌人系统
+
+> *13个章节敌人脚本已创建，但仅有 3 个拥有场景文件，其余 10 个缺失场景文件。*
+
+### 已完成 ✅ (脚本)
+
+- [x] 13个章节敌人脚本已创建（位于 `scripts/entities/enemies/chapter_enemies/`）
+
+### 场景文件状态详细列表
+
+| 章节敌人 | 脚本(.gd) | 场景(.tscn) | 状态 |
+|------|------|------|------|
+| ch1_grid_static | ✅ | ❌ 缺失 | 需补全 |
+| ch1_metronome_pulse | ✅ | ❌ 缺失 | 需补全 |
+| ch2_choir | ✅ | ❌ 缺失 | 需补全 |
+| ch2_scribe | ✅ | ❌ 缺失 | 需补全 |
+| ch3_counterpoint_crawler | ✅ | ❌ 缺失 | 需补全 |
+| ch4_minuet_dancer | ✅ | ✅ 已有 | 完成 |
+| ch5_crescendo_surge | ✅ | ❌ 缺失 | 需补全 |
+| ch5_fate_knocker | ✅ | ❌ 缺失 | 需补全 |
+| ch5_fury_spirit | ✅ | ✅ 已有 | 完成 |
+| ch6_scat_singer | ✅ | ❌ 缺失 | 需补全 |
+| ch6_walking_bass | ✅ | ✅ 已有 | 完成 |
+| ch7_bitcrusher_worm | ✅ | ❌ 缺失 | 需补全 |
+| ch7_glitch_phantom | ✅ | ❌ 缺失 | 需补全 |
+
+### 待完成 🔲
+
+- [ ] 为 10 个缺失场景文件的章节敌人创建 `.tscn` 场景
+- [ ] 根据《关卡与Boss整合设计文档_v3.0.md》补全剩余章节专属敌人
+- [ ] 敌人属性随时间/BPM 动态缩放
+
+---
+
 ## 视觉与 Shader
 
 ### 已完成 ✅
@@ -521,6 +628,36 @@
 
 ---
 
+## 技术债务
+
+> *基于 2026-02-12 项目评估报告发现的技术债务问题。需要在后续开发中逐步解决。*
+
+### 信号连接问题
+
+项目中存在大量信号声明（~206个）和连接调用（~1016处），部分信号存在以下问题：
+
+- [ ] **信号审计**: 全面审计所有 `signal` 声明与 `connect`/`emit` 调用的匹配情况，识别未连接的信号
+- [ ] **历史修复残留**: v4.1/v5.1 修复过多个信号连接问题（InvincibilityTimer、PickupArea、player_damaged 等），需确认是否还有类似问题残留
+- [ ] **场景树信号连接验证**: 检查所有 `.tscn` 文件中的信号连接是否有效（目标节点是否存在、方法名是否正确）
+- [ ] **自动化信号连接测试**: 创建脚本自动检测信号声明与连接的不匹配
+
+### 孤岛代码问题
+
+部分脚本文件缺少对应的场景文件，导致代码无法被游戏实际使用：
+
+- [ ] **精英敌人场景补全**: 8个精英敌人脚本均无场景文件，代码处于孤岛状态
+- [ ] **章节敌人场景补全**: 10个章节敌人脚本缺少场景文件
+- [ ] **未使用脚本清理**: 审计所有脚本文件，识别并清理未被任何场景引用的孤立脚本
+- [ ] **场景引用完整性检查**: 验证所有 `.tscn` 文件中引用的脚本路径是否有效
+
+### 其他技术债务
+
+- [ ] **听感疲劳惩罚机制完善**: 疲劳系统已实现三维惩罚，但实际游戏体验中的惩罚强度和触发阈值尚未经过充分测试
+- [ ] **文档与代码同步**: 部分设计文档描述的功能与实际代码实现存在差异（如 Feature_Completeness_Report.md 中记录的多项差距）
+- [ ] **Godot 4.6 兼容性检查**: 确保所有代码均兼容 Godot 4.6 API
+
+---
+
 ## 待设计/待讨论
 
 - [ ] 多人合奏模式
@@ -533,6 +670,19 @@
 ---
 
 ## 文件变更日志
+
+### 2026-02-12 v9.0 项目文档同步与TODO全面更新 (Issue #94)
+
+**文档更新：**
+
+| 文档 | 变更内容 |
+|------|------|
+| `godot_project/TODO.md` | 新增第一章垂直切片状态、精英敌人系统、章节敌人系统、技术债务章节；更新Boss系统状态 |
+| `ProjectHarmony-项目待办事项.md` | 标记任务3完成；新增基于评估报告的待办任务；更新依赖关系 |
+| `DOCUMENTATION_INDEX.md` | 新增章节开发计划索引、评估报告引用；确认文档状态准确性 |
+| `GDD_Evaluation_TODO_v2.md` | 移入 `Archive/` 目录 |
+
+---
 
 ### 2026-02-12 v8.1 OPT07 召唤系统音乐性深化
 
