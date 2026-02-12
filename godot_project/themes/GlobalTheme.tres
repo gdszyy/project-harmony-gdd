@@ -1,125 +1,168 @@
 [gd_resource type="Theme" format=3]
 
+; ============================================================
+; GlobalTheme.tres — Project Harmony 全局 UI 主题
+; 遵循 UI_Design_Module1_MainMenu.md 与 Art_And_VFX_Direction.md 第10章规范
+; 核心色彩：
+;   面板背景: 星空紫 #141026 (80% 不透明)
+;   面板边框: 主强调色 #9D6FFF (40% 不透明)
+;   按钮正常: #9D6FFF 边框辉光
+;   文本主色: 晶体白 #EAE6FF
+;   文本次色: #A098C8
+; ============================================================
+
+; --- 面板样式 (深色) ---
 [sub_resource type="StyleBoxFlat" id="panel_dark"]
-bg_color = Color(0.02, 0.02, 0.05, 0.85)
+bg_color = Color(0.078, 0.063, 0.149, 0.8)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.8, 0.6, 0.5)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-shadow_color = Color(0, 0.8, 0.6, 0.1)
-shadow_size = 4
+border_color = Color(0.616, 0.435, 1.0, 0.4)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.616, 0.435, 1.0, 0.08)
+shadow_size = 6
 
+; --- 面板样式 (半透明) ---
 [sub_resource type="StyleBoxFlat" id="panel_transparent"]
-bg_color = Color(0.02, 0.02, 0.05, 0.5)
+bg_color = Color(0.078, 0.063, 0.149, 0.5)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.6, 0.5, 0.3)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
+border_color = Color(0.616, 0.435, 1.0, 0.25)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
+; --- 按钮 (正常) ---
 [sub_resource type="StyleBoxFlat" id="button_normal"]
-bg_color = Color(0.05, 0.05, 0.1, 0.9)
+bg_color = Color(0.078, 0.063, 0.149, 0.85)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.6, 0.5, 0.6)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
+border_color = Color(0.616, 0.435, 1.0, 0.5)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.616, 0.435, 1.0, 0.06)
+shadow_size = 4
+content_margin_left = 20
+content_margin_top = 12
+content_margin_right = 20
+content_margin_bottom = 12
 
+; --- 按钮 (悬停) 亮度+20% ---
 [sub_resource type="StyleBoxFlat" id="button_hover"]
-bg_color = Color(0.08, 0.08, 0.15, 0.95)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0, 1.0, 0.8, 0.8)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-shadow_color = Color(0, 1.0, 0.8, 0.15)
-shadow_size = 6
-
-[sub_resource type="StyleBoxFlat" id="button_pressed"]
-bg_color = Color(0.0, 0.15, 0.12, 0.95)
+bg_color = Color(0.12, 0.1, 0.22, 0.92)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 1.0, 0.83, 1.0)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-shadow_color = Color(0, 1.0, 0.83, 0.25)
+border_color = Color(0.74, 0.52, 1.0, 0.7)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.616, 0.435, 1.0, 0.15)
 shadow_size = 8
+content_margin_left = 20
+content_margin_top = 12
+content_margin_right = 20
+content_margin_bottom = 12
 
-[sub_resource type="StyleBoxFlat" id="button_disabled"]
-bg_color = Color(0.03, 0.03, 0.06, 0.6)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.2, 0.2, 0.25, 0.3)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="button_focus"]
-bg_color = Color(0.06, 0.06, 0.12, 0.95)
+; --- 按钮 (按下) 亮度-20% ---
+[sub_resource type="StyleBoxFlat" id="button_pressed"]
+bg_color = Color(0.05, 0.04, 0.1, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 1.0, 0.83, 0.9)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-shadow_color = Color(0, 1.0, 0.83, 0.2)
-shadow_size = 6
+border_color = Color(0.616, 0.435, 1.0, 0.9)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.616, 0.435, 1.0, 0.25)
+shadow_size = 3
+content_margin_left = 20
+content_margin_top = 12
+content_margin_right = 20
+content_margin_bottom = 12
 
-[sub_resource type="StyleBoxFlat" id="progress_bar_bg"]
-bg_color = Color(0.03, 0.03, 0.06, 0.9)
+; --- 按钮 (禁用) ---
+[sub_resource type="StyleBoxFlat" id="button_disabled"]
+bg_color = Color(0.05, 0.04, 0.08, 0.5)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.5, 0.4, 0.4)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
+border_color = Color(0.3, 0.25, 0.4, 0.2)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 20
+content_margin_top = 12
+content_margin_right = 20
+content_margin_bottom = 12
 
+; --- 按钮 (焦点) ---
+[sub_resource type="StyleBoxFlat" id="button_focus"]
+bg_color = Color(0.1, 0.08, 0.18, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.74, 0.52, 1.0, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.616, 0.435, 1.0, 0.12)
+shadow_size = 6
+content_margin_left = 20
+content_margin_top = 12
+content_margin_right = 20
+content_margin_bottom = 12
+
+; --- 进度条背景 ---
+[sub_resource type="StyleBoxFlat" id="progress_bar_bg"]
+bg_color = Color(0.04, 0.03, 0.08, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.616, 0.435, 1.0, 0.3)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+; --- 进度条填充 ---
 [sub_resource type="StyleBoxFlat" id="progress_bar_fill"]
-bg_color = Color(0, 0.8, 0.6, 0.8)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-shadow_color = Color(0, 0.8, 0.6, 0.2)
+bg_color = Color(0.616, 0.435, 1.0, 0.8)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+shadow_color = Color(0.616, 0.435, 1.0, 0.2)
 shadow_size = 3
 
+; --- 滑块背景 ---
 [sub_resource type="StyleBoxFlat" id="hslider_bg"]
-bg_color = Color(0.03, 0.03, 0.06, 0.8)
+bg_color = Color(0.04, 0.03, 0.08, 0.8)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.5, 0.4, 0.3)
+border_color = Color(0.616, 0.435, 1.0, 0.25)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -127,8 +170,9 @@ corner_radius_bottom_left = 4
 content_margin_top = 4
 content_margin_bottom = 4
 
+; --- 滑块填充 ---
 [sub_resource type="StyleBoxFlat" id="hslider_fill"]
-bg_color = Color(0, 0.7, 0.55, 0.7)
+bg_color = Color(0.616, 0.435, 1.0, 0.6)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -136,123 +180,204 @@ corner_radius_bottom_left = 4
 content_margin_top = 4
 content_margin_bottom = 4
 
+; --- 工具提示面板 ---
 [sub_resource type="StyleBoxFlat" id="tooltip_panel"]
-bg_color = Color(0.02, 0.02, 0.05, 0.95)
+bg_color = Color(0.078, 0.063, 0.149, 0.95)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.8, 0.6, 0.6)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-shadow_color = Color(0, 0.8, 0.6, 0.15)
+border_color = Color(0.616, 0.435, 1.0, 0.5)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+shadow_color = Color(0.616, 0.435, 1.0, 0.1)
 shadow_size = 4
 content_margin_left = 8
 content_margin_top = 4
 content_margin_right = 8
 content_margin_bottom = 4
 
+; --- 行编辑 (正常) ---
 [sub_resource type="StyleBoxFlat" id="line_edit_normal"]
-bg_color = Color(0.03, 0.03, 0.06, 0.9)
+bg_color = Color(0.04, 0.03, 0.08, 0.9)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0, 0.5, 0.4, 0.4)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
+border_color = Color(0.616, 0.435, 1.0, 0.3)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 content_margin_left = 6
 content_margin_right = 6
 
+; --- 行编辑 (焦点) ---
 [sub_resource type="StyleBoxFlat" id="line_edit_focus"]
-bg_color = Color(0.04, 0.04, 0.08, 0.95)
+bg_color = Color(0.06, 0.05, 0.12, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 1.0, 0.83, 0.8)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-shadow_color = Color(0, 1.0, 0.83, 0.1)
+border_color = Color(0.74, 0.52, 1.0, 0.7)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+shadow_color = Color(0.616, 0.435, 1.0, 0.08)
 shadow_size = 3
 content_margin_left = 6
 content_margin_right = 6
 
+; --- 标签页 (选中) ---
 [sub_resource type="StyleBoxFlat" id="tab_selected"]
-bg_color = Color(0.05, 0.05, 0.1, 0.9)
+bg_color = Color(0.1, 0.08, 0.18, 0.9)
 border_width_left = 1
 border_width_top = 2
 border_width_right = 1
 border_width_bottom = 0
-border_color = Color(0, 1.0, 0.83, 0.8)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
+border_color = Color(0.616, 0.435, 1.0, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
 
+; --- 标签页 (未选中) ---
 [sub_resource type="StyleBoxFlat" id="tab_unselected"]
-bg_color = Color(0.02, 0.02, 0.04, 0.7)
+bg_color = Color(0.04, 0.03, 0.07, 0.7)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 0
-border_color = Color(0, 0.4, 0.3, 0.3)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
+border_color = Color(0.616, 0.435, 1.0, 0.2)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
 
+; --- 标签页 (悬停) ---
 [sub_resource type="StyleBoxFlat" id="tab_hover"]
-bg_color = Color(0.04, 0.04, 0.08, 0.85)
+bg_color = Color(0.07, 0.06, 0.13, 0.85)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 0
-border_color = Color(0, 0.7, 0.55, 0.5)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
+border_color = Color(0.616, 0.435, 1.0, 0.45)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
 
+; --- CheckBox 样式 ---
+[sub_resource type="StyleBoxFlat" id="checkbox_normal"]
+bg_color = Color(0.04, 0.03, 0.08, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.616, 0.435, 1.0, 0.4)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+; --- OptionButton 样式 ---
+[sub_resource type="StyleBoxFlat" id="option_normal"]
+bg_color = Color(0.078, 0.063, 0.149, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.616, 0.435, 1.0, 0.4)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12
+content_margin_top = 8
+content_margin_right = 12
+content_margin_bottom = 8
+
+; --- OptionButton (悬停) ---
+[sub_resource type="StyleBoxFlat" id="option_hover"]
+bg_color = Color(0.12, 0.1, 0.22, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.74, 0.52, 1.0, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12
+content_margin_top = 8
+content_margin_right = 12
+content_margin_bottom = 8
+
+; ============================================================
+; 主题资源定义
+; ============================================================
 [resource]
-default_font_size = 14
+default_font_size = 16
 
+; --- Button ---
 Button/styles/normal = SubResource("button_normal")
 Button/styles/hover = SubResource("button_hover")
 Button/styles/pressed = SubResource("button_pressed")
 Button/styles/disabled = SubResource("button_disabled")
 Button/styles/focus = SubResource("button_focus")
-Button/colors/font_color = Color(0.8, 0.9, 0.85, 1)
+Button/colors/font_color = Color(0.918, 0.902, 1.0, 1)
 Button/colors/font_hover_color = Color(1, 1, 1, 1)
-Button/colors/font_pressed_color = Color(0, 1.0, 0.83, 1)
-Button/colors/font_disabled_color = Color(0.3, 0.35, 0.33, 0.6)
-Button/colors/font_focus_color = Color(0.9, 1.0, 0.95, 1)
+Button/colors/font_pressed_color = Color(0.616, 0.435, 1.0, 1)
+Button/colors/font_disabled_color = Color(0.42, 0.4, 0.54, 0.5)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/font_sizes/font_size = 18
 
+; --- PanelContainer ---
 PanelContainer/styles/panel = SubResource("panel_dark")
 
-Label/colors/font_color = Color(0.7, 0.8, 0.75, 1)
-Label/font_sizes/font_size = 14
+; --- Label ---
+Label/colors/font_color = Color(0.918, 0.902, 1.0, 1)
+Label/font_sizes/font_size = 16
 
+; --- ProgressBar ---
 ProgressBar/styles/background = SubResource("progress_bar_bg")
 ProgressBar/styles/fill = SubResource("progress_bar_fill")
 
+; --- HSlider ---
 HSlider/styles/slider = SubResource("hslider_bg")
 HSlider/styles/grabber_area = SubResource("hslider_fill")
 
+; --- Tooltip ---
 TooltipPanel/styles/panel = SubResource("tooltip_panel")
-TooltipLabel/colors/font_color = Color(0.8, 0.9, 0.85, 1)
+TooltipLabel/colors/font_color = Color(0.918, 0.902, 1.0, 1)
 TooltipLabel/font_sizes/font_size = 12
 
+; --- LineEdit ---
 LineEdit/styles/normal = SubResource("line_edit_normal")
 LineEdit/styles/focus = SubResource("line_edit_focus")
-LineEdit/colors/font_color = Color(0.8, 0.9, 0.85, 1)
-LineEdit/colors/caret_color = Color(0, 1.0, 0.83, 1)
-LineEdit/colors/selection_color = Color(0, 0.5, 0.4, 0.4)
+LineEdit/colors/font_color = Color(0.918, 0.902, 1.0, 1)
+LineEdit/colors/caret_color = Color(0.616, 0.435, 1.0, 1)
+LineEdit/colors/selection_color = Color(0.616, 0.435, 1.0, 0.3)
 
+; --- TabContainer ---
 TabContainer/styles/tab_selected = SubResource("tab_selected")
 TabContainer/styles/tab_unselected = SubResource("tab_unselected")
 TabContainer/styles/tab_hovered = SubResource("tab_hover")
 TabContainer/styles/panel = SubResource("panel_dark")
 TabContainer/colors/font_selected_color = Color(1, 1, 1, 1)
-TabContainer/colors/font_unselected_color = Color(0.5, 0.6, 0.55, 0.7)
-TabContainer/colors/font_hovered_color = Color(0.8, 0.9, 0.85, 1)
+TabContainer/colors/font_unselected_color = Color(0.627, 0.596, 0.784, 0.7)
+TabContainer/colors/font_hovered_color = Color(0.918, 0.902, 1.0, 1)
+TabContainer/font_sizes/font_size = 18
+
+; --- CheckBox ---
+CheckBox/colors/font_color = Color(0.918, 0.902, 1.0, 1)
+CheckBox/colors/font_hover_color = Color(1, 1, 1, 1)
+CheckBox/font_sizes/font_size = 16
+
+; --- OptionButton ---
+OptionButton/styles/normal = SubResource("option_normal")
+OptionButton/styles/hover = SubResource("option_hover")
+OptionButton/styles/pressed = SubResource("button_pressed")
+OptionButton/styles/disabled = SubResource("button_disabled")
+OptionButton/styles/focus = SubResource("button_focus")
+OptionButton/colors/font_color = Color(0.918, 0.902, 1.0, 1)
+OptionButton/colors/font_hover_color = Color(1, 1, 1, 1)
+OptionButton/font_sizes/font_size = 16

@@ -1,350 +1,355 @@
 ## main_menu.gd
-## 主菜单场景 - v2.2 UIColors Integration
-## 极简主义设计：深色背景 + 神圣几何动态图案 + 呼吸感交互
-## 修复：使用正确的锚点居中布局，适配不同分辨率
-## v2.2: 替换硬编码颜色为 UIColors Autoload 引用
+## 主菜单场景 — 模块1：主菜单与导航系统
+##
+## 设计规范来源: Docs/UI_Design_Module1_MainMenu.md
+## 美术方向来源: Docs/Art_And_VFX_Direction.md 第10章
+##
+## 功能概述:
+##   - 游戏 Logo 居中偏上，带扫光辉光效果
+##   - 导航按钮垂直排列：继续、开始游戏、设置、图鉴、退出
+##   - "继续"按钮仅在存在有效存档时可见
+##   - 动态背景：sacred_geometry shader + 底部波形动画
+##   - 入场动画：标题滑入 + 按钮依次淡入
+##   - 按钮悬停/按下动效：缩放 + 辉光变化
+##   - 通过 UITransitionManager 实现页面转场
+##
+## 节点结构 (对应 main_menu.tscn):
+##   MainMenu (Control)
+##     ├── BackgroundRect (ColorRect)        — 背景 shader
+##     ├── WaveformRect (ColorRect)          — 底部波形 shader
+##     ├── CenterContainer
+##     │   └── VBoxContainer (MenuContainer)
+##     │       ├── LogoLabel (Label)         — 游戏标题
+##     │       ├── SubtitleLabel (Label)     — 副标题
+##     │       ├── Spacer (Control)          — 间距
+##     │       ├── ContinueButton (Button)
+##     │       ├── StartButton (Button)
+##     │       ├── SettingsButton (Button)
+##     │       ├── CodexButton (Button)
+##     │       └── QuitButton (Button)
+##     └── VersionLabel (Label)              — 版本号
 extends Control
 
 # ============================================================
-# 节点引用
+# 颜色常量 (来自 UIColors Autoload + 设计文档规范)
 # ============================================================
-@onready var _title_label: Label = $TitleLabel
-@onready var _start_button: Button = $StartButton
-@onready var _settings_button: Button = $SettingsButton
-@onready var _quit_button: Button = $QuitButton
-@onready var _bg_visual: ColorRect = $BackgroundVisual
+
+## H1 标题色: 晶体白 #EAE6FF
+const COLOR_TITLE := Color("#EAE6FF")
+## H2 副标题色: 次级文本 #A098C8
+const COLOR_SUBTITLE := Color("#A098C8")
+## 按钮主强调色: #9D6FFF
+const COLOR_ACCENT := Color("#9D6FFF")
+## 面板背景色: 星空紫 #141026, 80% 不透明
+const COLOR_PANEL_BG := Color(0.078, 0.063, 0.149, 0.8)
+## 面板边框色: #9D6FFF, 40% 不透明
+const COLOR_PANEL_BORDER := Color(0.616, 0.435, 1.0, 0.4)
+## 深渊黑: #0A0814
+const COLOR_ABYSS := Color("#0A0814")
+## 版本号文本色
+const COLOR_VERSION := Color("#6B668A")
+
+# ============================================================
+# 按钮动效参数 (来自设计文档 §6.1)
+# ============================================================
+
+## 悬停缩放倍率
+const HOVER_SCALE := 1.05
+## 按下缩放倍率
+const PRESSED_SCALE := 0.95
+## 悬停亮度增量 (+20%)
+const HOVER_BRIGHTNESS := 1.2
+## 按下亮度减量 (-20%)
+const PRESSED_BRIGHTNESS := 0.8
+## 按钮动效时长
+const BUTTON_ANIM_DURATION := 0.12
+
+# ============================================================
+# 节点引用 (对应 .tscn 中的节点路径)
+# ============================================================
+
+@onready var _bg_rect: ColorRect = $BackgroundRect
+@onready var _waveform_rect: ColorRect = $WaveformRect
+@onready var _logo_label: Label = $CenterContainer/MenuContainer/LogoLabel
+@onready var _subtitle_label: Label = $CenterContainer/MenuContainer/SubtitleLabel
+@onready var _continue_button: Button = $CenterContainer/MenuContainer/ContinueButton
+@onready var _start_button: Button = $CenterContainer/MenuContainer/StartButton
+@onready var _settings_button: Button = $CenterContainer/MenuContainer/SettingsButton
+@onready var _codex_button: Button = $CenterContainer/MenuContainer/CodexButton
+@onready var _quit_button: Button = $CenterContainer/MenuContainer/QuitButton
 @onready var _version_label: Label = $VersionLabel
 
 # ============================================================
-# 颜色配置 (v2.2: 使用 UIColors Autoload 单例)
+# 状态变量
 # ============================================================
-var BG_BUTTON: Color
-var BG_BUTTON_HOVER: Color
-var BG_BUTTON_PRESSED: Color
-var TITLE_COLOR: Color
-var SUBTITLE_COLOR: Color
-var VERSION_COLOR: Color
 
-var BUTTON_CONFIGS: Array = []
-
-# ============================================================
-# 状态
-# ============================================================
+## 累计时间，用于驱动背景动画和标题呼吸效果
 var _time: float = 0.0
-var _buttons: Array[Button] = []
-var _subtitle_label: Label = null
-var _button_container: VBoxContainer = null
+## 所有菜单按钮的引用数组，用于批量操作
+var _menu_buttons: Array[Button] = []
 
 # ============================================================
 # 生命周期
 # ============================================================
 
 func _ready() -> void:
-	_init_colors()
-	_setup_ui()
+	# 初始化按钮列表
+	_menu_buttons = [
+		_continue_button,
+		_start_button,
+		_settings_button,
+		_codex_button,
+		_quit_button,
+	]
+
+	# 检查存档状态，决定"继续"按钮是否可见
+	_update_continue_visibility()
+
+	# 连接按钮信号
+	_connect_button_signals()
+
+	# 为所有按钮设置悬停/按下动效
+	_setup_button_animations()
+
+	# 设置背景 shader
 	_setup_background()
+
+	# 播放入场动画
 	_play_entrance_animation()
-	
+
+	# 通知 GameManager 当前处于菜单状态
+	if GameManager.current_state != GameManager.GameState.MENU:
+		GameManager.current_state = GameManager.GameState.MENU
+		GameManager.game_state_changed.emit(GameManager.GameState.MENU)
+
 	# 启动菜单 BGM
 	if BGMManager.has_method("auto_select_bgm_for_state"):
 		BGMManager.auto_select_bgm_for_state(GameManager.GameState.MENU)
 
+
 func _process(delta: float) -> void:
 	_time += delta
-	_update_background()
-	_update_title_animation()
+	_update_background_uniforms()
+	_update_title_glow()
 
 # ============================================================
-# 颜色初始化 (v2.2: 从 UIColors Autoload 读取)
+# 存档检测
 # ============================================================
 
-func _init_colors() -> void:
-	BG_BUTTON = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
-	BG_BUTTON_HOVER = UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.95)
-	BG_BUTTON_PRESSED = UIColors.PANEL_SELECTED
-	TITLE_COLOR = UIColors.TEXT_PRIMARY
-	SUBTITLE_COLOR = UIColors.TEXT_SECONDARY
-	VERSION_COLOR = UIColors.TEXT_DIM
-
-	BUTTON_CONFIGS = [
-		{ "name": "StartButton", "text": "BEGIN RESONANCE", "accent": UIColors.ACCENT },
-		{ "name": "DifficultyButton", "text": "DIFFICULTY SELECT", "accent": UIColors.ACCENT_2 },
-		{ "name": "TutorialButton", "text": "TUTORIAL", "accent": Color(0.3, 0.8, 0.5) },
-		{ "name": "HallButton", "text": "HALL OF HARMONY", "accent": UIColors.GOLD },
-		{ "name": "CodexButton", "text": "CODEX RESONARE", "accent": UIColors.ACCENT_2 },
-		{ "name": "TestChamberButton", "text": "ECHOING CHAMBER", "accent": UIColors.WARNING },
-		{ "name": "SettingsButton", "text": "SETTINGS", "accent": UIColors.TEXT_SECONDARY },
-		{ "name": "QuitButton", "text": "EXIT", "accent": UIColors.TEXT_DIM },
-	]
+## 检查是否存在有效存档，控制"继续"按钮的可见性
+func _update_continue_visibility() -> void:
+	var has_save := SaveManager.get_total_runs() > 0
+	_continue_button.visible = has_save
 
 # ============================================================
-# UI 设置 (v2.1 - 使用 VBoxContainer 居中布局)
+# 信号连接
 # ============================================================
 
-func _setup_ui() -> void:
-	# ---- 标题 ----
-	if _title_label == null:
-		_title_label = Label.new()
-		_title_label.name = "TitleLabel"
-		add_child(_title_label)
-
-	_title_label.text = "PROJECT HARMONY"
-	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_font_size_override("font_size", 48)
-	_title_label.add_theme_color_override("font_color", TITLE_COLOR)
-	_title_label.add_theme_color_override("font_shadow_color", UIColors.with_alpha(UIColors.ACCENT, 0.25))
-	_title_label.add_theme_constant_override("shadow_offset_x", 0)
-	_title_label.add_theme_constant_override("shadow_offset_y", 3)
-	# 使用全宽居中锚点
-	_title_label.anchor_left = 0.0
-	_title_label.anchor_right = 1.0
-	_title_label.anchor_top = 0.0
-	_title_label.anchor_bottom = 0.0
-	_title_label.offset_left = 0
-	_title_label.offset_right = 0
-	_title_label.offset_top = 0
-	_title_label.offset_bottom = 60
-	# 使用 size_flags 和 margin 来定位
-	# 标题位于屏幕上方约 25% 处
-	_title_label.anchor_top = 0.2
-	_title_label.anchor_bottom = 0.2
-	_title_label.offset_top = -30
-	_title_label.offset_bottom = 30
-
-	# ---- 副标题 ----
-	_subtitle_label = Label.new()
-	_subtitle_label.name = "SubtitleLabel"
-	_subtitle_label.text = "Where Music Becomes Magic"
-	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_subtitle_label.add_theme_font_size_override("font_size", 16)
-	_subtitle_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	_subtitle_label.anchor_left = 0.0
-	_subtitle_label.anchor_right = 1.0
-	_subtitle_label.anchor_top = 0.2
-	_subtitle_label.anchor_bottom = 0.2
-	_subtitle_label.offset_left = 0
-	_subtitle_label.offset_right = 0
-	_subtitle_label.offset_top = 35
-	_subtitle_label.offset_bottom = 55
-	add_child(_subtitle_label)
-
-	# ---- 按钮容器（垂直居中）----
-	_button_container = VBoxContainer.new()
-	_button_container.name = "ButtonContainer"
-	# 锚点居中
-	_button_container.anchor_left = 0.5
-	_button_container.anchor_right = 0.5
-	_button_container.anchor_top = 0.42
-	_button_container.anchor_bottom = 0.42
-	_button_container.offset_left = -120
-	_button_container.offset_right = 120
-	_button_container.offset_top = 0
-	_button_container.offset_bottom = 350
-	_button_container.add_theme_constant_override("separation", 12)
-	add_child(_button_container)
-
-	# ---- 创建所有按钮 ----
-	_buttons.clear()
-	for config in BUTTON_CONFIGS:
-		var button: Button
-		var existing = get_node_or_null(config.name)
-		if existing:
-			button = existing
-			existing.reparent(_button_container)
-		else:
-			button = Button.new()
-			button.name = config.name
-			_button_container.add_child(button)
-		
-		button.text = config.text
-		button.custom_minimum_size = Vector2(240, 50)
-		_style_button(button, config.accent)
-		_buttons.append(button)
-	
-	# 连接按钮信号
-	_buttons[0].pressed.connect(_on_start_pressed)
-	_buttons[1].pressed.connect(_on_difficulty_pressed)
-	_buttons[2].pressed.connect(_on_tutorial_pressed)
-	_buttons[3].pressed.connect(_on_hall_pressed)
-	_buttons[4].pressed.connect(_on_codex_pressed)
-	_buttons[5].pressed.connect(_on_test_chamber_pressed)
-	# _buttons[6] settings - can be connected later
-	_buttons[7].pressed.connect(_on_quit_pressed)
-
-	# ---- 版本号（右下角）----
-	if _version_label == null:
-		_version_label = Label.new()
-		_version_label.name = "VersionLabel"
-		add_child(_version_label)
-
-	_version_label.text = "v0.2.0 Alpha"
-	_version_label.add_theme_font_size_override("font_size", 10)
-	_version_label.add_theme_color_override("font_color", VERSION_COLOR)
-	_version_label.anchor_left = 1.0
-	_version_label.anchor_right = 1.0
-	_version_label.anchor_top = 1.0
-	_version_label.anchor_bottom = 1.0
-	_version_label.offset_left = -120
-	_version_label.offset_right = -10
-	_version_label.offset_top = -30
-	_version_label.offset_bottom = -10
-
-func _style_button(button: Button, accent_color: Color) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = BG_BUTTON
-	style.border_color = accent_color
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	button.add_theme_stylebox_override("normal", style)
-
-	var hover_style := style.duplicate()
-	hover_style.bg_color = BG_BUTTON_HOVER
-	hover_style.border_color = accent_color.lightened(0.2)
-	hover_style.set_border_width_all(2) # Thicker border on hover
-	button.add_theme_stylebox_override("hover", hover_style)
-
-	var pressed_style := style.duplicate()
-	pressed_style.bg_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.25)
-	pressed_style.border_color = accent_color
-	button.add_theme_stylebox_override("pressed", pressed_style)
-
-	var focus_style := hover_style.duplicate()
-	button.add_theme_stylebox_override("focus", focus_style)
-
-	button.add_theme_color_override("font_color", TITLE_COLOR)
-	button.add_theme_color_override("font_hover_color", Color.WHITE)
-	button.add_theme_font_size_override("font_size", 14)
+## 连接所有按钮的 pressed 信号到对应的回调函数
+func _connect_button_signals() -> void:
+	_continue_button.pressed.connect(_on_continue_pressed)
+	_start_button.pressed.connect(_on_start_pressed)
+	_settings_button.pressed.connect(_on_settings_pressed)
+	_codex_button.pressed.connect(_on_codex_pressed)
+	_quit_button.pressed.connect(_on_quit_pressed)
 
 # ============================================================
-# 入场动画
+# 按钮动效系统 (设计文档 §6.1)
 # ============================================================
 
+## 为所有菜单按钮设置悬停和按下的交互动效
+func _setup_button_animations() -> void:
+	for button in _menu_buttons:
+		# 设置按钮的 pivot 为中心，以便缩放时从中心变换
+		button.pivot_offset = button.size / 2.0
+
+		# 连接鼠标进入/离开信号
+		button.mouse_entered.connect(_on_button_hover_enter.bind(button))
+		button.mouse_exited.connect(_on_button_hover_exit.bind(button))
+
+		# 连接按下/释放信号
+		button.button_down.connect(_on_button_down.bind(button))
+		button.button_up.connect(_on_button_up.bind(button))
+
+		# 确保按钮大小变化时更新 pivot
+		button.resized.connect(func(): button.pivot_offset = button.size / 2.0)
+
+
+## 按钮悬停进入: 缩放 1.05x + 亮度 +20%
+func _on_button_hover_enter(button: Button) -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), BUTTON_ANIM_DURATION) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(button, "modulate", Color(HOVER_BRIGHTNESS, HOVER_BRIGHTNESS, HOVER_BRIGHTNESS), BUTTON_ANIM_DURATION)
+
+
+## 按钮悬停离开: 恢复原始缩放和亮度
+func _on_button_hover_exit(button: Button) -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2.ONE, BUTTON_ANIM_DURATION) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(button, "modulate", Color.WHITE, BUTTON_ANIM_DURATION)
+
+
+## 按钮按下: 缩放 0.95x + 亮度 -20%
+func _on_button_down(button: Button) -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2(PRESSED_SCALE, PRESSED_SCALE), BUTTON_ANIM_DURATION * 0.5) \
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(button, "modulate", Color(PRESSED_BRIGHTNESS, PRESSED_BRIGHTNESS, PRESSED_BRIGHTNESS), BUTTON_ANIM_DURATION * 0.5)
+
+
+## 按钮释放: 恢复悬停状态（因为鼠标仍在按钮上）
+func _on_button_up(button: Button) -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), BUTTON_ANIM_DURATION) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(button, "modulate", Color(HOVER_BRIGHTNESS, HOVER_BRIGHTNESS, HOVER_BRIGHTNESS), BUTTON_ANIM_DURATION)
+
+# ============================================================
+# 入场动画 (设计文档 §6)
+# ============================================================
+
+## 播放主菜单的入场动画序列
 func _play_entrance_animation() -> void:
-	# 标题从上方滑入 + 淡入
-	if _title_label:
-		_title_label.modulate.a = 0.0
-		var tween := create_tween()
-		tween.set_parallel(true)
-		tween.tween_property(_title_label, "modulate:a", 1.0, 0.6).set_ease(Tween.EASE_OUT)
-	
-	# 副标题淡入
+	# --- Logo 从上方滑入 + 淡入 ---
+	if _logo_label:
+		_logo_label.modulate.a = 0.0
+		_logo_label.position.y -= 30.0
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(_logo_label, "modulate:a", 1.0, 0.6) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(_logo_label, "position:y", _logo_label.position.y + 30.0, 0.6) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+	# --- 副标题延迟淡入 ---
 	if _subtitle_label:
 		_subtitle_label.modulate.a = 0.0
 		var tween := create_tween()
-		tween.tween_interval(0.2)
-		tween.tween_property(_subtitle_label, "modulate:a", 1.0, 0.5)
-	
-	# 按钮依次淡入
-	for i in range(_buttons.size()):
-		var button = _buttons[i]
+		tween.tween_interval(0.3)
+		tween.tween_property(_subtitle_label, "modulate:a", 1.0, 0.5) \
+			.set_ease(Tween.EASE_OUT)
+
+	# --- 按钮依次淡入（从上到下，每个间隔 80ms）---
+	var visible_buttons: Array[Button] = []
+	for btn in _menu_buttons:
+		if btn.visible:
+			visible_buttons.append(btn)
+
+	for i in range(visible_buttons.size()):
+		var button := visible_buttons[i]
 		button.modulate.a = 0.0
-		var delay = 0.3 + i * 0.08
+		button.position.x += 20.0  # 从右侧轻微滑入
+		var delay := 0.4 + i * 0.08
 		var tween := create_tween()
 		tween.tween_interval(delay)
-		tween.tween_property(button, "modulate:a", 1.0, 0.3)
+		tween.set_parallel(true)
+		tween.tween_property(button, "modulate:a", 1.0, 0.3) \
+			.set_ease(Tween.EASE_OUT)
+		tween.tween_property(button, "position:x", button.position.x - 20.0, 0.3) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+	# --- 版本号淡入 ---
+	if _version_label:
+		_version_label.modulate.a = 0.0
+		var tween := create_tween()
+		tween.tween_interval(0.8)
+		tween.tween_property(_version_label, "modulate:a", 1.0, 0.4)
 
 # ============================================================
-# 背景
+# 背景视觉效果 (设计文档 §6.3)
 # ============================================================
 
+## 初始化背景 shader
 func _setup_background() -> void:
-	if _bg_visual == null:
-		_bg_visual = ColorRect.new()
-		_bg_visual.name = "BackgroundVisual"
-		add_child(_bg_visual)
-		move_child(_bg_visual, 0)
+	# 背景 sacred_geometry shader
+	if _bg_rect:
+		var shader := load("res://shaders/sacred_geometry.gdshader")
+		if shader:
+			var mat := ShaderMaterial.new()
+			mat.shader = shader
+			_bg_rect.material = mat
 
-	_bg_visual.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 底部波形 shader (如果存在)
+	if _waveform_rect:
+		var waveform_shader := load("res://shaders/waveform.gdshader") if ResourceLoader.exists("res://shaders/waveform.gdshader") else null
+		if waveform_shader:
+			var mat := ShaderMaterial.new()
+			mat.shader = waveform_shader
+			_waveform_rect.material = mat
 
-	# 应用神圣几何 Shader
-	var shader := load("res://shaders/sacred_geometry.gdshader")
-	if shader:
-		var mat := ShaderMaterial.new()
-		mat.shader = shader
-		_bg_visual.material = mat
 
-func _update_background() -> void:
-	if _bg_visual and _bg_visual.material is ShaderMaterial:
-		var mat: ShaderMaterial = _bg_visual.material
+## 每帧更新背景 shader 的 uniform 参数
+func _update_background_uniforms() -> void:
+	# 更新 sacred_geometry shader
+	if _bg_rect and _bg_rect.material is ShaderMaterial:
+		var mat: ShaderMaterial = _bg_rect.material
 		mat.set_shader_parameter("time", _time)
 		mat.set_shader_parameter("beat_energy", sin(_time * 2.0) * 0.3 + 0.5)
 
+	# 更新波形 shader
+	if _waveform_rect and _waveform_rect.material is ShaderMaterial:
+		var mat: ShaderMaterial = _waveform_rect.material
+		mat.set_shader_parameter("time", _time)
+
 # ============================================================
-# 标题动画
+# 标题呼吸辉光效果
 # ============================================================
 
-func _update_title_animation() -> void:
-	if _title_label:
-		# 呼吸感发光 (使用新的调色板)
-		var glow := sin(_time * 1.5) * 0.15 + 0.85
-		_title_label.modulate = Color(glow, glow, glow + 0.05) # Slight blue tint on glow
+## 标题文字的呼吸感发光动画
+func _update_title_glow() -> void:
+	if _logo_label:
+		# 使用正弦波驱动亮度变化，营造"呼吸"感
+		var glow := sin(_time * 1.5) * 0.1 + 0.95
+		# 轻微的蓝紫色调偏移，增强科幻感
+		_logo_label.modulate = Color(glow, glow, glow + 0.03, _logo_label.modulate.a)
 
 # ============================================================
 # 按钮回调
 # ============================================================
 
+## 继续游戏 — 加载最近的存档并进入游戏
+func _on_continue_pressed() -> void:
+	SaveManager.load_game()
+	if UITransitionManager:
+		UITransitionManager.transition_to_scene("res://scenes/main_game.tscn", "glitch")
+	else:
+		get_tree().change_scene_to_file("res://scenes/main_game.tscn")
+
+
+## 开始新游戏 — 重置状态并进入游戏
 func _on_start_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
-
-func _on_codex_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/codex.tscn")
-
-func _on_test_chamber_pressed() -> void:
-	# v4.0: 测试场不再是独立场景，而是以测试模式启动正式游戏
-	GameManager.is_test_mode = true
-	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
-
-func _on_hall_pressed() -> void:
-	# 打开和谐殿堂（局外成长系统）—— 审计报告 建议3 修复
-	var hall_script := load("res://scripts/ui/hall_of_harmony.gd")
-	if hall_script == null:
-		return
-	var hall := Control.new()
-	hall.set_script(hall_script)
-	hall.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hall.z_index = 100
-	add_child(hall)
-	if hall.has_signal("start_game_pressed"):
-		hall.start_game_pressed.connect(func():
-			hall.queue_free()
-			_on_start_pressed()
-		)
-	if hall.has_signal("back_pressed"):
-		hall.back_pressed.connect(func():
-			hall.queue_free()
-		)
-
-func _on_difficulty_pressed() -> void:
-	# Issue #115: 打开难度选择面板
-	var diff_ui_script := load("res://scripts/ui/difficulty_select_ui.gd")
-	if diff_ui_script == null:
-		return
-	var diff_ui := Control.new()
-	diff_ui.set_script(diff_ui_script)
-	diff_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	diff_ui.z_index = 100
-	add_child(diff_ui)
-	if diff_ui.has_signal("difficulty_selected"):
-		diff_ui.difficulty_selected.connect(func(_d: int):
-			diff_ui.queue_free()
-		)
-	if diff_ui.has_signal("back_pressed"):
-		diff_ui.back_pressed.connect(func():
-			diff_ui.queue_free()
-		)
-
-func _on_tutorial_pressed() -> void:
-	# Issue #115: 启动教程模式（强制重新开始教程）
-	var tutorial_mgr := get_node_or_null("/root/TutorialManager")
-	if tutorial_mgr:
-		tutorial_mgr.tutorial_enabled = true
-		tutorial_mgr._is_completed = false  # 允许重新开始
 	GameManager.is_test_mode = false
-	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
+	if UITransitionManager:
+		UITransitionManager.transition_to_scene("res://scenes/main_game.tscn", "glitch")
+	else:
+		get_tree().change_scene_to_file("res://scenes/main_game.tscn")
 
+
+## 打开设置菜单 — 实例化设置菜单场景并叠加显示
+func _on_settings_pressed() -> void:
+	var settings_scene := load("res://scenes/settings_menu.tscn")
+	if settings_scene:
+		var settings_menu := settings_scene.instantiate()
+		settings_menu.z_index = 50
+		add_child(settings_menu)
+		# 连接设置菜单的关闭信号
+		if settings_menu.has_signal("menu_closed"):
+			settings_menu.menu_closed.connect(func(): settings_menu.queue_free())
+
+
+## 打开图鉴 — 通过转场切换到图鉴场景
+func _on_codex_pressed() -> void:
+	if UITransitionManager:
+		UITransitionManager.transition_to_scene("res://scenes/codex.tscn", "glitch")
+	else:
+		get_tree().change_scene_to_file("res://scenes/codex.tscn")
+
+
+## 退出游戏
 func _on_quit_pressed() -> void:
+	# 播放一个短暂的淡出效果后退出
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	await tween.finished
 	get_tree().quit()
