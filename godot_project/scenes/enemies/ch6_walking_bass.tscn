@@ -1,0 +1,50 @@
+[gd_scene load_steps=4 format=3 uid="uid://ch6_walking_bass_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd" id="1_bass"]
+[ext_resource type="Shader" path="res://shaders/walking_bass_neon.gdshader" id="2_neon"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 14.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 20.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_neon"]
+shader = ExtResource("2_neon")
+shader_parameter/glitch_intensity = 0.05
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_offbeat = 0.0
+shader_parameter/base_tint = Color(0.3, 0.15, 0.1, 1)
+shader_parameter/color_flow_speed = 2.0
+shader_parameter/neon_glow_intensity = 1.5
+shader_parameter/neon_flicker_speed = 5.0
+shader_parameter/smoke_density = 0.3
+
+[node name="WalkingBass" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_bass")
+max_hp = 100.0
+move_speed = 70.0
+contact_damage = 8.0
+xp_value = 15
+quantized_fps = 12.0
+collision_radius = 14.0
+knockback_resistance = 0.3
+base_color = Color(0.3, 0.15, 0.1, 1)
+base_glitch_intensity = 0.05
+max_glitch_intensity = 0.6
+
+[node name="EnemyVisual" type="Node2D" parent="."]
+material = SubResource("ShaderMaterial_neon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")
