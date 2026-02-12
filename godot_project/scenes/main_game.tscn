@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3 uid="uid://main_game"]
+[gd_scene load_steps=45 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -39,6 +39,8 @@
 [ext_resource type="PackedScene" uid="uid://phase_transition_001" path="res://scenes/ui/phase_transition_overlay.tscn" id="41_transition"]
 [ext_resource type="PackedScene" uid="uid://phase_gain_hint_001" path="res://scenes/ui/phase_gain_hint.tscn" id="42_gain_hint"]
 [ext_resource type="Script" path="res://scripts/ui/phase_hud_tint_manager.gd" id="43_tint_mgr"]
+[ext_resource type="Script" path="res://scripts/ui/help_panel.gd" id="44_help_panel"]
+[ext_resource type="Script" path="res://scripts/ui/theory_breakthrough_popup.gd" id="45_breakthrough"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -318,6 +320,22 @@ script = ExtResource("29_codex_popup")
 
 [node name="PhaseHudTintManager" type="Node" parent="HUD"]
 script = ExtResource("43_tint_mgr")
+
+[node name="HelpPanel" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("44_help_panel")
+
+[node name="TheoryBreakthrough" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("45_breakthrough")
 
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false

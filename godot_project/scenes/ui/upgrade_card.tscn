@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://upgrade_card_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_upgrade_card"]
+
+[node name="UpgradeCard" type="PanelContainer"]
+custom_minimum_size = Vector2(240, 320)
+script = ExtResource("1_upgrade_card")

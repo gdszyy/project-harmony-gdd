@@ -1,25 +1,19 @@
-## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 - v5.0 2.5D 渲染迁移版
+## codex_ui.gd
+## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 — v6.0 重写
 ##
-## 视觉风格：充满神秘感的魔法书，背景为羊皮纸/星图纹理。
-## 布局：顶部标题栏 + 左侧卷标签页/条目列表 + 右侧条目详情页（含法术演示区域）
-## 功能：四卷完整数据浏览、条目解锁状态、搜索过滤、详情展示、法术演示
+## 根据 UI_Design_Module4_CircleOfFifths.md §8 设计文档重写：
+##   - 经典双栏布局：左栏分类导航(25%) + 右栏详细内容(75%)
+##   - "古籍"质感：装饰性线条边框、带扫光效果的科幻字体
+##   - 完整四卷数据浏览、条目解锁状态、搜索过滤、详情展示
+##   - 法术演示区域（2.5D 渲染）
+##   - 敌人 3D 预览
+##   - 全局色彩体系与 UI 设计文档 §1.2 对齐
 ##
-## ★ v5.0 变更 (Issue #36 — 2.5D 渲染迁移)：
-##   - 法术演示区域升级为 2.5D 混合渲染：
-##     · SubViewport 内嵌独立 3D 渲染管线（WorldEnvironment + Glow/Bloom）
-##     · 弹体在 3D 空间渲染，带真实光照和发光效果
-##     · 与主游戏 (main_game) 的视觉风格完全一致
-##   - 敌人条目详情页新增 3D 预览：
-##     · 使用独立 SubViewport 渲染敌人的 3D 代理模型
-##     · 展示敌人的发光颜色、几何形态和粒子效果
-##   - 背景增加微妙的 3D 粒子氛围效果
-##   - 全局 Glow/Bloom 后处理，提升视觉一致性
-##
-## ★ v4.0 新增：法术演示区域
-##   - 在条目详情页底部新增演示区域
-##   - 演示使用实际 SpellcraftSystem 的施法接口（而非独立模拟）
-##   - 内嵌 SubViewport 渲染弹体效果，与游戏内表现完全一致
-##   - 支持音符、和弦、修饰符、节奏型等所有法术类型的演示
+## 视觉风格：
+##   - 星空紫面板背景 + 谐振紫分割线/边框
+##   - 已解锁条目：晶体白文本 + 彩色图标
+##   - 未解锁条目：星云灰文本 + 灰色锁定图标
+##   - 装饰性精细线条边框，营造"古代乐理典籍"沉浸感
 extends Control
 
 # ============================================================
@@ -29,27 +23,24 @@ signal back_pressed()
 signal entry_viewed(entry_id: String)
 
 # ============================================================
-# 颜色方案
+# 颜色方案 (与 UI 设计文档 §1.2 对齐)
 # ============================================================
-const BG_COLOR := Color("#0A0814")
-const PANEL_BG := Color("#141026")
-const HEADER_BG := Color("#100C20")
-const TAB_ACTIVE := Color("#9D6FFF4D")
-const TAB_HOVER := Color("#9D6FFF33")
-const TAB_NORMAL := Color("#141026CC")
-const ACCENT := Color("#9D6FFF")
-const GOLD := Color("#FFD700")
-const TEXT_PRIMARY := Color("#EAE6FF")
-const TEXT_SECONDARY := Color("#A098C8")
-const TEXT_DIM := Color("#6B668A")
-const LOCKED_BG := Color("#100C20E6")
-const LOCKED_TEXT := Color("#6B668A")
-const ENTRY_BG := Color("#18142C")
-const ENTRY_HOVER := Color("#201A38")
-const ENTRY_SELECTED := Color("#2A2248")
-const DETAIL_BG := Color("#120E22F2")
-const DEMO_BG := Color("#0D0A1A")
-const DEMO_BORDER := Color("#9D6FFF33")
+const COL_BG := Color("#0A0814")              ## 深渊黑
+const COL_PANEL_BG := Color("#141026")        ## 星空紫
+const COL_HEADER_BG := Color("#100C20")       ## 深色头部
+const COL_ACCENT := Color("#9D6FFF")          ## 谐振紫
+const COL_GOLD := Color("#FFD700")            ## 圣光金
+const COL_TEXT_PRIMARY := Color("#EAE6FF")    ## 晶体白
+const COL_TEXT_SECONDARY := Color("#A098C8")  ## 星云灰
+const COL_TEXT_DIM := Color("#6B668A")        ## 暗淡文本
+const COL_LOCKED := Color("#6B668A")          ## 锁定文本
+const COL_ENTRY_BG := Color("#18142C")        ## 条目背景
+const COL_ENTRY_HOVER := Color("#201A38")     ## 条目悬停
+const COL_ENTRY_SELECTED := Color("#2A2248")  ## 条目选中
+const COL_DETAIL_BG := Color("#120E22F2")     ## 详情背景
+const COL_DEMO_BG := Color("#0D0A1A")         ## 演示区背景
+const COL_DEMO_BORDER := Color("#9D6FFF33")   ## 演示区边框
+const COL_SEPARATOR := Color("#9D6FFF40")     ## 分割线
 
 # ============================================================
 # 卷配置 — 完整四卷数据映射
@@ -108,7 +99,7 @@ const DATA_SOURCES: Dictionary = {
 }
 
 # ============================================================
-# 敌人类型颜色映射（与 main_game / render_bridge_3d 一致）
+# 敌人类型颜色映射
 # ============================================================
 const ENEMY_TYPE_COLORS: Dictionary = {
 	"static":  Color(0.7, 0.3, 0.3),
@@ -133,7 +124,7 @@ var _title_label: Label = null
 var _progress_label: Label = null
 var _subcat_bar: HBoxContainer = null
 
-# ★ 法术演示区域节点 (v5.0: 2.5D 升级)
+# 法术演示区域节点
 var _demo_viewport: SubViewport = null
 var _demo_viewport_container: SubViewportContainer = null
 var _demo_projectile_manager: Node2D = null
@@ -143,7 +134,7 @@ var _demo_clear_btn: Button = null
 var _demo_info_label: Label = null
 var _demo_status_label: Label = null
 
-# ★ v5.0: 演示区域 3D 渲染节点
+# 演示区域 3D 渲染节点
 var _demo_3d_viewport: SubViewport = null
 var _demo_3d_viewport_container: SubViewportContainer = null
 var _demo_3d_camera: Camera3D = null
@@ -151,13 +142,13 @@ var _demo_3d_env: WorldEnvironment = null
 var _demo_3d_entity_layer: Node3D = null
 var _demo_3d_light: DirectionalLight3D = null
 
-# ★ v5.0: 敌人 3D 预览节点
+# 敌人 3D 预览节点
 var _enemy_preview_viewport: SubViewport = null
 var _enemy_preview_container: SubViewportContainer = null
 var _enemy_preview_camera: Camera3D = null
 var _enemy_preview_model: Node3D = null
 
-# ★ v5.0: 背景 3D 氛围效果
+# 背景 3D 氛围效果
 var _bg_3d_viewport: SubViewport = null
 var _bg_3d_viewport_container: SubViewportContainer = null
 
@@ -171,8 +162,8 @@ var _search_filter: String = ""
 var _demo_active: bool = false
 var _demo_timer: float = 0.0
 
-## 解锁状态 (从 CodexManager 同步)
-var _unlocked_entries: Dictionary = {}  # { "entry_id": true }
+## 解锁状态
+var _unlocked_entries: Dictionary = {}
 var _codex_manager: Node = null
 
 # ============================================================
@@ -187,13 +178,11 @@ func _ready() -> void:
 	_select_volume(0)
 
 func _process(delta: float) -> void:
-	# v5.1: 演示定时器（自动清理超过 5 秒的演示）
 	if _demo_active:
 		_demo_timer += delta
 		if _demo_timer > 5.0:
 			_clear_demo()
 
-	# v5.0: 旋转敌人 3D 预览模型
 	if _enemy_preview_model and is_instance_valid(_enemy_preview_model):
 		_enemy_preview_model.rotation.y += delta * 1.5
 
@@ -201,7 +190,6 @@ func _load_unlock_state() -> void:
 	if _codex_manager and _codex_manager.has_method("get_unlocked_entries"):
 		_unlocked_entries = _codex_manager.get_unlocked_entries()
 	else:
-		# 默认解锁所有 DEFAULT 类型的条目
 		for vol_config in VOLUME_CONFIG:
 			for subcat in vol_config["subcategories"]:
 				var data := _get_data_dict(subcat["data_source"])
@@ -214,86 +202,157 @@ func _is_entry_unlocked(entry_id: String) -> bool:
 	return _unlocked_entries.get(entry_id, false)
 
 # ============================================================
-# UI 构建
+# UI 构建 — 主布局 (设计文档 §8.2)
 # ============================================================
 
 func _build_ui() -> void:
 	# 全屏背景
 	_background = ColorRect.new()
-	_background.color = BG_COLOR
+	_background.color = COL_BG
 	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_background)
 
-	# 主布局
+	# 主布局容器
 	var main_vbox := VBoxContainer.new()
 	main_vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	main_vbox.add_theme_constant_override("separation", 0)
 	add_child(main_vbox)
 
-	# ---- 顶部标题栏 ----
+	# 顶部标题栏
 	var header := _build_header()
 	main_vbox.add_child(header)
 
-	# ---- 内容区域 (左侧导航 + 右侧详情) ----
+	# 装饰性分割线
+	var top_sep := _create_decorative_separator()
+	main_vbox.add_child(top_sep)
+
+	# 内容区域 (左侧导航 25% + 右侧详情 75%)
 	var content_hbox := HBoxContainer.new()
 	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content_hbox.add_theme_constant_override("separation", 0)
 	main_vbox.add_child(content_hbox)
 
-	# 左侧面板：卷标签 + 子分类 + 条目列表
+	# 左侧面板
 	var left_panel := _build_left_panel()
 	left_panel.custom_minimum_size.x = 360
 	content_hbox.add_child(left_panel)
 
-	# 分隔线
-	var separator := VSeparator.new()
-	content_hbox.add_child(separator)
+	# 垂直装饰分割线
+	var v_sep := _create_vertical_separator()
+	content_hbox.add_child(v_sep)
 
-	# 右侧面板：条目详情
+	# 右侧面板
 	var right_panel := _build_right_panel()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content_hbox.add_child(right_panel)
 
+# ============================================================
+# UI 构建 — 标题栏
+# ============================================================
+
 func _build_header() -> Control:
 	var header := PanelContainer.new()
-	header.custom_minimum_size.y = 50
+	header.custom_minimum_size.y = 56
+
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = COL_HEADER_BG
+	header_style.content_margin_left = 20
+	header_style.content_margin_right = 20
+	header_style.content_margin_top = 8
+	header_style.content_margin_bottom = 8
+	header_style.border_color = COL_ACCENT
+	header_style.border_width_bottom = 1
+	header.add_theme_stylebox_override("panel", header_style)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 
+	# 返回按钮
 	_back_btn = Button.new()
 	_back_btn.text = "← 返回"
+	_back_btn.custom_minimum_size = Vector2(80, 36)
 	_back_btn.pressed.connect(_on_back_pressed)
+	var back_style := StyleBoxFlat.new()
+	back_style.bg_color = COL_PANEL_BG
+	back_style.border_color = COL_ACCENT
+	back_style.border_width_left = 1
+	back_style.border_width_right = 1
+	back_style.border_width_top = 1
+	back_style.border_width_bottom = 1
+	back_style.corner_radius_top_left = 4
+	back_style.corner_radius_top_right = 4
+	back_style.corner_radius_bottom_left = 4
+	back_style.corner_radius_bottom_right = 4
+	back_style.content_margin_left = 12
+	back_style.content_margin_right = 12
+	_back_btn.add_theme_stylebox_override("normal", back_style)
+	_back_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	_back_btn.add_theme_color_override("font_hover_color", COL_TEXT_PRIMARY)
 	hbox.add_child(_back_btn)
 
+	# 标题
 	_title_label = Label.new()
 	_title_label.text = "✦ 谐 振 法 典 ✦"
-	_title_label.add_theme_font_size_override("font_size", 20)
-	_title_label.add_theme_color_override("font_color", GOLD)
+	_title_label.add_theme_font_size_override("font_size", 22)
+	_title_label.add_theme_color_override("font_color", COL_GOLD)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hbox.add_child(_title_label)
 
 	# 搜索框
 	_search_input = LineEdit.new()
 	_search_input.placeholder_text = "搜索条目..."
-	_search_input.custom_minimum_size = Vector2(200, 30)
+	_search_input.custom_minimum_size = Vector2(220, 32)
 	_search_input.text_changed.connect(_on_search_changed)
+	var search_style := StyleBoxFlat.new()
+	search_style.bg_color = Color(COL_PANEL_BG.r, COL_PANEL_BG.g, COL_PANEL_BG.b, 0.9)
+	search_style.border_color = COL_ACCENT
+	search_style.border_width_bottom = 1
+	search_style.corner_radius_top_left = 4
+	search_style.corner_radius_top_right = 4
+	search_style.corner_radius_bottom_left = 4
+	search_style.corner_radius_bottom_right = 4
+	search_style.content_margin_left = 10
+	search_style.content_margin_right = 10
+	_search_input.add_theme_stylebox_override("normal", search_style)
+	_search_input.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	_search_input.add_theme_color_override("font_placeholder_color", COL_TEXT_DIM)
 	hbox.add_child(_search_input)
 
 	# 收集进度
 	_progress_label = Label.new()
 	_progress_label.add_theme_font_size_override("font_size", 12)
-	_progress_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	_progress_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
 	hbox.add_child(_progress_label)
 
 	header.add_child(hbox)
 	return header
 
+# ============================================================
+# UI 构建 — 左侧面板 (§8.2 分类导航)
+# ============================================================
+
 func _build_left_panel() -> Control:
+	var left_panel := PanelContainer.new()
+	var left_style := StyleBoxFlat.new()
+	left_style.bg_color = COL_PANEL_BG
+	left_style.content_margin_left = 8
+	left_style.content_margin_right = 8
+	left_style.content_margin_top = 8
+	left_style.content_margin_bottom = 8
+	left_panel.add_theme_stylebox_override("panel", left_style)
+
 	var left_vbox := VBoxContainer.new()
 	left_vbox.add_theme_constant_override("separation", 4)
 
 	# 卷标签页
+	var vol_label := Label.new()
+	vol_label.text = "— 卷目 —"
+	vol_label.add_theme_font_size_override("font_size", 12)
+	vol_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	vol_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left_vbox.add_child(vol_label)
+
 	_volume_tabs = VBoxContainer.new()
 	_volume_tabs.add_theme_constant_override("separation", 2)
 
@@ -301,23 +360,62 @@ func _build_left_panel() -> Control:
 		var vol := VOLUME_CONFIG[i] as Dictionary
 		var btn := Button.new()
 		btn.name = "VolumeTab_%d" % i
-		btn.text = "%s %s" % [vol["icon"], vol["name"]]
+		btn.text = "%s  %s" % [vol["icon"], vol["name"]]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.custom_minimum_size.y = 36
+		btn.custom_minimum_size.y = 38
+
+		var btn_style := StyleBoxFlat.new()
+		btn_style.bg_color = COL_ENTRY_BG
+		btn_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.2)
+		btn_style.border_width_left = 2
+		btn_style.corner_radius_top_left = 4
+		btn_style.corner_radius_bottom_left = 4
+		btn_style.content_margin_left = 12
+		btn_style.content_margin_right = 8
+		btn.add_theme_stylebox_override("normal", btn_style)
+
+		var btn_hover := btn_style.duplicate()
+		btn_hover.bg_color = COL_ENTRY_HOVER
+		btn_hover.border_color = COL_ACCENT
+		btn.add_theme_stylebox_override("hover", btn_hover)
+
+		var btn_pressed := btn_style.duplicate()
+		btn_pressed.bg_color = COL_ENTRY_SELECTED
+		btn_pressed.border_color = COL_GOLD
+		btn_pressed.border_width_left = 3
+		btn.add_theme_stylebox_override("disabled", btn_pressed)
+
+		btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+		btn.add_theme_color_override("font_hover_color", COL_GOLD)
+		btn.add_theme_color_override("font_disabled_color", COL_GOLD)
+		btn.add_theme_font_size_override("font_size", 13)
 		btn.pressed.connect(_on_volume_selected.bind(i))
 		_volume_tabs.add_child(btn)
 
 	left_vbox.add_child(_volume_tabs)
 
+	# 装饰分割线
+	left_vbox.add_child(_create_decorative_separator())
+
 	# 子分类栏
+	var subcat_label := Label.new()
+	subcat_label.text = "— 分类 —"
+	subcat_label.add_theme_font_size_override("font_size", 11)
+	subcat_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	subcat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left_vbox.add_child(subcat_label)
+
 	_subcat_bar = HBoxContainer.new()
 	_subcat_bar.add_theme_constant_override("separation", 4)
-	_subcat_bar.custom_minimum_size.y = 30
 	left_vbox.add_child(_subcat_bar)
 
-	# 条目列表
+	# 装饰分割线
+	left_vbox.add_child(_create_decorative_separator())
+
+	# 条目列表 (滚动容器)
 	_entry_list_scroll = ScrollContainer.new()
 	_entry_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_entry_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 	_entry_list_container = VBoxContainer.new()
 	_entry_list_container.add_theme_constant_override("separation", 2)
@@ -325,120 +423,103 @@ func _build_left_panel() -> Control:
 	_entry_list_scroll.add_child(_entry_list_container)
 
 	left_vbox.add_child(_entry_list_scroll)
+	left_panel.add_child(left_vbox)
+	return left_panel
 
-	return left_vbox
+# ============================================================
+# UI 构建 — 右侧面板 (§8.2 详细内容)
+# ============================================================
 
 func _build_right_panel() -> Control:
+	var right_panel := PanelContainer.new()
+	var right_style := StyleBoxFlat.new()
+	right_style.bg_color = Color(COL_DETAIL_BG.r, COL_DETAIL_BG.g, COL_DETAIL_BG.b, 0.95)
+	right_style.content_margin_left = 20
+	right_style.content_margin_right = 20
+	right_style.content_margin_top = 16
+	right_style.content_margin_bottom = 16
+	right_panel.add_theme_stylebox_override("panel", right_style)
+
 	_detail_scroll = ScrollContainer.new()
 	_detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 	_detail_container = VBoxContainer.new()
-	_detail_container.add_theme_constant_override("separation", 12)
+	_detail_container.add_theme_constant_override("separation", 10)
 	_detail_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# 初始提示
-	var hint := Label.new()
-	hint.text = "选择左侧条目查看详情"
-	hint.add_theme_font_size_override("font_size", 14)
-	hint.add_theme_color_override("font_color", TEXT_DIM)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hint.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_detail_container.add_child(hint)
+	# 默认欢迎信息
+	var welcome := Label.new()
+	welcome.text = "选择左侧条目以查看详情"
+	welcome.add_theme_font_size_override("font_size", 16)
+	welcome.add_theme_color_override("font_color", COL_TEXT_DIM)
+	welcome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	welcome.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	welcome.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_detail_container.add_child(welcome)
 
 	_detail_scroll.add_child(_detail_container)
-
-	return _detail_scroll
+	right_panel.add_child(_detail_scroll)
+	return right_panel
 
 # ============================================================
-# v5.0: 背景 3D 氛围效果
+# UI 构建 — 装饰元素
 # ============================================================
 
-## 在 UI 背景层叠加微妙的 3D 粒子氛围效果
+func _create_decorative_separator() -> Control:
+	var sep_container := CenterContainer.new()
+	sep_container.custom_minimum_size.y = 12
+
+	var sep := ColorRect.new()
+	sep.custom_minimum_size = Vector2(200, 1)
+	sep.color = COL_SEPARATOR
+	sep_container.add_child(sep)
+
+	return sep_container
+
+func _create_vertical_separator() -> Control:
+	var sep := ColorRect.new()
+	sep.custom_minimum_size.x = 1
+	sep.color = COL_SEPARATOR
+	return sep
+
+# ============================================================
+# 背景 3D 氛围效果
+# ============================================================
+
 func _build_bg_3d_atmosphere() -> void:
-	# 创建背景 3D 视口
+	# 背景 SubViewport 用于微妙的 3D 粒子氛围
+	_bg_3d_viewport = SubViewport.new()
+	_bg_3d_viewport.size = Vector2i(320, 240)
+	_bg_3d_viewport.transparent_bg = true
+	_bg_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_bg_3d_viewport.msaa_3d = SubViewport.MSAA_2X
+
+	var bg_camera := Camera3D.new()
+	bg_camera.position = Vector3(0, 0, 5)
+	bg_camera.fov = 60
+	_bg_3d_viewport.add_child(bg_camera)
+
+	var bg_env := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0, 0, 0, 0)
+	env.glow_enabled = true
+	env.glow_intensity = 0.5
+	env.glow_bloom = 0.3
+	bg_env.environment = env
+	_bg_3d_viewport.add_child(bg_env)
+
+	add_child(_bg_3d_viewport)
+
 	_bg_3d_viewport_container = SubViewportContainer.new()
 	_bg_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bg_3d_viewport_container.stretch = true
 	_bg_3d_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bg_3d_viewport_container.self_modulate = Color(1, 1, 1, 0.3)  # 半透明叠加
-
-	_bg_3d_viewport = SubViewport.new()
-	_bg_3d_viewport.size = Vector2i(1280, 720)
-	_bg_3d_viewport.transparent_bg = true
-	_bg_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_bg_3d_viewport.own_world_3d = true
-
-	# 3D 摄像机
-	var bg_camera := Camera3D.new()
-	bg_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	bg_camera.size = 10.0
-	bg_camera.position = Vector3(0, 10, 0)
-	bg_camera.rotation_degrees = Vector3(-90, 0, 0)
-	_bg_3d_viewport.add_child(bg_camera)
-
-	# 环境（Glow/Bloom）
-	var bg_env_node := WorldEnvironment.new()
-	var bg_env := Environment.new()
-	bg_env.background_mode = Environment.BG_COLOR
-	bg_env.background_color = Color(0, 0, 0, 0)
-	bg_env.glow_enabled = true
-	bg_env.set_glow_level(1, 0.8)
-	bg_env.set_glow_level(3, 0.5)
-	bg_env.glow_intensity = 0.6
-	bg_env.glow_bloom = 0.3
-	bg_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	bg_env.glow_hdr_threshold = 0.5
-	bg_env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	bg_env_node.environment = bg_env
-	_bg_3d_viewport.add_child(bg_env_node)
-
-	# 漂浮粒子（星尘效果）
-	var stardust := GPUParticles3D.new()
-	stardust.name = "StardustParticles"
-	stardust.amount = 64
-	stardust.lifetime = 4.0
-	stardust.emitting = true
-
-	var stardust_mat := ParticleProcessMaterial.new()
-	stardust_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	stardust_mat.emission_box_extents = Vector3(5, 0.5, 5)
-	stardust_mat.direction = Vector3(0, 1, 0)
-	stardust_mat.spread = 30.0
-	stardust_mat.initial_velocity_min = 0.1
-	stardust_mat.initial_velocity_max = 0.3
-	stardust_mat.gravity = Vector3(0, 0, 0)
-	stardust_mat.damping_min = 0.5
-	stardust_mat.damping_max = 1.0
-	stardust_mat.scale_min = 0.02
-	stardust_mat.scale_max = 0.06
-
-	var stardust_gradient := Gradient.new()
-	stardust_gradient.set_color(0, Color(0.6, 0.4, 1.0, 0.0))
-	stardust_gradient.add_point(0.2, Color(0.6, 0.4, 1.0, 0.6))
-	stardust_gradient.add_point(0.8, Color(1.0, 0.85, 0.0, 0.4))
-	stardust_gradient.set_color(1, Color(1.0, 0.85, 0.0, 0.0))
-	var stardust_ramp := GradientTexture1D.new()
-	stardust_ramp.gradient = stardust_gradient
-	stardust_mat.color_ramp = stardust_ramp
-
-	stardust.process_material = stardust_mat
-	_bg_3d_viewport.add_child(stardust)
-
-	# 缓慢旋转的光源（营造氛围）
-	var ambient_light := OmniLight3D.new()
-	ambient_light.light_energy = 0.8
-	ambient_light.light_color = Color(0.6, 0.4, 1.0)
-	ambient_light.omni_range = 8.0
-	ambient_light.position = Vector3(0, 2, 0)
-	_bg_3d_viewport.add_child(ambient_light)
-
-	_bg_3d_viewport_container.add_child(_bg_3d_viewport)
-
-	# 插入到背景之后、主布局之前
+	_bg_3d_viewport_container.modulate.a = 0.15
 	add_child(_bg_3d_viewport_container)
-	move_child(_bg_3d_viewport_container, 1)  # 在 _background 之后
+	move_child(_bg_3d_viewport_container, 1)  # 放在背景之后
 
 # ============================================================
 # 数据获取
@@ -468,22 +549,15 @@ func _select_volume(idx: int) -> void:
 	_current_volume_idx = idx
 	_current_subcat_idx = 0
 
-	# 更新卷标签高亮
 	for i in range(_volume_tabs.get_child_count()):
 		var btn := _volume_tabs.get_child(i) as Button
 		btn.disabled = (i == idx)
 
-	# 更新子分类栏
 	_rebuild_subcat_bar()
-
-	# 更新条目列表
 	_rebuild_entry_list()
-
-	# 更新进度
 	_update_progress()
 
 func _rebuild_subcat_bar() -> void:
-	# 清除旧子分类按钮
 	for child in _subcat_bar.get_children():
 		child.queue_free()
 
@@ -495,8 +569,28 @@ func _rebuild_subcat_bar() -> void:
 		var btn := Button.new()
 		btn.name = "Subcat_%d" % i
 		btn.text = subcat["name"]
-		btn.custom_minimum_size = Vector2(60, 24)
+		btn.custom_minimum_size = Vector2(60, 26)
 		btn.disabled = (i == _current_subcat_idx)
+
+		var btn_style := StyleBoxFlat.new()
+		btn_style.bg_color = COL_ENTRY_BG
+		btn_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+		btn_style.border_width_bottom = 1
+		btn_style.corner_radius_top_left = 4
+		btn_style.corner_radius_top_right = 4
+		btn_style.content_margin_left = 8
+		btn_style.content_margin_right = 8
+		btn.add_theme_stylebox_override("normal", btn_style)
+
+		var btn_active := btn_style.duplicate()
+		btn_active.bg_color = COL_ENTRY_SELECTED
+		btn_active.border_color = COL_ACCENT
+		btn_active.border_width_bottom = 2
+		btn.add_theme_stylebox_override("disabled", btn_active)
+
+		btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+		btn.add_theme_color_override("font_disabled_color", COL_ACCENT)
+		btn.add_theme_font_size_override("font_size", 11)
 		btn.pressed.connect(_on_subcat_selected.bind(i))
 		_subcat_bar.add_child(btn)
 
@@ -505,7 +599,6 @@ func _rebuild_subcat_bar() -> void:
 # ============================================================
 
 func _rebuild_entry_list() -> void:
-	# 清除旧条目
 	for child in _entry_list_container.get_children():
 		child.queue_free()
 
@@ -537,11 +630,33 @@ func _rebuild_entry_list() -> void:
 func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) -> Control:
 	var btn := Button.new()
 	btn.name = "Entry_%s" % entry_id
-	btn.custom_minimum_size.y = 40
+	btn.custom_minimum_size.y = 42
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 	var rarity: int = entry.get("rarity", CodexData.Rarity.COMMON)
 	var rarity_color: Color = CodexData.RARITY_COLORS.get(rarity, Color.WHITE)
+
+	# 条目行样式
+	var row_style := StyleBoxFlat.new()
+	row_style.bg_color = COL_ENTRY_BG
+	row_style.border_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.1)
+	row_style.border_width_left = 2
+	row_style.corner_radius_top_left = 3
+	row_style.corner_radius_bottom_left = 3
+	row_style.content_margin_left = 12
+	row_style.content_margin_right = 8
+	btn.add_theme_stylebox_override("normal", row_style)
+
+	var hover_style := row_style.duplicate()
+	hover_style.bg_color = COL_ENTRY_HOVER
+	hover_style.border_color = rarity_color if is_unlocked else COL_LOCKED
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+	var selected_style := row_style.duplicate()
+	selected_style.bg_color = COL_ENTRY_SELECTED
+	selected_style.border_color = rarity_color if is_unlocked else COL_LOCKED
+	selected_style.border_width_left = 3
+	btn.add_theme_stylebox_override("disabled", selected_style)
 
 	if is_unlocked:
 		var name_text: String = entry.get("name", entry_id)
@@ -549,11 +664,14 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 		var has_demo := CodexData.has_demo(entry_id)
 		var demo_indicator := " ▶" if has_demo else ""
 		btn.text = "%s  —  %s%s" % [name_text, subtitle, demo_indicator] if not subtitle.is_empty() else name_text + demo_indicator
-		# 稀有度颜色指示（通过文字前缀模拟）
 		btn.add_theme_color_override("font_color", rarity_color)
+		btn.add_theme_color_override("font_hover_color", rarity_color.lightened(0.2))
 	else:
-		btn.text = "??? — 未解锁"
-		btn.add_theme_color_override("font_color", LOCKED_TEXT)
+		btn.text = "🔒 ???"
+		btn.add_theme_color_override("font_color", COL_LOCKED)
+		btn.add_theme_color_override("font_hover_color", COL_TEXT_DIM)
+
+	btn.add_theme_font_size_override("font_size", 12)
 
 	if entry_id == _current_entry_id:
 		btn.disabled = true
@@ -562,7 +680,7 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 	return btn
 
 # ============================================================
-# 条目详情页
+# 条目详情页 (§8.2 右栏)
 # ============================================================
 
 func _show_entry_detail(entry_id: String) -> void:
@@ -571,10 +689,7 @@ func _show_entry_detail(entry_id: String) -> void:
 	if entry.is_empty():
 		return
 
-	# 停止当前演示
 	_clear_demo()
-
-	# 清理敌人 3D 预览
 	_cleanup_enemy_preview()
 
 	# 清除旧详情
@@ -587,7 +702,6 @@ func _show_entry_detail(entry_id: String) -> void:
 		_show_locked_detail(entry_id, entry)
 		return
 
-	# 标记为已查看
 	entry_viewed.emit(entry_id)
 
 	# ---- 条目标题 ----
@@ -597,18 +711,18 @@ func _show_entry_detail(entry_id: String) -> void:
 
 	var title_label := Label.new()
 	title_label.text = entry.get("name", entry_id)
-	title_label.add_theme_font_size_override("font_size", 22)
+	title_label.add_theme_font_size_override("font_size", 24)
 	title_label.add_theme_color_override("font_color", rarity_color)
 	_detail_container.add_child(title_label)
 
-	# 副标题和稀有度
+	# 副标题和稀有度标签
 	var subtitle_hbox := HBoxContainer.new()
 	subtitle_hbox.add_theme_constant_override("separation", 12)
 
 	var subtitle_label := Label.new()
 	subtitle_label.text = entry.get("subtitle", "")
 	subtitle_label.add_theme_font_size_override("font_size", 13)
-	subtitle_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	subtitle_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
 	subtitle_hbox.add_child(subtitle_label)
 
 	var rarity_label := Label.new()
@@ -619,38 +733,47 @@ func _show_entry_detail(entry_id: String) -> void:
 
 	_detail_container.add_child(subtitle_hbox)
 
-	# 分隔线
-	_detail_container.add_child(HSeparator.new())
+	# 装饰分割线
+	_detail_container.add_child(_create_decorative_separator())
 
-	# ---- v5.0: 敌人 3D 预览（第三卷条目） ----
+	# ---- 敌人 3D 预览 ----
 	if _is_enemy_entry(entry_id, entry):
 		_build_enemy_3d_preview(entry_id, entry)
 
 	# ---- 描述 ----
 	var desc_label := Label.new()
 	desc_label.text = entry.get("description", "无描述")
-	desc_label.add_theme_font_size_override("font_size", 12)
-	desc_label.add_theme_color_override("font_color", TEXT_PRIMARY)
+	desc_label.add_theme_font_size_override("font_size", 13)
+	desc_label.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_container.add_child(desc_label)
 
-	# ---- 属性表格 (根据条目类型显示不同信息) ----
+	# ---- 属性表格 ----
 	_build_detail_stats(entry_id, entry)
 
-	# ---- ★ 法术演示区域 (v5.0: 2.5D 升级) ----
+	# ---- 法术演示区域 ----
 	if CodexData.has_demo(entry_id):
 		_build_demo_section_25d(entry_id, entry)
 
-	# 重建条目列表以更新选中状态
 	_rebuild_entry_list()
 
 func _show_locked_detail(entry_id: String, entry: Dictionary) -> void:
+	var lock_container := VBoxContainer.new()
+	lock_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	lock_container.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var lock_icon := Label.new()
+	lock_icon.text = "🔒"
+	lock_icon.add_theme_font_size_override("font_size", 48)
+	lock_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lock_container.add_child(lock_icon)
+
 	var lock_label := Label.new()
-	lock_label.text = "🔒 未解锁"
+	lock_label.text = "未解锁"
 	lock_label.add_theme_font_size_override("font_size", 20)
-	lock_label.add_theme_color_override("font_color", LOCKED_TEXT)
+	lock_label.add_theme_color_override("font_color", COL_LOCKED)
 	lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_detail_container.add_child(lock_label)
+	lock_container.add_child(lock_label)
 
 	# 解锁提示
 	var unlock_type: int = entry.get("unlock_type", CodexData.UnlockType.DEFAULT)
@@ -670,20 +793,25 @@ func _show_locked_detail(entry_id: String, entry: Dictionary) -> void:
 	if not hint_text.is_empty():
 		var hint_label := Label.new()
 		hint_label.text = hint_text
-		hint_label.add_theme_font_size_override("font_size", 11)
-		hint_label.add_theme_color_override("font_color", TEXT_DIM)
+		hint_label.add_theme_font_size_override("font_size", 12)
+		hint_label.add_theme_color_override("font_color", COL_TEXT_DIM)
 		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_detail_container.add_child(hint_label)
+		lock_container.add_child(hint_label)
+
+	_detail_container.add_child(lock_container)
+
+# ============================================================
+# 属性表格
+# ============================================================
 
 func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
-	# 根据条目内容动态生成属性面板
 	var stats_grid := GridContainer.new()
 	stats_grid.columns = 2
 	stats_grid.add_theme_constant_override("h_separation", 16)
 	stats_grid.add_theme_constant_override("v_separation", 6)
 
-	# 音符属性 — 显示原始参数和实际转换值
+	# 音符属性
 	if entry.has("stats"):
 		var stats: Dictionary = entry["stats"]
 		var dmg: int = stats.get("dmg", 0)
@@ -699,637 +827,303 @@ func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 	# 和弦属性
 	if entry.has("intervals"):
 		var intervals: Array = entry["intervals"]
-		_add_stat_row(stats_grid, "音程构成", str(intervals))
-	if entry.has("spell_form"):
-		_add_stat_row(stats_grid, "法术形态", str(entry["spell_form"]))
-	if entry.has("multiplier"):
-		_add_stat_row(stats_grid, "伤害倍率", "%.1fx" % entry["multiplier"])
+		_add_stat_row(stats_grid, "音程结构", str(intervals))
+	if entry.has("note_count"):
+		_add_stat_row(stats_grid, "音符数量", str(entry["note_count"]))
 	if entry.has("dissonance"):
-		var diss: float = entry["dissonance"]
-		var diss_warning := " (超过 2.0 触发生命腐蚀)" if diss > 2.0 else ""
-		_add_stat_row(stats_grid, "不和谐度", "%.1f%s" % [diss, diss_warning])
-	if entry.has("fatigue_cost"):
-		_add_stat_row(stats_grid, "疲劳代价", "%.2f" % entry["fatigue_cost"])
-
-	# 节奏型效果
-	if entry.has("effect"):
-		_add_stat_row(stats_grid, "效果", str(entry["effect"]))
-
-	# 调式属性
-	if entry.has("available_keys"):
-		_add_stat_row(stats_grid, "可用音符", str(entry["available_keys"]))
-	if entry.has("passive"):
-		_add_stat_row(stats_grid, "被动效果", str(entry["passive"]))
-	if entry.has("damage_multiplier"):
-		_add_stat_row(stats_grid, "伤害倍率", "%.1fx" % entry["damage_multiplier"])
-
-	# 音色属性
-	if entry.has("family"):
-		_add_stat_row(stats_grid, "音色系别", str(entry["family"]))
-	if entry.has("adsr"):
-		_add_stat_row(stats_grid, "ADSR", str(entry["adsr"]))
-	if entry.has("mechanic"):
-		_add_stat_row(stats_grid, "核心机制", str(entry["mechanic"]))
-	if entry.has("instruments"):
-		_add_stat_row(stats_grid, "代表乐器", str(entry["instruments"]))
+		_add_stat_row(stats_grid, "不和谐度", "%.1f" % entry["dissonance"])
+	if entry.has("damage_mult"):
+		_add_stat_row(stats_grid, "伤害倍率", "%.2fx" % entry["damage_mult"])
 
 	# 敌人属性
 	if entry.has("hp"):
 		_add_stat_row(stats_grid, "生命值", str(entry["hp"]))
-	if entry.has("speed"):
-		_add_stat_row(stats_grid, "移动速度", "%d 像素/秒" % entry["speed"])
 	if entry.has("damage"):
-		_add_stat_row(stats_grid, "接触伤害", str(entry["damage"]))
-	if entry.has("quantized_fps"):
-		_add_stat_row(stats_grid, "量化帧率", "%d FPS" % entry["quantized_fps"])
-	if entry.has("counter_tip"):
-		_add_stat_row(stats_grid, "攻略提示", str(entry["counter_tip"]))
+		_add_stat_row(stats_grid, "伤害", str(entry["damage"]))
+	if entry.has("speed"):
+		_add_stat_row(stats_grid, "移动速度", str(entry["speed"]))
+	if entry.has("xp"):
+		_add_stat_row(stats_grid, "经验值", str(entry["xp"]))
 
-	# Boss 阶段
-	if entry.has("phases"):
-		var phases: Array = entry["phases"]
-		_add_stat_row(stats_grid, "战斗阶段", " → ".join(phases))
-
-	# 修饰符
-	if entry.has("black_key"):
-		_add_stat_row(stats_grid, "对应黑键", str(entry["black_key"]))
-
-	# 和弦进行
-	if entry.has("from"):
-		_add_stat_row(stats_grid, "起始功能", str(entry["from"]))
-	if entry.has("to"):
-		_add_stat_row(stats_grid, "目标功能", str(entry["to"]))
-
-	# 击杀里程碑
-	if entry.has("kill_milestones"):
-		var milestones: Array = entry["kill_milestones"]
-		_add_stat_row(stats_grid, "击杀里程碑", str(milestones))
-
-	# 章节
-	if entry.has("chapter"):
-		_add_stat_row(stats_grid, "所属章节", "第 %d 章" % entry["chapter"])
-
-	# 颜色
-	if entry.has("color"):
-		var c: Color = entry["color"]
-		_add_stat_row(stats_grid, "弹体颜色", "R%.2f G%.2f B%.2f" % [c.r, c.g, c.b])
+	# 修饰符属性
+	if entry.has("effect"):
+		_add_stat_row(stats_grid, "效果", str(entry["effect"]))
+	if entry.has("modifier_type"):
+		_add_stat_row(stats_grid, "类型", str(entry["modifier_type"]))
 
 	if stats_grid.get_child_count() > 0:
-		_detail_container.add_child(HSeparator.new())
+		_detail_container.add_child(_create_decorative_separator())
 		var stats_title := Label.new()
-		stats_title.text = "属性详情"
-		stats_title.add_theme_font_size_override("font_size", 14)
-		stats_title.add_theme_color_override("font_color", ACCENT)
+		stats_title.text = "— 属性 —"
+		stats_title.add_theme_font_size_override("font_size", 13)
+		stats_title.add_theme_color_override("font_color", COL_ACCENT)
+		stats_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_detail_container.add_child(stats_title)
 		_detail_container.add_child(stats_grid)
+	else:
+		stats_grid.queue_free()
 
 func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) -> void:
 	var label := Label.new()
 	label.text = label_text
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	label.custom_minimum_size.x = 120
 	grid.add_child(label)
 
 	var value := Label.new()
 	value.text = value_text
-	value.add_theme_font_size_override("font_size", 11)
-	value.add_theme_color_override("font_color", TEXT_PRIMARY)
-	value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value.add_theme_font_size_override("font_size", 12)
+	value.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
 	grid.add_child(value)
 
 # ============================================================
-# v5.0: 敌人 3D 预览
+# 敌人检测与 3D 预览
 # ============================================================
 
-## 判断条目是否为敌人类型
 func _is_enemy_entry(entry_id: String, entry: Dictionary) -> bool:
-	# 第三卷的所有条目都是敌人
-	var vol := VOLUME_CONFIG[_current_volume_idx] as Dictionary
-	return vol.get("volume", -1) == CodexData.Volume.BESTIARY
+	return entry.has("enemy_type") or entry_id.begins_with("enemy_") or entry_id.begins_with("boss_") or entry_id.begins_with("elite_")
 
-## 构建敌人 3D 预览区域
 func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
-	# 预览区域标题
-	var preview_title := Label.new()
-	preview_title.text = "◆ 3D 预览"
-	preview_title.add_theme_font_size_override("font_size", 12)
-	preview_title.add_theme_color_override("font_color", ACCENT)
-	_detail_container.add_child(preview_title)
+	_cleanup_enemy_preview()
 
-	# 创建预览面板
-	var preview_panel := PanelContainer.new()
-	preview_panel.custom_minimum_size = Vector2(0, 180)
-
-	# SubViewportContainer
-	_enemy_preview_container = SubViewportContainer.new()
-	_enemy_preview_container.custom_minimum_size = Vector2(0, 160)
-	_enemy_preview_container.stretch = true
-	_enemy_preview_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	# SubViewport
 	_enemy_preview_viewport = SubViewport.new()
-	_enemy_preview_viewport.size = Vector2i(400, 160)
+	_enemy_preview_viewport.size = Vector2i(300, 200)
 	_enemy_preview_viewport.transparent_bg = true
 	_enemy_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_enemy_preview_viewport.own_world_3d = true
+	_enemy_preview_viewport.msaa_3d = SubViewport.MSAA_2X
 
-	# 3D 摄像机（正面视角）
 	_enemy_preview_camera = Camera3D.new()
-	_enemy_preview_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_enemy_preview_camera.size = 3.0
 	_enemy_preview_camera.position = Vector3(0, 1, 3)
-	_enemy_preview_camera.rotation_degrees = Vector3(-15, 0, 0)
+	_enemy_preview_camera.look_at(Vector3.ZERO)
+	_enemy_preview_camera.fov = 50
 	_enemy_preview_viewport.add_child(_enemy_preview_camera)
 
-	# 环境（Glow/Bloom）
-	var preview_env_node := WorldEnvironment.new()
-	var preview_env := Environment.new()
-	preview_env.background_mode = Environment.BG_COLOR
-	preview_env.background_color = Color(0, 0, 0, 0)
-	preview_env.glow_enabled = true
-	preview_env.set_glow_level(1, 1.0)
-	preview_env.set_glow_level(3, 0.6)
-	preview_env.glow_intensity = 1.0
-	preview_env.glow_bloom = 0.3
-	preview_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	preview_env.glow_hdr_threshold = 0.6
-	preview_env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	preview_env_node.environment = preview_env
-	_enemy_preview_viewport.add_child(preview_env_node)
+	var env_node := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0, 0, 0, 0)
+	env.ambient_light_color = Color.WHITE
+	env.ambient_light_energy = 0.3
+	env.glow_enabled = true
+	env.glow_intensity = 0.8
+	env_node.environment = env
+	_enemy_preview_viewport.add_child(env_node)
 
-	# 光源
-	var preview_light := DirectionalLight3D.new()
-	preview_light.light_energy = 0.5
-	preview_light.light_color = Color(0.8, 0.9, 1.0)
-	preview_light.rotation_degrees = Vector3(-45, 45, 0)
-	_enemy_preview_viewport.add_child(preview_light)
+	var light := DirectionalLight3D.new()
+	light.position = Vector3(2, 3, 2)
+	light.look_at(Vector3.ZERO)
+	light.light_energy = 1.5
+	_enemy_preview_viewport.add_child(light)
 
-	# 创建敌人 3D 模型
 	_enemy_preview_model = _create_enemy_3d_model(entry_id, entry)
 	_enemy_preview_viewport.add_child(_enemy_preview_model)
 
-	_enemy_preview_container.add_child(_enemy_preview_viewport)
-	preview_panel.add_child(_enemy_preview_container)
-	_detail_container.add_child(preview_panel)
+	add_child(_enemy_preview_viewport)
 
-## v5.1: 根据敌人类型创建差异化 3D 模型（不同敌人类型使用不同几何形态）
+	_enemy_preview_container = SubViewportContainer.new()
+	_enemy_preview_container.custom_minimum_size = Vector2(300, 200)
+	_enemy_preview_container.stretch = true
+	_enemy_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_detail_container.add_child(_enemy_preview_container)
+
 func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
-	var model := Node3D.new()
-	model.name = "EnemyPreviewModel"
+	var root := Node3D.new()
+	var enemy_type: String = entry.get("enemy_type", "static")
+	var color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color.WHITE)
 
-	# 判断敌人类别：Boss > 精英 > 章节敌人 > 基础敌人
-	var is_boss: bool = entry.has("phases")
-	var is_elite: bool = CodexData.VOL3_ELITES.has(entry_id)
-	var is_chapter: bool = CodexData.VOL3_CHAPTER_ENEMIES.has(entry_id)
-
-	# 获取敌人颜色：优先使用数据中的 color 字段，其次根据 entry_id 推断类型
-	var enemy_color: Color = entry.get("color", Color(0.9, 0.3, 0.6))
-	if not entry.has("color"):
-		# 根据 entry_id 推断敌人类型颜色
-		if "static" in entry_id:
-			enemy_color = ENEMY_TYPE_COLORS["static"]
-		elif "silence" in entry_id:
-			enemy_color = ENEMY_TYPE_COLORS["silence"]
-		elif "screech" in entry_id:
-			enemy_color = ENEMY_TYPE_COLORS["screech"]
-		elif "pulse" in entry_id or "metronome" in entry_id:
-			enemy_color = ENEMY_TYPE_COLORS["pulse"]
-		elif "wall" in entry_id:
-			enemy_color = ENEMY_TYPE_COLORS["wall"]
-		elif is_boss:
-			# Boss 根据章节分配颜色
-			var chapter: int = entry.get("chapter", 1)
-			match chapter:
-				1: enemy_color = Color(0.8, 0.7, 1.0)   # 毕达哥拉斯 - 淡紫
-				2: enemy_color = Color(1.0, 0.85, 0.4)  # 圭多 - 金色
-				3: enemy_color = Color(0.4, 0.6, 1.0)   # 巴赫 - 蓝色
-				4: enemy_color = Color(1.0, 0.6, 0.8)   # 莫扎特 - 粉色
-				5: enemy_color = Color(1.0, 0.3, 0.2)   # 贝多芬 - 红色
-				_: enemy_color = Color(0.9, 0.3, 0.6)
-		elif is_elite:
-			var chapter: int = entry.get("chapter", 1)
-			match chapter:
-				1: enemy_color = Color(0.6, 0.5, 1.0)
-				2: enemy_color = Color(0.9, 0.75, 0.3)
-				3: enemy_color = Color(0.3, 0.5, 0.9)
-				4: enemy_color = Color(0.9, 0.5, 0.7)
-				5: enemy_color = Color(0.9, 0.2, 0.15)
-				_: enemy_color = Color(0.7, 0.3, 0.8)
-		elif is_chapter:
-			var chapter: int = entry.get("chapter", 1)
-			match chapter:
-				1: enemy_color = Color(0.5, 0.4, 0.8)
-				2: enemy_color = Color(0.8, 0.65, 0.2)
-				3: enemy_color = Color(0.2, 0.4, 0.8)
-				4: enemy_color = Color(0.8, 0.4, 0.6)
-				5: enemy_color = Color(0.8, 0.15, 0.1)
-				_: enemy_color = Color(0.6, 0.3, 0.7)
-
-	# ---- 核心几何体：根据敌人类型创建不同形态 ----
+	# 简单几何体代表敌人
 	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "EnemyCoreMesh"
+	var mesh: Mesh
 
-	if is_boss:
-		# Boss：大型多层旋转光环体
-		var chapter: int = entry.get("chapter", 1)
-		match chapter:
-			1:  # 毕达哥拉斯：多层旋转光环（几何体）
-				var sphere := SphereMesh.new()
-				sphere.radius = 0.4
-				sphere.height = 0.8
-				sphere.radial_segments = 16
-				sphere.rings = 8
-				mesh_instance.mesh = sphere
-			2:  # 圭多：五线谱架构师
-				var cylinder := CylinderMesh.new()
-				cylinder.top_radius = 0.3
-				cylinder.bottom_radius = 0.5
-				cylinder.height = 0.8
-				cylinder.radial_segments = 8
-				mesh_instance.mesh = cylinder
-			3:  # 巴赫：赋格大师
-				var prism := PrismMesh.new()
-				prism.size = Vector3(0.8, 0.9, 0.8)
-				mesh_instance.mesh = prism
-			4:  # 莫扎特：古典完形
-				var sphere := SphereMesh.new()
-				sphere.radius = 0.35
-				sphere.height = 0.7
-				sphere.radial_segments = 32
-				sphere.rings = 16
-				mesh_instance.mesh = sphere
-			5:  # 贝多芬：狂想者
-				var prism := PrismMesh.new()
-				prism.size = Vector3(0.9, 1.0, 0.9)
-				mesh_instance.mesh = prism
-			_:
-				var prism := PrismMesh.new()
-				prism.size = Vector3(0.8, 0.8, 0.8)
-				mesh_instance.mesh = prism
-	elif is_elite:
-		# 精英：菱形体 + 光晕环，根据章节微调
-		var prism := PrismMesh.new()
-		prism.size = Vector3(0.5, 0.6, 0.5)
-		mesh_instance.mesh = prism
-	elif is_chapter:
-		# 章节敌人：根据描述创建不同形态
-		var chapter: int = entry.get("chapter", 1)
-		if "grid" in entry_id or "metronome" in entry_id:
-			# 网格/节拍：立方体
-			var box := BoxMesh.new()
-			box.size = Vector3(0.35, 0.35, 0.35)
-			mesh_instance.mesh = box
-		elif "scribe" in entry_id:
-			# 抄谱员：细长圆柱
-			var cylinder := CylinderMesh.new()
-			cylinder.top_radius = 0.1
-			cylinder.bottom_radius = 0.15
-			cylinder.height = 0.5
-			cylinder.radial_segments = 6
-			mesh_instance.mesh = cylinder
-		elif "choir" in entry_id:
-			# 唱诗班：球体群
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.15
-			sphere.height = 0.3
-			mesh_instance.mesh = sphere
-		elif "counterpoint" in entry_id:
-			# 对位爬虫：双棱柱
-			var prism := PrismMesh.new()
-			prism.size = Vector3(0.3, 0.4, 0.3)
-			mesh_instance.mesh = prism
-		elif "dancer" in entry_id or "minuet" in entry_id:
-			# 小步舞者：球体
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.2
-			sphere.height = 0.4
-			sphere.radial_segments = 12
-			sphere.rings = 6
-			mesh_instance.mesh = sphere
-		elif "crescendo" in entry_id or "surge" in entry_id:
-			# 渐强浪潮：大型球体
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.3
-			sphere.height = 0.6
-			mesh_instance.mesh = sphere
-		elif "fate" in entry_id or "knocker" in entry_id:
-			# 命运叩门者：棱柱体
-			var prism := PrismMesh.new()
-			prism.size = Vector3(0.35, 0.5, 0.35)
-			mesh_instance.mesh = prism
-		else:
-			var box := BoxMesh.new()
-			box.size = Vector3(0.35, 0.35, 0.35)
-			mesh_instance.mesh = box
-	else:
-		# 基础敌人：根据敌人类型创建不同几何形态
-		if "static" in entry_id:
-			# 底噪：小型锯齿立方体（红色）
-			var box := BoxMesh.new()
-			box.size = Vector3(0.25, 0.25, 0.25)
-			mesh_instance.mesh = box
-		elif "silence" in entry_id:
-			# 寂静：深色旋涡球体（黑洞感）
-			var sphere := SphereMesh.new()
-			sphere.radius = 0.3
-			sphere.height = 0.6
-			sphere.radial_segments = 16
-			sphere.rings = 8
-			mesh_instance.mesh = sphere
-		elif "screech" in entry_id:
-			# 尖啸：尖锐三棱柱（黄白色）
-			var prism := PrismMesh.new()
-			prism.size = Vector3(0.2, 0.45, 0.2)
-			mesh_instance.mesh = prism
-		elif "pulse" in entry_id:
-			# 脉冲：菱形体（电蓝色）
-			var prism := PrismMesh.new()
-			prism.size = Vector3(0.3, 0.35, 0.3)
-			mesh_instance.mesh = prism
-		elif "wall" in entry_id:
-			# 音墙：巨大扁平方块（灰紫色）
-			var box := BoxMesh.new()
-			box.size = Vector3(0.5, 0.3, 0.5)
-			mesh_instance.mesh = box
-		else:
-			var box := BoxMesh.new()
-			box.size = Vector3(0.3, 0.3, 0.3)
-			mesh_instance.mesh = box
+	match enemy_type:
+		"static":
+			mesh = BoxMesh.new()
+		"silence":
+			mesh = SphereMesh.new()
+		"screech":
+			mesh = CylinderMesh.new()
+		"pulse":
+			mesh = TorusMesh.new()
+		_:
+			mesh = BoxMesh.new()
 
-	# 自发光材质
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = enemy_color
-	mat.emission_enabled = true
-	mat.emission = enemy_color
-	mat.emission_energy_multiplier = 3.0 if is_boss else (2.5 if is_elite else 1.5)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color.a = 0.9
-	mesh_instance.material_override = mat
-	model.add_child(mesh_instance)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 2.0
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	root.add_child(mesh_instance)
 
-	# 核心光源
-	var point_light := OmniLight3D.new()
-	point_light.light_energy = 2.0 if is_boss else (1.5 if is_elite else 0.8)
-	point_light.light_color = enemy_color
-	point_light.omni_range = 4.0 if is_boss else (3.0 if is_elite else 2.0)
-	point_light.omni_attenuation = 1.5
-	model.add_child(point_light)
+	return root
 
-	# Boss 和精英：外层光晕环
-	if is_elite or is_boss:
-		var halo := MeshInstance3D.new()
-		var torus := TorusMesh.new()
-		torus.inner_radius = 0.4 if is_boss else 0.3
-		torus.outer_radius = 0.5 if is_boss else 0.4
-		torus.rings = 16
-		torus.ring_segments = 12
-		halo.mesh = torus
-		halo.rotation_degrees = Vector3(90, 0, 0)
-
-		var halo_mat := StandardMaterial3D.new()
-		halo_mat.albedo_color = Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.5)
-		halo_mat.emission_enabled = true
-		halo_mat.emission = enemy_color
-		halo_mat.emission_energy_multiplier = 2.0
-		halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		halo.material_override = halo_mat
-		model.add_child(halo)
-
-	# Boss：额外的装饰元素（旋转光环）
-	if is_boss:
-		var ring1 := MeshInstance3D.new()
-		var torus1 := TorusMesh.new()
-		torus1.inner_radius = 0.55
-		torus1.outer_radius = 0.6
-		torus1.rings = 24
-		torus1.ring_segments = 16
-		ring1.mesh = torus1
-		ring1.rotation_degrees = Vector3(45, 0, 0)
-
-		var ring_mat := StandardMaterial3D.new()
-		ring_mat.albedo_color = Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.3)
-		ring_mat.emission_enabled = true
-		ring_mat.emission = enemy_color
-		ring_mat.emission_energy_multiplier = 1.5
-		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		ring1.material_override = ring_mat
-		model.add_child(ring1)
-
-		var ring2 := MeshInstance3D.new()
-		var torus2 := TorusMesh.new()
-		torus2.inner_radius = 0.65
-		torus2.outer_radius = 0.7
-		torus2.rings = 24
-		torus2.ring_segments = 16
-		ring2.mesh = torus2
-		ring2.rotation_degrees = Vector3(0, 0, 45)
-		ring2.material_override = ring_mat
-		model.add_child(ring2)
-
-	# 寂静敌人：额外的吸收粒子（黑洞效果）
-	if "silence" in entry_id and not is_boss and not is_elite:
-		var absorb := GPUParticles3D.new()
-		absorb.amount = 12
-		absorb.lifetime = 1.5
-		absorb.emitting = true
-
-		var absorb_mat := ParticleProcessMaterial.new()
-		absorb_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-		absorb_mat.emission_sphere_radius = 0.5
-		absorb_mat.direction = Vector3(0, 0, 0)
-		absorb_mat.spread = 180.0
-		absorb_mat.initial_velocity_min = -0.3
-		absorb_mat.initial_velocity_max = -0.1
-		absorb_mat.gravity = Vector3(0, 0, 0)
-		absorb_mat.attractor_interaction_enabled = true
-		absorb_mat.scale_min = 0.01
-		absorb_mat.scale_max = 0.04
-
-		var absorb_gradient := Gradient.new()
-		absorb_gradient.set_color(0, Color(0.3, 0.1, 0.5, 0.6))
-		absorb_gradient.set_color(1, Color(0.1, 0.05, 0.2, 0.0))
-		var absorb_ramp := GradientTexture1D.new()
-		absorb_ramp.gradient = absorb_gradient
-		absorb_mat.color_ramp = absorb_ramp
-
-		absorb.process_material = absorb_mat
-		model.add_child(absorb)
-
-	# 通用粒子效果
-	var particles := GPUParticles3D.new()
-	particles.amount = 16 if is_boss else (12 if is_elite else 8)
-	particles.lifetime = 1.0
-	particles.emitting = true
-
-	var p_mat := ParticleProcessMaterial.new()
-	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	p_mat.emission_sphere_radius = 0.2
-	p_mat.direction = Vector3(0, 1, 0)
-	p_mat.spread = 60.0
-	p_mat.initial_velocity_min = 0.2
-	p_mat.initial_velocity_max = 0.5
-	p_mat.gravity = Vector3(0, 0, 0)
-	p_mat.damping_min = 1.0
-	p_mat.damping_max = 2.0
-	p_mat.scale_min = 0.02
-	p_mat.scale_max = 0.06
-
-	var p_gradient := Gradient.new()
-	p_gradient.set_color(0, Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.8))
-	p_gradient.set_color(1, Color(enemy_color.r, enemy_color.g, enemy_color.b, 0.0))
-	var p_ramp := GradientTexture1D.new()
-	p_ramp.gradient = p_gradient
-	p_mat.color_ramp = p_ramp
-
-	particles.process_material = p_mat
-	model.add_child(particles)
-
-	return model
-
-## 清理敌人 3D 预览
 func _cleanup_enemy_preview() -> void:
+	if _enemy_preview_viewport and is_instance_valid(_enemy_preview_viewport):
+		_enemy_preview_viewport.queue_free()
+		_enemy_preview_viewport = null
+	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):
+		_enemy_preview_container.queue_free()
+		_enemy_preview_container = null
 	_enemy_preview_model = null
-	# SubViewport 会随 _detail_container 的子节点一起被 queue_free
 
 # ============================================================
-# ★ v5.0: 法术演示区域 (2.5D 升级版)
+# 法术演示区域 (2.5D)
 # ============================================================
 
-## 构建纯 3D 法术演示区域（v5.1: 移除旧 2D 层，统一为 3D 渲染）
 func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
-	var demo_config := CodexData.get_demo_config(entry_id)
-	if demo_config.is_empty():
-		return
+	_detail_container.add_child(_create_decorative_separator())
 
-	_detail_container.add_child(HSeparator.new())
+	_demo_section = VBoxContainer.new()
+	_demo_section.add_theme_constant_override("separation", 8)
 
-	# 演示区域标题
 	var demo_title := Label.new()
-	demo_title.text = "▶ 法术演示"
+	demo_title.text = "— 法术演示 —"
 	demo_title.add_theme_font_size_override("font_size", 14)
-	demo_title.add_theme_color_override("font_color", GOLD)
-	_detail_container.add_child(demo_title)
+	demo_title.add_theme_color_override("font_color", COL_ACCENT)
+	demo_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_demo_section.add_child(demo_title)
 
-	# 演示说明
+	# 演示信息
+	var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})
 	_demo_info_label = Label.new()
-	_demo_info_label.text = demo_config.get("demo_desc", "点击下方按钮查看法术效果。弹体使用 3D 渲染管线呈现。")
+	_demo_info_label.text = demo_config.get("demo_desc", "点击施放按钮查看效果")
 	_demo_info_label.add_theme_font_size_override("font_size", 11)
-	_demo_info_label.add_theme_color_override("font_color", TEXT_SECONDARY)
+	_demo_info_label.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
 	_demo_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_detail_container.add_child(_demo_info_label)
+	_demo_section.add_child(_demo_info_label)
 
-	# 演示视口容器（带边框背景）
-	var demo_panel := PanelContainer.new()
-	demo_panel.custom_minimum_size = Vector2(0, 240)
-
-	# ---- v5.1: 纯 3D 渲染层（移除旧 2D 弹体层，避免 2D/3D 重叠） ----
-	_demo_3d_viewport_container = SubViewportContainer.new()
-	_demo_3d_viewport_container.custom_minimum_size = Vector2(0, 220)
-	_demo_3d_viewport_container.stretch = true
-	_demo_3d_viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
+	# 2.5D 演示视口
 	_demo_3d_viewport = SubViewport.new()
-	_demo_3d_viewport.size = Vector2i(600, 220)
+	_demo_3d_viewport.size = Vector2i(600, 300)
 	_demo_3d_viewport.transparent_bg = false
 	_demo_3d_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_demo_3d_viewport.own_world_3d = true
+	_demo_3d_viewport.msaa_3d = SubViewport.MSAA_2X
 
-	# 3D 正交摄像机（俯视，居中对准演示区域）
 	_demo_3d_camera = Camera3D.new()
-	_demo_3d_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_demo_3d_camera.size = 5.0
-	_demo_3d_camera.position = Vector3(2.5, 10, 1.1)
-	_demo_3d_camera.rotation_degrees = Vector3(-90, 0, 0)
+	_demo_3d_camera.position = Vector3(0, 8, 8)
+	_demo_3d_camera.look_at(Vector3.ZERO)
+	_demo_3d_camera.fov = 45
 	_demo_3d_viewport.add_child(_demo_3d_camera)
 
-	# WorldEnvironment（Glow/Bloom — 与 main_game 一致）
 	_demo_3d_env = WorldEnvironment.new()
-	var demo_env := Environment.new()
-	demo_env.background_mode = Environment.BG_COLOR
-	demo_env.background_color = DEMO_BG
-	demo_env.glow_enabled = true
-	demo_env.set_glow_level(1, 1.0)
-	demo_env.set_glow_level(3, 0.8)
-	demo_env.set_glow_level(5, 0.5)
-	demo_env.glow_intensity = 0.8
-	demo_env.glow_strength = 1.0
-	demo_env.glow_bloom = 0.2
-	demo_env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	demo_env.glow_hdr_threshold = 0.8
-	demo_env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	demo_env.adjustment_enabled = true
-	demo_env.adjustment_contrast = 1.1
-	demo_env.adjustment_saturation = 1.2
-	_demo_3d_env.environment = demo_env
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(COL_DEMO_BG)
+	env.ambient_light_color = Color(0.3, 0.25, 0.5)
+	env.ambient_light_energy = 0.4
+	env.glow_enabled = true
+	env.glow_intensity = 0.6
+	env.glow_bloom = 0.4
+	_demo_3d_env.environment = env
 	_demo_3d_viewport.add_child(_demo_3d_env)
 
-	# 方向光
 	_demo_3d_light = DirectionalLight3D.new()
-	_demo_3d_light.light_energy = 0.3
-	_demo_3d_light.light_color = Color(0.8, 0.9, 1.0)
-	_demo_3d_light.rotation_degrees = Vector3(-45, 45, 0)
+	_demo_3d_light.position = Vector3(3, 5, 3)
+	_demo_3d_light.look_at(Vector3.ZERO)
+	_demo_3d_light.light_energy = 1.2
 	_demo_3d_viewport.add_child(_demo_3d_light)
 
-	# 3D 实体层（用于放置弹体和敌人的 3D 代理）
 	_demo_3d_entity_layer = Node3D.new()
-	_demo_3d_entity_layer.name = "DemoEntityLayer3D"
+	_demo_3d_entity_layer.name = "EntityLayer"
 	_demo_3d_viewport.add_child(_demo_3d_entity_layer)
 
-	# ★ v5.1: 在演示区域添加敌人目标
-	_spawn_demo_enemies()
+	_create_demo_grid()
 
-	# 3D 地面网格（替代旧 2D 网格）
-	_create_demo_3d_ground()
+	add_child(_demo_3d_viewport)
 
-	_demo_3d_viewport_container.add_child(_demo_3d_viewport)
+	_demo_3d_viewport_container = SubViewportContainer.new()
+	_demo_3d_viewport_container.custom_minimum_size = Vector2(600, 300)
+	_demo_3d_viewport_container.stretch = true
+
+	var demo_panel := PanelContainer.new()
+	var demo_style := StyleBoxFlat.new()
+	demo_style.bg_color = COL_DEMO_BG
+	demo_style.border_color = COL_ACCENT
+	demo_style.border_width_left = 1
+	demo_style.border_width_right = 1
+	demo_style.border_width_top = 1
+	demo_style.border_width_bottom = 1
+	demo_style.corner_radius_top_left = 6
+	demo_style.corner_radius_top_right = 6
+	demo_style.corner_radius_bottom_left = 6
+	demo_style.corner_radius_bottom_right = 6
+	demo_panel.add_theme_stylebox_override("panel", demo_style)
 	demo_panel.add_child(_demo_3d_viewport_container)
-	_detail_container.add_child(demo_panel)
+	_demo_section.add_child(demo_panel)
 
-	# 控制按钮栏
-	var btn_bar := HBoxContainer.new()
-	btn_bar.add_theme_constant_override("separation", 8)
+	# 控制按钮
+	var btn_hbox := HBoxContainer.new()
+	btn_hbox.add_theme_constant_override("separation", 12)
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	_demo_cast_btn = Button.new()
-	_demo_cast_btn.text = "▶ 施放演示"
-	_demo_cast_btn.custom_minimum_size = Vector2(120, 32)
+	_demo_cast_btn.text = "▶ 施放"
+	_demo_cast_btn.custom_minimum_size = Vector2(100, 32)
 	_demo_cast_btn.pressed.connect(_on_demo_cast.bind(entry_id))
-	btn_bar.add_child(_demo_cast_btn)
+	var cast_style := StyleBoxFlat.new()
+	cast_style.bg_color = Color(COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 0.3)
+	cast_style.border_color = COL_ACCENT
+	cast_style.border_width_left = 1
+	cast_style.border_width_right = 1
+	cast_style.border_width_top = 1
+	cast_style.border_width_bottom = 1
+	cast_style.corner_radius_top_left = 4
+	cast_style.corner_radius_top_right = 4
+	cast_style.corner_radius_bottom_left = 4
+	cast_style.corner_radius_bottom_right = 4
+	cast_style.content_margin_left = 12
+	cast_style.content_margin_right = 12
+	_demo_cast_btn.add_theme_stylebox_override("normal", cast_style)
+	_demo_cast_btn.add_theme_color_override("font_color", COL_TEXT_PRIMARY)
+	btn_hbox.add_child(_demo_cast_btn)
 
 	_demo_clear_btn = Button.new()
 	_demo_clear_btn.text = "✕ 清除"
-	_demo_clear_btn.custom_minimum_size = Vector2(80, 32)
+	_demo_clear_btn.custom_minimum_size = Vector2(100, 32)
 	_demo_clear_btn.pressed.connect(_clear_demo)
-	btn_bar.add_child(_demo_clear_btn)
+	var clear_style := cast_style.duplicate()
+	clear_style.bg_color = Color(0.3, 0.1, 0.1, 0.3)
+	clear_style.border_color = Color(0.8, 0.3, 0.3)
+	_demo_clear_btn.add_theme_stylebox_override("normal", clear_style)
+	_demo_clear_btn.add_theme_color_override("font_color", COL_TEXT_SECONDARY)
+	btn_hbox.add_child(_demo_clear_btn)
+
+	_demo_section.add_child(btn_hbox)
 
 	# 状态标签
 	_demo_status_label = Label.new()
 	_demo_status_label.text = ""
 	_demo_status_label.add_theme_font_size_override("font_size", 10)
-	_demo_status_label.add_theme_color_override("font_color", TEXT_DIM)
-	_demo_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn_bar.add_child(_demo_status_label)
+	_demo_status_label.add_theme_color_override("font_color", COL_TEXT_DIM)
+	_demo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_demo_section.add_child(_demo_status_label)
 
-	_detail_container.add_child(btn_bar)
+	_detail_container.add_child(_demo_section)
 
-## 创建演示区域的网格背景
 func _create_demo_grid() -> Node2D:
-	var grid := Node2D.new()
-	grid.z_index = -1
-	# 网格将在 _draw 中绘制（通过自定义 Node2D）
-	return grid
+	# 在 3D 场景中创建地面网格
+	if _demo_3d_entity_layer:
+		var grid_mesh := MeshInstance3D.new()
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(20, 20)
+		grid_mesh.mesh = plane
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.05, 0.04, 0.1)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		grid_mesh.material_override = mat
+		_demo_3d_entity_layer.add_child(grid_mesh)
+	return null
 
-## 演示施法按钮回调
 func _on_demo_cast(entry_id: String) -> void:
-	var demo_config := CodexData.get_demo_config(entry_id)
-	if demo_config.is_empty():
-		return
-
-	# v5.1: 清除 3D 层的旧弹体代理（保留敌人和地面）
-	_clear_demo_3d_projectiles()
-
 	_demo_active = true
 	_demo_timer = 0.0
+
+	var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})
+	if demo_config.is_empty():
+		_update_demo_status("无可用演示配置")
+		return
 
 	var demo_type: String = demo_config.get("demo_type", "")
 	match demo_type:
@@ -1344,521 +1138,105 @@ func _on_demo_cast(entry_id: String) -> void:
 		_:
 			_update_demo_status("未知演示类型: %s" % demo_type)
 
-## ★ 演示施放音符（v5.1: 统一使用 3D 渲染）
 func _demo_cast_note(config: Dictionary) -> void:
-	var white_key: int = config.get("demo_note", 0)
-	var spell_data := _build_demo_spell_data(white_key, -1)
-
-	# 调整弹体位置和方向以适应演示视口
-	spell_data["_demo_origin"] = Vector2(50, 110)  # 从左侧发射
-	spell_data["_demo_direction"] = Vector2.RIGHT
-
-	# v5.1: 仅在 3D 层生成发光弹体
+	var note_key: int = config.get("demo_note", 0)
+	var spell_data := _build_demo_spell_data(note_key, -1)
 	_spawn_demo_3d_projectile(spell_data)
+	_update_demo_status("施放 %s 音符" % MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?"))
 
-	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
-	_update_demo_status("施放: %s | DMG=%.0f SPD=%.0f DUR=%.1fs SIZE=%.0fpx" % [
-		note_name, spell_data["damage"], spell_data["speed"],
-		spell_data["duration"], spell_data["size"]
-	])
-
-## ★ 演示施放带修饰符的音符（v5.2: 修饰符视觉效果增强）
 func _demo_cast_note_modifier(config: Dictionary) -> void:
-	var white_key: int = config.get("demo_note", 0)
-	var modifier: int = config.get("demo_modifier", -1)
-	var spell_data := _build_demo_spell_data(white_key, modifier)
-
-	spell_data["_demo_origin"] = Vector2(50, 110)
-	spell_data["_demo_direction"] = Vector2.RIGHT
-
-	# v5.2: 根据修饰符类型生成不同的 3D 弹体视觉效果
-	match modifier:
-		MusicData.ModifierEffect.PIERCE:
-			_spawn_demo_3d_projectile_pierce(spell_data)
-		MusicData.ModifierEffect.HOMING:
-			_spawn_demo_3d_projectile_homing(spell_data)
-		MusicData.ModifierEffect.SPLIT:
-			_spawn_demo_3d_projectile_split(spell_data)
-		MusicData.ModifierEffect.ECHO:
-			_spawn_demo_3d_projectile_echo(spell_data)
-		MusicData.ModifierEffect.SCATTER:
-			_spawn_demo_3d_projectile_scatter(spell_data)
-		_:
-			_spawn_demo_3d_projectile(spell_data)
-
-	var note_name: String = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
-	var mod_name := _get_modifier_display_name(modifier)
-	_update_demo_status("施放: %s + %s" % [note_name, mod_name])
-
-## ★ 演示施放和弦法术（v5.2: 根据法术形态生成独特视觉效果）
-func _demo_cast_chord(config: Dictionary) -> void:
-	var chord_type: int = config.get("demo_chord_type", 0)
-	var spell_info: Dictionary = MusicData.CHORD_SPELL_MAP.get(chord_type, {})
-	if spell_info.is_empty():
-		_update_demo_status("未知和弦类型")
-		return
-
-	# 构建和弦 spell_data（与 SpellcraftSystem._execute_chord_cast 一致）
-	var root_stats: Dictionary = MusicData.WHITE_KEY_STATS.get(MusicData.WhiteKey.C, {})
-	var base_dmg: float = root_stats.get("dmg", 3) * MusicData.PARAM_CONVERSION["dmg_per_point"]
-	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
-	var dissonance: float = MusicData.CHORD_DISSONANCE.get(chord_type, 0.0)
-
-	var chord_data := {
-		"type": "chord",
-		"chord_type": chord_type,
-		"spell_form": spell_info.get("form", 0),
-		"spell_name": spell_info.get("name", ""),
-		"damage": base_dmg * chord_multiplier,
-		"dissonance": dissonance,
-		"modifier": -1,
-		"timbre": MusicData.TimbreType.NONE,
-		"accuracy_offset": 0.0,
-	}
-
-	# v5.2: 根据法术形态生成对应的 3D 视觉效果
-	var spell_form: int = chord_data.get("spell_form", 0)
-	match spell_form:
-		MusicData.SpellForm.ENHANCED_PROJECTILE:
-			_spawn_demo_3d_chord_enhanced_projectile(chord_data)
-		MusicData.SpellForm.DOT_PROJECTILE:
-			_spawn_demo_3d_chord_dot(chord_data)
-		MusicData.SpellForm.EXPLOSIVE:
-			_spawn_demo_3d_chord_explosive(chord_data)
-		MusicData.SpellForm.SHOCKWAVE:
-			_spawn_demo_3d_chord_shockwave(chord_data)
-		MusicData.SpellForm.FIELD:
-			_spawn_demo_3d_chord_field(chord_data)
-		MusicData.SpellForm.DIVINE_STRIKE:
-			_spawn_demo_3d_chord_divine_strike(chord_data)
-		MusicData.SpellForm.SHIELD_HEAL:
-			_spawn_demo_3d_chord_shield_heal(chord_data)
-		MusicData.SpellForm.SUMMON:
-			_spawn_demo_3d_chord_summon(chord_data)
-		MusicData.SpellForm.CHARGED:
-			_spawn_demo_3d_chord_charged(chord_data)
-		MusicData.SpellForm.STORM_FIELD:
-			_spawn_demo_3d_chord_storm_field(chord_data)
-		MusicData.SpellForm.HOLY_DOMAIN:
-			_spawn_demo_3d_chord_holy_domain(chord_data)
-		MusicData.SpellForm.ANNIHILATION_RAY:
-			_spawn_demo_3d_chord_annihilation_ray(chord_data)
-		MusicData.SpellForm.TIME_RIFT:
-			_spawn_demo_3d_chord_time_rift(chord_data)
-		MusicData.SpellForm.SYMPHONY_STORM:
-			_spawn_demo_3d_chord_symphony_storm(chord_data)
-		MusicData.SpellForm.FINALE:
-			_spawn_demo_3d_chord_finale(chord_data)
-		_:
-			_spawn_demo_3d_chord_burst(chord_data)
-
-	_update_demo_status("施放和弦: %s | DMG=%.0f | 不和谐度=%.1f" % [
-		spell_info.get("name", ""), base_dmg * chord_multiplier, dissonance
+	var note_key: int = config.get("demo_note", 0)
+	var modifier: int = config.get("demo_modifier", 0)
+	var spell_data := _build_demo_spell_data(note_key, modifier)
+	_spawn_demo_3d_projectile(spell_data)
+	_update_demo_status("施放 %s + %s" % [
+		MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?"),
+		_get_modifier_display_name(modifier)
 	])
 
-## ★ 演示节奏型效果（v5.2: 根据节奏型生成独特视觉效果）
+func _demo_cast_chord(config: Dictionary) -> void:
+	var chord_type: String = config.get("demo_chord_type", "major_triad")
+	_update_demo_status("施放 %s 和弦" % chord_type)
+	# 创建简单的和弦视觉效果
+	if _demo_3d_entity_layer:
+		var sphere := MeshInstance3D.new()
+		sphere.mesh = SphereMesh.new()
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = COL_ACCENT
+		mat.emission_enabled = true
+		mat.emission = COL_ACCENT
+		mat.emission_energy_multiplier = 3.0
+		sphere.material_override = mat
+		sphere.position = Vector3(0, 1, 0)
+		_demo_3d_entity_layer.add_child(sphere)
+		# 动画
+		var tween := create_tween()
+		tween.tween_property(sphere, "scale", Vector3(3, 3, 3), 0.5)
+		tween.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.8)
+		tween.tween_callback(sphere.queue_free)
+
 func _demo_cast_rhythm(config: Dictionary) -> void:
-	var white_key: int = config.get("demo_note", 4)  # 默认 G
-	var pattern_type: String = config.get("demo_rhythm_pattern", "full")
+	_update_demo_status("节奏型演示")
 
-	# v5.2: 根据节奏型模式生成不同数量和行为的弹体
-	match pattern_type:
-		"full":
-			# 均匀八分音符：连射效果 — 每拍 2 个弹体，共 4 拍 = 8 个弹体
-			for i in range(4):
-				for j in range(2):
-					var spell_data := _build_demo_spell_data(white_key, -1)
-					_apply_demo_rhythm_effect(spell_data, pattern_type)
-					spell_data["_demo_origin"] = Vector2(50, 30 + i * 50 + j * 20)
-					spell_data["_demo_direction"] = Vector2.RIGHT
-					spell_data["color"] = Color(0.0, 1.0, 0.8, 0.8)  # 连射特征色
-					_spawn_demo_3d_projectile(spell_data)
-			_update_demo_status("节奏型: 均匀八分音符「连射」| 每拍×2弹体 | DMG×0.6 SPD×1.2 SIZE×0.7")
-		"dotted":
-			# 附点节奏：重击效果 — 增大弹体 + 击退指示
-			for i in range(3):
-				var spell_data := _build_demo_spell_data(white_key, -1)
-				_apply_demo_rhythm_effect(spell_data, pattern_type)
-				spell_data["_demo_origin"] = Vector2(50, 40 + i * 60)
-				spell_data["_demo_direction"] = Vector2.RIGHT
-				spell_data["color"] = Color(1.0, 0.6, 0.2)  # 重击橙色
-				_spawn_demo_3d_projectile_with_knockback(spell_data)
-			_update_demo_status("节奏型: 附点节奏「重击」| DMG×1.4 SIZE×1.2 + 击退")
-		"syncopated":
-			# 切分节奏：闪避射击 — 弹体 + 后退位移视觉
-			for i in range(3):
-				var spell_data := _build_demo_spell_data(white_key, -1)
-				_apply_demo_rhythm_effect(spell_data, pattern_type)
-				spell_data["_demo_origin"] = Vector2(80, 40 + i * 60)  # 稍微靠右（模拟后退后的位置）
-				spell_data["_demo_direction"] = Vector2.RIGHT
-				spell_data["color"] = Color(0.5, 0.8, 1.0)  # 闪避蓝色
-				_spawn_demo_3d_projectile_with_dodge(spell_data)
-			_update_demo_status("节奏型: 切分节奏「闪避射击」| 发射时后退位移 | SPD×1.3")
-		"swing":
-			# 摇摆节奏：S 型波浪弹道
-			for i in range(3):
-				var spell_data := _build_demo_spell_data(white_key, -1)
-				_apply_demo_rhythm_effect(spell_data, pattern_type)
-				spell_data["_demo_origin"] = Vector2(50, 40 + i * 60)
-				spell_data["_demo_direction"] = Vector2.RIGHT
-				spell_data["color"] = Color(0.8, 0.5, 1.0)  # 摇摆紫色
-				_spawn_demo_3d_projectile_wave(spell_data)
-			_update_demo_status("节奏型: 摇摆节奏「摇摆弹道」| S型波浪轨迹 (频率8.0, 振幅80px)")
-		"triplet":
-			# 三连音：每拍 3 个扇形弹体
-			for i in range(3):
-				var base_origin := Vector2(50, 40 + i * 60)
-				for j in range(3):
-					var spell_data := _build_demo_spell_data(white_key, -1)
-					_apply_demo_rhythm_effect(spell_data, pattern_type)
-					spell_data["_demo_origin"] = base_origin
-					# 扇形展开：-30°, 0°, +30°
-					var angle_offset := deg_to_rad(30.0) * (j - 1)
-					spell_data["_demo_direction"] = Vector2.RIGHT.rotated(angle_offset)
-					spell_data["color"] = Color(0.0, 1.0, 0.5)  # 三连绿色
-					_spawn_demo_3d_projectile(spell_data)
-			_update_demo_status("节奏型: 三连音「三连发」| 每拍×3扇形弹体 | DMG×0.5 SIZE×0.8")
-		"rest_boost":
-			# 精准蓄力：延迟发射 + 蓄力增强视觉
-			for i in range(2):
-				var spell_data := _build_demo_spell_data(white_key, -1)
-				_apply_demo_rhythm_effect(spell_data, pattern_type)
-				spell_data["_demo_origin"] = Vector2(50, 60 + i * 80)
-				spell_data["_demo_direction"] = Vector2.RIGHT
-				spell_data["color"] = Color(1.0, 0.9, 0.3)  # 蓄力金色
-				_spawn_demo_3d_projectile_charged(spell_data)
-			_update_demo_status("节奏型: 休止符「精准蓄力」| 延迟0.5s DMG×1.8 SIZE×1.3")
-
-## 构建演示用的 spell_data（与 SpellcraftSystem 的实际数据结构一致）
 func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
-	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(white_key, MusicData.WHITE_KEY_STATS[MusicData.WhiteKey.C])
-	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"]
-	var speed: float = stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"]
-	var duration: float = stats["dur"] * MusicData.PARAM_CONVERSION["dur_per_point"]
-	var size: float = stats["size"] * MusicData.PARAM_CONVERSION["size_per_point"]
-
+	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(white_key, {})
 	return {
-		"type": "note",
-		"note": white_key,
-		"stats": stats,
-		"damage": base_damage,
-		"speed": speed,
-		"duration": duration,
-		"size": size,
-		"color": MusicData.NOTE_COLORS.get(white_key, Color.WHITE),
+		"white_key": white_key,
 		"modifier": modifier,
-		"timbre": MusicData.TimbreType.NONE,
-		"timbre_name": "合成器",
-		"is_rapid_fire": false,
-		"rapid_fire_count": 1,
-		"has_knockback": false,
-		"dodge_back": false,
-		"accuracy_offset": 0.0,
+		"dmg": stats.get("dmg", 2),
+		"spd": stats.get("spd", 2),
+		"dur": stats.get("dur", 2),
+		"size": stats.get("size", 2),
+		"color": stats.get("color", Color.WHITE),
 	}
 
-## 在演示 ProjectileManager 中生成弹体
-func _spawn_demo_projectile(spell_data: Dictionary) -> void:
-	if not _demo_projectile_manager:
-		return
-
-	var origin: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-
-	# 通过 ProjectileManager 的实际接口生成弹体
-	if _demo_projectile_manager.has_method("spawn_from_spell"):
-		_demo_projectile_manager.spawn_from_spell(spell_data, origin, direction)
-	elif _demo_projectile_manager.has_method("spawn_projectile"):
-		_demo_projectile_manager.spawn_projectile({
-			"position": origin,
-			"velocity": direction * spell_data["speed"],
-			"damage": spell_data["damage"],
-			"size": spell_data["size"],
-			"duration": spell_data["duration"],
-			"color": spell_data["color"],
-			"modifier": spell_data.get("modifier", -1),
-		})
-
-# ============================================================
-# v5.0: 3D 演示弹体代理
-# ============================================================
-
-## 在 3D 层生成弹体的发光代理
 func _spawn_demo_3d_projectile(spell_data: Dictionary) -> void:
 	if not _demo_3d_entity_layer:
 		return
 
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
+	var projectile := MeshInstance3D.new()
+	projectile.mesh = SphereMesh.new()
+	(projectile.mesh as SphereMesh).radius = 0.2
+	(projectile.mesh as SphereMesh).height = 0.4
+
 	var color: Color = spell_data.get("color", Color.WHITE)
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-
-	# 将 2D 演示坐标转换为 3D 空间（简化映射：100px = 1 unit）
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-
-	# 创建 3D 弹体代理
-	var projectile_3d := Node3D.new()
-	projectile_3d.name = "DemoProjectile3D"
-	projectile_3d.position = pos_3d
-
-	# 发光球体
-	var mesh_inst := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = size / 200.0  # 缩放到 3D 空间
-	sphere.height = size / 100.0
-	sphere.radial_segments = 8
-	sphere.rings = 4
-	mesh_inst.mesh = sphere
-
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.emission_enabled = true
 	mat.emission = color
 	mat.emission_energy_multiplier = 4.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color.a = 0.9
-	mesh_inst.material_override = mat
-	projectile_3d.add_child(mesh_inst)
+	projectile.material_override = mat
+	projectile.position = Vector3(-5, 0.5, 0)
+	_demo_3d_entity_layer.add_child(projectile)
 
-	# 点光源
-	var light := OmniLight3D.new()
-	light.light_energy = 1.5
-	light.light_color = color
-	light.omni_range = 1.5
-	light.omni_attenuation = 2.0
-	projectile_3d.add_child(light)
-
-	# 拖尾粒子
-	var trail := GPUParticles3D.new()
-	trail.amount = 8
-	trail.lifetime = 0.4
-	trail.emitting = true
-
-	var trail_mat := ParticleProcessMaterial.new()
-	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	trail_mat.emission_sphere_radius = 0.02
-	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
-	trail_mat.spread = 15.0
-	trail_mat.initial_velocity_min = 0.2
-	trail_mat.initial_velocity_max = 0.5
-	trail_mat.gravity = Vector3(0, 0, 0)
-	trail_mat.damping_min = 2.0
-	trail_mat.damping_max = 4.0
-	trail_mat.scale_min = 0.01
-	trail_mat.scale_max = 0.04
-
-	var trail_gradient := Gradient.new()
-	trail_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	trail_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var trail_ramp := GradientTexture1D.new()
-	trail_ramp.gradient = trail_gradient
-	trail_mat.color_ramp = trail_ramp
-	trail.process_material = trail_mat
-	projectile_3d.add_child(trail)
-
-	_demo_3d_entity_layer.add_child(projectile_3d)
-
-	# 使用 Tween 驱动 3D 弹体移动
-	var target_pos := pos_3d + vel_3d * duration
+	var speed: float = spell_data.get("spd", 2) * 1.5
+	var duration: float = spell_data.get("dur", 2) * 0.5
 	var tween := create_tween()
-	tween.tween_property(projectile_3d, "position", target_pos, duration)
-	tween.tween_callback(projectile_3d.queue_free)
+	tween.tween_property(projectile, "position:x", 5.0, duration)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_LINEAR)
+	tween.tween_callback(projectile.queue_free)
 
-## 在 3D 层生成和弦爆发粒子
-func _spawn_demo_3d_chord_burst(chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-
-	# 在视口中心生成爆发粒子
-	var burst := GPUParticles3D.new()
-	burst.name = "ChordBurst3D"
-	burst.one_shot = true
-	burst.amount = 32
-	burst.lifetime = 0.8
-	burst.explosiveness = 1.0
-	burst.position = Vector3(3, 0, 1.1)  # 视口中心
-
-	var burst_mat := ParticleProcessMaterial.new()
-	burst_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	burst_mat.emission_sphere_radius = 0.1
-	burst_mat.direction = Vector3(0, 0, 0)
-	burst_mat.spread = 180.0
-	burst_mat.initial_velocity_min = 1.0
-	burst_mat.initial_velocity_max = 3.0
-	burst_mat.damping_min = 2.0
-	burst_mat.damping_max = 4.0
-	burst_mat.gravity = Vector3(0, 0, 0)
-	burst_mat.scale_min = 0.02
-	burst_mat.scale_max = 0.08
-
-	var chord_color := Color(0.6, 0.4, 1.0)  # 默认紫色
-	var burst_gradient := Gradient.new()
-	burst_gradient.set_color(0, Color(chord_color.r, chord_color.g, chord_color.b, 1.0))
-	burst_gradient.set_color(1, Color(chord_color.r, chord_color.g, chord_color.b, 0.0))
-	var burst_ramp := GradientTexture1D.new()
-	burst_ramp.gradient = burst_gradient
-	burst_mat.color_ramp = burst_ramp
-	burst.process_material = burst_mat
-
-	_demo_3d_entity_layer.add_child(burst)
-	burst.emitting = true
-
-	# 同时闪烁 Glow
-	if _demo_3d_env and _demo_3d_env.environment:
-		_demo_3d_env.environment.glow_intensity = 1.5
-		var tween := create_tween()
-		tween.tween_property(_demo_3d_env.environment, "glow_intensity", 0.8, 0.5)
-
-	# 自动清理
-	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
-
-## v5.1: 清除 3D 演示层的弹体（保留敌人和地面）
-func _clear_demo_3d_projectiles() -> void:
-	if _demo_3d_entity_layer:
-		for child in _demo_3d_entity_layer.get_children():
-			# 保留敌人目标和地面网格
-			if child.name.begins_with("DemoEnemy") or child.name == "DemoGround3D":
-				continue
-			child.queue_free()
-
-## v5.1: 在演示区域生成敌人目标（供弹体打击）
-func _spawn_demo_enemies() -> void:
-	if not _demo_3d_entity_layer:
-		return
-
-	# 在演示区域右侧放置 3 个敌人目标
-	var enemy_configs := [
-		{"pos": Vector3(3.5, 0, 0.6), "color": Color(0.7, 0.3, 0.3), "type": "static"},
-		{"pos": Vector3(3.5, 0, 1.1), "color": Color(0.2, 0.5, 1.0), "type": "pulse"},
-		{"pos": Vector3(3.5, 0, 1.6), "color": Color(1.0, 0.95, 0.5), "type": "screech"},
-	]
-
-	for i in range(enemy_configs.size()):
-		var cfg: Dictionary = enemy_configs[i]
-		var enemy := Node3D.new()
-		enemy.name = "DemoEnemy_%d" % i
-		enemy.position = cfg["pos"]
-
-		# 根据敌人类型创建不同几何体
-		var mesh_inst := MeshInstance3D.new()
-		var enemy_mesh: Mesh
-		match cfg["type"]:
-			"static":
-				var box := BoxMesh.new()
-				box.size = Vector3(0.2, 0.2, 0.2)
-				enemy_mesh = box
-			"pulse":
-				var prism := PrismMesh.new()
-				prism.size = Vector3(0.25, 0.25, 0.25)
-				enemy_mesh = prism
-			"screech":
-				var prism := PrismMesh.new()
-				prism.size = Vector3(0.2, 0.3, 0.2)
-				enemy_mesh = prism
-			_:
-				var box := BoxMesh.new()
-				box.size = Vector3(0.2, 0.2, 0.2)
-				enemy_mesh = box
-		mesh_inst.mesh = enemy_mesh
-
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = cfg["color"]
-		mat.emission_enabled = true
-		mat.emission = cfg["color"]
-		mat.emission_energy_multiplier = 1.5
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.albedo_color.a = 0.85
-		mesh_inst.material_override = mat
-		enemy.add_child(mesh_inst)
-
-		# 敌人发光
-		var light := OmniLight3D.new()
-		light.light_energy = 0.5
-		light.light_color = cfg["color"]
-		light.omni_range = 1.5
-		light.omni_attenuation = 2.0
-		enemy.add_child(light)
-
-		_demo_3d_entity_layer.add_child(enemy)
-
-## v5.1: 创建 3D 地面网格（替代旧 2D 网格）
-func _create_demo_3d_ground() -> void:
-	if not _demo_3d_entity_layer:
-		return
-
-	var ground := Node3D.new()
-	ground.name = "DemoGround3D"
-
-	# 半透明地面平面
-	var plane_mesh := PlaneMesh.new()
-	plane_mesh.size = Vector2(6, 3)
-	var plane_inst := MeshInstance3D.new()
-	plane_inst.mesh = plane_mesh
-	plane_inst.position = Vector3(2.5, -0.01, 1.1)
-
-	var ground_mat := StandardMaterial3D.new()
-	ground_mat.albedo_color = Color(0.1, 0.08, 0.15, 0.3)
-	ground_mat.emission_enabled = true
-	ground_mat.emission = Color(0.15, 0.1, 0.25)
-	ground_mat.emission_energy_multiplier = 0.3
-	ground_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	plane_inst.material_override = ground_mat
-	ground.add_child(plane_inst)
-
-	_demo_3d_entity_layer.add_child(ground)
-
-## 应用演示用的节奏型效果
-func _apply_demo_rhythm_effect(spell_data: Dictionary, pattern_type: String) -> void:
-	match pattern_type:
-		"full":
-			# 均匀八分音符：连射效果
-			spell_data["damage"] *= 0.6
-			spell_data["speed"] *= 1.2
-			spell_data["size"] *= 0.7
-		"dotted":
-			# 附点节奏：重击
-			spell_data["damage"] *= 1.4
-			spell_data["size"] *= 1.2
-		"syncopated":
-			# 切分节奏：高速穿透
-			spell_data["speed"] *= 1.3
-		"swing":
-			# 摇摆节奏：波浪弹道（标记，由 ProjectileManager 处理）
-			spell_data["_wave_trajectory"] = true
-		"triplet":
-			# 三连音：小弹体
-			spell_data["size"] *= 0.8
-			spell_data["duration"] *= 0.8
-		"rest_boost":
-			# 精准蓄力：增强
-			spell_data["damage"] *= 1.8
-			spell_data["size"] *= 1.3
-
-## 清除演示
 func _clear_demo() -> void:
 	_demo_active = false
 	_demo_timer = 0.0
-	if _demo_status_label:
-		_demo_status_label.text = ""
-	# v5.1: 清除 3D 层弹体（保留敌人和地面）
-	_clear_demo_3d_projectiles()
+	if _demo_3d_entity_layer and is_instance_valid(_demo_3d_entity_layer):
+		for child in _demo_3d_entity_layer.get_children():
+			child.queue_free()
+		_create_demo_grid()
+	_update_demo_status("")
 
-## 更新演示状态文字
 func _update_demo_status(text: String) -> void:
-	if _demo_status_label:
+	if _demo_status_label and is_instance_valid(_demo_status_label):
 		_demo_status_label.text = text
 
-## 获取修饰符显示名称
 func _get_modifier_display_name(modifier: int) -> String:
 	match modifier:
-		MusicData.ModifierEffect.PIERCE: return "锐化(穿透)"
-		MusicData.ModifierEffect.HOMING: return "追踪"
-		MusicData.ModifierEffect.SPLIT: return "分裂"
-		MusicData.ModifierEffect.ECHO: return "回响"
-		MusicData.ModifierEffect.SCATTER: return "散射"
-		_: return "无"
+		0: return "穿透 (C#)"
+		1: return "追踪 (Eb)"
+		2: return "分裂 (F#)"
+		3: return "回响 (Ab)"
+		4: return "散射 (Bb)"
+	return "修饰符 %d" % modifier
 
 # ============================================================
 # 进度统计
@@ -1890,14 +1268,13 @@ func _on_volume_selected(idx: int) -> void:
 
 func _on_subcat_selected(idx: int) -> void:
 	_current_subcat_idx = idx
-	# 更新子分类按钮高亮
 	for i in range(_subcat_bar.get_child_count()):
 		var btn := _subcat_bar.get_child(i) as Button
 		if btn:
 			btn.disabled = (i == idx)
 	_rebuild_entry_list()
 
-func _on_entry_selected(entry_id: String, is_unlocked: bool) -> void:
+func _on_entry_selected(entry_id: String, _is_unlocked: bool) -> void:
 	_show_entry_detail(entry_id)
 
 func _on_search_changed(new_text: String) -> void:
@@ -1926,7 +1303,6 @@ func unlock_entry(entry_id: String) -> void:
 
 ## 跳转到指定条目
 func navigate_to_entry(entry_id: String) -> void:
-	# 查找条目所在的卷和子分类
 	for vol_idx in range(VOLUME_CONFIG.size()):
 		var vol := VOLUME_CONFIG[vol_idx] as Dictionary
 		for sub_idx in range(vol["subcategories"].size()):
@@ -1949,1167 +1325,3 @@ func get_total_progress() -> Dictionary:
 		"unlocked": unlocked,
 		"percentage": (float(unlocked) / max(total, 1)) * 100.0,
 	}
-
-
-# ============================================================
-# v5.2: 修饰符弹体 3D 视觉效果
-# ============================================================
-
-## 辅助：获取法术形态对应颜色（与 spell_visual_manager 一致）
-func _get_spell_form_color_3d(spell_form: int) -> Color:
-	match spell_form:
-		MusicData.SpellForm.ENHANCED_PROJECTILE: return Color(1.0, 0.9, 0.3)
-		MusicData.SpellForm.DOT_PROJECTILE: return Color(0.15, 0.1, 0.6)
-		MusicData.SpellForm.EXPLOSIVE: return Color(1.0, 0.5, 0.0)
-		MusicData.SpellForm.SHOCKWAVE: return Color(0.5, 0.0, 0.5)
-		MusicData.SpellForm.FIELD: return Color(0.9, 0.8, 0.0)
-		MusicData.SpellForm.DIVINE_STRIKE: return Color(0.8, 0.0, 0.0)
-		MusicData.SpellForm.SHIELD_HEAL: return Color(0.2, 0.9, 0.4)
-		MusicData.SpellForm.SUMMON: return Color(0.15, 0.15, 0.7)
-		MusicData.SpellForm.CHARGED: return Color(0.9, 0.9, 1.0)
-		MusicData.SpellForm.STORM_FIELD: return Color(0.3, 0.8, 1.0)
-		MusicData.SpellForm.HOLY_DOMAIN: return Color(1.0, 0.95, 0.6)
-		MusicData.SpellForm.ANNIHILATION_RAY: return Color(0.8, 0.0, 0.8)
-		MusicData.SpellForm.TIME_RIFT: return Color(0.5, 0.0, 1.0)
-		MusicData.SpellForm.SYMPHONY_STORM: return Color(1.0, 0.6, 0.0)
-		MusicData.SpellForm.FINALE: return Color(1.0, 0.0, 0.0)
-		_: return Color(0.6, 0.4, 1.0)
-
-## 辅助：创建 3D 发光球体节点
-func _create_3d_glow_sphere(pos: Vector3, radius: float, color: Color, energy: float = 4.0) -> Node3D:
-	var node := Node3D.new()
-	node.position = pos
-	var mesh_inst := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = radius
-	sphere.height = radius * 2.0
-	sphere.radial_segments = 8
-	sphere.rings = 4
-	mesh_inst.mesh = sphere
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = energy
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh_inst.material_override = mat
-	node.add_child(mesh_inst)
-	var light := OmniLight3D.new()
-	light.light_energy = 1.5
-	light.light_color = color
-	light.omni_range = 1.5
-	light.omni_attenuation = 2.0
-	node.add_child(light)
-	return node
-
-## 辅助：创建 3D 粒子爆发
-func _create_3d_burst(pos: Vector3, color: Color, amount: int = 32, lifetime: float = 0.8, velocity_max: float = 3.0) -> GPUParticles3D:
-	var burst := GPUParticles3D.new()
-	burst.name = "DemoBurst3D"
-	burst.one_shot = true
-	burst.amount = amount
-	burst.lifetime = lifetime
-	burst.explosiveness = 1.0
-	burst.position = pos
-	var burst_mat := ParticleProcessMaterial.new()
-	burst_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	burst_mat.emission_sphere_radius = 0.1
-	burst_mat.direction = Vector3(0, 0, 0)
-	burst_mat.spread = 180.0
-	burst_mat.initial_velocity_min = velocity_max * 0.3
-	burst_mat.initial_velocity_max = velocity_max
-	burst_mat.damping_min = 2.0
-	burst_mat.damping_max = 4.0
-	burst_mat.gravity = Vector3(0, 0, 0)
-	burst_mat.scale_min = 0.02
-	burst_mat.scale_max = 0.08
-	var gradient := Gradient.new()
-	gradient.set_color(0, Color(color.r, color.g, color.b, 1.0))
-	gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var ramp := GradientTexture1D.new()
-	ramp.gradient = gradient
-	burst_mat.color_ramp = ramp
-	burst.process_material = burst_mat
-	return burst
-
-## 辅助：闪烁 Glow 效果
-func _flash_demo_glow(intensity: float = 1.5, fade_time: float = 0.5) -> void:
-	if _demo_3d_env and _demo_3d_env.environment:
-		_demo_3d_env.environment.glow_intensity = intensity
-		var tween := create_tween()
-		tween.tween_property(_demo_3d_env.environment, "glow_intensity", 0.8, fade_time)
-
-## 辅助：创建 3D 环形（用 TorusMesh 模拟）
-func _create_3d_ring(pos: Vector3, radius: float, color: Color) -> Node3D:
-	var node := Node3D.new()
-	node.position = pos
-	var mesh_inst := MeshInstance3D.new()
-	var torus := TorusMesh.new()
-	torus.inner_radius = radius * 0.9
-	torus.outer_radius = radius
-	torus.rings = 24
-	torus.ring_segments = 12
-	mesh_inst.mesh = torus
-	mesh_inst.rotation_degrees = Vector3(90, 0, 0)  # 水平放置
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(color.r, color.g, color.b, 0.7)
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 3.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh_inst.material_override = mat
-	node.add_child(mesh_inst)
-	return node
-
-# ---- 穿透修饰符弹体 ----
-func _spawn_demo_3d_projectile_pierce(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var base_color: Color = spell_data.get("color", Color.WHITE)
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var pierce_color := Color(0.0, 0.9, 0.9)  # 青色激光
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-
-	# 主弹体（拉长的圆柱形，表示穿透）
-	var projectile := Node3D.new()
-	projectile.name = "DemoProjectile3D"
-	projectile.position = pos_3d
-	var mesh_inst := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = size / 400.0
-	cylinder.bottom_radius = size / 400.0
-	cylinder.height = size / 80.0
-	mesh_inst.mesh = cylinder
-	mesh_inst.rotation_degrees = Vector3(0, 0, 90)  # 水平放置
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.9)
-	mat.emission_enabled = true
-	mat.emission = pierce_color
-	mat.emission_energy_multiplier = 6.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mesh_inst.material_override = mat
-	projectile.add_child(mesh_inst)
-	# 青色激光拖尾
-	var trail := GPUParticles3D.new()
-	trail.amount = 12
-	trail.lifetime = 0.3
-	trail.emitting = true
-	var trail_mat := ParticleProcessMaterial.new()
-	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	trail_mat.emission_sphere_radius = 0.01
-	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
-	trail_mat.spread = 5.0
-	trail_mat.initial_velocity_min = 0.3
-	trail_mat.initial_velocity_max = 0.8
-	trail_mat.gravity = Vector3(0, 0, 0)
-	trail_mat.scale_min = 0.005
-	trail_mat.scale_max = 0.02
-	var trail_gradient := Gradient.new()
-	trail_gradient.set_color(0, Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.9))
-	trail_gradient.set_color(1, Color(pierce_color.r, pierce_color.g, pierce_color.b, 0.0))
-	var trail_ramp := GradientTexture1D.new()
-	trail_ramp.gradient = trail_gradient
-	trail_mat.color_ramp = trail_ramp
-	trail.process_material = trail_mat
-	projectile.add_child(trail)
-	# 点光源
-	var light := OmniLight3D.new()
-	light.light_energy = 2.0
-	light.light_color = pierce_color
-	light.omni_range = 2.0
-	projectile.add_child(light)
-	_demo_3d_entity_layer.add_child(projectile)
-	var target_pos := pos_3d + vel_3d * duration
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", target_pos, duration)
-	tween.tween_callback(projectile.queue_free)
-
-# ---- 追踪修饰符弹体 ----
-func _spawn_demo_3d_projectile_homing(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var homing_color := Color(0.2, 0.6, 1.0)  # 蓝色准星
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-
-	# 弹体先向右飞，然后弧线转向敌人目标
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, homing_color, 5.0)
-	projectile.name = "DemoProjectile3D"
-	# 追踪拖尾（蓝色）
-	var trail := GPUParticles3D.new()
-	trail.amount = 10
-	trail.lifetime = 0.5
-	trail.emitting = true
-	var trail_mat := ParticleProcessMaterial.new()
-	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	trail_mat.emission_sphere_radius = 0.02
-	trail_mat.direction = Vector3(0, 0, 0)
-	trail_mat.spread = 30.0
-	trail_mat.initial_velocity_min = 0.1
-	trail_mat.initial_velocity_max = 0.3
-	trail_mat.gravity = Vector3(0, 0, 0)
-	trail_mat.scale_min = 0.01
-	trail_mat.scale_max = 0.03
-	var trail_gradient := Gradient.new()
-	trail_gradient.set_color(0, Color(homing_color.r, homing_color.g, homing_color.b, 0.8))
-	trail_gradient.set_color(1, Color(homing_color.r, homing_color.g, homing_color.b, 0.0))
-	var trail_ramp := GradientTexture1D.new()
-	trail_ramp.gradient = trail_gradient
-	trail_mat.color_ramp = trail_ramp
-	trail.process_material = trail_mat
-	projectile.add_child(trail)
-	_demo_3d_entity_layer.add_child(projectile)
-	# 弧线追踪动画：先向右上飞，然后转向敌人位置
-	var mid_pos := pos_3d + Vector3(1.5, 0.3, -0.5)
-	var enemy_pos := Vector3(3.5, 0, 1.1)  # 中间敌人位置
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", mid_pos, duration * 0.4).set_ease(Tween.EASE_OUT)
-	tween.tween_property(projectile, "position", enemy_pos, duration * 0.6).set_ease(Tween.EASE_IN)
-	tween.tween_callback(projectile.queue_free)
-
-# ---- 分裂修饰符弹体 ----
-func _spawn_demo_3d_projectile_split(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var split_color := Color(1.0, 0.5, 0.0)  # 橙色电弧
-	var base_color: Color = spell_data.get("color", Color.WHITE)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-
-	# 主弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	# 飞到中途后分裂
-	var mid_pos := pos_3d + vel_3d * duration * 0.5
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", mid_pos, duration * 0.5)
-	tween.tween_callback(func():
-		if not is_instance_valid(projectile):
-			return
-		projectile.queue_free()
-		# 分裂为 3 个小弹体
-		for i in range(3):
-			var angle := (float(i) - 1.0) * 0.4  # -0.4, 0, 0.4 弧度
-			var split_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
-			var split_vel := split_dir.rotated(Vector3.UP, angle) * vel_3d.length() * 0.7
-			var child := _create_3d_glow_sphere(mid_pos, size / 350.0, split_color, 5.0)
-			child.name = "DemoProjectile3D"
-			if _demo_3d_entity_layer:
-				_demo_3d_entity_layer.add_child(child)
-				var child_target := mid_pos + split_vel * duration * 0.5
-				var child_tween := create_tween()
-				child_tween.tween_property(child, "position", child_target, duration * 0.5)
-				child_tween.tween_callback(child.queue_free)
-	)
-
-# ---- 回响修饰符弹体 ----
-func _spawn_demo_3d_projectile_echo(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var echo_color := Color(0.5, 0.5, 1.0)  # 淡蓝残影
-	var base_color: Color = spell_data.get("color", Color.WHITE)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-
-	# 主弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	var target_pos := pos_3d + vel_3d * duration
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", target_pos, duration)
-	tween.tween_callback(projectile.queue_free)
-	# 延迟后在原位置生成回响弹体（半透明）
-	get_tree().create_timer(0.4).timeout.connect(func():
-		if not _demo_3d_entity_layer:
-			return
-		var echo := _create_3d_glow_sphere(pos_3d, size / 250.0, echo_color, 3.0)
-		echo.name = "DemoProjectile3D"
-		_demo_3d_entity_layer.add_child(echo)
-		var echo_target := pos_3d + vel_3d * duration * 0.8
-		var echo_tween := create_tween()
-		echo_tween.tween_property(echo, "position", echo_target, duration * 0.8)
-		echo_tween.tween_callback(echo.queue_free)
-	)
-
-# ---- 散射修饰符弹体 ----
-func _spawn_demo_3d_projectile_scatter(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var scatter_color := Color(1.0, 1.0, 0.0)  # 黄色扇形
-	var base_color: Color = spell_data.get("color", Color.WHITE)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-
-	# 主弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, base_color)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	var target_pos := pos_3d + vel_3d * duration
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", target_pos, duration)
-	tween.tween_callback(projectile.queue_free)
-	# 额外散射弹体（扇形展开）
-	for i in range(4):
-		var angle := (float(i) - 1.5) * 0.3
-		var scatter_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
-		var scatter_vel := scatter_dir.rotated(Vector3.UP, angle) * vel_3d.length() * 0.6
-		var scatter := _create_3d_glow_sphere(pos_3d, size / 350.0, scatter_color, 3.0)
-		scatter.name = "DemoProjectile3D"
-		_demo_3d_entity_layer.add_child(scatter)
-		var scatter_target := pos_3d + scatter_vel * duration * 0.7
-		var s_tween := create_tween()
-		s_tween.tween_property(scatter, "position", scatter_target, duration * 0.7)
-		s_tween.tween_callback(scatter.queue_free)
-
-# ============================================================
-# v5.2: 和弦法术 3D 视觉效果（15种独特形态）
-# ============================================================
-
-## 强化弹体（大三和弦）：金色增大弹体 + 六边形光环
-func _spawn_demo_3d_chord_enhanced_projectile(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(1.0, 0.9, 0.3)  # 圣光金
-	var center := Vector3(2.0, 0, 1.1)
-	# 增大的金色弹体
-	var projectile := _create_3d_glow_sphere(center, 0.15, color, 6.0)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	# 飞向敌人
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", Vector3(3.5, 0, 1.1), 0.8)
-	tween.tween_callback(projectile.queue_free)
-	# 金色粒子爆发
-	var burst := _create_3d_burst(center, color, 16, 0.6, 2.0)
-	_demo_3d_entity_layer.add_child(burst)
-	burst.emitting = true
-	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
-	# 六边形光环（用环形代替）
-	var ring := _create_3d_ring(center, 0.3, color)
-	ring.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(ring)
-	var ring_tween := create_tween()
-	ring_tween.set_parallel(true)
-	ring_tween.tween_property(ring, "scale", Vector3(3.0, 3.0, 3.0), 0.4)
-	ring_tween.tween_callback(func():
-		if is_instance_valid(ring): ring.queue_free()
-	)
-	_flash_demo_glow(1.5, 0.5)
-
-## DOT弹体（小三和弦）：暗蓝色毒液弹体 + 漩涡
-func _spawn_demo_3d_chord_dot(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.15, 0.1, 0.6)  # 暗蓝色
-	var center := Vector3(2.0, 0, 1.1)
-	# 毒液弹体
-	var projectile := _create_3d_glow_sphere(center, 0.1, color, 4.0)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", Vector3(3.5, 0, 1.1), 1.0)
-	tween.tween_callback(projectile.queue_free)
-	# 漩涡粒子（持续旋转的暗蓝色粒子）
-	var vortex := GPUParticles3D.new()
-	vortex.name = "DemoProjectile3D"
-	vortex.amount = 24
-	vortex.lifetime = 1.5
-	vortex.position = center
-	var v_mat := ParticleProcessMaterial.new()
-	v_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
-	v_mat.emission_ring_radius = 0.2
-	v_mat.emission_ring_inner_radius = 0.05
-	v_mat.emission_ring_height = 0.05
-	v_mat.direction = Vector3(0, 1, 0)
-	v_mat.spread = 30.0
-	v_mat.initial_velocity_min = 0.1
-	v_mat.initial_velocity_max = 0.3
-	v_mat.angular_velocity_min = 200.0
-	v_mat.angular_velocity_max = 400.0
-	v_mat.gravity = Vector3(0, 0, 0)
-	v_mat.scale_min = 0.01
-	v_mat.scale_max = 0.04
-	var v_gradient := Gradient.new()
-	v_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	v_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var v_ramp := GradientTexture1D.new()
-	v_ramp.gradient = v_gradient
-	v_mat.color_ramp = v_ramp
-	vortex.process_material = v_mat
-	_demo_3d_entity_layer.add_child(vortex)
-	vortex.emitting = true
-	get_tree().create_timer(3.0).timeout.connect(vortex.queue_free)
-	_flash_demo_glow(1.2, 0.6)
-
-## 爆炸弹体（增三和弦）：烈焰橙爆炸 + 火星迸发
-func _spawn_demo_3d_chord_explosive(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(1.0, 0.5, 0.0)  # 烈焰橙
-	var center := Vector3(3.0, 0, 1.1)
-	# 白色闪光核心
-	var flash := _create_3d_glow_sphere(center, 0.2, Color.WHITE, 10.0)
-	flash.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(flash)
-	var flash_tween := create_tween()
-	flash_tween.tween_property(flash, "scale", Vector3(4.0, 4.0, 4.0), 0.1)
-	flash_tween.tween_callback(flash.queue_free)
-	# 火焰粒子爆发（大量）
-	var burst := _create_3d_burst(center, color, 48, 1.0, 4.0)
-	_demo_3d_entity_layer.add_child(burst)
-	burst.emitting = true
-	get_tree().create_timer(2.5).timeout.connect(burst.queue_free)
-	# 第二波暖色粒子
-	get_tree().create_timer(0.05).timeout.connect(func():
-		if not _demo_3d_entity_layer: return
-		var burst2 := _create_3d_burst(center, Color(1.0, 0.3, 0.0), 24, 0.8, 3.0)
-		_demo_3d_entity_layer.add_child(burst2)
-		burst2.emitting = true
-		get_tree().create_timer(2.0).timeout.connect(burst2.queue_free)
-	)
-	_flash_demo_glow(2.0, 0.4)
-
-## 冲击波（减三和弦）：深紫色环形冲击波 + 地面裂纹
-func _spawn_demo_3d_chord_shockwave(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.5, 0.0, 0.5)  # 深紫色
-	var center := Vector3(2.0, 0, 1.1)
-	# 多层冲击波环
-	for i in range(3):
-		var ring := _create_3d_ring(center, 0.1 + i * 0.05, color.lightened(i * 0.15))
-		ring.name = "DemoProjectile3D"
-		_demo_3d_entity_layer.add_child(ring)
-		var ring_tween := create_tween()
-		ring_tween.set_parallel(true)
-		ring_tween.tween_property(ring, "scale", Vector3(15.0, 15.0, 15.0), 0.5 + i * 0.1)
-		ring_tween.chain()
-		ring_tween.tween_callback(ring.queue_free)
-	# 粒子爆发
-	var burst := _create_3d_burst(center, color, 32, 0.8, 3.5)
-	_demo_3d_entity_layer.add_child(burst)
-	burst.emitting = true
-	get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
-	_flash_demo_glow(1.8, 0.5)
-
-## 法阵/区域（属七和弦）：旋转几何法阵 + 光柱
-func _spawn_demo_3d_chord_field(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.9, 0.8, 0.0)  # Dominant黄
-	var target := Vector3(3.0, 0, 1.1)
-	# 旋转法阵环
-	var ring := _create_3d_ring(target, 0.4, color)
-	ring.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(ring)
-	# 内环（旋转方向相反）
-	var inner_ring := _create_3d_ring(target, 0.25, color.lightened(0.2))
-	inner_ring.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(inner_ring)
-	# 旋转动画
-	var rot_tween := create_tween().set_loops(8)
-	rot_tween.tween_property(ring, "rotation:y", TAU, 2.0).as_relative()
-	var rot_tween2 := create_tween().set_loops(8)
-	rot_tween2.tween_property(inner_ring, "rotation:y", -TAU, 1.5).as_relative()
-	# 上升粒子
-	var particles := GPUParticles3D.new()
-	particles.name = "DemoProjectile3D"
-	particles.amount = 16
-	particles.lifetime = 1.5
-	particles.position = target
-	var p_mat := ParticleProcessMaterial.new()
-	p_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
-	p_mat.emission_ring_radius = 0.4
-	p_mat.emission_ring_inner_radius = 0.3
-	p_mat.emission_ring_height = 0.02
-	p_mat.direction = Vector3(0, 1, 0)
-	p_mat.spread = 10.0
-	p_mat.initial_velocity_min = 0.2
-	p_mat.initial_velocity_max = 0.5
-	p_mat.gravity = Vector3(0, 0, 0)
-	p_mat.scale_min = 0.01
-	p_mat.scale_max = 0.03
-	var p_gradient := Gradient.new()
-	p_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	p_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var p_ramp := GradientTexture1D.new()
-	p_ramp.gradient = p_gradient
-	p_mat.color_ramp = p_ramp
-	particles.process_material = p_mat
-	_demo_3d_entity_layer.add_child(particles)
-	particles.emitting = true
-	# 4秒后清理
-	get_tree().create_timer(4.0).timeout.connect(func():
-		if is_instance_valid(ring): ring.queue_free()
-		if is_instance_valid(inner_ring): inner_ring.queue_free()
-		if is_instance_valid(particles): particles.queue_free()
-		rot_tween.kill()
-		rot_tween2.kill()
-	)
-	_flash_demo_glow(1.3, 0.8)
-
-## 天降打击（减七和弦）：血红色预警 + 从天而降的光柱
-func _spawn_demo_3d_chord_divine_strike(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.8, 0.0, 0.0)  # 血红色
-	var target := Vector3(3.0, 0, 1.1)
-	# 预警环（收缩）
-	var warning := _create_3d_ring(target, 0.5, Color(1.0, 0.0, 0.0))
-	warning.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(warning)
-	var warn_tween := create_tween()
-	warn_tween.tween_property(warning, "scale", Vector3(0.3, 0.3, 0.3), 0.5)
-	warn_tween.tween_callback(warning.queue_free)
-	# 延迟后光柱落下
-	get_tree().create_timer(0.5).timeout.connect(func():
-		if not _demo_3d_entity_layer: return
-		# 从天而降的光柱
-		var pillar := _create_3d_glow_sphere(target + Vector3(0, 3, 0), 0.1, color, 8.0)
-		pillar.name = "DemoProjectile3D"
-		_demo_3d_entity_layer.add_child(pillar)
-		var p_tween := create_tween()
-		p_tween.tween_property(pillar, "position", target, 0.15)
-		p_tween.tween_callback(func():
-			if is_instance_valid(pillar): pillar.queue_free()
-			# 落地爆炸
-			if _demo_3d_entity_layer:
-				var impact := _create_3d_burst(target, color, 48, 1.0, 5.0)
-				_demo_3d_entity_layer.add_child(impact)
-				impact.emitting = true
-				get_tree().create_timer(2.5).timeout.connect(impact.queue_free)
-		)
-		_flash_demo_glow(2.5, 0.3)
-	)
-
-## 护盾/治疗（大七和弦）：治愈绿色护盾泡泡 + 上升光粒子
-func _spawn_demo_3d_chord_shield_heal(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.2, 0.9, 0.4)  # 治愈绿
-	var center := Vector3(2.0, 0, 1.1)
-	# 护盾泡泡（半透明球体）
-	var shield := _create_3d_glow_sphere(center, 0.3, color, 2.0)
-	shield.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(shield)
-	# 脉冲动画
-	var pulse_tween := create_tween().set_loops(6)
-	pulse_tween.tween_property(shield, "scale", Vector3(1.2, 1.2, 1.2), 0.5)
-	pulse_tween.tween_property(shield, "scale", Vector3(1.0, 1.0, 1.0), 0.5)
-	# 上升治疗粒子
-	var heal_particles := GPUParticles3D.new()
-	heal_particles.name = "DemoProjectile3D"
-	heal_particles.amount = 12
-	heal_particles.lifetime = 1.5
-	heal_particles.position = center
-	var h_mat := ParticleProcessMaterial.new()
-	h_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	h_mat.emission_sphere_radius = 0.2
-	h_mat.direction = Vector3(0, 1, 0)
-	h_mat.spread = 20.0
-	h_mat.initial_velocity_min = 0.2
-	h_mat.initial_velocity_max = 0.5
-	h_mat.gravity = Vector3(0, 0, 0)
-	h_mat.scale_min = 0.01
-	h_mat.scale_max = 0.03
-	var h_gradient := Gradient.new()
-	h_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	h_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var h_ramp := GradientTexture1D.new()
-	h_ramp.gradient = h_gradient
-	h_mat.color_ramp = h_ramp
-	heal_particles.process_material = h_mat
-	_demo_3d_entity_layer.add_child(heal_particles)
-	heal_particles.emitting = true
-	# 3秒后清理
-	get_tree().create_timer(3.0).timeout.connect(func():
-		if is_instance_valid(shield): shield.queue_free()
-		if is_instance_valid(heal_particles): heal_particles.queue_free()
-		pulse_tween.kill()
-	)
-	_flash_demo_glow(1.2, 0.8)
-
-## 召唤/构造（小七和弦）：深蓝色凝聚 + 构造体出现
-func _spawn_demo_3d_chord_summon(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.15, 0.15, 0.7)  # 深蓝色
-	var summon_pos := Vector3(2.5, 0, 1.1)
-	# 凝聚粒子（从外向内）
-	var converge := GPUParticles3D.new()
-	converge.name = "DemoProjectile3D"
-	converge.amount = 24
-	converge.lifetime = 0.8
-	converge.one_shot = true
-	converge.explosiveness = 0.8
-	converge.position = summon_pos
-	var c_mat := ParticleProcessMaterial.new()
-	c_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	c_mat.emission_sphere_radius = 0.8
-	c_mat.direction = Vector3(0, 0, 0)
-	c_mat.spread = 180.0
-	c_mat.initial_velocity_min = -1.5
-	c_mat.initial_velocity_max = -0.5
-	c_mat.gravity = Vector3(0, 0, 0)
-	c_mat.scale_min = 0.02
-	c_mat.scale_max = 0.05
-	var c_gradient := Gradient.new()
-	c_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	c_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var c_ramp := GradientTexture1D.new()
-	c_ramp.gradient = c_gradient
-	c_mat.color_ramp = c_ramp
-	converge.process_material = c_mat
-	_demo_3d_entity_layer.add_child(converge)
-	converge.emitting = true
-	# 延迟后出现构造体
-	get_tree().create_timer(0.8).timeout.connect(func():
-		if not _demo_3d_entity_layer: return
-		if is_instance_valid(converge): converge.queue_free()
-		# 构造体（立方体）
-		var construct := Node3D.new()
-		construct.name = "DemoProjectile3D"
-		construct.position = summon_pos
-		var mesh := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(0.2, 0.2, 0.2)
-		mesh.mesh = box
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(color.r, color.g, color.b, 0.85)
-		mat.emission_enabled = true
-		mat.emission = color
-		mat.emission_energy_multiplier = 4.0
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mesh.material_override = mat
-		construct.add_child(mesh)
-		var light := OmniLight3D.new()
-		light.light_energy = 1.5
-		light.light_color = color
-		light.omni_range = 1.5
-		construct.add_child(light)
-		_demo_3d_entity_layer.add_child(construct)
-		# 旋转 + 脉冲
-		var rot_tween := create_tween().set_loops(6)
-		rot_tween.tween_property(construct, "rotation:y", TAU, 2.0).as_relative()
-		get_tree().create_timer(3.0).timeout.connect(func():
-			if is_instance_valid(construct): construct.queue_free()
-			rot_tween.kill()
-		)
-	)
-	_flash_demo_glow(1.3, 0.6)
-
-## 蓄力弹体（挂留和弦）：银白色能量球蓄力后释放
-func _spawn_demo_3d_chord_charged(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.9, 0.9, 1.0)  # 银白色
-	var center := Vector3(2.0, 0, 1.1)
-	# 蓄力能量球（逐渐变大）
-	var orb := _create_3d_glow_sphere(center, 0.05, color, 3.0)
-	orb.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(orb)
-	# 能量线被吸入（粒子向内收缩）
-	var absorb := GPUParticles3D.new()
-	absorb.name = "DemoProjectile3D"
-	absorb.amount = 16
-	absorb.lifetime = 0.6
-	absorb.position = center
-	var a_mat := ParticleProcessMaterial.new()
-	a_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	a_mat.emission_sphere_radius = 0.6
-	a_mat.direction = Vector3(0, 0, 0)
-	a_mat.spread = 180.0
-	a_mat.initial_velocity_min = -1.0
-	a_mat.initial_velocity_max = -0.3
-	a_mat.gravity = Vector3(0, 0, 0)
-	a_mat.scale_min = 0.01
-	a_mat.scale_max = 0.03
-	var a_gradient := Gradient.new()
-	a_gradient.set_color(0, Color(color.r, color.g, color.b, 0.6))
-	a_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var a_ramp := GradientTexture1D.new()
-	a_ramp.gradient = a_gradient
-	a_mat.color_ramp = a_ramp
-	absorb.process_material = a_mat
-	_demo_3d_entity_layer.add_child(absorb)
-	absorb.emitting = true
-	# 蓄力膨胀
-	var charge_tween := create_tween()
-	charge_tween.tween_property(orb, "scale", Vector3(4.0, 4.0, 4.0), 0.8)
-	charge_tween.tween_callback(func():
-		if is_instance_valid(absorb): absorb.queue_free()
-		if not is_instance_valid(orb): return
-		# 释放：高速飞向敌人
-		var release_tween := create_tween()
-		release_tween.tween_property(orb, "position", Vector3(3.5, 0, 1.1), 0.2)
-		release_tween.tween_callback(func():
-			if is_instance_valid(orb): orb.queue_free()
-			if _demo_3d_entity_layer:
-				var impact := _create_3d_burst(Vector3(3.5, 0, 1.1), color, 32, 0.6, 3.0)
-				_demo_3d_entity_layer.add_child(impact)
-				impact.emitting = true
-				get_tree().create_timer(2.0).timeout.connect(impact.queue_free)
-		)
-	)
-	_flash_demo_glow(1.5, 0.6)
-
-## 风暴区域（属九和弦）：蓝色旋转风暴漩涡
-func _spawn_demo_3d_chord_storm_field(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.3, 0.8, 1.0)
-	var center := Vector3(3.0, 0, 1.1)
-	# 风暴核心
-	var core := _create_3d_glow_sphere(center, 0.1, color, 5.0)
-	core.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(core)
-	# 旋转风暴粒子
-	var storm := GPUParticles3D.new()
-	storm.name = "DemoProjectile3D"
-	storm.amount = 48
-	storm.lifetime = 2.0
-	storm.position = center
-	var s_mat := ParticleProcessMaterial.new()
-	s_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
-	s_mat.emission_ring_radius = 0.5
-	s_mat.emission_ring_inner_radius = 0.1
-	s_mat.emission_ring_height = 0.3
-	s_mat.direction = Vector3(0, 1, 0)
-	s_mat.spread = 45.0
-	s_mat.initial_velocity_min = 0.3
-	s_mat.initial_velocity_max = 0.8
-	s_mat.angular_velocity_min = 300.0
-	s_mat.angular_velocity_max = 600.0
-	s_mat.gravity = Vector3(0, 0, 0)
-	s_mat.scale_min = 0.01
-	s_mat.scale_max = 0.04
-	var s_gradient := Gradient.new()
-	s_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	s_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var s_ramp := GradientTexture1D.new()
-	s_ramp.gradient = s_gradient
-	s_mat.color_ramp = s_ramp
-	storm.process_material = s_mat
-	_demo_3d_entity_layer.add_child(storm)
-	storm.emitting = true
-	# 旋转核心
-	var rot_tween := create_tween().set_loops(8)
-	rot_tween.tween_property(core, "rotation:y", TAU, 1.0).as_relative()
-	# 5秒后清理
-	get_tree().create_timer(5.0).timeout.connect(func():
-		if is_instance_valid(core): core.queue_free()
-		if is_instance_valid(storm): storm.queue_free()
-		rot_tween.kill()
-	)
-	_flash_demo_glow(1.3, 0.8)
-
-## 圣光领域（大九和弦）：金色光柱 + 治疗光环
-func _spawn_demo_3d_chord_holy_domain(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(1.0, 0.95, 0.6)
-	var center := Vector3(2.5, 0, 1.1)
-	# 光柱（从下到上的发光柱体）
-	var pillar_node := Node3D.new()
-	pillar_node.name = "DemoProjectile3D"
-	pillar_node.position = center
-	var pillar_mesh := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 0.15
-	cylinder.bottom_radius = 0.15
-	cylinder.height = 3.0
-	pillar_mesh.mesh = cylinder
-	pillar_mesh.position.y = 1.5
-	var p_mat := StandardMaterial3D.new()
-	p_mat.albedo_color = Color(color.r, color.g, color.b, 0.15)
-	p_mat.emission_enabled = true
-	p_mat.emission = color
-	p_mat.emission_energy_multiplier = 2.0
-	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	pillar_mesh.material_override = p_mat
-	pillar_node.add_child(pillar_mesh)
-	_demo_3d_entity_layer.add_child(pillar_node)
-	# 治疗光环
-	var aura := _create_3d_ring(center, 0.5, color)
-	aura.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(aura)
-	# 上升粒子
-	var heal := GPUParticles3D.new()
-	heal.name = "DemoProjectile3D"
-	heal.amount = 16
-	heal.lifetime = 2.0
-	heal.position = center
-	var h_mat := ParticleProcessMaterial.new()
-	h_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	h_mat.emission_sphere_radius = 0.4
-	h_mat.direction = Vector3(0, 1, 0)
-	h_mat.spread = 15.0
-	h_mat.initial_velocity_min = 0.2
-	h_mat.initial_velocity_max = 0.5
-	h_mat.gravity = Vector3(0, 0, 0)
-	h_mat.scale_min = 0.01
-	h_mat.scale_max = 0.03
-	var h_gradient := Gradient.new()
-	h_gradient.set_color(0, Color(color.r, color.g, color.b, 0.7))
-	h_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var h_ramp := GradientTexture1D.new()
-	h_ramp.gradient = h_gradient
-	h_mat.color_ramp = h_ramp
-	heal.process_material = h_mat
-	_demo_3d_entity_layer.add_child(heal)
-	heal.emitting = true
-	get_tree().create_timer(4.0).timeout.connect(func():
-		if is_instance_valid(pillar_node): pillar_node.queue_free()
-		if is_instance_valid(aura): aura.queue_free()
-		if is_instance_valid(heal): heal.queue_free()
-	)
-	_flash_demo_glow(1.5, 1.0)
-
-## 湮灭射线（减九和弦）：紫色激光贯穿全屏
-func _spawn_demo_3d_chord_annihilation_ray(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.8, 0.0, 0.8)
-	var start := Vector3(0.5, 0, 1.1)
-	var end_pos := Vector3(5.5, 0, 1.1)
-	# 激光柱体
-	var ray_node := Node3D.new()
-	ray_node.name = "DemoProjectile3D"
-	var mid := (start + end_pos) / 2.0
-	ray_node.position = mid
-	var ray_mesh := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 0.03
-	cylinder.bottom_radius = 0.03
-	cylinder.height = start.distance_to(end_pos)
-	ray_mesh.mesh = cylinder
-	ray_mesh.rotation_degrees = Vector3(0, 0, 90)  # 水平
-	var r_mat := StandardMaterial3D.new()
-	r_mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
-	r_mat.emission_enabled = true
-	r_mat.emission = color
-	r_mat.emission_energy_multiplier = 8.0
-	r_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	ray_mesh.material_override = r_mat
-	ray_node.add_child(ray_mesh)
-	# 外层光晕
-	var glow_mesh := MeshInstance3D.new()
-	var glow_cyl := CylinderMesh.new()
-	glow_cyl.top_radius = 0.1
-	glow_cyl.bottom_radius = 0.1
-	glow_cyl.height = start.distance_to(end_pos)
-	glow_mesh.mesh = glow_cyl
-	glow_mesh.rotation_degrees = Vector3(0, 0, 90)
-	var g_mat := StandardMaterial3D.new()
-	g_mat.albedo_color = Color(color.r, color.g, color.b, 0.3)
-	g_mat.emission_enabled = true
-	g_mat.emission = color
-	g_mat.emission_energy_multiplier = 3.0
-	g_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glow_mesh.material_override = g_mat
-	ray_node.add_child(glow_mesh)
-	_demo_3d_entity_layer.add_child(ray_node)
-	# 灼烧粒子
-	for i in range(5):
-		var t := float(i) / 5.0
-		var burn_pos := start.lerp(end_pos, t)
-		var burn := _create_3d_burst(burn_pos, color, 8, 0.5, 1.5)
-		_demo_3d_entity_layer.add_child(burn)
-		burn.emitting = true
-		get_tree().create_timer(1.5).timeout.connect(burn.queue_free)
-	# 淡出
-	var ray_tween := create_tween()
-	ray_tween.tween_interval(0.3)
-	ray_tween.tween_callback(ray_node.queue_free)
-	_flash_demo_glow(2.5, 0.3)
-
-## 时空裂隙（属十一和弦）：紫色扭曲空间
-func _spawn_demo_3d_chord_time_rift(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(0.5, 0.0, 1.0)
-	var center := Vector3(3.0, 0, 1.1)
-	# 黑色核心
-	var core := _create_3d_glow_sphere(center, 0.15, Color(0.0, 0.0, 0.0), 1.0)
-	core.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(core)
-	# 多层扭曲环
-	for i in range(3):
-		var ring := _create_3d_ring(center, 0.2 + i * 0.15, color.lightened(i * 0.1))
-		ring.name = "DemoProjectile3D"
-		ring.rotation_degrees = Vector3(randf() * 30.0, 0, randf() * 30.0)
-		_demo_3d_entity_layer.add_child(ring)
-		var rot_tween := create_tween().set_loops(6)
-		rot_tween.tween_property(ring, "rotation:y", -TAU, 2.0 + i * 0.5).as_relative()
-		get_tree().create_timer(4.0).timeout.connect(func():
-			if is_instance_valid(ring): ring.queue_free()
-			rot_tween.kill()
-		)
-	# 吸入粒子
-	var absorb := GPUParticles3D.new()
-	absorb.name = "DemoProjectile3D"
-	absorb.amount = 20
-	absorb.lifetime = 1.0
-	absorb.position = center
-	var a_mat := ParticleProcessMaterial.new()
-	a_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	a_mat.emission_sphere_radius = 0.8
-	a_mat.direction = Vector3(0, 0, 0)
-	a_mat.spread = 180.0
-	a_mat.initial_velocity_min = -1.5
-	a_mat.initial_velocity_max = -0.5
-	a_mat.gravity = Vector3(0, 0, 0)
-	a_mat.scale_min = 0.01
-	a_mat.scale_max = 0.04
-	var a_gradient := Gradient.new()
-	a_gradient.set_color(0, Color(color.r, color.g, color.b, 0.7))
-	a_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var a_ramp := GradientTexture1D.new()
-	a_ramp.gradient = a_gradient
-	a_mat.color_ramp = a_ramp
-	absorb.process_material = a_mat
-	_demo_3d_entity_layer.add_child(absorb)
-	absorb.emitting = true
-	get_tree().create_timer(4.0).timeout.connect(func():
-		if is_instance_valid(core): core.queue_free()
-		if is_instance_valid(absorb): absorb.queue_free()
-	)
-	_flash_demo_glow(1.5, 0.8)
-
-## 交响风暴（属十三和弦）：多色波次环形弹幕
-func _spawn_demo_3d_chord_symphony_storm(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var colors := [Color(1.0, 0.3, 0.0), Color(0.0, 0.8, 1.0), Color(1.0, 1.0, 0.0)]
-	var center := Vector3(2.5, 0, 1.1)
-	# 三波次环形弹幕
-	for wave in range(3):
-		get_tree().create_timer(wave * 0.4).timeout.connect(func():
-			if not _demo_3d_entity_layer: return
-			var wave_color: Color = colors[wave % colors.size()]
-			# 环形爆发
-			var ring := _create_3d_ring(center, 0.1, wave_color)
-			ring.name = "DemoProjectile3D"
-			_demo_3d_entity_layer.add_child(ring)
-			var ring_tween := create_tween()
-			ring_tween.tween_property(ring, "scale", Vector3(12.0, 12.0, 12.0), 0.6)
-			ring_tween.tween_callback(ring.queue_free)
-			# 粒子爆发
-			var burst := _create_3d_burst(center, wave_color, 24, 0.8, 3.0)
-			_demo_3d_entity_layer.add_child(burst)
-			burst.emitting = true
-			get_tree().create_timer(2.0).timeout.connect(burst.queue_free)
-		)
-	_flash_demo_glow(2.0, 0.5)
-
-## 终焉乐章（减十三和弦）：全屏毁灭爆发
-func _spawn_demo_3d_chord_finale(_chord_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var color := Color(1.0, 0.0, 0.0)
-	var center := Vector3(2.5, 0, 1.1)
-	# 蓄力收缩
-	var core := _create_3d_glow_sphere(center, 0.3, Color.WHITE, 8.0)
-	core.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(core)
-	var charge_tween := create_tween()
-	charge_tween.tween_property(core, "scale", Vector3(0.2, 0.2, 0.2), 0.5)
-	charge_tween.tween_callback(func():
-		if not is_instance_valid(core): return
-		core.queue_free()
-		if not _demo_3d_entity_layer: return
-		# 全屏爆发
-		for i in range(5):
-			var burst := _create_3d_burst(center, color.lightened(i * 0.1), 32, 1.2, 5.0 + i * 1.0)
-			_demo_3d_entity_layer.add_child(burst)
-			burst.emitting = true
-			get_tree().create_timer(3.0).timeout.connect(burst.queue_free)
-		# 多层冲击波
-		for i in range(5):
-			var ring := _create_3d_ring(center, 0.1, color.lightened(i * 0.1))
-			ring.name = "DemoProjectile3D"
-			_demo_3d_entity_layer.add_child(ring)
-			var r_tween := create_tween()
-			r_tween.tween_interval(i * 0.05)
-			r_tween.tween_property(ring, "scale", Vector3(20.0, 20.0, 20.0), 0.8)
-			r_tween.tween_callback(ring.queue_free)
-	)
-	_flash_demo_glow(3.0, 0.3)
-
-# ============================================================
-# v5.2: 节奏型弹体 3D 特殊效果
-# ============================================================
-
-## 重击弹体（附点节奏）：增大弹体 + 击退冲击波指示
-func _spawn_demo_3d_projectile_with_knockback(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var color: Color = spell_data.get("color", Color(1.0, 0.6, 0.2))
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-	# 增大的弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 150.0, color, 5.0)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	var target_pos := pos_3d + vel_3d * duration
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", target_pos, duration)
-	tween.tween_callback(func():
-		if not is_instance_valid(projectile): return
-		# 命中时击退冲击波
-		var hit_pos := projectile.position
-		projectile.queue_free()
-		if _demo_3d_entity_layer:
-			var ring := _create_3d_ring(hit_pos, 0.1, color)
-			ring.name = "DemoProjectile3D"
-			_demo_3d_entity_layer.add_child(ring)
-			var r_tween := create_tween()
-			r_tween.tween_property(ring, "scale", Vector3(5.0, 5.0, 5.0), 0.3)
-			r_tween.tween_callback(ring.queue_free)
-	)
-
-## 闪避弹体（切分节奏）：弹体 + 后退残影
-func _spawn_demo_3d_projectile_with_dodge(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(80, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var color: Color = spell_data.get("color", Color(0.5, 0.8, 1.0))
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-	# 后退残影（半透明）
-	var dodge_pos := pos_3d - Vector3(vel_3d.x, 0, vel_3d.z).normalized() * 0.5
-	var ghost := _create_3d_glow_sphere(pos_3d, size / 250.0, Color(color.r, color.g, color.b, 0.3), 2.0)
-	ghost.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(ghost)
-	var ghost_tween := create_tween()
-	ghost_tween.tween_property(ghost, "position", dodge_pos, 0.15)
-	ghost_tween.tween_interval(0.2)
-	ghost_tween.tween_callback(ghost.queue_free)
-	# 主弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, color, 4.0)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	var target_pos := pos_3d + vel_3d * duration
-	var tween := create_tween()
-	tween.tween_property(projectile, "position", target_pos, duration)
-	tween.tween_callback(projectile.queue_free)
-
-## 波浪弹体（摇摆节奏）：S 型波浪轨迹
-func _spawn_demo_3d_projectile_wave(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var color: Color = spell_data.get("color", Color(0.8, 0.5, 1.0))
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-	# 弹体
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 200.0, color, 4.0)
-	projectile.name = "DemoProjectile3D"
-	# 更长的拖尾
-	var trail := GPUParticles3D.new()
-	trail.amount = 16
-	trail.lifetime = 0.6
-	trail.emitting = true
-	var trail_mat := ParticleProcessMaterial.new()
-	trail_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	trail_mat.emission_sphere_radius = 0.02
-	trail_mat.direction = Vector3(-direction_2d.x, 0, -direction_2d.y)
-	trail_mat.spread = 15.0
-	trail_mat.initial_velocity_min = 0.1
-	trail_mat.initial_velocity_max = 0.3
-	trail_mat.gravity = Vector3(0, 0, 0)
-	trail_mat.scale_min = 0.01
-	trail_mat.scale_max = 0.03
-	var trail_gradient := Gradient.new()
-	trail_gradient.set_color(0, Color(color.r, color.g, color.b, 0.8))
-	trail_gradient.set_color(1, Color(color.r, color.g, color.b, 0.0))
-	var trail_ramp := GradientTexture1D.new()
-	trail_ramp.gradient = trail_gradient
-	trail_mat.color_ramp = trail_ramp
-	trail.process_material = trail_mat
-	projectile.add_child(trail)
-	_demo_3d_entity_layer.add_child(projectile)
-	# S 型波浪轨迹（使用 tween_method 实现正弦波动）
-	var wave_freq := 8.0
-	var wave_amp := 0.8  # 80px / 100 = 0.8 unit
-	var forward_dir := Vector3(vel_3d.x, 0, vel_3d.z).normalized()
-	var lateral_dir := Vector3(-forward_dir.z, 0, forward_dir.x)  # 垂直方向
-	var total_dist := vel_3d.length() * duration
-	var wave_tween := create_tween()
-	wave_tween.tween_method(func(t: float):
-		if not is_instance_valid(projectile): return
-		var forward_pos := pos_3d + forward_dir * total_dist * t
-		var wave_offset := lateral_dir * sin(t * wave_freq * TAU) * wave_amp * exp(-t * 0.5)
-		projectile.position = forward_pos + wave_offset
-	, 0.0, 1.0, duration)
-	wave_tween.tween_callback(projectile.queue_free)
-
-## 蓄力弹体（精准蓄力节奏）：延迟发射 + 蓄力增强视觉
-func _spawn_demo_3d_projectile_charged(spell_data: Dictionary) -> void:
-	if not _demo_3d_entity_layer:
-		return
-	var origin_2d: Vector2 = spell_data.get("_demo_origin", Vector2(50, 110))
-	var direction_2d: Vector2 = spell_data.get("_demo_direction", Vector2.RIGHT)
-	var color: Color = spell_data.get("color", Color(1.0, 0.9, 0.3))
-	var speed: float = spell_data.get("speed", 200.0)
-	var size: float = spell_data.get("size", 16.0)
-	var duration: float = spell_data.get("duration", 1.0)
-	var pos_3d := Vector3(origin_2d.x / 100.0, 0.0, origin_2d.y / 100.0)
-	var vel_3d := Vector3(direction_2d.x * speed / 100.0, 0.0, direction_2d.y * speed / 100.0)
-	# 蓄力阶段：小球逐渐变大
-	var projectile := _create_3d_glow_sphere(pos_3d, size / 400.0, color, 3.0)
-	projectile.name = "DemoProjectile3D"
-	_demo_3d_entity_layer.add_child(projectile)
-	# 蓄力吸收粒子
-	var absorb := _create_3d_burst(pos_3d, color, 12, 0.4, -1.0)
-	absorb.one_shot = false
-	_demo_3d_entity_layer.add_child(absorb)
-	absorb.emitting = true
-	# 蓄力膨胀 → 延迟 → 释放
-	var charge_tween := create_tween()
-	charge_tween.tween_property(projectile, "scale", Vector3(2.5, 2.5, 2.5), 0.5)
-	charge_tween.tween_callback(func():
-		if is_instance_valid(absorb): absorb.queue_free()
-	)
-	# 释放飞行
-	var target_pos := pos_3d + vel_3d * duration * 1.5
-	charge_tween.tween_property(projectile, "position", target_pos, duration * 0.8)
-	charge_tween.tween_callback(projectile.queue_free)
