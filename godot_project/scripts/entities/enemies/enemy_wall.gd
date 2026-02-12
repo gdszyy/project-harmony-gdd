@@ -74,6 +74,10 @@ func _on_enemy_ready() -> void:
 	
 	_current_shield = shield_hp
 	
+	# OPT06: 护盾激活时应用 "shielded" 空间音频状态
+	if _spatial_audio_ctrl and _is_shield_active:
+		_spatial_audio_ctrl.apply_state_fx("shielded")
+	
 	# ## 初始化频谱纹理
 	_spectrum_image = Image.create(SPECTRUM_SIZE, 1, false, Image.FORMAT_RF)
 	_spectrum_texture = ImageTexture.create_from_image(_spectrum_image)
@@ -105,8 +109,12 @@ func _update_shield(delta: float) -> void:
 		return
 
 	if _current_shield < shield_hp:
+		var was_inactive := not _is_shield_active
 		_current_shield = min(shield_hp, _current_shield + shield_regen_rate * delta)
 		_is_shield_active = _current_shield > 0.0
+		# OPT06: 护盾从无到有时恢复 shielded 状态
+		if _is_shield_active and was_inactive and _spatial_audio_ctrl:
+			_spatial_audio_ctrl.apply_state_fx("shielded")
 		# 护盾恢复动画
 		if _shield_visual and _shield_visual.material:
 			_shield_visual.material.set_shader_parameter("shield_strength", _current_shield / shield_hp)
@@ -149,6 +157,7 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	if is_perfect_beat:
 		final_damage *= perfect_beat_damage_multiplier
 
+	var had_shield := _is_shield_active and _current_shield > 0.0
 	if _is_shield_active and _current_shield > 0.0:
 		var shield_absorb = min(_current_shield, final_damage)
 		_current_shield -= shield_absorb
@@ -164,11 +173,19 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 		if _current_shield <= 0.0:
 			_is_shield_active = false
 			_on_shield_break()
+			# OPT06: 护盾破碎时清除护盾音频状态
+			if _spatial_audio_ctrl and had_shield:
+				_spatial_audio_ctrl.clear_state_fx()
 
 	if final_damage > 0.0:
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
 		_damage_flash_timer = 0.15
+		# OPT06: 检查是否进入低血量状态
+		if _spatial_audio_ctrl and current_hp > 0.0:
+			var hp_ratio := current_hp / max_hp
+			if hp_ratio < 0.3 and _spatial_audio_ctrl.get_active_state() != "low_health":
+				_spatial_audio_ctrl.apply_state_fx("low_health")
 
 	if knockback_dir != Vector2.ZERO:
 		var effective_knockback := 200.0 * (1.0 - knockback_resistance)

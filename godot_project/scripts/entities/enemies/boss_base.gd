@@ -142,6 +142,13 @@ func _on_enemy_ready() -> void:
 	# 集成 Boss 视觉增强器 (Issue #52)
 	_setup_boss_visual_enhancer()
 
+	# OPT06: Boss 默认应用 "elite" 空间音频状态（失真效果，更具威压感）
+	if _spatial_audio_ctrl:
+		if _shield_active:
+			_spatial_audio_ctrl.apply_state_fx("shielded")
+		else:
+			_spatial_audio_ctrl.apply_state_fx("elite")
+
 ## 子类重写：Boss 专属初始化
 func _on_boss_ready() -> void:
 	pass
@@ -422,6 +429,7 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 		final_damage *= _vulnerability_damage_multiplier
 	
 	# 护盾吸收
+	var had_shield := _shield_active and _shield_hp > 0.0
 	if _shield_active and _shield_hp > 0.0:
 		var absorbed = min(_shield_hp, final_damage)
 		_shield_hp -= absorbed
@@ -431,11 +439,19 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 		if _shield_hp <= 0.0:
 			_shield_active = false
 			_on_shield_broken()
+			# OPT06: 护盾破碎时清除护盾音频状态
+			if _spatial_audio_ctrl and had_shield:
+				_spatial_audio_ctrl.clear_state_fx()
 	
 	# 应用伤害
 	if final_damage > 0.0:
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
+		# OPT06: 检查是否进入低血量状态
+		if _spatial_audio_ctrl and current_hp > 0.0:
+			var hp_ratio := current_hp / max_hp
+			if hp_ratio < 0.3 and _spatial_audio_ctrl.get_active_state() != "low_health":
+				_spatial_audio_ctrl.apply_state_fx("low_health")
 	
 	# Boss 击退减弱
 	if knockback_dir != Vector2.ZERO:
@@ -492,6 +508,9 @@ func _update_shield(delta: float) -> void:
 			_shield_hp = min(_shield_hp + _shield_regen_rate * delta, _max_shield_hp)
 			if _shield_hp >= _max_shield_hp:
 				_shield_active = true
+				# OPT06: 护盾恢复时切换到 shielded 状态
+				if _spatial_audio_ctrl:
+					_spatial_audio_ctrl.apply_state_fx("shielded")
 
 # ============================================================
 # 狂暴系统
