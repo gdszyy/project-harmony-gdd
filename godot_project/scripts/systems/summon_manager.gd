@@ -16,7 +16,7 @@
 ## OPT07 集成：
 ##   - 每个构造体自动挂载 SummonAudioController
 ##   - 音频控制器通过 SummonAudioProfile 配置独立音色
-##   - 支持 BgmManager 的和声上下文 API 和十六分音符信号
+##   - 支持 BGMManager 的和声上下文 API 和十六分音符信号
 extends Node
 
 # ============================================================

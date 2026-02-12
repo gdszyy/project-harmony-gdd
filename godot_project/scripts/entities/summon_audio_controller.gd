@@ -93,9 +93,9 @@ func _ready() -> void:
 	_connect_trigger_signals()
 	
 	# 监听和声变更（用于持续型和琶音型）
-	if BgmManager.has_signal("harmony_context_changed"):
-		if not BgmManager.harmony_context_changed.is_connected(_on_harmony_changed):
-			BgmManager.harmony_context_changed.connect(_on_harmony_changed)
+	if BGMManager.has_signal("harmony_context_changed"):
+		if not BGMManager.harmony_context_changed.is_connected(_on_harmony_changed):
+			BGMManager.harmony_context_changed.connect(_on_harmony_changed)
 	
 	_is_active = true
 	
@@ -113,20 +113,20 @@ func _exit_tree() -> void:
 func _connect_trigger_signals() -> void:
 	match audio_profile.trigger_mode:
 		SummonAudioProfile.TriggerMode.PER_BEAT:
-			if BgmManager.has_signal("bgm_beat_synced"):
-				BgmManager.bgm_beat_synced.connect(_on_beat)
+			if BGMManager.has_signal("bgm_beat_synced"):
+				BGMManager.bgm_beat_synced.connect(_on_beat)
 		
 		SummonAudioProfile.TriggerMode.PER_STRONG_BEAT:
-			if BgmManager.has_signal("bgm_beat_synced"):
-				BgmManager.bgm_beat_synced.connect(_on_beat_strong_only)
+			if BGMManager.has_signal("bgm_beat_synced"):
+				BGMManager.bgm_beat_synced.connect(_on_beat_strong_only)
 		
 		SummonAudioProfile.TriggerMode.PER_SIXTEENTH:
 			# 连接十六分音符信号
-			if BgmManager.has_signal("sixteenth_tick"):
-				BgmManager.sixteenth_tick.connect(_on_sixteenth)
-			elif BgmManager.has_signal("bgm_beat_synced"):
+			if BGMManager.has_signal("sixteenth_tick"):
+				BGMManager.sixteenth_tick.connect(_on_sixteenth)
+			elif BGMManager.has_signal("bgm_beat_synced"):
 				# 回退：使用节拍信号模拟（精度降低）
-				BgmManager.bgm_beat_synced.connect(_on_beat)
+				BGMManager.bgm_beat_synced.connect(_on_beat)
 		
 		SummonAudioProfile.TriggerMode.ON_EVENT:
 			# 事件型：不自动连接，由外部调用 trigger_on_event()
@@ -154,7 +154,7 @@ func _on_beat_strong_only(beat_index: int) -> void:
 		_trigger_sound()
 
 ## 十六分音符触发
-func _on_sixteenth() -> void:
+func _on_sixteenth(_sixteenth_index: int) -> void:
 	if not _is_active:
 		return
 	_trigger_sound()
@@ -190,7 +190,7 @@ func _trigger_sound() -> void:
 # ============================================================
 
 func _resolve_pitch() -> int:
-	# 尝试从 BgmManager 获取和声上下文
+	# 尝试从 BGMManager 获取和声上下文
 	var chord: Dictionary = _get_current_chord()
 	var scale: Array = _get_current_scale()
 	var base: int = audio_profile.base_octave * 12 + 12  # MIDI 基准
@@ -204,8 +204,8 @@ func _resolve_pitch() -> int:
 			var root: int = chord.get("root", 0)
 			var fifth: int = (root + 7) % 12
 			# 音阶锁定
-			if BgmManager.has_method("quantize_to_scale"):
-				fifth = BgmManager.quantize_to_scale(fifth)
+			if BGMManager.has_method("quantize_to_scale"):
+				fifth = BGMManager.quantize_to_scale(fifth)
 			return base + fifth
 		
 		SummonAudioProfile.PitchStrategy.CHORD_ARPEGGIO:
@@ -239,14 +239,14 @@ func _resolve_pitch() -> int:
 # ============================================================
 
 func _get_current_chord() -> Dictionary:
-	if BgmManager.has_method("get_current_chord"):
-		return BgmManager.get_current_chord()
+	if BGMManager.has_method("get_current_chord"):
+		return BGMManager.get_current_chord()
 	# 回退：使用默认 Am 和弦
 	return {"root": 9, "type": 0, "notes": [9, 0, 4]}
 
 func _get_current_scale() -> Array:
-	if BgmManager.has_method("get_current_scale"):
-		return BgmManager.get_current_scale()
+	if BGMManager.has_method("get_current_scale"):
+		return BGMManager.get_current_scale()
 	# 回退：A 自然小调
 	return [9, 11, 0, 2, 4, 5, 7]
 
@@ -270,21 +270,21 @@ func _start_sustained_playback() -> void:
 	_sustained_playing = true
 
 ## 和声变更时更新
-func _on_harmony_changed(root: int, type: int, notes: Array) -> void:
+func _on_harmony_changed(chord_root: int, chord_type: int, chord_notes: Array) -> void:
 	if audio_profile == null:
 		return
 	
 	if audio_profile.trigger_mode == SummonAudioProfile.TriggerMode.SUSTAINED:
-		_sustained_chord_notes.assign(notes)
-		_update_sustained_sound(notes, audio_profile.base_octave)
+		_sustained_chord_notes.assign(chord_notes)
+		_update_sustained_sound(chord_notes, audio_profile.base_octave)
 	
 	# 重置琶音序列
 	_arpeggio_index = 0
 	
 	# 缓存和弦
-	_cached_chord = {"root": root, "type": type, "notes": notes}
+	_cached_chord = {"root": chord_root, "type": chord_type, "notes": chord_notes}
 	
-	audio_sustained_updated.emit(audio_profile.timbre_id, notes)
+	audio_sustained_updated.emit(audio_profile.timbre_id, chord_notes)
 
 # ============================================================
 # 程序化音色合成
@@ -590,8 +590,8 @@ func _gen_gate_pulse(freq: float, duration: float) -> AudioStreamWAV:
 	
 	# 门限频率（每秒脉冲数，与 BPM 同步）
 	var gate_freq: float = 4.0  # 默认 4Hz（每秒 4 个脉冲）
-	if BgmManager.has_method("get_bgm_bpm"):
-		gate_freq = BgmManager.get_bgm_bpm() / 60.0
+	if BGMManager.has_method("get_bgm_bpm"):
+		gate_freq = BGMManager.get_bgm_bpm() / 60.0
 	
 	for i in range(num_samples):
 		var t: float = float(i) / SAMPLE_RATE
@@ -654,19 +654,19 @@ func deactivate() -> void:
 		_audio_player.stop()
 	
 	# 断开信号
-	if BgmManager.has_signal("bgm_beat_synced"):
-		if BgmManager.bgm_beat_synced.is_connected(_on_beat):
-			BgmManager.bgm_beat_synced.disconnect(_on_beat)
-		if BgmManager.bgm_beat_synced.is_connected(_on_beat_strong_only):
-			BgmManager.bgm_beat_synced.disconnect(_on_beat_strong_only)
+	if BGMManager.has_signal("bgm_beat_synced"):
+		if BGMManager.bgm_beat_synced.is_connected(_on_beat):
+			BGMManager.bgm_beat_synced.disconnect(_on_beat)
+		if BGMManager.bgm_beat_synced.is_connected(_on_beat_strong_only):
+			BGMManager.bgm_beat_synced.disconnect(_on_beat_strong_only)
 	
-	if BgmManager.has_signal("sixteenth_tick"):
-		if BgmManager.sixteenth_tick.is_connected(_on_sixteenth):
-			BgmManager.sixteenth_tick.disconnect(_on_sixteenth)
+	if BGMManager.has_signal("sixteenth_tick"):
+		if BGMManager.sixteenth_tick.is_connected(_on_sixteenth):
+			BGMManager.sixteenth_tick.disconnect(_on_sixteenth)
 	
-	if BgmManager.has_signal("harmony_context_changed"):
-		if BgmManager.harmony_context_changed.is_connected(_on_harmony_changed):
-			BgmManager.harmony_context_changed.disconnect(_on_harmony_changed)
+	if BGMManager.has_signal("harmony_context_changed"):
+		if BGMManager.harmony_context_changed.is_connected(_on_harmony_changed):
+			BGMManager.harmony_context_changed.disconnect(_on_harmony_changed)
 
 ## 获取当前是否活跃
 func is_audio_active() -> bool:
