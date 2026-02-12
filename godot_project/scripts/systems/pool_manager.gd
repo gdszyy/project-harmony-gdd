@@ -63,6 +63,7 @@ const STATS_UPDATE_INTERVAL: float = 1.0
 # ============================================================
 
 func _ready() -> void:
+	add_to_group("pool_manager")
 	_preload_scenes()
 	_init_all_pools()
 

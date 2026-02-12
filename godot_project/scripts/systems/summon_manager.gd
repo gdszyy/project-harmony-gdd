@@ -1,19 +1,17 @@
 ## summon_manager.gd
-## 召唤系统 — "幻影声部 (Phantom Voice)"
+## 召唤系统 — "幻影声部 (The Phantom Section)" (Issue #32)
+##
 ## 法术第五维度：通过小七和弦（Minor 7th）召唤幻影声部伴奏实体。
-## 幻影声部是持续存在的战术单位，提供伴奏、共鸣、干扰等多种支持。
 ##
-## 设计理念：
-## - 每个幻影声部代表一个"伴奏声部"（低音、和声、旋律、打击）
-## - 声部之间可以产生"共鸣"效果（多个声部协同增强）
-## - 声部的行为受当前音色影响
-## - 声部有持续时间和维护成本（疲劳消耗）
-##
-## 召唤类型：
-## 1. 伴奏声部 (Accompaniment) — 跟随玩家，自动攻击最近敌人
-## 2. 共鸣声部 (Resonance) — 固定位置，增强区域内法术伤害
-## 3. 干扰声部 (Interference) — 巡逻移动，减速和干扰敌人
-## 4. 节奏声部 (Rhythm) — 跟随玩家，在节拍时释放脉冲波
+## v7.0 重构：
+##   - 双模式架构：保留原有音色驱动的 SummonType 系统，
+##     新增基于根音的 SummonConstruct 构造体系统。
+##   - 根音构造体类型（基于 SummoningSystem_Documentation.md）：
+##     C=节拍哨塔  D=长程棱镜  E=低频音墙  F=净化信标
+##     G=重低音炮  A=和声光环  B=高频陷阱
+##   - 共鸣网络 (Resonance Network)：同类型构造体连线增益
+##   - 玩家指挥 (Conducting)：弹体击中构造体触发激励
+##   - 音色行为修饰：弹拨系追踪泡泫、拉弦系减速力场、吹奏系穿透、打击系击退
 extends Node
 
 # ============================================================
@@ -52,7 +50,7 @@ enum SummonType {
 # ============================================================
 # 召唤物数据
 # ============================================================
-## 活跃召唤物列表
+## 活跃召唤物列表（旧版音色驱动）
 var _active_summons: Array[Dictionary] = []
 ## 召唤物 ID 计数器
 var _next_summon_id: int = 0
@@ -60,6 +58,13 @@ var _next_summon_id: int = 0
 var _resonance_bonus: float = 0.0
 ## 共鸣更新计时
 var _resonance_update_timer: float = 0.0
+
+## === v7.0 新增：根音构造体系统 (Issue #32) ===
+var _active_constructs: Array = []  ## SummonConstruct 节点引用
+var _next_construct_id: int = 0
+var _construct_network_timer: float = 0.0
+const CONSTRUCT_SCENE_PATH := "res://scripts/entities/summon_construct.gd"
+const MAX_CONSTRUCTS: int = 4  ## 最大复音数
 
 # ============================================================
 # 召唤物类型配置
@@ -132,6 +137,14 @@ func _process(delta: float) -> void:
 	if _resonance_update_timer >= 0.5:
 		_resonance_update_timer = 0.0
 		_update_resonance_bonus()
+	
+	# === v7.0: 更新构造体共鸣网络 ===
+	_construct_network_timer += delta
+	if _construct_network_timer >= 1.0:
+		_construct_network_timer = 0.0
+		_update_construct_network()
+	# 清理已销毁的构造体引用
+	_active_constructs = _active_constructs.filter(func(c): return is_instance_valid(c))
 
 # ============================================================
 # 召唤物创建
@@ -142,6 +155,15 @@ func _on_chord_cast(chord_data: Dictionary) -> void:
 	if spell_form != MusicData.SpellForm.SUMMON:
 		return
 	
+	# v7.0: 优先使用根音构造体系统
+	var note = chord_data.get("note", -1)
+	if note >= 0:
+		var root_note_index := _midi_note_to_root_index(note)
+		if root_note_index >= 0:
+			create_construct(root_note_index, chord_data)
+			return
+	
+	# 回退到旧版音色驱动系统
 	create_summon(chord_data)
 
 ## 创建召唤物
@@ -685,5 +707,172 @@ func get_resonance_bonus() -> float:
 ## 重置系统
 func reset() -> void:
 	clear_all()
+	clear_all_constructs()
 	_next_summon_id = 0
+	_next_construct_id = 0
 	_resonance_bonus = 0.0
+
+# ============================================================
+# v7.0 — 根音构造体系统 (Issue #32)
+# ============================================================
+
+## MIDI 音符 → 根音索引 (0=C, 1=D, ..., 6=B)
+func _midi_note_to_root_index(midi_note: int) -> int:
+	var pc := midi_note % 12
+	match pc:
+		0: return 0   # C
+		2: return 1   # D
+		4: return 2   # E
+		5: return 3   # F
+		7: return 4   # G
+		9: return 5   # A
+		11: return 6  # B
+		_: return -1  # 黑键，不支持构造体
+
+## 创建根音构造体
+func create_construct(root_note_index: int, chord_data: Dictionary) -> void:
+	# 最大复音数检查
+	if _active_constructs.size() >= MAX_CONSTRUCTS:
+		summon_limit_reached.emit()
+		# 移除最旧的构造体
+		_remove_oldest_construct()
+	
+	var player_pos := _get_player_position()
+	var base_damage: float = chord_data.get("damage", 15.0)
+	
+	# 实例化构造体
+	var construct_script = load(CONSTRUCT_SCENE_PATH)
+	if construct_script == null:
+		push_warning("SummonManager: 无法加载构造体脚本 " + CONSTRUCT_SCENE_PATH)
+		return
+	
+	var construct := Node2D.new()
+	construct.set_script(construct_script)
+	
+	# 配置构造体
+	construct.construct_id = _next_construct_id
+	construct.root_note = root_note_index
+	construct.base_damage = base_damage
+	construct.measures_remaining = _calculate_construct_measures(chord_data)
+	
+	# 放置位置：玩家前方偏移
+	var offset := Vector2(randf_range(-60, 60), randf_range(-60, 60))
+	construct.global_position = player_pos + offset
+	
+	# 应用音色修饰
+	_apply_timbre_modifier_to_construct(construct, chord_data)
+	
+	# 添加到场景
+	get_tree().current_scene.add_child(construct)
+	
+	# 连接信号
+	construct.construct_expired.connect(_on_construct_expired)
+	construct.construct_excited.connect(_on_construct_excited)
+	
+	_active_constructs.append(construct)
+	_next_construct_id += 1
+	
+	# 发射兼容信号（供 UI 使用）
+	var summon_data := {
+		"id": construct.construct_id,
+		"type": root_note_index,
+		"type_name": construct._config.get("name", "构造体"),
+		"position": construct.global_position,
+		"color": construct._config.get("color", Color.WHITE),
+		"is_construct": true,
+	}
+	summon_created.emit(summon_data)
+
+## 计算构造体存活小节数
+func _calculate_construct_measures(chord_data: Dictionary) -> int:
+	var base_measures := 4
+	var timbre = chord_data.get("timbre", -1)
+	
+	# 打击系（钢琴）音色：持续时间 +20%
+	if timbre == MusicData.TimbreType.PERCUSSIVE:
+		base_measures = 5
+	
+	return base_measures
+
+## 应用音色修饰到构造体
+func _apply_timbre_modifier_to_construct(construct: Node2D, chord_data: Dictionary) -> void:
+	var timbre = chord_data.get("timbre", -1)
+	
+	match timbre:
+		MusicData.TimbreType.PLUCKED:
+			# 弹拨系：攻击时额外弹射 2 个微型音符（增加攻击范围）
+			construct.attack_range *= 1.3
+		MusicData.TimbreType.BOWED:
+			# 拉弦系：周围产生减速力场
+			construct.pulse_radius *= 1.2
+		MusicData.TimbreType.WIND:
+			# 吹奏系：弹体穿透 +2
+			construct.projectile_speed *= 1.2
+		MusicData.TimbreType.PERCUSSIVE:
+			# 打击系：强拍攻击附加击退
+			construct.base_damage *= 1.15
+
+## 更新构造体共鸣网络
+func _update_construct_network() -> void:
+	for construct in _active_constructs:
+		if is_instance_valid(construct) and construct.has_method("update_network"):
+			construct.update_network(_active_constructs)
+
+## 移除最旧的构造体
+func _remove_oldest_construct() -> void:
+	if _active_constructs.is_empty():
+		return
+	
+	var oldest = _active_constructs[0]
+	if is_instance_valid(oldest):
+		oldest._start_fade_out()
+	_active_constructs.remove_at(0)
+
+## 构造体过期回调
+func _on_construct_expired(construct_id: int) -> void:
+	summon_expired.emit(construct_id)
+
+## 构造体被激励回调
+func _on_construct_excited(construct_id: int) -> void:
+	# 可在此处添加全局激励效果（如音效、UI 反馈）
+	pass
+
+## 玩家弹体击中构造体时调用（由 ProjectileManager 调用）
+func try_excite_construct(hit_position: Vector2) -> bool:
+	for construct in _active_constructs:
+		if not is_instance_valid(construct):
+			continue
+		if hit_position.distance_to(construct.global_position) < 30.0:
+			if construct.has_method("excite"):
+				construct.excite()
+				return true
+	return false
+
+## 清除所有构造体
+func clear_all_constructs() -> void:
+	for construct in _active_constructs:
+		if is_instance_valid(construct):
+			construct.queue_free()
+	_active_constructs.clear()
+
+## 获取活跃构造体数量
+func get_active_construct_count() -> int:
+	return _active_constructs.size()
+
+## 获取活跃构造体信息（供 UI 使用）
+func get_active_constructs_info() -> Array[Dictionary]:
+	var info: Array[Dictionary] = []
+	for construct in _active_constructs:
+		if not is_instance_valid(construct):
+			continue
+		info.append({
+			"id": construct.construct_id,
+			"root_note": construct.root_note,
+			"name": construct._config.get("name", "构造体"),
+			"category": construct._category,
+			"position": construct.global_position,
+			"measures_remaining": construct.measures_remaining,
+			"color": construct._config.get("color", Color.WHITE),
+			"linked_count": construct._linked_constructs.size(),
+		})
+	return info

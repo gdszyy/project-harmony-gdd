@@ -1,0 +1,54 @@
+[gd_scene load_steps=4 format=3 uid://boss_jazz_001]
+
+[ext_resource type="Script" path="res://scripts/entities/enemies/bosses/boss_jazz.gd" id="1_boss_script"]
+[ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_glitch"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 38.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_damage"]
+radius = 46.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glitch"]
+shader = ExtResource("2_glitch")
+shader_parameter/glitch_intensity = 0.15
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/is_stunned = 0.0
+shader_parameter/base_tint = Color(0.2, 0.8, 0.6, 1)
+shader_parameter/scanline_density = 60.0
+shader_parameter/scanline_strength = 0.3
+shader_parameter/chromatic_offset = 2.0
+shader_parameter/noise_speed = 3.0
+shader_parameter/pixel_size = 1.0
+
+[node name="BossJazz" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_boss_script")
+max_hp = 4500.0
+move_speed = 70.0
+contact_damage = 18.0
+xp_value = 200
+collision_radius = 38.0
+base_color = Color(0.2, 0.8, 0.6, 1)
+boss_name = "爵士"
+boss_title = "切分行者 · The Swing Walker"
+show_boss_bar = true
+enrage_time = 240.0
+resonance_fragment_drop = 100
+
+[node name="EnemyVisual" type="Polygon2D" parent="."]
+material = SubResource("ShaderMaterial_glitch")
+color = Color(0.2, 0.8, 0.6, 1)
+polygon = PackedVector2Array(-30, -38, 0, -42, 35, -28, 42, 0, 30, 30, 5, 42, -25, 35, -40, 10)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="DamageArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+
+[node name="DamageShape" type="CollisionShape2D" parent="DamageArea"]
+shape = SubResource("CircleShape2D_damage")

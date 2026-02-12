@@ -35,6 +35,11 @@ var _loaded_scenes: Dictionary = {}
 ## 缓存已加载的脚本（章节特色敌人 + 精英）
 var _loaded_scripts: Dictionary = {}
 
+## 对象池管理器引用 (Issue #55)
+var _pool_manager: Node = null
+## 对象池支持的敌人类型（基础五种）
+const POOLED_ENEMY_TYPES: Array = ["static", "silence", "screech", "pulse", "wall"]
+
 # ============================================================
 # 生成配置
 # ============================================================
@@ -145,6 +150,7 @@ func _ready() -> void:
 	add_to_group("enemy_spawner")
 	_preload_enemy_scenes()
 	_connect_signals()
+	_init_pool_manager()
 	_is_resting = true
 	_wave_rest_timer = 2.0
 
@@ -861,13 +867,21 @@ func _spawn_enemy(player_pos: Vector2, type_name: String) -> void:
 
 func _spawn_enemy_at(spawn_pos: Vector2, type_name: String) -> void:
 	var enemy: CharacterBody2D = null
+	var from_pool: bool = false
 	
-	# 1. 尝试从预加载场景实例化（基础五种）
-	var scene: PackedScene = _loaded_scenes.get(type_name)
-	if scene:
-		enemy = scene.instantiate() as CharacterBody2D
+	# 1. 优先尝试从对象池获取 (Issue #55)
+	if _pool_manager and type_name in POOLED_ENEMY_TYPES:
+		enemy = _pool_manager.acquire_enemy(type_name) as CharacterBody2D
+		if enemy:
+			from_pool = true
 	
-	# 2. 尝试从脚本实例化（章节特色 + 精英）
+	# 2. 尝试从预加载场景实例化（基础五种）
+	if enemy == null:
+		var scene: PackedScene = _loaded_scenes.get(type_name)
+		if scene:
+			enemy = scene.instantiate() as CharacterBody2D
+	
+	# 3. 尝试从脚本实例化（章节特色 + 精英）
 	if enemy == null:
 		enemy = _instantiate_from_script(type_name)
 	
@@ -877,6 +891,10 @@ func _spawn_enemy_at(spawn_pos: Vector2, type_name: String) -> void:
 	
 	enemy.global_position = spawn_pos
 	
+	# 标记敌人来源（用于回收时判断）
+	enemy.set_meta("from_pool", from_pool)
+	enemy.set_meta("pool_type", type_name)
+	
 	# 应用难度缩放
 	_apply_difficulty_scaling(enemy, type_name)
 	
@@ -884,12 +902,15 @@ func _spawn_enemy_at(spawn_pos: Vector2, type_name: String) -> void:
 	if _current_wave_type == WaveType.ELITE and not ChapterData.is_elite_enemy(type_name):
 		_apply_elite_bonus(enemy, type_name)
 	
-	add_child(enemy)
+	# 从对象池获取的敌人已在场景树中，只需重新激活
+	if not from_pool:
+		add_child(enemy)
 	_active_enemies.append(enemy)
 	_total_enemies_spawned += 1
 	
 	if enemy.has_signal("enemy_died"):
-		enemy.enemy_died.connect(_on_enemy_died)
+		if not enemy.enemy_died.is_connected(_on_enemy_died):
+			enemy.enemy_died.connect(_on_enemy_died)
 	
 	spawn_count_changed.emit(_active_enemies.size(), _total_enemies_spawned)
 
@@ -1007,6 +1028,9 @@ func _apply_elite_bonus(enemy: CharacterBody2D, _type_name: String) -> void:
 func _on_enemy_died(pos: Vector2, xp: int, enemy_type: String) -> void:
 	# 经验值由 xp_pickup 拾取时添加，不在此处重复添加
 	_spawn_xp_pickup(pos, xp, enemy_type)
+	
+	# 尝试将死亡敌人归还对象池 (Issue #55)
+	_return_dead_enemy_to_pool(enemy_type)
 
 func _cleanup_dead_enemies() -> void:
 	_active_enemies = _active_enemies.filter(func(e): return is_instance_valid(e))
@@ -1063,6 +1087,60 @@ func get_wave_progress() -> float:
 func clear_all_enemies() -> void:
 	for enemy in _active_enemies:
 		if is_instance_valid(enemy):
-			enemy.queue_free()
+			var from_pool: bool = enemy.get_meta("from_pool", false)
+			var pool_type: String = enemy.get_meta("pool_type", "")
+			if from_pool and _pool_manager and pool_type != "":
+				_pool_manager.release_enemy(pool_type, enemy)
+			else:
+				enemy.queue_free()
 	_active_enemies.clear()
 	_wave_spawn_budget = 0
+
+# ============================================================
+# 对象池集成 (Issue #55)
+# ============================================================
+
+## 初始化对象池管理器引用
+func _init_pool_manager() -> void:
+	# PoolManager 可能作为场景子节点存在，也可能作为 Autoload
+	_pool_manager = get_node_or_null("/root/PoolManager")
+	if _pool_manager == null:
+		# 尝试在场景树中查找
+		_pool_manager = get_tree().get_first_node_in_group("pool_manager") if get_tree() else null
+	if _pool_manager == null:
+		# 尝试从父节点查找
+		var parent := get_parent()
+		if parent:
+			_pool_manager = parent.get_node_or_null("PoolManager")
+	if _pool_manager:
+		print("EnemySpawner: PoolManager connected (Issue #55)")
+	else:
+		push_warning("EnemySpawner: PoolManager not found, falling back to instantiate/queue_free")
+
+## 将死亡敌人归还对象池
+func _return_dead_enemy_to_pool(enemy_type: String) -> void:
+	if _pool_manager == null:
+		return
+	
+	# 查找匹配类型的死亡敌人
+	var to_return: Array[Node2D] = []
+	for enemy in _active_enemies:
+		if not is_instance_valid(enemy):
+			continue
+		var is_dead: bool = enemy.get("_is_dead") if enemy.get("_is_dead") != null else false
+		if not is_dead:
+			continue
+		var from_pool: bool = enemy.get_meta("from_pool", false)
+		var pool_type: String = enemy.get_meta("pool_type", "")
+		if from_pool and pool_type == enemy_type:
+			to_return.append(enemy)
+	
+	for enemy in to_return:
+		_active_enemies.erase(enemy)
+		_pool_manager.release_enemy(enemy_type, enemy)
+
+## 获取对象池统计信息（供性能监控使用）
+func get_pool_stats() -> Dictionary:
+	if _pool_manager and _pool_manager.has_method("get_all_stats"):
+		return _pool_manager.get_all_stats()
+	return {}

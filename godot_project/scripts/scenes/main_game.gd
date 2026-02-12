@@ -151,6 +151,10 @@ func _start_normal_game() -> void:
 	_connect_system_signals()
 	_start_chapter_system()
 	GameManager.start_game()
+	# v7.0: 应用角色/职业系统 (Issue #28)
+	var class_mgr := get_node_or_null("CharacterClassManager")
+	if class_mgr and class_mgr.has_method("apply_class"):
+		class_mgr.apply_class()
 
 func _process_normal_game(delta: float) -> void:
 	# 游戏结束延迟跳转

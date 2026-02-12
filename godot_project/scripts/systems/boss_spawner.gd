@@ -36,10 +36,20 @@ signal boss_intro_completed(boss_name: String)
 # ============================================================
 const BOSS_SCENES: Dictionary = {
 	"conductor": "res://scenes/enemies/boss_dissonant_conductor.tscn",
+	"boss_pythagoras": "res://scenes/enemies/boss_pythagoras.tscn",
+	"boss_guido": "res://scenes/enemies/boss_guido.tscn",
+	"boss_bach": "res://scenes/enemies/boss_bach.tscn",
+	"boss_mozart": "res://scenes/enemies/boss_mozart.tscn",
+	"boss_beethoven": "res://scenes/enemies/boss_beethoven.tscn",
+	"boss_jazz": "res://scenes/enemies/boss_jazz.tscn",
+	"boss_noise": "res://scenes/enemies/boss_noise.tscn",
 }
 
 ## Boss 出现顺序（传统模式循环）
-const BOSS_ORDER: Array = ["conductor"]
+const BOSS_ORDER: Array = [
+	"boss_pythagoras", "boss_guido", "boss_bach", "boss_mozart",
+	"boss_beethoven", "boss_jazz", "boss_noise",
+]
 
 # ============================================================
 # 章节 Boss 脚本路径（由 ChapterData 定义，这里缓存）
