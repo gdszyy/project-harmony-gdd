@@ -99,6 +99,10 @@ func _on_enemy_ready() -> void:
 	_build_vortex_particles()
 	# 创建舞伴连接线
 	_build_connection_line()
+	
+	# 将程序化视觉节点注册为 enemy_base 的 _sprite
+	# 使基类的 _update_visual 能正确操作程序化视觉
+	_sprite = _candlestick_visual
 
 # ============================================================
 # 程序化洛可可烛台几何体 (Issue #67)

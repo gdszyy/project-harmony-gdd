@@ -943,22 +943,32 @@ func _instantiate_from_script(type_name: String) -> CharacterBody2D:
 	return enemy
 
 ## 为脚本实例化的敌人创建必要子节点
+## 章节特色敌人拥有自定义程序化视觉，其 _on_enemy_ready() 会自行创建视觉节点并设置 _sprite
+## 因此对这些敌人仅创建碰撞体和伤害区域，跳过通用 EnemyVisual
+const CUSTOM_VISUAL_ENEMIES: Array = [
+	"ch4_minuet_dancer",
+	"ch5_fury_spirit",
+	"ch6_walking_bass",
+]
 func _create_enemy_nodes(enemy: Node, type_name: String) -> void:
 	var is_elite = ChapterData.is_elite_enemy(type_name)
 	var radius := 16.0 if is_elite else 12.0
+	var has_custom_visual := type_name in CUSTOM_VISUAL_ENEMIES
 	
-	# EnemyVisual
-	var visual := Polygon2D.new()
-	visual.name = "EnemyVisual"
-	var points := PackedVector2Array()
-	var sides := 6 if is_elite else 4
-	for i in range(sides):
-		var angle := (TAU / sides) * i - PI / 2.0
-		var r := radius * (1.2 if i % 2 == 0 else 0.9) if is_elite else radius
-		points.append(Vector2.from_angle(angle) * r)
-	visual.polygon = points
-	visual.color = Color(0.7, 0.3, 0.3)
-	enemy.add_child(visual)
+	# EnemyVisual — 拥有自定义视觉的敌人跳过通用视觉创建
+	# 它们会在 _on_enemy_ready() 中创建程序化视觉并命名为 "EnemyVisual"
+	if not has_custom_visual:
+		var visual := Polygon2D.new()
+		visual.name = "EnemyVisual"
+		var points := PackedVector2Array()
+		var sides := 6 if is_elite else 4
+		for i in range(sides):
+			var angle := (TAU / sides) * i - PI / 2.0
+			var r := radius * (1.2 if i % 2 == 0 else 0.9) if is_elite else radius
+			points.append(Vector2.from_angle(angle) * r)
+		visual.polygon = points
+		visual.color = Color(0.7, 0.3, 0.3)
+		enemy.add_child(visual)
 	
 	# CollisionShape2D
 	var col := CollisionShape2D.new()

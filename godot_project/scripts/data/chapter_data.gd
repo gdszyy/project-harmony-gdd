@@ -424,6 +424,7 @@ const CHAPTERS: Dictionary = {
 			"ch4_minuet_dancer":         { "weight": 1.5, "min_wave": 1 },
 			"ch5_fate_knocker":          { "weight": 3.0, "min_wave": 2 },
 			"ch5_crescendo_surge":       { "weight": 2.5, "min_wave": 3 },
+			"ch5_fury_spirit":           { "weight": 2.0, "min_wave": 4 },
 			"pulse":                     { "weight": 1.5, "min_wave": 1 },
 			"ch3_counterpoint_crawler":  { "weight": 1.0, "min_wave": 2 },
 			"wall":                      { "weight": 1.5, "min_wave": 5 },
@@ -466,7 +467,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [7, 9],
 				"type": "swarm",
 				"enemy_count_base": 25,
-				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch4_minuet_dancer", "wall"],
+				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch5_fury_spirit", "ch4_minuet_dancer", "wall"],
 				"spawn_interval": 0.9,
 			},
 			{
@@ -481,7 +482,7 @@ const CHAPTERS: Dictionary = {
 				"waves": [11, 13],
 				"type": "pre_boss",
 				"enemy_count_base": 20,
-				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch4_minuet_dancer", "wall"],
+				"enemy_types": ["ch5_fate_knocker", "ch5_crescendo_surge", "ch5_fury_spirit", "ch4_minuet_dancer", "wall"],
 				"spawn_interval": 0.7,
 			},
 		],
@@ -518,6 +519,7 @@ const CHAPTERS: Dictionary = {
 		"enemy_pool": {
 			"ch5_crescendo_surge":       { "weight": 1.0, "min_wave": 1 },
 			"ch5_fate_knocker":          { "weight": 1.0, "min_wave": 1 },
+			"ch5_fury_spirit":           { "weight": 0.8, "min_wave": 3 },
 			"ch6_walking_bass":          { "weight": 3.0, "min_wave": 2 },
 			"ch6_scat_singer":           { "weight": 2.5, "min_wave": 3 },
 			"pulse":                     { "weight": 1.5, "min_wave": 1 },
@@ -743,6 +745,7 @@ const ENEMY_SCRIPT_PATHS: Dictionary = {
 	# 第五章特色
 	"ch5_fate_knocker":      "res://scripts/entities/enemies/chapter_enemies/ch5_fate_knocker.gd",
 	"ch5_crescendo_surge":   "res://scripts/entities/enemies/chapter_enemies/ch5_crescendo_surge.gd",
+	"ch5_fury_spirit":       "res://scripts/entities/enemies/chapter_enemies/ch5_fury_spirit.gd",
 	
 	# 第六章特色
 	"ch6_walking_bass":      "res://scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd",
@@ -804,6 +807,9 @@ const CHAPTER_ENEMY_STATS: Dictionary = {
 	},
 	"ch5_crescendo_surge": {
 		"hp": 50.0, "speed": 60.0, "damage": 8.0, "xp": 8,
+	},
+	"ch5_fury_spirit": {
+		"hp": 120.0, "speed": 90.0, "damage": 12.0, "xp": 18,
 	},
 	# 第六章
 	"ch6_walking_bass": {

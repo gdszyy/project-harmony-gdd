@@ -805,6 +805,30 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
 	},
+	"ch5_fury_spirit": {
+		"name": "狂怒精魂",
+		"subtitle": "第五章 · 狂想曲",
+		"description": "贝多芬时代的特色敌人。一种由闪电构成的不定形元素生物，核心是一个跳动的心脏状闪电球。其形态会随BGM情绪激烈程度而变化，从柔和电光到狂暴的闪电触须。蓄力后进行极速冲刺，留下电弧轨迹。",
+		"chapter": 5,
+		"rarity": Rarity.EPIC,
+		"unlock_type": UnlockType.ENCOUNTER,
+	},
+	"ch6_walking_bass": {
+		"name": "摇摆贝斯",
+		"subtitle": "第六章 · 切分行者",
+		"description": "爵士时代的特色敌人。低音提琴形状的数字生物，轮廓由霓虹灯管构成，颜色随布鲁斯音阶流动。沿经典的行走贝斯音阶在场上留下发光音符轨迹，在反拍时移动速度加倍。",
+		"chapter": 6,
+		"rarity": Rarity.EPIC,
+		"unlock_type": UnlockType.ENCOUNTER,
+	},
+	"ch6_scat_singer": {
+		"name": "卡特歌手",
+		"subtitle": "第六章 · 切分行者",
+		"description": "爵士时代的特色敌人。一个快速移动的声音实体，会发出即兴的卡特音节攻击，节奏不可预测。代表了爵士乐中即兴演唱的自由精神。",
+		"chapter": 6,
+		"rarity": Rarity.RARE,
+		"unlock_type": UnlockType.ENCOUNTER,
+	},
 }
 
 const VOL3_ELITES: Dictionary = {

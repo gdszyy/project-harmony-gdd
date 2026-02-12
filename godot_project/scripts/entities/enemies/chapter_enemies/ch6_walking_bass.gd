@@ -108,6 +108,10 @@ func _on_enemy_ready() -> void:
 	
 	# 生成初始路径
 	_generate_bass_path()
+	
+	# 将程序化视觉节点注册为 enemy_base 的 _sprite
+	# 使基类的 _update_visual 能正确操作程序化视觉
+	_sprite = _bass_visual
 
 # ============================================================
 # 程序化低音提琴霓虹灯管轮廓 (Issue #69)

@@ -109,6 +109,10 @@ func _on_enemy_ready() -> void:
 	# 初始化噪声种子
 	for i in range(cloud_particle_count):
 		_noise_seeds.append(randf() * 1000.0)
+	
+	# 将程序化视觉核心节点注册为 enemy_base 的 _sprite
+	# 使基类的 _update_visual 能正确操作程序化视觉
+	_sprite = _core_visual
 
 # ============================================================
 # 程序化不定形粒子云体 (Issue #68)
