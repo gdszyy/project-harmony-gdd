@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://main_game"]
+[gd_scene load_steps=36 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -7,8 +7,6 @@
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5_hud"]
 [ext_resource type="Script" path="res://scripts/ui/sequencer_ui.gd" id="6_sequencer"]
 [ext_resource type="Script" path="res://scripts/ui/circle_of_fifths_upgrade_v3.gd" id="7_upgrade"]
-[ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
-[ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
 [ext_resource type="PackedScene" uid="uid://pause_menu_001" path="res://scenes/pause_menu.tscn" id="8_pause"]
 [ext_resource type="Script" path="res://scripts/ui/game_mechanics_panel.gd" id="9_mechanics"]
 [ext_resource type="Script" path="res://scripts/ui/note_inventory_ui.gd" id="10_note_inv"]
@@ -31,6 +29,10 @@
 [ext_resource type="Script" path="res://scripts/visual/ui_theme_manager.gd" id="31_ui_theme"]
 [ext_resource type="Script" path="res://scripts/systems/character_class_manager.gd" id="32_class_mgr"]
 [ext_resource type="Script" path="res://scripts/systems/obstacle_spawner.gd" id="33_obstacle_spawner"]
+[ext_resource type="Script" path="res://scripts/ui/hp_bar.gd" id="34_hp_bar"]
+[ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
+[ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
+[ext_resource type="Script" path="res://scripts/ui/tutorial_hint_manager.gd" id="37_tutorial"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 12.0
@@ -109,6 +111,7 @@ offset_left = 20.0
 offset_top = 20.0
 offset_right = 340.0
 offset_bottom = 70.0
+script = ExtResource("34_hp_bar")
 
 [node name="FatigueBar" type="Control" parent="HUD"]
 anchors_preset = 1
@@ -294,6 +297,10 @@ script = ExtResource("29_codex_popup")
 
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false
+
+[node name="TutorialHintManager" type="CanvasLayer" parent="HUD"]
+layer = 100
+script = ExtResource("37_tutorial")
 
 [node name="PerformanceMonitor" type="CanvasLayer" parent="."]
 layer = 20

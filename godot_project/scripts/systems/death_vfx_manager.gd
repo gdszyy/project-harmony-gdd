@@ -1,10 +1,11 @@
 ## death_vfx_manager.gd
-## 死亡特效管理器 v2.0 — 统一管理敌人死亡时的视觉效果
+## 死亡特效管理器 v2.1 — 统一管理敌人死亡时的视觉效果
 ## 使用对象池避免频繁实例化，支持不同敌人类型的差异化特效。
 ## 设计参考：敌人死亡 = "信号崩溃"，视觉上模拟老式电视关机效果。
 ## v2.0 优化：将死亡特效与音乐性更紧密结合。
 ## - 普通敌人：身体分解为构成它的"音符"粒子
 ## - Boss：触发多阶段的"乐章崩坏"视觉盛宴
+## v2.1: 替换硬编码颜色为 UIColors Autoload 引用
 extends Node2D
 
 # ============================================================
@@ -22,65 +23,11 @@ extends Node2D
 @export var pool_size: int = 50
 
 # ============================================================
-# 敌人类型特效配置
+# 敌人类型特效配置 (v2.1: 使用 UIColors 引用)
 # ============================================================
-# 音符颜色 (from UIColors / UI_Art_Style_Enhancement_Proposal.md)
-const NOTE_COLORS: Dictionary = {
-	"C": Color("#FF6B6B"),
-	"D": Color("#FF8C42"),
-	"E": Color("#FFD700"),
-	"F": Color("#4DFF80"),
-	"G": Color("#4DFFF3"),
-	"A": Color("#4D8BFF"),
-	"B": Color("#9D6FFF"),
-}
 
-const TYPE_VFX_CONFIG: Dictionary = {
-	"static": {
-		"fragments": 4,
-		"speed": 150.0,
-		"color": Color("#FF4D4D"),
-		"fragment_shape": "triangle",
-		"screen_shake": 0.0,
-		"note_names": ["C", "E"],
-	},
-	"silence": {
-		"fragments": 8,
-		"speed": 80.0,
-		"color": Color("#6B668A"),
-		"fragment_shape": "circle",
-		"screen_shake": 0.3,
-		"implode": true,
-		"note_names": ["B"],
-	},
-	"screech": {
-		"fragments": 10,
-		"speed": 300.0,
-		"color": Color("#FFD700"),
-		"fragment_shape": "spike",
-		"screen_shake": 0.2,
-		"burst_ring": true,
-		"note_names": ["E", "G"],
-	},
-	"pulse": {
-		"fragments": 6,
-		"speed": 200.0,
-		"color": Color("#4D8BFF"),
-		"fragment_shape": "square",
-		"screen_shake": 0.15,
-		"ripple": true,
-		"note_names": ["A", "C"],
-	},
-	"wall": {
-		"fragments": 12,
-		"speed": 120.0,
-		"color": Color("#A098C8"),
-		"fragment_shape": "rectangle",
-		"screen_shake": 0.5,
-		"quake_ring": true,
-		"note_names": ["D", "F"],
-	},
-}
+## 延迟初始化的类型配置（需要在 _ready 之后访问 UIColors）
+var _type_vfx_config: Dictionary = {}
 
 # ============================================================
 # 对象池
@@ -93,10 +40,59 @@ var _pool_index: int = 0
 # ============================================================
 
 func _ready() -> void:
+	_init_type_vfx_config()
 	_init_fragment_pool()
 	# 连接全局敌人死亡信号
 	if GameManager.has_signal("enemy_killed"):
 		GameManager.enemy_killed.connect(_on_enemy_killed_global)
+
+func _init_type_vfx_config() -> void:
+	_type_vfx_config = {
+		"static": {
+			"fragments": 4,
+			"speed": 150.0,
+			"color": UIColors.DANGER,
+			"fragment_shape": "triangle",
+			"screen_shake": 0.0,
+			"note_names": ["C", "E"],
+		},
+		"silence": {
+			"fragments": 8,
+			"speed": 80.0,
+			"color": UIColors.TEXT_DIM,
+			"fragment_shape": "circle",
+			"screen_shake": 0.3,
+			"implode": true,
+			"note_names": ["B"],
+		},
+		"screech": {
+			"fragments": 10,
+			"speed": 300.0,
+			"color": UIColors.GOLD,
+			"fragment_shape": "spike",
+			"screen_shake": 0.2,
+			"burst_ring": true,
+			"note_names": ["E", "G"],
+		},
+		"pulse": {
+			"fragments": 6,
+			"speed": 200.0,
+			"color": UIColors.CHORD_TONIC,
+			"fragment_shape": "square",
+			"screen_shake": 0.15,
+			"ripple": true,
+			"note_names": ["A", "C"],
+		},
+		"wall": {
+			"fragments": 12,
+			"speed": 120.0,
+			"color": UIColors.TEXT_SECONDARY,
+			"fragment_shape": "rectangle",
+			"screen_shake": 0.5,
+			"quake_ring": true,
+			"note_names": ["D", "F"],
+		},
+	}
 
 func _init_fragment_pool() -> void:
 	for i in range(pool_size):
@@ -114,7 +110,7 @@ func _init_fragment_pool() -> void:
 
 ## 播放敌人死亡特效
 func play_death_effect(pos: Vector2, enemy_type: String) -> void:
-	var config: Dictionary = TYPE_VFX_CONFIG.get(enemy_type, TYPE_VFX_CONFIG["static"])
+	var config: Dictionary = _type_vfx_config.get(enemy_type, _type_vfx_config.get("static", {}))
 
 	# 1. 碎片爆散
 	_spawn_fragments(pos, config)
@@ -158,12 +154,12 @@ func play_boss_death_effect(boss: Node2D, phase_count: int = 3) -> void:
 		for wave in range(phase_count):
 			var delay := wave * 0.3
 			get_tree().create_timer(delay).timeout.connect(func():
-				var note_keys = NOTE_COLORS.keys()
+				var note_keys = UIColors.NOTE_COLORS.keys()
 				for j in range(8):
-					var color = NOTE_COLORS[note_keys[j % note_keys.size()]]
+					var color = UIColors.NOTE_COLORS[note_keys[j % note_keys.size()]]
 					_spawn_single_note_particle(pos, color)
 				# 每波都有一个小闪光
-				var wave_color = NOTE_COLORS[note_keys[wave % note_keys.size()]]
+				var wave_color = UIColors.NOTE_COLORS[note_keys[wave % note_keys.size()]]
 				_spawn_flash(pos, {"color": wave_color})
 			)
 	)
@@ -174,7 +170,7 @@ func play_boss_death_effect(boss: Node2D, phase_count: int = 3) -> void:
 		_spawn_final_burst(pos)
 		var vfx = get_node_or_null("/root/VFXManager")
 		if vfx and vfx.has_method("play_screen_flash"):
-			vfx.play_screen_flash(Color("#FFD700"), 0.5)
+			vfx.play_screen_flash(UIColors.GOLD, 0.5)
 	)
 
 	# 阶段4：Boss淡出
@@ -295,11 +291,11 @@ func _spawn_flash(pos: Vector2, config: Dictionary) -> void:
 	tween.tween_callback(flash.queue_free)
 
 # ============================================================
-# 特殊效果
+# 特殊效果 (v2.1: 默认颜色使用 UIColors)
 # ============================================================
 
 func _spawn_burst_ring(pos: Vector2, config: Dictionary) -> void:
-	var color: Color = config.get("color", Color.YELLOW)
+	var color: Color = config.get("color", UIColors.GOLD)
 	var ring := _create_ring(pos, color, 5.0)
 
 	var tween := ring.create_tween()
@@ -310,7 +306,7 @@ func _spawn_burst_ring(pos: Vector2, config: Dictionary) -> void:
 	tween.tween_callback(ring.queue_free)
 
 func _spawn_implode_effect(pos: Vector2, config: Dictionary) -> void:
-	var color: Color = config.get("color", Color.PURPLE)
+	var color: Color = config.get("color", UIColors.ACCENT)
 	var ring := _create_ring(pos, color, 40.0)
 	ring.modulate.a = 0.0
 
@@ -325,7 +321,7 @@ func _spawn_implode_effect(pos: Vector2, config: Dictionary) -> void:
 	tween.tween_callback(ring.queue_free)
 
 func _spawn_ripple(pos: Vector2, config: Dictionary) -> void:
-	var color: Color = config.get("color", Color.CYAN)
+	var color: Color = config.get("color", UIColors.ACCENT_2)
 	# 多层涟漪
 	for i in range(3):
 		var delay := i * 0.08
@@ -341,7 +337,7 @@ func _spawn_ripple(pos: Vector2, config: Dictionary) -> void:
 		)
 
 func _spawn_quake_ring(pos: Vector2, config: Dictionary) -> void:
-	var color: Color = config.get("color", Color.GRAY)
+	var color: Color = config.get("color", UIColors.TEXT_SECONDARY)
 	var ring := _create_ring(pos, color, 8.0)
 
 	# 粗重的地震环
@@ -370,13 +366,13 @@ func _create_ring(pos: Vector2, color: Color, radius: float) -> Polygon2D:
 # ============================================================
 
 # ============================================================
-# 音符粒子系统 (v2.0 新增)
+# 音符粒子系统 (v2.0 新增, v2.1: 使用 UIColors.NOTE_COLORS)
 # ============================================================
 
 func _spawn_note_particles(pos: Vector2, note_names: Array) -> void:
 	for i in range(note_names.size() * 2):
 		var note_name: String = note_names[i % note_names.size()]
-		var color: Color = NOTE_COLORS.get(note_name, Color.WHITE)
+		var color: Color = UIColors.get_note_color(note_name)
 		_spawn_single_note_particle(pos, color)
 
 func _spawn_single_note_particle(pos: Vector2, color: Color) -> void:
@@ -406,9 +402,9 @@ func _spawn_single_note_particle(pos: Vector2, color: Color) -> void:
 	tween.tween_callback(particle.queue_free)
 
 func _spawn_final_burst(pos: Vector2) -> void:
-	var note_keys = NOTE_COLORS.keys()
+	var note_keys = UIColors.NOTE_COLORS.keys()
 	for i in range(24):
-		var color = NOTE_COLORS[note_keys[i % note_keys.size()]]
+		var color = UIColors.NOTE_COLORS[note_keys[i % note_keys.size()]]
 		var particle := Polygon2D.new()
 		particle.polygon = PackedVector2Array([
 			Vector2(-3, 4), Vector2(-3, -4), Vector2(0, -5),

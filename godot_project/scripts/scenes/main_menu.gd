@@ -1,7 +1,8 @@
 ## main_menu.gd
-## 主菜单场景 - v2.1 Layout Fix
+## 主菜单场景 - v2.2 UIColors Integration
 ## 极简主义设计：深色背景 + 神圣几何动态图案 + 呼吸感交互
 ## 修复：使用正确的锚点居中布局，适配不同分辨率
+## v2.2: 替换硬编码颜色为 UIColors Autoload 引用
 extends Control
 
 # ============================================================
@@ -15,23 +16,16 @@ extends Control
 @onready var _version_label: Label = $VersionLabel
 
 # ============================================================
-# 颜色配置 (from UIColors / UI_Art_Style_Enhancement_Proposal.md)
+# 颜色配置 (v2.2: 使用 UIColors Autoload 单例)
 # ============================================================
-const BG_BUTTON := Color("#141026E6")
-const BG_BUTTON_HOVER := Color("#201A38F2")
-const BG_BUTTON_PRESSED := Color("#2A2248")
-const TITLE_COLOR := Color("#EAE6FF")
-const SUBTITLE_COLOR := Color("#A098C8")
-const VERSION_COLOR := Color("#6B668A")
+var BG_BUTTON: Color
+var BG_BUTTON_HOVER: Color
+var BG_BUTTON_PRESSED: Color
+var TITLE_COLOR: Color
+var SUBTITLE_COLOR: Color
+var VERSION_COLOR: Color
 
-const BUTTON_CONFIGS: Array = [
-	{ "name": "StartButton", "text": "BEGIN RESONANCE", "accent": Color("#9D6FFF") },
-	{ "name": "HallButton", "text": "HALL OF HARMONY", "accent": Color("#FFD700") },
-	{ "name": "CodexButton", "text": "CODEX RESONARE", "accent": Color("#4DFFF3") },
-	{ "name": "TestChamberButton", "text": "ECHOING CHAMBER", "accent": Color("#FF8C42") },
-	{ "name": "SettingsButton", "text": "SETTINGS", "accent": Color("#A098C8") },
-	{ "name": "QuitButton", "text": "EXIT", "accent": Color("#6B668A") },
-]
+var BUTTON_CONFIGS: Array = []
 
 # ============================================================
 # 状态
@@ -46,6 +40,7 @@ var _button_container: VBoxContainer = null
 # ============================================================
 
 func _ready() -> void:
+	_init_colors()
 	_setup_ui()
 	_setup_background()
 	_play_entrance_animation()
@@ -58,6 +53,27 @@ func _process(delta: float) -> void:
 	_time += delta
 	_update_background()
 	_update_title_animation()
+
+# ============================================================
+# 颜色初始化 (v2.2: 从 UIColors Autoload 读取)
+# ============================================================
+
+func _init_colors() -> void:
+	BG_BUTTON = UIColors.with_alpha(UIColors.PANEL_BG, 0.9)
+	BG_BUTTON_HOVER = UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.95)
+	BG_BUTTON_PRESSED = UIColors.PANEL_SELECTED
+	TITLE_COLOR = UIColors.TEXT_PRIMARY
+	SUBTITLE_COLOR = UIColors.TEXT_SECONDARY
+	VERSION_COLOR = UIColors.TEXT_DIM
+
+	BUTTON_CONFIGS = [
+		{ "name": "StartButton", "text": "BEGIN RESONANCE", "accent": UIColors.ACCENT },
+		{ "name": "HallButton", "text": "HALL OF HARMONY", "accent": UIColors.GOLD },
+		{ "name": "CodexButton", "text": "CODEX RESONARE", "accent": UIColors.ACCENT_2 },
+		{ "name": "TestChamberButton", "text": "ECHOING CHAMBER", "accent": UIColors.WARNING },
+		{ "name": "SettingsButton", "text": "SETTINGS", "accent": UIColors.TEXT_SECONDARY },
+		{ "name": "QuitButton", "text": "EXIT", "accent": UIColors.TEXT_DIM },
+	]
 
 # ============================================================
 # UI 设置 (v2.1 - 使用 VBoxContainer 居中布局)
@@ -74,7 +90,7 @@ func _setup_ui() -> void:
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 48)
 	_title_label.add_theme_color_override("font_color", TITLE_COLOR)
-	_title_label.add_theme_color_override("font_shadow_color", Color("#9D6FFF40"))
+	_title_label.add_theme_color_override("font_shadow_color", UIColors.with_alpha(UIColors.ACCENT, 0.25))
 	_title_label.add_theme_constant_override("shadow_offset_x", 0)
 	_title_label.add_theme_constant_override("shadow_offset_y", 3)
 	# 使用全宽居中锚点
