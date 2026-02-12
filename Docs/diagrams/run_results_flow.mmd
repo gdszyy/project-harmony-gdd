@@ -1,0 +1,56 @@
+graph TD
+    subgraph FLOW["单局结算流程 (Run Results Flow)"]
+        direction TB
+        
+        END["局内游戏结束"]
+        
+        subgraph PHASE1["阶段一: 核心奖励展示"]
+            P1_TITLE["乐章完成 / 不谐级联\n(胜利/失败标题)"]
+            P1_REWARD["💎 共鸣碎片 +1,250\n(数字滚动动画)"]
+            P1_BTN["[检视演奏]"]
+        end
+        
+        subgraph PHASE2["阶段二: 表现分析仪表盘"]
+            direction LR
+            P2_LEFT["常规统计\n━━━━━━━━\n演奏时长: 18:32\n肃清杂音: 2,847\n击溃乐长: 3\n最高乐章: Ch.4\n获得音符: 156"]
+            P2_CENTER["乐曲画像\n━━━━━━━━\n(动态频谱图)\n\n常用音符: C D G\n常用和弦: Cmaj Gdom7"]
+            P2_RIGHT["音乐性评级\n━━━━━━━━\n评分: A\n(独奏家)\n\n和谐度 ████░ 82%\n技巧性 ███░░ 67%\n表现力 ████░ 75%"]
+        end
+        
+        subgraph PHASE3["阶段三: 成长进度总览"]
+            P3_UNLOCK["✨ 新的可能性已被揭示\n七和弦解析 → 可解锁"]
+            P3_ACHIEVE["🏆 成就进度更新\n击败1000敌人 850/1000"]
+            P3_BTN["[回归殿堂]"]
+        end
+        
+        HALL["和谐殿堂主界面"]
+        
+        END --> P1_TITLE
+        P1_TITLE --> P1_REWARD
+        P1_REWARD --> P1_BTN
+        P1_BTN --> P2_LEFT
+        P1_BTN --> P2_CENTER
+        P1_BTN --> P2_RIGHT
+        P2_LEFT --> P3_UNLOCK
+        P2_CENTER --> P3_UNLOCK
+        P2_RIGHT --> P3_UNLOCK
+        P3_UNLOCK --> P3_ACHIEVE
+        P3_ACHIEVE --> P3_BTN
+        P3_BTN --> HALL
+    end
+    
+    style END fill:#FF2244,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style HALL fill:#9D6FFF,stroke:#EAE6FF,stroke-width:3px,color:#EAE6FF
+    style P1_TITLE fill:#141026,stroke:#FFD700,stroke-width:2px,color:#FFD700
+    style P1_REWARD fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style P1_BTN fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style P2_LEFT fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style P2_CENTER fill:#141026,stroke:#00FFD4,stroke-width:2px,color:#EAE6FF
+    style P2_RIGHT fill:#141026,stroke:#FFD700,stroke-width:2px,color:#EAE6FF
+    style P3_UNLOCK fill:#141026,stroke:#00FFD4,stroke-width:2px,color:#00FFD4
+    style P3_ACHIEVE fill:#141026,stroke:#FFD700,stroke-width:2px,color:#FFD700
+    style P3_BTN fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style FLOW fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style PHASE1 fill:#0A0814,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style PHASE2 fill:#0A0814,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style PHASE3 fill:#0A0814,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF

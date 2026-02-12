@@ -1,0 +1,35 @@
+graph TD
+    subgraph SCREEN["和谐殿堂 主界面 (1920×1080)"]
+        direction TB
+        
+        TOP["🎵 命运交响诗 (进度总览入口)\n位置: 顶部居中"]
+        
+        CURRENCY["💎 共鸣碎片: 12,450\n位置: 右上角"]
+        
+        subgraph CENTER["中央区域"]
+            direction LR
+            UL["🎻 乐器调优\nInstrument Tuning\n(左上星宿)\n基础属性永久加成"]
+            UR["📖 乐理研习\nTheory Archives\n(右上星宿)\n解锁黑键与和弦"]
+            CORE(("✨ 和谐核心\n(中央星云)\n缓慢旋转"))
+            LL["🎭 调式风格\nMode Mastery\n(左下星宿)\n解锁开局职业"]
+            LR_MOD["🔇 声学降噪\nAcoustic Treatment\n(右下星宿)\n疲劳系统缓解"]
+        end
+        
+        BOTTOM["▶ 开始演奏 (Start Run)  |  ⚙ 设置  |  ✕ 返回主菜单\n位置: 底部"]
+    end
+    
+    UL --- CORE
+    UR --- CORE
+    LL --- CORE
+    LR_MOD --- CORE
+    
+    style CORE fill:#9D6FFF,stroke:#EAE6FF,stroke-width:3px,color:#EAE6FF
+    style UL fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style UR fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style LL fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style LR_MOD fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style TOP fill:#141026,stroke:#FFD700,stroke-width:2px,color:#EAE6FF
+    style CURRENCY fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style BOTTOM fill:#141026,stroke:#A098C8,stroke-width:1px,color:#A098C8
+    style CENTER fill:#0A0814,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style SCREEN fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF

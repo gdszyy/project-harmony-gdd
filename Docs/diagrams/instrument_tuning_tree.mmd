@@ -1,0 +1,71 @@
+graph BT
+    subgraph TUNING["乐器调优 (Instrument Tuning) — 星象调音台"]
+        direction BT
+        
+        subgraph COL1["舞台定力\nStage Presence"]
+            SP1["Lv.1 +10 HP\n💎 100"]
+            SP2["Lv.2 +10 HP\n💎 200"]
+            SP3["Lv.3 +10 HP\n💎 400"]
+            SP4["Lv.4 +10 HP\n💎 800"]
+            SP5["Lv.5 +10 HP\n💎 1500"]
+            SP1 --> SP2 --> SP3 --> SP4 --> SP5
+        end
+        
+        subgraph COL2["基础声压\nAcoustic Pressure"]
+            AP1["Lv.1 +2% DMG\n💎 150"]
+            AP2["Lv.2 +2% DMG\n💎 300"]
+            AP3["Lv.3 +2% DMG\n💎 600"]
+            AP4["Lv.4 +2% DMG\n💎 1200"]
+            AP5["Lv.5 +2% DMG\n💎 2000"]
+            AP1 --> AP2 --> AP3 --> AP4 --> AP5
+        end
+        
+        subgraph COL3["节拍敏锐度\nRhythmic Sense"]
+            RS1["Lv.1\n💎 200"]
+            RS2["Lv.2\n💎 400"]
+            RS3["Lv.3\n💎 800"]
+            RS1 --> RS2 --> RS3
+        end
+        
+        subgraph COL4["拾音范围\nPickup Range"]
+            PR1["Lv.1\n💎 100"]
+            PR2["Lv.2\n💎 200"]
+            PR3["Lv.3\n💎 400"]
+            PR1 --> PR2 --> PR3
+        end
+        
+        subgraph COL5["起拍速度\nUpbeat Velocity"]
+            UV1["Lv.1 +3% SPD\n💎 120"]
+            UV2["Lv.2 +3% SPD\n💎 240"]
+            UV3["Lv.3 +3% SPD\n💎 480"]
+            UV4["Lv.4 +3% SPD\n💎 960"]
+            UV1 --> UV2 --> UV3 --> UV4
+        end
+    end
+    
+    style SP1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style SP2 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style SP3 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style SP4 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style SP5 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style AP1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style AP2 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style AP3 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style AP4 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style AP5 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style RS1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style RS2 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style RS3 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style PR1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style PR2 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style PR3 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style UV1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style UV2 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style UV3 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style UV4 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style TUNING fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style COL1 fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style COL2 fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style COL3 fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style COL4 fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style COL5 fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF

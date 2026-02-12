@@ -1,0 +1,50 @@
+graph LR
+    subgraph THEORY["乐理研习 (Theory Archives) — 技能树"]
+        direction LR
+        
+        ROOT(("🎵 基础乐理\n(已解锁)"))
+        
+        subgraph CHORDS["和弦图谱扩展"]
+            C1["大三和弦\n(初始解锁)"]
+            C2["小三和弦\n(初始解锁)"]
+            C3["紧张度理论\n解锁减三/增三和弦\n💎 500"]
+            C4["七和弦解析\n解锁属七/大七/小七/减七\n💎 1200"]
+            C5["传说乐章许可\n提升扩展和弦出现率\n💎 2000"]
+        end
+        
+        subgraph BLACKKEYS["黑键修饰符进阶"]
+            B1["C# 穿透\n(初始解锁)"]
+            B2["F# 分裂\n(初始解锁)"]
+            B3["D# 追踪\n💎 300"]
+            B4["G# 回响\n💎 450"]
+            B5["A# 散射\n💎 600"]
+        end
+        
+        ROOT --> C1
+        ROOT --> C2
+        ROOT --> B1
+        ROOT --> B2
+        C1 --> C3
+        C2 --> C3
+        C3 --> C4
+        C4 --> C5
+        B1 --> B3
+        B2 --> B3
+        B3 --> B4
+        B4 --> B5
+    end
+    
+    style ROOT fill:#00FFD4,stroke:#EAE6FF,stroke-width:3px,color:#0A0814
+    style C1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style C2 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style B1 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style B2 fill:#00FFD4,stroke:#EAE6FF,stroke-width:2px,color:#0A0814
+    style C3 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style B3 fill:#9D6FFF,stroke:#EAE6FF,stroke-width:2px,color:#EAE6FF
+    style C4 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style C5 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style B4 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style B5 fill:#141026,stroke:#9D6FFF,stroke-width:2px,color:#A098C8
+    style THEORY fill:#0A0814,stroke:#9D6FFF,stroke-width:2px,color:#EAE6FF
+    style CHORDS fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
+    style BLACKKEYS fill:#141026,stroke:#9D6FFF,stroke-width:1px,color:#EAE6FF
