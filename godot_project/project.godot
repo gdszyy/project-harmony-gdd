@@ -33,6 +33,10 @@ GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.g
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
 UIColors="*res://scripts/autoload/ui_colors.gd"
 SignalBridge="*res://scripts/autoload/signal_bridge.gd"
+DifficultyManager="*res://scripts/systems/difficulty_manager.gd"
+TutorialManager="*res://scripts/systems/tutorial_manager.gd"
+MutatorManager="*res://scripts/systems/mutator_manager.gd"
+TimedMilestoneManager="*res://scripts/systems/timed_milestone_manager.gd"
 
 [display]
 

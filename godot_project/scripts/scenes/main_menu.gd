@@ -68,6 +68,8 @@ func _init_colors() -> void:
 
 	BUTTON_CONFIGS = [
 		{ "name": "StartButton", "text": "BEGIN RESONANCE", "accent": UIColors.ACCENT },
+		{ "name": "DifficultyButton", "text": "DIFFICULTY SELECT", "accent": UIColors.ACCENT_2 },
+		{ "name": "TutorialButton", "text": "TUTORIAL", "accent": Color(0.3, 0.8, 0.5) },
 		{ "name": "HallButton", "text": "HALL OF HARMONY", "accent": UIColors.GOLD },
 		{ "name": "CodexButton", "text": "CODEX RESONARE", "accent": UIColors.ACCENT_2 },
 		{ "name": "TestChamberButton", "text": "ECHOING CHAMBER", "accent": UIColors.WARNING },
@@ -161,11 +163,13 @@ func _setup_ui() -> void:
 	
 	# 连接按钮信号
 	_buttons[0].pressed.connect(_on_start_pressed)
-	_buttons[1].pressed.connect(_on_hall_pressed)
-	_buttons[2].pressed.connect(_on_codex_pressed)
-	_buttons[3].pressed.connect(_on_test_chamber_pressed)
-	# _buttons[4] settings - can be connected later
-	_buttons[5].pressed.connect(_on_quit_pressed)
+	_buttons[1].pressed.connect(_on_difficulty_pressed)
+	_buttons[2].pressed.connect(_on_tutorial_pressed)
+	_buttons[3].pressed.connect(_on_hall_pressed)
+	_buttons[4].pressed.connect(_on_codex_pressed)
+	_buttons[5].pressed.connect(_on_test_chamber_pressed)
+	# _buttons[6] settings - can be connected later
+	_buttons[7].pressed.connect(_on_quit_pressed)
 
 	# ---- 版本号（右下角）----
 	if _version_label == null:
@@ -313,6 +317,34 @@ func _on_hall_pressed() -> void:
 		hall.back_pressed.connect(func():
 			hall.queue_free()
 		)
+
+func _on_difficulty_pressed() -> void:
+	# Issue #115: 打开难度选择面板
+	var diff_ui_script := load("res://scripts/ui/difficulty_select_ui.gd")
+	if diff_ui_script == null:
+		return
+	var diff_ui := Control.new()
+	diff_ui.set_script(diff_ui_script)
+	diff_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	diff_ui.z_index = 100
+	add_child(diff_ui)
+	if diff_ui.has_signal("difficulty_selected"):
+		diff_ui.difficulty_selected.connect(func(_d: int):
+			diff_ui.queue_free()
+		)
+	if diff_ui.has_signal("back_pressed"):
+		diff_ui.back_pressed.connect(func():
+			diff_ui.queue_free()
+		)
+
+func _on_tutorial_pressed() -> void:
+	# Issue #115: 启动教程模式（强制重新开始教程）
+	var tutorial_mgr := get_node_or_null("/root/TutorialManager")
+	if tutorial_mgr:
+		tutorial_mgr.tutorial_enabled = true
+		tutorial_mgr._is_completed = false  # 允许重新开始
+	GameManager.is_test_mode = false
+	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
