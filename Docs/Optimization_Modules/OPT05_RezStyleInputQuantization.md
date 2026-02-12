@@ -1,12 +1,12 @@
 # 引入"Rez 式"输入量化错觉 (Rez-Style Input Quantization Illusion)
 
-**版本:** 1.0
+**版本:** 2.0
 **最后更新:** 2026-02-12
-**状态:** 设计稿
+**状态:** ✅ 已实现
 **作者:** Manus AI
 **优先级:** P2 — 第三优先级（提升体验）
 **前置依赖:** 无硬性依赖（可独立实现，但与 OPT01 配合效果最佳）
-**关联模块:** `bgm_manager.gd`, `AudioManager`, `GameManager`
+**关联模块:** `bgm_manager.gd`, `audio_manager.gd`, `audio_event.gd`, `audio_event_queue.gd`
 
 ---
 
@@ -36,9 +36,10 @@
 
 | 组件 | 职责 |
 | :--- | :--- |
-| **AudioEventQueue** | 存储待播放的音效事件，每个事件包含音效资源、音高、音量等参数 |
-| **BGM 时钟同步器** | 监听 `bgm_manager` 的 `_tick_sixteenth` 信号，在每个十六分音符节拍点触发队列处理 |
-| **即时视觉分发器** | 在音效入队的同时，立即触发对应的视觉效果 |
+| **AudioEvent** (`audio_event.gd`) | 封装音效事件数据结构，包含音效 ID、音高、音量、位置、来源类型等 |
+| **AudioEventQueue** (`audio_event_queue.gd`) | 存储待播放的音效事件，监听 BGM 时钟信号，在节拍点批量处理 |
+| **BGM 时钟信号** (`sixteenth_tick`) | `bgm_manager.gd` 暴露的十六分音符时钟信号 |
+| **即时视觉分发器** | 在音效入队的同时，立即触发对应的视觉效果（无需修改） |
 
 ### 2.2. 事件处理流程
 
@@ -59,9 +60,9 @@
 
 在项目的 BPM 范围内（100-160），最大延迟均在人类"视听同步感知阈值"（约 100-150ms）附近或以内，配合即时的视觉反馈，玩家几乎不会感知到延迟。
 
-### 2.4. 可选：量化强度配置
+### 2.4. 量化强度配置
 
-为了适应不同玩家的偏好，可以提供量化强度的配置选项：
+为了适应不同玩家的偏好，提供三种量化强度的配置选项：
 
 | 量化模式 | 说明 | 适用场景 |
 | :--- | :--- | :--- |
@@ -71,124 +72,149 @@
 
 ---
 
-## 3. 代码实现（GDScript 接口定义）
+## 3. 实现文件清单
 
-### 3.1. 音效事件数据结构
+### 3.1. 新增文件
+
+| 文件路径 | 说明 |
+| :--- | :--- |
+| `godot_project/scripts/audio/audio_event.gd` | 音效事件数据结构（`class_name AudioEvent`） |
+| `godot_project/scripts/audio/audio_event_queue.gd` | 音效事件量化队列管理器（`class_name AudioEventQueue`） |
+
+### 3.2. 修改文件
+
+| 文件路径 | 修改内容 |
+| :--- | :--- |
+| `godot_project/scripts/autoload/bgm_manager.gd` | 新增 `sixteenth_tick` 信号；在 `_tick_sixteenth()` 中发射信号 |
+| `godot_project/scripts/autoload/audio_manager.gd` | 集成 `AudioEventQueue`；新增量化播放接口；内部播放路径改为走量化队列 |
+| `godot_project/scripts/ui/settings_menu.gd` | 新增量化模式选项（Full/Soft/Off） |
+| `godot_project/scripts/ui/debug_panel.gd` | 新增"音效量化 (OPT05)"调试统计区域 |
+
+---
+
+## 4. 代码实现详解
+
+### 4.1. AudioEvent — 音效事件数据结构
 
 ```gdscript
-# audio_event.gd
-
+# scripts/audio/audio_event.gd
 class_name AudioEvent
+extends RefCounted
 
-var sound_id: String          ## 音效资源标识
-var pitch: float = 1.0        ## 音高（频率或 pitch_scale）
-var volume_db: float = 0.0    ## 音量 (dB)
-var position: Vector2 = Vector2.ZERO  ## 空间位置（用于 2D 空间化）
-var timestamp: float = 0.0    ## 原始输入时间戳
-var source_type: String = ""  ## 来源类型（"spell", "enemy_hit", "summon" 等）
+enum SourceType {
+    SPELL,              ## 玩家法术施放音效
+    CHORD,              ## 和弦法术音效
+    ENEMY_HIT,          ## 敌人受击音效
+    ENEMY_DEATH,        ## 敌人死亡音效
+    ENEMY_MOVE,         ## 敌人移动音效
+    STATUS_FEEDBACK,    ## 状态反馈音效
+    PROGRESSION,        ## 和弦进行完成音效
+    OTHER,              ## 其他音效
+}
+
+var sound_id: String = ""
+var pitch: float = 1.0
+var volume_db: float = 0.0
+var position: Vector2 = Vector2.ZERO
+var is_spatial: bool = false
+var timestamp_ms: float = 0.0
+var source_type: SourceType = SourceType.OTHER
+var bus_name: String = "SFX"
+var extra_data: Dictionary = {}
+
+# 提供工厂方法：create_spell(), create_chord(), create_enemy(), create_global()
 ```
 
-### 3.2. 音效事件队列管理器
+### 4.2. AudioEventQueue — 量化队列管理器
 
 ```gdscript
-# audio_event_queue.gd — AudioManager 的内部模块
-
+# scripts/audio/audio_event_queue.gd
 class_name AudioEventQueue
 extends Node
 
-## 待播放的事件队列
+enum QuantizeMode { FULL, SOFT, OFF }
+
+var quantize_mode: QuantizeMode = QuantizeMode.FULL
 var _queue: Array[AudioEvent] = []
 
-## 量化模式
-enum QuantizeMode { FULL, SOFT, OFF }
-var quantize_mode: QuantizeMode = QuantizeMode.FULL
-
-## 柔性量化阈值（秒）
-const SOFT_QUANTIZE_THRESHOLD: float = 0.03  # 约 1/32 音符 @120BPM
-
 func _ready() -> void:
-    # 连接 BGM 的十六分音符时钟信号
-    BgmManager.bgm_beat_synced.connect(_on_beat_synced)
+    # 连接 BGMManager 的十六分音符时钟信号
+    BGMManager.sixteenth_tick.connect(_on_sixteenth_tick)
 
-## 将音效事件加入队列
 func enqueue(event: AudioEvent) -> void:
-    event.timestamp = Time.get_ticks_msec() / 1000.0
-    
     match quantize_mode:
         QuantizeMode.OFF:
-            # 直接播放，不入队
-            _play_event(event)
+            _play_event(event)  # 直接播放
         QuantizeMode.SOFT:
-            # 检查是否接近节拍点
-            var time_to_next = _get_time_to_next_sixteenth()
-            if time_to_next < SOFT_QUANTIZE_THRESHOLD:
-                _play_event(event)  # 足够接近，直接播放
+            if _get_time_to_next_sixteenth() < SOFT_QUANTIZE_THRESHOLD_SEC:
+                _play_event(event)
             else:
                 _queue.append(event)
         QuantizeMode.FULL:
             _queue.append(event)
 
-## 十六分音符节拍点回调
-func _on_beat_synced(beat_index: int) -> void:
-    # 注意：需要将 bgm_manager 的 _tick_sixteenth 暴露为信号
-    # 或在 _process 中自行计算十六分音符时间点
-    _process_queue()
+func _on_sixteenth_tick(_idx: int) -> void:
+    _flush_queue()  # 在节拍点批量播放所有待处理事件
 
-## 处理队列：播放所有待处理事件
-func _process_queue() -> void:
+func _flush_queue() -> void:
     for event in _queue:
         _play_event(event)
     _queue.clear()
-
-## 实际播放音效
-func _play_event(event: AudioEvent) -> void:
-    # 委托给 AudioManager 的实际播放逻辑
-    AudioManager.play_sound_immediate(
-        event.sound_id,
-        event.pitch,
-        event.volume_db,
-        event.position
-    )
-
-## 计算距离下一个十六分音符的时间
-func _get_time_to_next_sixteenth() -> float:
-    var sixteenth_interval = 60.0 / (BgmManager._bpm * 4.0)
-    var current_time = Time.get_ticks_msec() / 1000.0
-    var elapsed_in_beat = fmod(current_time, sixteenth_interval)
-    return sixteenth_interval - elapsed_in_beat
 ```
 
-### 3.3. 集成到现有音效播放流程
+### 4.3. BGMManager 信号扩展
 
 ```gdscript
-# audio_manager.gd — 修改现有播放接口
+# bgm_manager.gd — 新增信号
+signal sixteenth_tick(sixteenth_index: int)
 
-var _event_queue: AudioEventQueue
+# 在 _tick_sixteenth() 方法中发射
+func _tick_sixteenth() -> void:
+    # ... 原有逻辑 ...
+    sixteenth_tick.emit(_current_sixteenth)
+```
+
+### 4.4. AudioManager 集成
+
+```gdscript
+# audio_manager.gd — 关键修改
+
+var _event_queue: AudioEventQueue = null
 
 func _ready() -> void:
+    # ... 原有初始化 ...
+    _setup_event_queue()  # OPT05
+
+func _setup_event_queue() -> void:
     _event_queue = AudioEventQueue.new()
+    _event_queue.name = "AudioEventQueue"
+    _event_queue.set_audio_manager(self)
     add_child(_event_queue)
 
-## 公共接口：播放法术音效（经过量化）
-func play_spell_sound_quantized(spell_data: Dictionary, position: Vector2) -> void:
-    var event = AudioEvent.new()
-    event.sound_id = spell_data.sound_id
-    event.pitch = spell_data.get("pitch", 1.0)
-    event.volume_db = spell_data.get("volume_db", 0.0)
-    event.position = position
-    event.source_type = "spell"
-    
-    _event_queue.enqueue(event)
+# 新增量化播放接口
+func play_2d_sound_quantized(sound_name, position, volume_db, pitch, bus, source_type) -> void
+func play_global_sound_quantized(sound_name, volume_db, pitch, bus, source_type) -> void
 
-## 内部接口：即时播放（被队列调用）
-func play_sound_immediate(sound_id: String, pitch: float, volume_db: float, position: Vector2) -> void:
-    # 现有的音效播放逻辑
-    pass
+# 新增即时播放接口（供 AudioEventQueue 回调）
+func play_sound_immediate_2d(sound_name, position, volume_db, pitch, bus) -> void
+func play_sound_immediate_global(sound_name, volume_db, pitch, bus) -> void
+
+# 新增量化模式控制接口
+func set_quantize_mode(mode: AudioEventQueue.QuantizeMode) -> void
+func get_quantize_mode() -> AudioEventQueue.QuantizeMode
+func get_quantize_stats() -> Dictionary
+
+# 内部播放函数自动走量化路径
+func _play_2d_sound(...) -> void:
+    play_2d_sound_quantized(...)  # 自动量化
+
+func _play_global_sound(...) -> void:
+    play_global_sound_quantized(...)  # 自动量化
 ```
 
 ---
 
-## 4. 信号交互流程
+## 5. 信号交互流程
 
 ```mermaid
 sequenceDiagram
@@ -200,32 +226,60 @@ sequenceDiagram
 
     Player->>Visual: 按键 (T_input)
     Visual->>Visual: 立即渲染弹体/特效
-    Player->>AM: play_spell_sound_quantized()
+    Player->>AM: play_spell_cast_sfx() / play_enemy_hit_sfx()
+    AM->>AM: _play_2d_sound() → play_2d_sound_quantized()
     AM->>Queue: enqueue(AudioEvent)
     
     Note over Queue: 等待下一个十六分音符...
     
-    BGM->>Queue: _tick_sixteenth (T_quantized)
-    Queue->>Queue: _process_queue()
-    Queue->>AM: play_sound_immediate()
+    BGM->>Queue: sixteenth_tick (T_quantized)
+    Queue->>Queue: _flush_queue()
+    Queue->>AM: play_sound_immediate_2d()
     AM->>AM: 播放音效 (完美对齐节拍)
 ```
 
 ---
 
-## 5. 与现有系统的集成点
+## 6. 安全机制
 
-| 现有系统 | 集成方式 | 说明 |
-| :--- | :--- | :--- |
-| `bgm_manager.gd` | 信号连接 | 需要将内部的 `_tick_sixteenth` 暴露为公共信号 |
-| `AudioManager` | 逻辑包装 | 在现有播放接口外层包装量化队列 |
-| 法术系统 | 调用修改 | 将 `play_sound()` 调用改为 `play_spell_sound_quantized()` |
-| 视觉系统 | 无修改 | 视觉反馈保持即时，无需任何改动 |
+| 机制 | 说明 |
+| :--- | :--- |
+| **超时强制播放** | 事件在队列中停留超过 500ms 时强制播放，防止 BGM 暂停时事件丢失 |
+| **BGM 未播放回退** | 当 BGM 未播放时，定期（每 500ms）刷新队列，确保音效不会永远不播放 |
+| **队列为空时零开销** | 队列为空时 `_flush_queue()` 立即返回，无性能影响 |
+| **回退机制** | 如果 `AudioEventQueue` 不可用，自动回退到即时播放 |
 
 ---
 
-## 6. 引用文档
+## 7. 调试支持
 
+在调试面板（`debug_panel.gd`）中新增"音效量化 (OPT05)"区域：
+
+- **量化模式显示：** 实时显示当前量化模式（FULL / SOFT / OFF）
+- **队列大小：** 实时显示当前队列中待处理的事件数量
+- **统计信息：** 总入队数、已处理数、即时播放数
+- **模式切换按钮：** 可在运行时切换量化模式进行对比测试
+
+---
+
+## 8. 与现有系统的集成点
+
+| 现有系统 | 集成方式 | 说明 |
+| :--- | :--- | :--- |
+| `bgm_manager.gd` | 信号连接 | 新增 `sixteenth_tick` 信号，在 `_tick_sixteenth()` 中发射 |
+| `audio_manager.gd` | 逻辑包装 | 内部 `_play_2d_sound` / `_play_global_sound` 自动走量化路径 |
+| 法术系统 | 透明集成 | 无需修改调用方，所有通过 `AudioManager` 播放的音效自动量化 |
+| 视觉系统 | 无修改 | 视觉反馈保持即时，无需任何改动 |
+| 设置菜单 | 新增选项 | 玩家可在设置中选择量化模式 |
+| 调试面板 | 新增区域 | 开发者可实时监控量化系统状态 |
+
+---
+
+## 9. 引用文档
+
+- `godot_project/scripts/audio/audio_event.gd` — 音效事件数据结构
+- `godot_project/scripts/audio/audio_event_queue.gd` — 音效事件量化队列
 - `godot_project/scripts/autoload/bgm_manager.gd` — BGM 管理器（时钟源）
+- `godot_project/scripts/autoload/audio_manager.gd` — 音效管理器（集成点）
 - `Docs/Audio_Design_Guide.md` — 音频设计指南
 - 《Rez》/ 《Rez Infinite》— 设计灵感来源

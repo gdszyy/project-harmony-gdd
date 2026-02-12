@@ -10,6 +10,12 @@
 ##   - 监听敌人信号 (enemy_damaged, enemy_died) 触发对应音效
 ##   - 敌人量化移动时播放机械卡顿声
 ##   - 所有音效通过 SFX 总线输出，与 Music 总线分离
+##
+## OPT05 扩展：Rez 式输入量化错觉 (Rez-Style Input Quantization)
+##   - 集成 AudioEventQueue，将游戏音效自动对齐到十六分音符网格
+##   - 视觉效果保持即时响应，仅音频被量化延迟
+##   - 支持 FULL / SOFT / OFF 三种量化模式
+##   - 参见 Docs/Optimization_Modules/OPT05_RezStyleInputQuantization.md
 extends Node
 
 # ============================================================
@@ -157,6 +163,11 @@ var _pool_global_index: int = 0
 var _generated_sounds: Dictionary = {}
 
 # ============================================================
+# OPT05: 音效量化队列
+# ============================================================
+var _event_queue: AudioEventQueue = null
+
+# ============================================================
 # 冷却系统 (防止音效过度叠加)
 # ============================================================
 var _sfx_cooldowns: Dictionary = {}
@@ -171,6 +182,7 @@ func _ready() -> void:
 	_setup_audio_buses()
 	_init_audio_pools()
 	_generate_procedural_sounds()
+	_setup_event_queue()  # OPT05
 	_connect_global_signals()
 
 func _process(delta: float) -> void:
@@ -1099,7 +1111,83 @@ func _on_accuracy_penalized(_penalty: float) -> void:
 # 内部播放函数
 # ============================================================
 
-func _play_2d_sound(sound_name: String, position: Vector2,
+# ============================================================
+# OPT05: 量化队列初始化
+# ============================================================
+
+func _setup_event_queue() -> void:
+	_event_queue = AudioEventQueue.new()
+	_event_queue.name = "AudioEventQueue"
+	_event_queue.set_audio_manager(self)
+	add_child(_event_queue)
+
+# ============================================================
+# OPT05: 量化播放公共接口
+# ============================================================
+
+## 通过量化队列播放 2D 空间化音效（音频对齐到十六分音符网格）
+## 视觉效果应在调用此方法之前或同时触发，保持即时响应
+func play_2d_sound_quantized(sound_name: String, position: Vector2,
+		volume_db: float, pitch: float, bus: String,
+		source_type: AudioEvent.SourceType = AudioEvent.SourceType.OTHER) -> void:
+	var event := AudioEvent.new()
+	event.sound_id = sound_name
+	event.position = position
+	event.volume_db = volume_db
+	event.pitch = pitch
+	event.is_spatial = true
+	event.bus_name = bus
+	event.source_type = source_type
+	event.timestamp_ms = Time.get_ticks_msec()
+
+	if _event_queue:
+		_event_queue.enqueue(event)
+	else:
+		# 回退：如果队列不可用，直接播放
+		play_sound_immediate_2d(sound_name, position, volume_db, pitch, bus)
+
+## 通过量化队列播放全局音效（音频对齐到十六分音符网格）
+func play_global_sound_quantized(sound_name: String,
+		volume_db: float, pitch: float, bus: String,
+		source_type: AudioEvent.SourceType = AudioEvent.SourceType.OTHER) -> void:
+	var event := AudioEvent.new()
+	event.sound_id = sound_name
+	event.volume_db = volume_db
+	event.pitch = pitch
+	event.is_spatial = false
+	event.bus_name = bus
+	event.source_type = source_type
+	event.timestamp_ms = Time.get_ticks_msec()
+
+	if _event_queue:
+		_event_queue.enqueue(event)
+	else:
+		play_sound_immediate_global(sound_name, volume_db, pitch, bus)
+
+## 设置量化模式
+## 可通过设置菜单调用：FULL（默认）、SOFT（高手）、OFF（无障碍）
+func set_quantize_mode(mode: AudioEventQueue.QuantizeMode) -> void:
+	if _event_queue:
+		_event_queue.set_quantize_mode(mode)
+
+## 获取当前量化模式
+func get_quantize_mode() -> AudioEventQueue.QuantizeMode:
+	if _event_queue:
+		return _event_queue.quantize_mode
+	return AudioEventQueue.QuantizeMode.OFF
+
+## 获取量化系统统计信息（调试用）
+func get_quantize_stats() -> Dictionary:
+	if _event_queue:
+		return _event_queue.get_stats()
+	return {}
+
+# ============================================================
+# OPT05: 即时播放接口（供 AudioEventQueue 回调使用）
+# ============================================================
+
+## 即时播放 2D 空间化音效（不经过量化队列）
+func play_sound_immediate_2d(sound_name: String, position: Vector2,
 		volume_db: float, pitch: float, bus: String) -> void:
 	var stream: AudioStreamWAV = _generated_sounds.get(sound_name)
 	if stream == null:
@@ -1118,8 +1206,9 @@ func _play_2d_sound(sound_name: String, position: Vector2,
 
 	sfx_played.emit(sound_name, position)
 
-func _play_global_sound(sound_name: String, volume_db: float,
-		pitch: float, bus: String) -> void:
+## 即时播放全局音效（不经过量化队列）
+func play_sound_immediate_global(sound_name: String,
+		volume_db: float, pitch: float, bus: String) -> void:
 	var stream: AudioStreamWAV = _generated_sounds.get(sound_name)
 	if stream == null:
 		return
@@ -1135,6 +1224,20 @@ func _play_global_sound(sound_name: String, volume_db: float,
 	player.play()
 
 	sfx_played.emit(sound_name, Vector2.ZERO)
+
+# ============================================================
+# 内部播放函数（保留原有接口，内部改为走量化路径）
+# ============================================================
+
+func _play_2d_sound(sound_name: String, position: Vector2,
+		volume_db: float, pitch: float, bus: String) -> void:
+	# OPT05: 法术和敌人音效走量化路径
+	play_2d_sound_quantized(sound_name, position, volume_db, pitch, bus)
+
+func _play_global_sound(sound_name: String, volume_db: float,
+		pitch: float, bus: String) -> void:
+	# OPT05: 全局音效走量化路径
+	play_global_sound_quantized(sound_name, volume_db, pitch, bus)
 
 # ============================================================
 # 对象池获取

@@ -28,6 +28,8 @@ signal bgm_beat_synced(beat_index: int)
 signal bgm_measure_synced(measure_index: int)
 signal layer_toggled(layer_name: String, enabled: bool)
 signal intensity_changed(new_intensity: float)
+## OPT05: 十六分音符时钟信号，用于音效量化系统 (Rez-Style Input Quantization)
+signal sixteenth_tick(sixteenth_index: int)
 
 # ============================================================
 # 常量
@@ -712,6 +714,9 @@ func _tick_sixteenth() -> void:
 	if is_downbeat:
 		_current_beat += 1
 		bgm_beat_synced.emit(_current_beat)
+
+	# OPT05: 发射十六分音符时钟信号，供 AudioEventQueue 使用
+	sixteenth_tick.emit(_current_sixteenth)
 
 	if step == 0 and _current_sixteenth > 1:
 		_current_measure += 1
