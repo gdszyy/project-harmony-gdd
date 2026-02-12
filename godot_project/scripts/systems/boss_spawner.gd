@@ -1,11 +1,12 @@
 ## boss_spawner.gd
-## Boss 生成管理器 v2.0 — 章节系统集成版
+## Boss 生成管理器 v3.0 — 章节系统 + 计时模式集成版
 ## 负责 Boss 的生成时机、入场动画、Boss 战流程管理。
-## 与 ChapterManager 协作，根据当前章节配置生成对应的最终 Boss。
+## 与 ChapterManager / TimedMilestoneManager 协作。
 ##
-## 两种模式：
+## 三种模式：
 ##   - 传统模式：每 N 波触发 Boss 战
 ##   - 章节模式：由 ChapterManager 触发，生成章节对应 Boss
+##   - 计时模式：由 TimedMilestoneManager 触发，在5/10/15分钟里程碑生成 Boss (Issue #115)
 extends Node
 
 # ============================================================
@@ -366,6 +367,76 @@ func _end_boss_fight(victory: bool) -> void:
 	
 	_current_boss = null
 	boss_fight_ended.emit(boss_display_name, victory)
+
+## 计时模式：由 TimedMilestoneManager 触发 (Issue #115)
+func spawn_timed_boss(boss_key: String, player_pos: Vector2, difficulty_bonus: float = 0.0) -> void:
+	if _boss_fight_active:
+		return
+
+	_chapter_mode = false
+
+	# 先播放 Boss 战警告
+	_play_boss_warning(boss_key, func():
+		# 警告结束后生成 Boss
+		var scene: PackedScene = _cached_boss_scenes.get(boss_key)
+		if scene:
+			var boss := scene.instantiate()
+			_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
+		else:
+			# 后备：从代码生成
+			var BossScript = load("res://scripts/entities/enemies/boss_dissonant_conductor.gd")
+			if BossScript:
+				var boss := CharacterBody2D.new()
+				boss.set_script(BossScript)
+				_create_boss_nodes(boss)
+				_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
+			else:
+				push_error("BossSpawner: Cannot create timed boss: %s" % boss_key)
+	)
+
+func _setup_timed_boss(boss: Node, player_pos: Vector2, boss_key: String, difficulty_bonus: float) -> void:
+	_boss_fight_active = true
+	_current_boss = boss
+
+	# 计算生成位置
+	var angle := randf() * TAU
+	var spawn_pos := player_pos + Vector2.from_angle(angle) * boss_spawn_distance
+	boss.global_position = spawn_pos
+
+	# 难度缩放：基础 + 计时模式额外加成 + DifficultyManager 全局倍率
+	var difficulty_mult := 1.0 + difficulty_bonus
+	var diff_mgr := get_node_or_null("/root/DifficultyManager")
+	if diff_mgr:
+		difficulty_mult *= diff_mgr.get_boss_hp_multiplier()
+
+	var base_hp: float = boss.get("max_hp") if boss.get("max_hp") else 5000.0
+	boss.set("max_hp", base_hp * difficulty_mult)
+	boss.set("current_hp", base_hp * difficulty_mult)
+
+	# 添加到场景
+	add_child(boss)
+
+	# 连接信号
+	if boss.has_signal("boss_defeated"):
+		boss.boss_defeated.connect(_on_boss_defeated)
+	if boss.has_signal("boss_phase_changed"):
+		boss.boss_phase_changed.connect(_on_boss_phase_changed)
+	if boss.has_signal("enemy_died"):
+		boss.enemy_died.connect(_on_boss_died)
+	if boss.has_signal("boss_summon_minions"):
+		boss.boss_summon_minions.connect(_on_boss_summon_minions)
+
+	# 入场动画
+	_play_boss_intro(boss)
+
+	# 显示 Boss 血条
+	if _boss_health_bar and _boss_health_bar.has_method("show_boss_bar"):
+		_boss_health_bar.show_boss_bar(boss)
+
+	boss_spawned.emit(boss)
+
+	var boss_display_name: String = boss.get("boss_name") if boss.get("boss_name") else boss_key
+	boss_fight_started.emit(boss_display_name)
 
 func _grant_boss_rewards() -> void:
 	# Boss 击败奖励（基础）
