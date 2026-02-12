@@ -3,6 +3,11 @@
 ## 职责：音乐合成（音符/和弦）、频谱分析、节拍能量提取
 ## 注意：所有非音乐类音效（SFX、UI）统一由 AudioManager 负责
 ##
+## OPT05 集成：音符/和弦播放支持 Rez 式量化
+##   - 音乐合成音效通过 AudioManager 的量化队列播放
+##   - 动态生成的 WAV 临时缓存到 AudioManager._generated_sounds
+##   - 视觉效果（音符粒子等）仍然即时触发，不受量化影响
+##
 ## OPT08 集成：
 ##   当 SynthManager 可用且程序化合成已启用时，优先使用实时合成路径。
 ##   否则回退到 NoteSynthesizer 的预制采样/离线合成路径。
@@ -39,7 +44,7 @@ const HIGH_FREQ_MAX := 16000.0
 ## 能量平滑系数
 const ENERGY_SMOOTHING := 0.15
 
-## 音符播放器池大小
+## 音符播放器池大小（OPT05: 保留作为回退，量化模式下优先使用 AudioManager 池）
 const NOTE_POOL_SIZE: int = 12
 
 ## 音符最小播放间隔（秒）— 防止同一音符连续触发
@@ -72,12 +77,18 @@ var use_procedural_synthesis: bool = false
 ## OPT08: SynthManager 引用（缓存，避免每次查找）
 var _synth_manager: Node = null
 
-## 音符播放器对象池 (AudioStreamPlayer)
+## 音符播放器对象池 (AudioStreamPlayer) — OPT05: 保留作为回退使用
 var _note_pool: Array[AudioStreamPlayer] = []
 var _note_pool_index: int = 0
 
 ## 音符冷却记录
 var _note_cooldowns: Dictionary = {}
+
+## OPT05: AudioManager 引用（用于量化播放）
+var _audio_manager: Node = null
+
+## OPT05: 临时音效缓存计数器（用于生成唯一 key）
+var _temp_sound_counter: int = 0
 
 # ============================================================
 # 生命周期
@@ -113,12 +124,12 @@ func _connect_sfx_signals() -> void:
 	call_deferred("_deferred_connect_sfx")
 
 func _deferred_connect_sfx() -> void:
-	var audio_mgr := get_node_or_null("/root/AudioManager")
-	if audio_mgr:
-		if audio_mgr.has_method("play_spell_cast_sfx"):
-			request_spell_sfx.connect(audio_mgr.play_spell_cast_sfx)
-		if audio_mgr.has_method("play_chord_cast_sfx"):
-			request_chord_sfx.connect(audio_mgr.play_chord_cast_sfx)
+	_audio_manager = get_node_or_null("/root/AudioManager")
+	if _audio_manager:
+		if _audio_manager.has_method("play_spell_cast_sfx"):
+			request_spell_sfx.connect(_audio_manager.play_spell_cast_sfx)
+		if _audio_manager.has_method("play_chord_cast_sfx"):
+			request_chord_sfx.connect(_audio_manager.play_chord_cast_sfx)
 
 # ============================================================
 # 音频总线设置
@@ -220,6 +231,58 @@ func get_current_timbre() -> int:
 	return _current_timbre
 
 # ============================================================
+# OPT05: 量化播放辅助方法
+# ============================================================
+
+## 获取 AudioManager 引用（懒加载）
+func _get_audio_manager() -> Node:
+	if _audio_manager == null:
+		_audio_manager = get_node_or_null("/root/AudioManager")
+	return _audio_manager
+
+## 通过 AudioManager 量化队列播放动态生成的 WAV
+## 将 WAV 临时注册到 AudioManager 的 _generated_sounds 中
+## 返回是否成功走了量化路径
+func _play_wav_quantized(wav: AudioStreamWAV, volume_db: float,
+		pitch_scale: float = 1.0, bus: String = NOTE_BUS_NAME) -> bool:
+	var am := _get_audio_manager()
+	if am == null or not am.has_method("play_global_sound_quantized"):
+		return false
+
+	# 生成唯一的临时 key
+	_temp_sound_counter += 1
+	var temp_key := "gmm_synth_%d_%d" % [Time.get_ticks_msec() % 100000, _temp_sound_counter % 10000]
+
+	# 注册到 AudioManager 的音效缓存
+	if "_generated_sounds" in am:
+		am._generated_sounds[temp_key] = wav
+	else:
+		return false
+
+	# 通过量化队列播放
+	am.play_global_sound_quantized(temp_key, volume_db, pitch_scale, bus,
+		AudioEvent.SourceType.SPELL)
+
+	# 延迟清理临时缓存（等待量化队列处理完毕）
+	get_tree().create_timer(2.0).timeout.connect(
+		func():
+			if is_instance_valid(am) and "_generated_sounds" in am:
+				am._generated_sounds.erase(temp_key)
+	)
+	return true
+
+## 回退播放：直接使用本地播放器池（当 AudioManager 不可用时）
+func _play_wav_fallback(wav: AudioStreamWAV, volume_db: float,
+		pitch_scale: float = 1.0) -> void:
+	var player := _get_note_player()
+	if player == null:
+		return
+	player.stream = wav
+	player.volume_db = volume_db
+	player.pitch_scale = pitch_scale
+	player.play()
+
+# ============================================================
 # 法术音效播放
 # ============================================================
 
@@ -258,15 +321,10 @@ func play_note_sound(note: int, duration: float = 0.2,
 	if wav == null:
 		return
 
-	# 获取播放器并播放
-	var player := _get_note_player()
-	if player == null:
-		return
-
-	player.stream = wav
-	player.volume_db = _velocity_to_db(velocity)
-	player.pitch_scale = 1.0
-	player.play()
+	# OPT05: 优先通过量化队列播放，回退到本地播放器
+	var vol_db := _velocity_to_db(velocity)
+	if not _play_wav_quantized(wav, vol_db, 1.0, NOTE_BUS_NAME):
+		_play_wav_fallback(wav, vol_db)
 
 	note_played.emit(note, timbre)
 
@@ -312,15 +370,10 @@ func play_note_sound_with_modifier(
 	if wav == null:
 		return
 	
-	# 播放
-	var player := _get_note_player()
-	if player == null:
-		return
-	
-	player.stream = wav
-	player.volume_db = _velocity_to_db(velocity)
-	player.pitch_scale = 1.0
-	player.play()
+	# OPT05: 优先通过量化队列播放，回退到本地播放器
+	var vol_db := _velocity_to_db(velocity)
+	if not _play_wav_quantized(wav, vol_db, 1.0, NOTE_BUS_NAME):
+		_play_wav_fallback(wav, vol_db)
 	
 	note_played.emit(note, timbre)
 	
@@ -366,14 +419,10 @@ func play_chord_sound(notes: Array, duration: float = 0.3,
 	if wav == null:
 		return
 
-	var player := _get_note_player()
-	if player == null:
-		return
-
-	player.stream = wav
-	player.volume_db = _velocity_to_db(velocity)
-	player.pitch_scale = 1.0
-	player.play()
+	# OPT05: 优先通过量化队列播放，回退到本地播放器
+	var vol_db := _velocity_to_db(velocity)
+	if not _play_wav_quantized(wav, vol_db, 1.0, NOTE_BUS_NAME):
+		_play_wav_fallback(wav, vol_db)
 
 	chord_played.emit(notes, timbre)
 
@@ -421,14 +470,10 @@ func play_chord_sound_with_effect(
 	if wav == null:
 		return
 	
-	var player := _get_note_player()
-	if player == null:
-		return
-	
-	player.stream = wav
-	player.volume_db = _velocity_to_db(velocity)
-	player.pitch_scale = 1.0
-	player.play()
+	# OPT05: 优先通过量化队列播放，回退到本地播放器
+	var vol_db := _velocity_to_db(velocity)
+	if not _play_wav_quantized(wav, vol_db, 1.0, NOTE_BUS_NAME):
+		_play_wav_fallback(wav, vol_db)
 	
 	chord_played.emit(notes, timbre)
 	

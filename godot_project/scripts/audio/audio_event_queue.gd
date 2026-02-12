@@ -87,13 +87,21 @@ var _total_immediate: int = 0
 # ============================================================
 
 func _ready() -> void:
+	# 延迟连接信号，确保所有 autoload 单例已初始化
+	# （AudioManager 在 BGMManager 之前加载，需要等待 BGMManager 就绪）
+	call_deferred("_deferred_connect_signals")
+
+func _deferred_connect_signals() -> void:
 	# 连接 BGMManager 的十六分音符时钟信号
-	if BGMManager and BGMManager.has_signal("sixteenth_tick"):
-		BGMManager.sixteenth_tick.connect(_on_sixteenth_tick)
+	var bgm_mgr := get_node_or_null("/root/BGMManager")
+	if bgm_mgr and bgm_mgr.has_signal("sixteenth_tick"):
+		if not bgm_mgr.sixteenth_tick.is_connected(_on_sixteenth_tick):
+			bgm_mgr.sixteenth_tick.connect(_on_sixteenth_tick)
 
 	# 监听 BGM 状态变化
-	if BGMManager and BGMManager.has_signal("bgm_changed"):
-		BGMManager.bgm_changed.connect(_on_bgm_changed)
+	if bgm_mgr and bgm_mgr.has_signal("bgm_changed"):
+		if not bgm_mgr.bgm_changed.is_connected(_on_bgm_changed):
+			bgm_mgr.bgm_changed.connect(_on_bgm_changed)
 
 func _process(delta: float) -> void:
 	# 安全机制：如果 BGM 未播放，定期刷新队列
@@ -250,13 +258,14 @@ func _play_event(event: AudioEvent) -> void:
 
 ## 计算距离下一个十六分音符的时间（秒）
 func _get_time_to_next_sixteenth() -> float:
-	if not BGMManager:
+	var bgm_mgr := get_node_or_null("/root/BGMManager")
+	if bgm_mgr == null:
 		return 0.0
 
-	var bpm: float = BGMManager._bpm if BGMManager._bpm > 0.0 else 120.0
+	var bpm: float = bgm_mgr._bpm if bgm_mgr._bpm > 0.0 else 120.0
 	var sixteenth_interval := 60.0 / (bpm * 4.0)
 
 	# 使用 BGMManager 的内部时钟计算偏移
 	# _clock_timer 记录了距离下一个十六分音符的剩余时间
-	var elapsed_in_tick: float = BGMManager._clock_timer if BGMManager else 0.0
+	var elapsed_in_tick: float = bgm_mgr._clock_timer if bgm_mgr else 0.0
 	return max(0.0, sixteenth_interval - elapsed_in_tick)

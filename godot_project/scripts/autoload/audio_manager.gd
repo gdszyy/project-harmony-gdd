@@ -1010,7 +1010,7 @@ func play_chord_cast_sfx(position: Vector2, chord_data: Dictionary = {}) -> void
 	var timbre: int = chord_data.get("timbre", MusicData.TimbreType.NONE)
 	var spell_form = chord_data.get("spell_form", -1)
 
-	# OPT08: 如果有具体音符数据，优先使用 SynthManager 实时合成
+	# OPT08 + OPT05: 和弦音效播放（OPT08 实时合成优先，OPT05 量化降级）
 	if notes.size() >= 2:
 		var sm = get_node_or_null("/root/SynthManager")
 		if sm and sm.is_synthesis_enabled():
@@ -1019,19 +1019,18 @@ func play_chord_cast_sfx(position: Vector2, chord_data: Dictionary = {}) -> void
 				sm.play_synth_note_from_enum(n, 4, position)
 			sfx_played.emit("chord_synth", position)
 		else:
-			# 降级路径：使用 NoteSynthesizer 离线合成
+			# OPT05 降级路径：离线合成 + 量化队列
 			var synth := NoteSynthesizer.new()
 			var chord_wav := synth.generate_chord(notes, timbre, 4, 0.5, 0.7)
 			if chord_wav:
-				var player := _get_pooled_2d()
-				if player:
-					player.stream = chord_wav
-					player.global_position = position
-					player.volume_db = -5.0
-					player.pitch_scale = 1.0
-					player.bus = PLAYER_BUS_NAME
-					player.play()
-					sfx_played.emit("chord_synth", position)
+				# 将动态生成的音效临时缓存，通过量化队列播放
+				var temp_key := "chord_synth_%d" % (Time.get_ticks_msec() % 10000)
+				_generated_sounds[temp_key] = chord_wav
+				_play_2d_sound(temp_key, position, -5.0, 1.0, PLAYER_BUS_NAME)
+				# 延迟清理临时缓存（等待量化队列处理完毕）
+				get_tree().create_timer(1.0).timeout.connect(
+					func(): _generated_sounds.erase(temp_key)
+				)
 
 	# 根据法术形态播放额外的法术音效
 	_play_spell_form_sfx(spell_form, position)
