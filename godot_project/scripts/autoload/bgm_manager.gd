@@ -1,8 +1,13 @@
 ## bgm_manager.gd
-## 程序化 Techno BGM 合成引擎 (Autoload)
+## 程序化 Techno BGM 合成引擎 / 和声指挥官 (Autoload)
 ##
 ## 不依赖任何外部音频文件，完全在代码中实时合成多层 Minimal Techno / Glitch Techno
 ## 鼓点与音轨，与 GameManager 的 BPM 系统完美同步。
+##
+## OPT04 — 章节调性进化 (Chapter-Based Tonality Evolution)：
+##   - 每个章节拥有独立的调式/音阶 (Ionian → Chromatic)
+##   - 章节切换时通过共同音过渡法平滑转换调式
+##   - 动态切换马尔可夫链矩阵以匹配新调式的和声进行风格
 ##
 ## 音轨层级 (由低到高)：
 ##   1. Kick (底鼓)        — 4/4 拍核心节拍器，20-80Hz 正弦衰减
@@ -32,6 +37,8 @@ signal intensity_changed(new_intensity: float)
 signal sixteenth_tick(sixteenth_index: int)
 ## OPT01: 全局和声上下文变更信号 — 广播当前和弦根音、类型和音符列表
 signal harmony_context_changed(chord_root: int, chord_type: int, chord_notes: Array)
+## OPT04: 章节调性变更信号 — 广播章节ID、调式名称和音阶
+signal tonality_changed(chapter_id: int, mode_name: String, scale_notes: Array)
 
 ## === OPT07: 召唤系统音乐性深化 ===
 ## 十六分音符级别的节拍信号（供召唤物音频控制器使用）
@@ -148,6 +155,16 @@ const AUTO_EVOLVE_THRESHOLD: int = 2
 var _markov_matrix: Dictionary = {}
 
 # ============================================================
+# OPT04: 章节调性进化状态
+# ============================================================
+
+## 当前调式信息
+var _current_tonal_mode_name: String = "Aeolian"  ## 默认 A 自然小调
+var _current_tonal_mode: int = -1  ## MusicData.TonalMode 枚举值, -1 = 未启用
+var _current_tonality_chapter_id: int = 0  ## 当前调性对应的章节 ID
+var _is_tonality_transitioning: bool = false  ## 是否正在进行调式过渡
+
+# ============================================================
 # 生命周期
 # ============================================================
 
@@ -194,6 +211,12 @@ func _connect_signals() -> void:
 	if MusicTheoryEngine.has_signal("chord_identified"):
 		MusicTheoryEngine.chord_identified.connect(_on_player_chord_identified)
 	bgm_measure_synced.connect(_on_harmony_measure_synced)
+	# OPT04: 连接章节管理器的章节开始信号
+	var chapter_mgr = get_node_or_null("/root/ChapterManager")
+	if chapter_mgr == null and get_tree():
+		chapter_mgr = get_tree().get_first_node_in_group("chapter_manager")
+	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
+		chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
 
 func _init_default_patterns() -> void:
 	## Hi-Hat 默认模式：八分音符 (每隔一个十六分音符)
@@ -1276,3 +1299,135 @@ func _note_name(pc: int) -> String:
 	if pc >= 0 and pc < 12:
 		return NAMES[pc]
 	return "?"
+
+# ============================================================
+# OPT04: 章节调性进化系统 (Chapter-Based Tonality Evolution)
+# ============================================================
+
+## 响应章节切换（来自 ChapterManager.chapter_started 信号）
+## 触发调式过渡流程：旧调式 → 共同音过渡 → 新调式
+func _on_chapter_started_tonality(chapter_id: int, _chapter_name: String = "") -> void:
+	if chapter_id == _current_tonality_chapter_id:
+		return
+
+	var config: Dictionary = MusicData.CHAPTER_TONALITY_MAP.get(chapter_id, {})
+	if config.is_empty():
+		push_warning("[TonalityEvolution] 未找到章节 %d 的调式配置" % chapter_id)
+		return
+
+	print("[TonalityEvolution] 章节切换: %d → %d (%s)" % [
+		_current_tonality_chapter_id, chapter_id, config.get("name", "Unknown")])
+
+	_current_tonality_chapter_id = chapter_id
+	_start_tonality_transition(config)
+
+## 启动调式过渡
+## 使用共同音过渡法实现平滑的调式切换：
+##   阶段1 (2小节): 仅使用旧音阶与新音阶的共同音
+##   阶段2: 完全切换到新调式
+func _start_tonality_transition(new_config: Dictionary) -> void:
+	_is_tonality_transitioning = true
+	var old_scale: Array[int] = current_scale.duplicate()
+	var new_scale: Array[int] = []
+	var raw_scale: Array = new_config.get("scale", [])
+	for note in raw_scale:
+		new_scale.append(int(note))
+
+	# 计算共同音 (Common Tones)
+	var common_tones: Array[int] = []
+	for note in old_scale:
+		if note in new_scale:
+			common_tones.append(note)
+
+	print("[TonalityEvolution] 共同音数量: %d (旧=%d, 新=%d)" % [
+		common_tones.size(), old_scale.size(), new_scale.size()])
+
+	# 阶段1：使用共同音过渡（如果共同音不足3个，使用旧音阶）
+	if common_tones.size() >= 3:
+		_apply_transition_scale(common_tones)
+	else:
+		# 共同音不足，保持旧音阶但将根音切换到新调式的根音
+		_apply_transition_scale(old_scale)
+
+	# 等待2小节后切换到完整新音阶
+	_schedule_tonality_completion(new_config, new_scale)
+
+## 应用过渡期间的临时音阶
+func _apply_transition_scale(transition_notes: Array[int]) -> void:
+	current_scale = transition_notes
+	# 将当前和弦根音量化到过渡音阶
+	var quantized_root := quantize_to_scale(current_chord_root)
+	if quantized_root != current_chord_root:
+		_apply_chord_change(quantized_root, current_chord_type)
+
+## 调度调式过渡完成
+## 使用 Timer 等待指定小节数后完成切换
+func _schedule_tonality_completion(new_config: Dictionary, new_scale: Array[int]) -> void:
+	var measures_to_wait: int = 2
+	var beats_per_measure: int = 4
+	if GameManager and "beats_per_measure" in GameManager:
+		beats_per_measure = GameManager.beats_per_measure
+	var wait_time: float = measures_to_wait * beats_per_measure * _beat_interval
+
+	var timer := get_tree().create_timer(wait_time)
+	timer.timeout.connect(func():
+		_complete_tonality_transition(new_config, new_scale)
+	)
+
+## 完成调式过渡
+## 切换到新调式的完整音阶，加载新的马尔可夫矩阵
+func _complete_tonality_transition(new_config: Dictionary, new_scale: Array[int]) -> void:
+	# 更新音阶
+	current_scale = new_scale
+
+	# 更新调式元数据
+	_current_tonal_mode_name = new_config.get("name", "Unknown")
+	_current_tonal_mode = new_config.get("mode", -1)
+
+	# 加载新的马尔可夫链矩阵
+	var matrix_key: String = new_config.get("markov_matrix_key", "")
+	if not matrix_key.is_empty():
+		var new_matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get(matrix_key, {})
+		if not new_matrix.is_empty():
+			_markov_matrix = new_matrix
+			print("[TonalityEvolution] 加载马尔可夫矩阵: %s" % matrix_key)
+		else:
+			push_warning("[TonalityEvolution] 未找到马尔可夫矩阵: %s" % matrix_key)
+
+	# 设置新调式的主和弦
+	var root: int = new_config.get("root", -1)
+	if root >= 0:
+		# 查找该根音在新马尔可夫矩阵中的和弦类型
+		var root_entry: Dictionary = _markov_matrix.get(root, {})
+		var chord_type: int = MusicData.ChordType.MINOR
+		# 使用矩阵中该根音的自身条目来确定和弦类型
+		if root_entry.has(root):
+			chord_type = root_entry[root].get("type", MusicData.ChordType.MINOR)
+		_apply_chord_change(root, chord_type)
+
+	_is_tonality_transitioning = false
+
+	# 广播调式变更
+	tonality_changed.emit(_current_tonality_chapter_id, _current_tonal_mode_name, current_scale)
+	print("[TonalityEvolution] 调式过渡完成: %s (Ch%d)" % [
+		_current_tonal_mode_name, _current_tonality_chapter_id])
+
+## 手动设置调式（用于测试或特殊场景）
+func set_tonality(chapter_id: int) -> void:
+	_on_chapter_started_tonality(chapter_id)
+
+## 获取当前调式名称
+func get_current_mode() -> String:
+	return _current_tonal_mode_name
+
+## 获取当前调式枚举值
+func get_current_tonal_mode() -> int:
+	return _current_tonal_mode
+
+## 获取当前调性章节 ID
+func get_current_tonality_chapter() -> int:
+	return _current_tonality_chapter_id
+
+## 检查是否正在进行调式过渡
+func is_tonality_transitioning() -> bool:
+	return _is_tonality_transitioning

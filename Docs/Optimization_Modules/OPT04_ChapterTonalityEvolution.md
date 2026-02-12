@@ -2,11 +2,11 @@
 
 **版本:** 1.0
 **最后更新:** 2026-02-12
-**状态:** 设计稿
+**状态:** ✅ 已实现
 **作者:** Manus AI
 **优先级:** P3 — 第四优先级（深化系统）
-**前置依赖:** OPT01 — 全局动态和声指挥官
-**关联模块:** `bgm_manager.gd`, `关卡与Boss整合设计文档_v3.0.md`, `TimbreSystem_Documentation.md`
+**前置依赖:** OPT01 — 全局动态和声指挥官 (已实现)
+**关联模块:** `bgm_manager.gd`, `music_data.gd`, `chapter_data.gd`, `关卡与Boss整合设计文档_v3.0.md`, `TimbreSystem_Documentation.md`
 
 ---
 
@@ -226,3 +226,56 @@ sequenceDiagram
 - `Docs/TimbreSystem_Documentation.md` — 音色武器系统
 - `godot_project/scripts/autoload/bgm_manager.gd` — BGM 管理器
 - `Docs/Optimization_Modules/OPT01_GlobalDynamicHarmonyConductor.md` — 前置依赖
+
+---
+
+## 7. 实现记录
+
+**实现日期:** 2026-02-12
+**实现者:** Manus AI
+**基于:** OPT01 和声指挥官已实现的基础设施
+
+### 7.1. 修改的文件
+
+| 文件 | 修改类型 | 说明 |
+| :--- | :--- | :--- |
+| `godot_project/scripts/data/music_data.gd` | 新增数据 | 添加 `TonalMode` 枚举、`CHAPTER_TONALITY_MAP` 章节调性映射表（7个章节的完整配置）、`CHAPTER_MARKOV_MATRICES` 7套马尔可夫链转移概率矩阵 |
+| `godot_project/scripts/autoload/bgm_manager.gd` | 功能扩展 | 新增 `tonality_changed` 信号、调性进化状态变量、章节切换响应、共同音过渡算法、马尔可夫矩阵动态切换、公共查询 API |
+| `godot_project/scripts/data/chapter_data.gd` | 配置扩展 | 为全部 7 个章节添加 `tonality` 字段，引用 `MusicData.CHAPTER_TONALITY_MAP` |
+
+### 7.2. 新增信号
+
+| 信号 | 参数 | 说明 |
+| :--- | :--- | :--- |
+| `tonality_changed` | `chapter_id: int, mode_name: String, scale_notes: Array` | 章节调式切换完成时广播 |
+
+### 7.3. 新增公共 API
+
+| 方法 | 返回值 | 说明 |
+| :--- | :--- | :--- |
+| `get_current_mode()` | `String` | 获取当前调式名称 |
+| `get_current_tonal_mode()` | `int` | 获取当前调式枚举值 |
+| `get_current_tonality_chapter()` | `int` | 获取当前调性章节 ID |
+| `is_tonality_transitioning()` | `bool` | 检查是否正在进行调式过渡 |
+| `set_tonality(chapter_id)` | `void` | 手动设置调式（测试用） |
+
+### 7.4. 与 OPT01 的集成方式
+
+OPT04 完全基于 OPT01 已实现的和声指挥官基础设施，不重复实现任何 OPT01 功能。具体集成点：
+
+1. **音阶切换**：OPT04 修改 `current_scale`（OPT01 定义的全局音阶），使 OPT01 的 `quantize_to_scale()` 自动适配新调式。
+2. **马尔可夫矩阵替换**：OPT04 在章节切换时替换 `_markov_matrix`（OPT01 的马尔可夫链引用），使 OPT01 的 `_get_markov_next_chord()` 自动使用新调式的和声进行风格。
+3. **和弦切换**：OPT04 通过调用 OPT01 的 `_apply_chord_change()` 方法设置新调式的主和弦，自动触发 Pad/Bass 采样重建和信号广播。
+4. **共同音过渡**：过渡期间临时设置 `current_scale` 为共同音集合，OPT01 的所有音阶相关逻辑自动适配。
+
+### 7.5. 章节调式映射
+
+| 章节 | 调式 | 根音 | 情感 | 马尔可夫矩阵 |
+| :--- | :--- | :--- | :--- | :--- |
+| Ch1 毕达哥拉斯 | Ionian (C大调) | C | 纯净、和谐、明亮 | `ch1_ionian` |
+| Ch2 圭多 | Dorian (D多利亚) | D | 忧郁、神圣、空灵 | `ch2_dorian` |
+| Ch3 巴赫 | Mixolydian (G混合利底亚) | G | 明亮、具有导向性 | `ch3_mixolydian` |
+| Ch4 莫扎特 | Phrygian (E弗里几亚) | E | 戏剧性、紧张、异域 | `ch4_phrygian` |
+| Ch5 贝多芬 | Locrian (B洛克里亚) | B | 极度不和谐、冲突 | `ch5_locrian` |
+| Ch6 爵士 | Blues (C蓝调) | C | 蓝调、张力、表现力 | `ch6_blues` |
+| Ch7 噪音 | Chromatic (半音阶) | 无 | 无调性、自由、混沌 | `ch7_chromatic` |

@@ -38,6 +38,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 100,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.3, 0.5, 0.8),
+		"tonality": 1,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[1] (Ionian/C大调)
 		"description": "毕达哥拉斯发现了音程与数学比例的关系，一切从数字开始。",
 		
 		# 章节持续时间（秒），达到后触发Boss
@@ -160,6 +161,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 90,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.8, 0.65, 0.3),
+		"tonality": 2,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[2] (Dorian/D多利亚)
 		"description": "圭多发明了四线谱，将无形的声音固定为有形的符号。",
 		
 		"duration": 200.0,
@@ -244,6 +246,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 110,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.6, 0.4, 0.15),
+		"tonality": 3,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[3] (Mixolydian/G混合利底亚)
 		"description": "巴赫将对位法推向极致，每个声部都是独立而又和谐的个体。",
 		
 		"duration": 220.0,
@@ -329,6 +332,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 120,
 		"beats_per_measure": 3,  # 3/4拍（华尔兹）
 		"color_theme": Color(0.95, 0.9, 0.7),
+		"tonality": 4,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[4] (Phrygian/E弗里几亚)
 		"description": "莫扎特以完美的形式和优雅的对称性，将古典主义推向巅峰。",
 		
 		"duration": 240.0,
@@ -414,6 +418,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 130,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.7, 0.15, 0.15),
+		"tonality": 5,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[5] (Locrian/B洛克里亚)
 		"description": "贝多芬打破了古典主义的框架，以个人意志和情感力量重塑音乐。",
 		
 		"duration": 260.0,
@@ -504,6 +509,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 140,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.6, 0.3, 0.7),
+		"tonality": 6,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[6] (Blues/C蓝调)
 		"description": "爵士乐的摇摆节奏与即兴色彩，打破了功能和声的稳定预期。",
 		
 		"duration": 280.0,
@@ -615,6 +621,7 @@ const CHAPTERS: Dictionary = {
 		"bpm": 150,
 		"beats_per_measure": 4,
 		"color_theme": Color(0.1, 0.9, 0.6),
+		"tonality": 7,  ## OPT04: 调式索引 → MusicData.CHAPTER_TONALITY_MAP[7] (Chromatic/半音阶)
 		"description": "音乐被彻底解构为频率与波形，一切皆可为音乐，包括噪音本身。",
 		
 		"duration": 300.0,
