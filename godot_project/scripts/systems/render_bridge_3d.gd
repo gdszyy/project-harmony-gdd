@@ -59,6 +59,9 @@ var _chapter_visual_mgr: Node3D
 ## 玩家的 3D 渲染代理
 var _player_proxy_3d: Node3D
 
+## Issue #59: 玩家的谐振调式化身管理器
+var _harmonic_avatar: HarmonicAvatarManager = null
+
 ## 弹幕的 3D MultiMesh 渲染器
 var _projectile_renderer_3d: Node3D
 
@@ -307,6 +310,7 @@ func _sync_enemy_proxies() -> void:
 # ============================================================
 
 ## 为 2D 玩家创建 3D 渲染代理
+## Issue #59: 使用 HarmonicAvatarManager 替代硬编码几何体
 func create_player_proxy(player_2d: Node2D) -> void:
 	_follow_target_2d = player_2d
 
@@ -322,48 +326,18 @@ func create_player_proxy(player_2d: Node2D) -> void:
 	point_light.omni_attenuation = 1.5
 	_player_proxy_3d.add_child(point_light)
 
-	# 可见几何体 — 发光球体（修复 Issue #35：玩家在 3D 层不可见）
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "PlayerMesh3D"
-	var sphere_mesh := SphereMesh.new()
-	sphere_mesh.radius = 0.25
-	sphere_mesh.height = 0.5
-	sphere_mesh.radial_segments = 16
-	sphere_mesh.rings = 8
-	mesh_instance.mesh = sphere_mesh
+	# --- Issue #59: 创建 HarmonicAvatarManager 作为玩家 3D 化身 ---
+	_harmonic_avatar = HarmonicAvatarManager.new()
+	_harmonic_avatar.name = "HarmonicAvatar"
+	_harmonic_avatar.skeleton_enabled = true
+	_harmonic_avatar.rendering_enabled = true
+	_player_proxy_3d.add_child(_harmonic_avatar)
 
-	# 自发光材质（确保在暗场景中也可见）
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.0, 1.0, 0.83)
-	mat.emission_enabled = true
-	mat.emission = Color(0.0, 1.0, 0.83)
-	mat.emission_energy_multiplier = 3.0
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color.a = 0.9
-	mesh_instance.material_override = mat
-	_player_proxy_3d.add_child(mesh_instance)
+	# 将化身管理器注册到 2D 玩家节点，供其他系统访问
+	if player_2d.has_method("register_harmonic_avatar"):
+		player_2d.register_harmonic_avatar(_harmonic_avatar)
 
-	# 外层光晕环（增强视觉辨识度）
-	var halo_mesh_instance := MeshInstance3D.new()
-	halo_mesh_instance.name = "PlayerHalo3D"
-	var torus_mesh := TorusMesh.new()
-	torus_mesh.inner_radius = 0.3
-	torus_mesh.outer_radius = 0.4
-	torus_mesh.rings = 16
-	torus_mesh.ring_segments = 12
-	halo_mesh_instance.mesh = torus_mesh
-	halo_mesh_instance.rotation_degrees = Vector3(90, 0, 0)  # 水平放置
-
-	var halo_mat := StandardMaterial3D.new()
-	halo_mat.albedo_color = Color(1.0, 0.85, 0.0, 0.6)
-	halo_mat.emission_enabled = true
-	halo_mat.emission = Color(1.0, 0.85, 0.0)
-	halo_mat.emission_energy_multiplier = 2.0
-	halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	halo_mesh_instance.material_override = halo_mat
-	_player_proxy_3d.add_child(halo_mesh_instance)
-
-	# 拖尾粒子
+	# 拖尾粒子（保留，作为移动拖尾补充）
 	var trail_particles := GPUParticles3D.new()
 	trail_particles.name = "PlayerTrail3D"
 	trail_particles.amount = 16
@@ -518,6 +492,14 @@ func on_beat_pulse(beat_index: int) -> void:
 		_directional_light.light_energy = 0.6
 		var tween2 = create_tween()
 		tween2.tween_property(_directional_light, "light_energy", 0.3, 0.3)
+
+	# Issue #59: 转发节拍脉冲到 HarmonicAvatarManager
+	if _harmonic_avatar and is_instance_valid(_harmonic_avatar):
+		_harmonic_avatar.on_beat_pulse(beat_index)
+
+## Issue #59: 获取玩家的谐振调式化身管理器
+func get_harmonic_avatar() -> HarmonicAvatarManager:
+	return _harmonic_avatar
 
 # ============================================================
 # VFX 接口

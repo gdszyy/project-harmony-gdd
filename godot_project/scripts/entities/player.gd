@@ -1,7 +1,10 @@
 ## player.gd
 ## 玩家角色控制器
 ## 正十二面体能量核心，悬浮移动，带有缓入缓出插值
-## 注意：所有视觉效果（旋转、脉冲、闪烁等）统一由 player_visual_enhanced.gd 负责
+## 视觉系统：
+##   - 2D 视觉由 player_visual_enhanced.gd 负责
+##   - 3D 程序化化身由 HarmonicAvatarManager (Issue #59) 负责
+##   - 两者通过 RenderBridge3D 协同工作
 extends CharacterBody2D
 
 # ============================================================
@@ -148,6 +151,9 @@ func take_damage(amount: float, source_position: Vector2 = Vector2.ZERO) -> void
 	if _visual and _visual.has_method("apply_damage_effect"):
 		_visual.apply_damage_effect()
 
+	# Issue #59: 通知 3D 化身系统播放受伤效果
+	_notify_avatar_damage(source_position)
+
 func _start_invincibility() -> void:
 	_is_invincible = true
 	_invincibility_timer.start(invincibility_duration)
@@ -244,3 +250,31 @@ func _setup_visual_enhancer() -> void:
 		_visual.add_child(enhancer)
 	else:
 		add_child(enhancer)
+
+# ============================================================
+# 谐振调式化身集成 (Issue #59)
+# ============================================================
+
+## HarmonicAvatarManager 实例引用
+## 注意：HarmonicAvatarManager 是 Node3D，不直接挂在 2D 玩家上。
+## 它由 RenderBridge3D 在 3D SubViewport 中创建和管理。
+## 此处仅保存引用，用于转发游戏事件。
+var _harmonic_avatar: HarmonicAvatarManager = null
+
+## 注册 HarmonicAvatarManager（由 RenderBridge3D 调用）
+func register_harmonic_avatar(avatar: HarmonicAvatarManager) -> void:
+	_harmonic_avatar = avatar
+
+## 获取 HarmonicAvatarManager
+func get_harmonic_avatar() -> HarmonicAvatarManager:
+	return _harmonic_avatar
+
+## 将受伤事件转发到化身系统
+func _notify_avatar_damage(source_position: Vector2) -> void:
+	if _harmonic_avatar:
+		var dir_3d := Vector3(
+			(source_position.x - global_position.x),
+			0,
+			(source_position.y - global_position.y)
+		).normalized()
+		_harmonic_avatar.apply_damage_visual(dir_3d)
