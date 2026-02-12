@@ -25,6 +25,11 @@ const ENEMY_BUS_NAME := "EnemySFX"
 const PLAYER_BUS_NAME := "PlayerSFX"
 const UI_BUS_NAME := "UI"
 
+## OPT06: 空间音频距离子总线
+const ENEMY_BUS_NEAR := "EnemySFX_Near"
+const ENEMY_BUS_MID := "EnemySFX_Mid"
+const ENEMY_BUS_FAR := "EnemySFX_Far"
+
 # ============================================================
 # 对象池配置
 # ============================================================
@@ -192,6 +197,42 @@ func _setup_audio_buses() -> void:
 
 	# 创建 UI 音效子总线 (挂载在 SFX 下)
 	_ensure_bus_exists(UI_BUS_NAME, SFX_BUS_NAME)
+
+	# OPT06: 创建空间音频距离子总线 (挂载在 EnemySFX 下)
+	_setup_spatial_audio_buses()
+
+## OPT06: 设置空间音频距离子总线及其 LPF 效果
+func _setup_spatial_audio_buses() -> void:
+	# 近距子总线 — 无 LPF（清晰明亮）
+	_ensure_bus_exists(ENEMY_BUS_NEAR, ENEMY_BUS_NAME)
+
+	# 中距子总线 — 中等 LPF（略显沉闷）
+	_ensure_bus_exists(ENEMY_BUS_MID, ENEMY_BUS_NAME)
+	_ensure_bus_lpf(ENEMY_BUS_MID, 6000.0)
+
+	# 远距子总线 — 强 LPF（模糊遥远）
+	_ensure_bus_exists(ENEMY_BUS_FAR, ENEMY_BUS_NAME)
+	_ensure_bus_lpf(ENEMY_BUS_FAR, 2500.0)
+
+## OPT06: 确保音频总线上挂载了 LPF 效果
+func _ensure_bus_lpf(bus_name: String, cutoff_hz: float) -> void:
+	var bus_idx := AudioServer.get_bus_index(bus_name)
+	if bus_idx == -1:
+		return
+
+	# 检查是否已存在 LPF 效果
+	for i in range(AudioServer.get_bus_effect_count(bus_idx)):
+		var effect := AudioServer.get_bus_effect(bus_idx, i)
+		if effect is AudioEffectLowPassFilter:
+			# 已存在，更新截止频率
+			(effect as AudioEffectLowPassFilter).cutoff_hz = cutoff_hz
+			return
+
+	# 不存在，创建并添加
+	var lpf := AudioEffectLowPassFilter.new()
+	lpf.cutoff_hz = cutoff_hz
+	lpf.resonance = 0.5  # 适度共振，避免过于生硬
+	AudioServer.add_bus_effect(bus_idx, lpf)
 
 func _ensure_bus_exists(bus_name: String, parent_bus_name: String) -> void:
 	var bus_idx := AudioServer.get_bus_index(bus_name)
@@ -839,7 +880,8 @@ func _connect_global_signals() -> void:
 
 ## 播放敌人受击音效
 ## 由敌人的 enemy_damaged 信号触发
-func play_enemy_hit_sfx(enemy_type: String, position: Vector2, damage_amount: float) -> void:
+func play_enemy_hit_sfx(enemy_type: String, position: Vector2, damage_amount: float,
+		enemy_node: Node = null) -> void:
 	var config: Dictionary = ENEMY_SFX_CONFIG.get(enemy_type, ENEMY_SFX_CONFIG["static"])
 	var sound_name: String = config.get("hit_sound", "bitcrush_short")
 
@@ -854,22 +896,48 @@ func play_enemy_hit_sfx(enemy_type: String, position: Vector2, damage_amount: fl
 		volume_db += 3.0
 		pitch *= 0.8
 
-	_play_2d_sound(sound_name, position, volume_db, pitch, ENEMY_BUS_NAME)
+	# OPT06: 应用空间音频参数
+	var bus := ENEMY_BUS_NAME
+	var pan := 0.0
+	var spatial_ctrl := _get_spatial_controller(enemy_node)
+	if spatial_ctrl:
+		var params := spatial_ctrl.modify_playback_params(volume_db, pitch, bus)
+		if not params.get("should_play", true):
+			return
+		volume_db = params.get("volume_db", volume_db)
+		pitch = params.get("pitch", pitch)
+		bus = params.get("bus", bus)
+		pan = params.get("pan", 0.0)
+
+	_play_2d_sound_spatial(sound_name, position, volume_db, pitch, bus, pan)
 
 ## 播放敌人死亡音效
 ## 由敌人的 enemy_died 信号触发
-func play_enemy_death_sfx(enemy_type: String, position: Vector2) -> void:
+func play_enemy_death_sfx(enemy_type: String, position: Vector2,
+		enemy_node: Node = null) -> void:
 	var config: Dictionary = ENEMY_SFX_CONFIG.get(enemy_type, ENEMY_SFX_CONFIG["static"])
 	var sound_name: String = config.get("die_sound", "glitch_burst_small")
 
 	var pitch := randf_range(config.get("die_pitch_min", 0.5), config.get("die_pitch_max", 1.0))
 	var volume_db: float = config.get("die_volume_db", -6.0)
 
-	_play_2d_sound(sound_name, position, volume_db, pitch, ENEMY_BUS_NAME)
+	# OPT06: 应用空间音频参数
+	var bus := ENEMY_BUS_NAME
+	var pan := 0.0
+	var spatial_ctrl := _get_spatial_controller(enemy_node)
+	if spatial_ctrl:
+		var params := spatial_ctrl.modify_playback_params(volume_db, pitch, bus)
+		volume_db = params.get("volume_db", volume_db)
+		pitch = params.get("pitch", pitch)
+		bus = params.get("bus", bus)
+		pan = params.get("pan", 0.0)
+
+	_play_2d_sound_spatial(sound_name, position, volume_db, pitch, bus, pan)
 
 ## 播放敌人移动音效 (量化步进时触发)
 ## 由敌人的 _quantize_timer 触发
-func play_enemy_move_sfx(enemy_type: String, position: Vector2) -> void:
+func play_enemy_move_sfx(enemy_type: String, position: Vector2,
+		enemy_node: Node = null) -> void:
 	var config: Dictionary = ENEMY_SFX_CONFIG.get(enemy_type, ENEMY_SFX_CONFIG["static"])
 	var sound_name: String = config.get("move_sound", "noise_click")
 
@@ -879,11 +947,37 @@ func play_enemy_move_sfx(enemy_type: String, position: Vector2) -> void:
 	var pitch := randf_range(config.get("move_pitch_min", 0.8), config.get("move_pitch_max", 1.2))
 	var volume_db: float = config.get("move_volume_db", -18.0)
 
-	_play_2d_sound(sound_name, position, volume_db, pitch, ENEMY_BUS_NAME)
+	# OPT06: 应用空间音频参数
+	var bus := ENEMY_BUS_NAME
+	var pan := 0.0
+	var spatial_ctrl := _get_spatial_controller(enemy_node)
+	if spatial_ctrl:
+		var params := spatial_ctrl.modify_playback_params(volume_db, pitch, bus)
+		if not params.get("should_play", true):
+			return
+		volume_db = params.get("volume_db", volume_db)
+		pitch = params.get("pitch", pitch)
+		bus = params.get("bus", bus)
+		pan = params.get("pan", 0.0)
+
+	_play_2d_sound_spatial(sound_name, position, volume_db, pitch, bus, pan)
 
 ## 播放敌人眩晕音效
-func play_enemy_stun_sfx(position: Vector2) -> void:
-	_play_2d_sound("digital_crack", position, -8.0, randf_range(0.6, 0.9), ENEMY_BUS_NAME)
+func play_enemy_stun_sfx(position: Vector2, enemy_node: Node = null) -> void:
+	# OPT06: 应用空间音频参数
+	var volume_db := -8.0
+	var pitch := randf_range(0.6, 0.9)
+	var bus := ENEMY_BUS_NAME
+	var pan := 0.0
+	var spatial_ctrl := _get_spatial_controller(enemy_node)
+	if spatial_ctrl:
+		var params := spatial_ctrl.modify_playback_params(volume_db, pitch, bus)
+		volume_db = params.get("volume_db", volume_db)
+		pitch = params.get("pitch", pitch)
+		bus = params.get("bus", bus)
+		pan = params.get("pan", 0.0)
+
+	_play_2d_sound_spatial("digital_crack", position, volume_db, pitch, bus, pan)
 
 # ============================================================
 # 公共接口 — 玩家音效
@@ -1059,15 +1153,18 @@ func unregister_enemy(enemy: Node) -> void:
 func _on_enemy_damaged(current_hp: float, max_hp: float, damage_amount: float,
 		enemy: Node, enemy_type_name: String) -> void:
 	if is_instance_valid(enemy):
-		play_enemy_hit_sfx(enemy_type_name, enemy.global_position, damage_amount)
+		# OPT06: 传递 enemy 节点以支持空间音频
+		play_enemy_hit_sfx(enemy_type_name, enemy.global_position, damage_amount, enemy)
 
 func _on_enemy_died(position: Vector2, xp_value: int, enemy_type: String,
 		_bound_type_name: String) -> void:
+	# OPT06: 死亡音效仍使用空间化播放（位置信息已在 position 中）
 	play_enemy_death_sfx(enemy_type, position)
 
 func _on_enemy_stunned(duration: float, enemy: Node) -> void:
 	if is_instance_valid(enemy):
-		play_enemy_stun_sfx(enemy.global_position)
+		# OPT06: 传递 enemy 节点以支持空间音频
+		play_enemy_stun_sfx(enemy.global_position, enemy)
 
 
 func _on_level_up(_new_level: int) -> void:
@@ -1114,6 +1211,31 @@ func _play_2d_sound(sound_name: String, position: Vector2,
 	player.volume_db = volume_db
 	player.pitch_scale = pitch
 	player.bus = bus
+	player.play()
+
+	sfx_played.emit(sound_name, position)
+
+## OPT06: 带空间音频参数的 2D 音效播放
+## 支持自定义声相值，用于空间化敌人音效
+func _play_2d_sound_spatial(sound_name: String, position: Vector2,
+		volume_db: float, pitch: float, bus: String, pan: float = 0.0) -> void:
+	var stream: AudioStreamWAV = _generated_sounds.get(sound_name)
+	if stream == null:
+		return
+
+	var player := _get_pooled_2d()
+	if player == null:
+		return
+
+	player.stream = stream
+	player.global_position = position
+	player.volume_db = volume_db
+	player.pitch_scale = pitch
+	player.bus = bus
+	# OPT06: 应用空间声相
+	# AudioStreamPlayer2D 已原生支持基于位置的声相，但我们额外通过
+	# 调整 panning_strength 来增强空间化效果
+	player.panning_strength = clampf(absf(pan) * 1.2 + 0.5, 0.5, 1.0)
 	player.play()
 
 	sfx_played.emit(sound_name, position)
@@ -1213,3 +1335,30 @@ func set_ui_volume(volume: float) -> void:
 	var bus_idx := AudioServer.get_bus_index(UI_BUS_NAME)
 	if bus_idx >= 0:
 		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(ui_volume))
+
+# ============================================================
+# OPT06: 空间音频控制器查询
+# ============================================================
+
+## 从敌人节点上获取 SpatialAudioController
+## 如果敌人没有挂载 SpatialAudioController，返回 null（向后兼容）
+func _get_spatial_controller(enemy_node: Node) -> SpatialAudioController:
+	if enemy_node == null or not is_instance_valid(enemy_node):
+		return null
+
+	# 尝试直接获取命名子节点
+	var ctrl := enemy_node.get_node_or_null("SpatialAudioController")
+	if ctrl is SpatialAudioController:
+		return ctrl as SpatialAudioController
+
+	# 遍历子节点查找
+	for child in enemy_node.get_children():
+		if child is SpatialAudioController:
+			return child as SpatialAudioController
+
+	return null
+
+## OPT06: 动态更新空间音频子总线的 LPF 截止频率
+## 可用于全局调整空间音频效果强度
+func update_spatial_bus_lpf(bus_name: String, cutoff_hz: float) -> void:
+	_ensure_bus_lpf(bus_name, cutoff_hz)

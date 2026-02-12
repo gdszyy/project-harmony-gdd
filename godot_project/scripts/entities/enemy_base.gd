@@ -106,6 +106,9 @@ const CONTACT_COOLDOWN_TIME: float = 0.5
 var _stun_timer: float = 0.0
 var _is_stunned: bool = false
 
+## OPT06: 空间音频控制器引用
+var _spatial_audio_ctrl: SpatialAudioController = null
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -120,6 +123,7 @@ func _ready() -> void:
 	_connect_beat_signals()
 	_register_audio_signals()
 	_setup_visual_enhancer()  # Issue #52: 集成视觉增强器
+	_setup_spatial_audio()    # OPT06: 集成空间音频控制器
 	_on_enemy_ready()
 
 ## 子类重写此方法以执行额外的初始化
@@ -158,6 +162,12 @@ func _physics_process(delta: float) -> void:
 		if _stun_timer <= 0.0:
 			_is_stunned = false
 			_stun_timer = 0.0
+			# OPT06: 眩晕结束，清除空间音频状态效果
+			if _spatial_audio_ctrl:
+				_spatial_audio_ctrl.clear_state_fx()
+				# 检查是否应进入低血量状态
+				if current_hp / max_hp < 0.3:
+					_spatial_audio_ctrl.apply_state_fx("low_health")
 		else:
 			_update_visual(delta)
 			return
@@ -274,7 +284,8 @@ func _quantized_movement(delta: float) -> void:
 func _play_quantized_step_sound() -> void:
 	var audio_mgr := get_node_or_null("/root/AudioManager")
 	if audio_mgr and audio_mgr.has_method("play_enemy_move_sfx"):
-		audio_mgr.play_enemy_move_sfx(_get_type_name(), global_position)
+		# OPT06: 传递 self 以支持空间音频参数查询
+		audio_mgr.play_enemy_move_sfx(_get_type_name(), global_position, self)
 
 ## 子类重写此方法以实现不同的移动逻辑
 ## 默认：直线追踪玩家
@@ -379,6 +390,12 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 	current_hp -= final_damage
 	enemy_damaged.emit(current_hp, max_hp, final_damage)
 
+	# OPT06: 检查是否进入低血量状态（HP < 30%）
+	if _spatial_audio_ctrl and current_hp > 0.0:
+		var hp_ratio := current_hp / max_hp
+		if hp_ratio < 0.3 and _spatial_audio_ctrl.get_active_state() != "low_health":
+			_spatial_audio_ctrl.apply_state_fx("low_health")
+
 	# 击退（考虑击退抗性）
 	if knockback_dir != Vector2.ZERO:
 		var effective_knockback := final_knockback_force * (1.0 - knockback_resistance)
@@ -422,6 +439,9 @@ func apply_stun(duration: float) -> void:
 	_is_stunned = true
 	_stun_timer = duration
 	enemy_stunned.emit(duration)
+	# OPT06: 通知空间音频控制器进入眩晕状态
+	if _spatial_audio_ctrl:
+		_spatial_audio_ctrl.apply_state_fx("stunned")
 
 # ============================================================
 # 死亡系统 — "信号崩溃"
@@ -563,3 +583,25 @@ func _setup_visual_enhancer() -> void:
 	var enhancer := EnemyVisualEnhancer.new()
 	enhancer.name = "EnemyVisualEnhancer"
 	add_child(enhancer)
+
+# ============================================================
+# OPT06: 空间音频控制器集成
+# ============================================================
+
+## 初始化 SpatialAudioController
+## 如果场景中尚未挂载 SpatialAudioController，则动态创建并添加
+func _setup_spatial_audio() -> void:
+	# 检查是否已存在 SpatialAudioController 子节点
+	for child in get_children():
+		if child is SpatialAudioController:
+			_spatial_audio_ctrl = child
+			return
+	# 动态创建 SpatialAudioController 并挂载
+	var ctrl := SpatialAudioController.new()
+	ctrl.name = "SpatialAudioController"
+	add_child(ctrl)
+	_spatial_audio_ctrl = ctrl
+
+## OPT06: 获取空间音频控制器（供外部系统查询）
+func get_spatial_audio_controller() -> SpatialAudioController:
+	return _spatial_audio_ctrl

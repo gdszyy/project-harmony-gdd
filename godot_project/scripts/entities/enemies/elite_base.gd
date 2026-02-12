@@ -81,6 +81,10 @@ func _on_enemy_ready() -> void:
 	_elite_projectile_container.name = "EliteProjectiles"
 	add_child(_elite_projectile_container)
 	
+	# OPT06: 精英敌人默认应用 "elite" 空间音频状态（失真效果）
+	if _spatial_audio_ctrl:
+		_spatial_audio_ctrl.apply_state_fx("elite")
+	
 	# 子类定义攻击
 	_define_elite_attacks()
 	
@@ -153,6 +157,10 @@ func _execute_elite_attack() -> void:
 	_elite_is_attacking = true
 	elite_ability_used.emit(attack.get("name", "unknown"))
 	
+	# OPT06: 攻击蓄力时应用 "charging" 空间音频状态（上升滤波扫频）
+	if _spatial_audio_ctrl:
+		_spatial_audio_ctrl.apply_state_fx("charging")
+	
 	# 执行攻击（子类实现）
 	_perform_elite_attack(attack)
 	
@@ -164,6 +172,12 @@ func _execute_elite_attack() -> void:
 		_elite_is_attacking = false
 		_elite_attack_cooldown = cooldown
 		_elite_attack_index = (_elite_attack_index + 1) % _elite_attacks.size()
+		# OPT06: 攻击结束，恢复精英状态音效
+		if _spatial_audio_ctrl:
+			if _elite_enraged:
+				_spatial_audio_ctrl.apply_state_fx("elite")
+			else:
+				_spatial_audio_ctrl.apply_state_fx("elite")
 	)
 
 func _select_elite_attack() -> Dictionary:
@@ -264,15 +278,24 @@ func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfec
 		final_damage *= perfect_beat_damage_multiplier
 	
 	# 精英护盾吸收
+	var had_shield := _elite_shield > 0.0
 	if _elite_shield > 0.0:
 		var absorbed = min(_elite_shield, final_damage)
 		_elite_shield -= absorbed
 		final_damage -= absorbed
+		# OPT06: 护盾破碎时切换音频状态
+		if _elite_shield <= 0.0 and had_shield and _spatial_audio_ctrl:
+			_spatial_audio_ctrl.apply_state_fx("elite")
 	
 	# 应用伤害
 	if final_damage > 0.0:
 		current_hp -= final_damage
 		enemy_damaged.emit(current_hp, max_hp, final_damage)
+		# OPT06: 检查低血量状态
+		if _spatial_audio_ctrl and current_hp > 0.0:
+			var hp_ratio := current_hp / max_hp
+			if hp_ratio < 0.3 and _spatial_audio_ctrl.get_active_state() != "low_health":
+				_spatial_audio_ctrl.apply_state_fx("low_health")
 	
 	# 击退（考虑抗性）
 	if knockback_dir != Vector2.ZERO:
