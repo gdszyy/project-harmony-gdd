@@ -1,20 +1,21 @@
-## dps_overlay.gd
-## DPS 实时统计覆盖层
+## dps_overlay.gd — DPS 实时统计覆盖层
 ## 在屏幕右上角显示实时 DPS 图表和数值
-## 仅在测试场中激活
+## 仅在测试场中激活，使用 _draw() 绘制折线图
 extends CanvasLayer
 
 # ============================================================
 # 常量
 # ============================================================
 const OVERLAY_WIDTH := 260.0
-const OVERLAY_HEIGHT := 140.0
+const OVERLAY_HEIGHT := 160.0
 const GRAPH_HEIGHT := 80.0
+const GRAPH_WIDTH := 230.0
 const MARGIN := 12.0
 const BG_COLOR := Color(0.04, 0.03, 0.08, 0.85)
 const BORDER_COLOR := Color(0.5, 0.3, 0.9, 0.5)
 const DPS_COLOR := Color(0.3, 0.9, 0.5)
 const PEAK_COLOR := Color(1.0, 0.85, 0.2)
+const AVG_COLOR := Color(0.5, 0.7, 1.0)
 const GRAPH_BG := Color(0.06, 0.04, 0.10, 0.9)
 const GRAPH_LINE := Color(0.3, 0.9, 0.5, 0.8)
 const GRAPH_FILL := Color(0.3, 0.9, 0.5, 0.15)
@@ -23,18 +24,14 @@ const GRAPH_GRID := Color(0.15, 0.12, 0.22, 0.5)
 # ============================================================
 # 状态
 # ============================================================
-var _test_chamber: Node2D = null
+var _test_chamber: Node = null
 var _dps_history: Array[float] = []
-const MAX_HISTORY := 60  # 60个采样点（每0.5秒一个，共30秒）
+const MAX_HISTORY := 60
 var _sample_timer: float = 0.0
 const SAMPLE_INTERVAL := 0.5
 
-# 节点引用
-var _panel: PanelContainer = null
-var _dps_value_label: Label = null
-var _peak_value_label: Label = null
-var _avg_value_label: Label = null
-var _graph_rect: ColorRect = null
+# 绘制面板
+var _draw_panel: Control = null
 
 # ============================================================
 # 生命周期
@@ -42,11 +39,12 @@ var _graph_rect: ColorRect = null
 
 func _ready() -> void:
 	layer = 19
-	_build_ui()
 
 	# 初始化历史数据
 	for i in range(MAX_HISTORY):
 		_dps_history.append(0.0)
+
+	_build_ui()
 
 	await get_tree().process_frame
 	_test_chamber = get_tree().get_first_node_in_group("test_chamber")
@@ -61,123 +59,126 @@ func _process(delta: float) -> void:
 		_sample_timer -= SAMPLE_INTERVAL
 		_record_sample()
 
-	_update_display()
+	if _draw_panel:
+		_draw_panel.queue_redraw()
 
 # ============================================================
 # UI 构建
 # ============================================================
 
 func _build_ui() -> void:
-	_panel = PanelContainer.new()
-	_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_panel.position = Vector2(-OVERLAY_WIDTH - MARGIN, MARGIN)
-	_panel.custom_minimum_size = Vector2(OVERLAY_WIDTH, OVERLAY_HEIGHT)
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = BG_COLOR
-	style.border_color = BORDER_COLOR
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	_panel.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	_panel.add_child(vbox)
-
-	# 标题
-	var title := Label.new()
-	title.text = "DPS MONITOR"
-	title.add_theme_font_size_override("font_size", 10)
-	title.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-
-	# 数值行
-	var stats_hbox := HBoxContainer.new()
-	stats_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	stats_hbox.add_theme_constant_override("separation", 16)
-
-	_dps_value_label = Label.new()
-	_dps_value_label.text = "0.0"
-	_dps_value_label.add_theme_font_size_override("font_size", 20)
-	_dps_value_label.add_theme_color_override("font_color", DPS_COLOR)
-	stats_hbox.add_child(_dps_value_label)
-
-	var peak_vbox := VBoxContainer.new()
-	var peak_title := Label.new()
-	peak_title.text = "PEAK"
-	peak_title.add_theme_font_size_override("font_size", 8)
-	peak_title.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5))
-	peak_vbox.add_child(peak_title)
-
-	_peak_value_label = Label.new()
-	_peak_value_label.text = "0.0"
-	_peak_value_label.add_theme_font_size_override("font_size", 12)
-	_peak_value_label.add_theme_color_override("font_color", PEAK_COLOR)
-	peak_vbox.add_child(_peak_value_label)
-	stats_hbox.add_child(peak_vbox)
-
-	var avg_vbox := VBoxContainer.new()
-	var avg_title := Label.new()
-	avg_title.text = "AVG"
-	avg_title.add_theme_font_size_override("font_size", 8)
-	avg_title.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5))
-	avg_vbox.add_child(avg_title)
-
-	_avg_value_label = Label.new()
-	_avg_value_label.text = "0.0"
-	_avg_value_label.add_theme_font_size_override("font_size", 12)
-	_avg_value_label.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
-	avg_vbox.add_child(_avg_value_label)
-	stats_hbox.add_child(avg_vbox)
-
-	vbox.add_child(stats_hbox)
-
-	# DPS 图表区域（使用 ColorRect 作为占位，实际绘制在 _draw 中）
-	_graph_rect = ColorRect.new()
-	_graph_rect.custom_minimum_size = Vector2(OVERLAY_WIDTH - 20, GRAPH_HEIGHT)
-	_graph_rect.color = GRAPH_BG
-	vbox.add_child(_graph_rect)
-
-	add_child(_panel)
+	_draw_panel = Control.new()
+	_draw_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_draw_panel.offset_left = -OVERLAY_WIDTH - MARGIN
+	_draw_panel.offset_right = -MARGIN
+	_draw_panel.offset_top = MARGIN
+	_draw_panel.offset_bottom = MARGIN + OVERLAY_HEIGHT
+	_draw_panel.custom_minimum_size = Vector2(OVERLAY_WIDTH, OVERLAY_HEIGHT)
+	_draw_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_panel.draw.connect(_on_panel_draw)
+	add_child(_draw_panel)
 
 # ============================================================
 # 数据采样
 # ============================================================
 
 func _record_sample() -> void:
-	if not _test_chamber:
+	if not _test_chamber or not _test_chamber.has_method("get_dps_stats"):
 		_dps_history.append(0.0)
 	else:
-		var stats = _test_chamber.get_dps_stats()
+		var stats: Dictionary = _test_chamber.get_dps_stats()
 		_dps_history.append(stats.get("current_dps", 0.0))
 
 	if _dps_history.size() > MAX_HISTORY:
 		_dps_history.pop_front()
 
 # ============================================================
-# 显示更新
+# 绘制
 # ============================================================
 
-func _update_display() -> void:
-	if not _test_chamber:
+func _on_panel_draw() -> void:
+	if not _draw_panel:
 		return
 
-	var stats = _test_chamber.get_dps_stats()
+	var font := ThemeDB.fallback_font
+	var panel_size := Vector2(OVERLAY_WIDTH, OVERLAY_HEIGHT)
 
-	if _dps_value_label:
-		_dps_value_label.text = "%.1f" % stats.get("current_dps", 0.0)
-	if _peak_value_label:
-		_peak_value_label.text = "%.1f" % stats.get("peak_dps", 0.0)
-	if _avg_value_label:
-		_avg_value_label.text = "%.1f" % stats.get("average_dps", 0.0)
+	# 背景
+	var bg_style := Rect2(Vector2.ZERO, panel_size)
+	_draw_panel.draw_rect(bg_style, BG_COLOR)
+	_draw_panel.draw_rect(bg_style, BORDER_COLOR, false, 1.0)
+
+	# 标题
+	_draw_panel.draw_string(font, Vector2(10, 16), "DPS MONITOR",
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.4, 0.35, 0.5))
+
+	# 获取统计数据
+	var current_dps := 0.0
+	var peak_dps := 0.0
+	var avg_dps := 0.0
+
+	if _test_chamber and _test_chamber.has_method("get_dps_stats"):
+		var stats: Dictionary = _test_chamber.get_dps_stats()
+		current_dps = stats.get("current_dps", 0.0)
+		peak_dps = stats.get("peak_dps", 0.0)
+		avg_dps = stats.get("average_dps", 0.0)
+
+	# DPS 数值
+	_draw_panel.draw_string(font, Vector2(10, 38), "%.1f" % current_dps,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 20, DPS_COLOR)
+
+	_draw_panel.draw_string(font, Vector2(120, 30), "PEAK",
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.35, 0.5))
+	_draw_panel.draw_string(font, Vector2(120, 42), "%.1f" % peak_dps,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, PEAK_COLOR)
+
+	_draw_panel.draw_string(font, Vector2(180, 30), "AVG",
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.4, 0.35, 0.5))
+	_draw_panel.draw_string(font, Vector2(180, 42), "%.1f" % avg_dps,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, AVG_COLOR)
+
+	# 图表区域
+	var graph_x := 15.0
+	var graph_y := 55.0
+	var graph_rect := Rect2(Vector2(graph_x, graph_y), Vector2(GRAPH_WIDTH, GRAPH_HEIGHT))
+
+	# 图表背景
+	_draw_panel.draw_rect(graph_rect, GRAPH_BG)
+
+	# 网格线
+	for i in range(5):
+		var gy := graph_y + GRAPH_HEIGHT * float(i) / 4.0
+		_draw_panel.draw_line(
+			Vector2(graph_x, gy),
+			Vector2(graph_x + GRAPH_WIDTH, gy),
+			GRAPH_GRID, 1.0
+		)
+
+	# 折线图
+	if _dps_history.size() > 1:
+		var max_val := 1.0
+		for v in _dps_history:
+			max_val = max(max_val, v)
+
+		var points := PackedVector2Array()
+		var fill_points := PackedVector2Array()
+		fill_points.append(Vector2(graph_x, graph_y + GRAPH_HEIGHT))
+
+		for i in range(_dps_history.size()):
+			var x := graph_x + (float(i) / float(max(_dps_history.size() - 1, 1))) * GRAPH_WIDTH
+			var y := graph_y + GRAPH_HEIGHT * (1.0 - _dps_history[i] / max_val)
+			points.append(Vector2(x, y))
+			fill_points.append(Vector2(x, y))
+
+		fill_points.append(Vector2(graph_x + GRAPH_WIDTH, graph_y + GRAPH_HEIGHT))
+
+		# 填充区域
+		if fill_points.size() > 2:
+			_draw_panel.draw_colored_polygon(fill_points, GRAPH_FILL)
+
+		# 折线
+		if points.size() > 1:
+			_draw_panel.draw_polyline(points, GRAPH_LINE, 1.5, true)
+
+	# 图表边框
+	_draw_panel.draw_rect(graph_rect, BORDER_COLOR, false, 1.0)

@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://fatigue_meter_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/fatigue_meter.gd" id="1_fatigue"]
+[ext_resource type="Shader" path="res://shaders/fatigue_meter.gdshader" id="2_fatigue_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fatigue"]
+shader = ExtResource("2_fatigue_shader")
+shader_parameter/afi_ratio = 0.0
+shader_parameter/time = 0.0
+shader_parameter/beat_intensity = 0.0
+
+[node name="FatigueMeter" type="Control"]
+material = SubResource("ShaderMaterial_fatigue")
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -220.0
+offset_right = 0.0
+offset_bottom = 220.0
+mouse_filter = 2
+script = ExtResource("1_fatigue")

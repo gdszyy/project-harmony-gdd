@@ -1,0 +1,112 @@
+[gd_scene load_steps=12 format=3 uid="uid://battle_hud_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/hp_bar.gd" id="2_hp_bar"]
+[ext_resource type="Script" path="res://scripts/ui/fatigue_meter.gd" id="3_fatigue"]
+[ext_resource type="Script" path="res://scripts/ui/boss_hp_bar_ui.gd" id="4_boss_hp"]
+[ext_resource type="Script" path="res://scripts/ui/manual_cast_slot.gd" id="5_cast"]
+[ext_resource type="Script" path="res://scripts/ui/info_panel.gd" id="6_info"]
+[ext_resource type="Script" path="res://scripts/ui/summon_hud.gd" id="7_summon"]
+[ext_resource type="Script" path="res://scripts/ui/damage_number_pool.gd" id="8_dmg_pool"]
+[ext_resource type="Script" path="res://scripts/ui/notification_manager.gd" id="9_notif"]
+[ext_resource type="Shader" path="res://shaders/hp_bar.gdshader" id="10_hp_shader"]
+[ext_resource type="Shader" path="res://shaders/fatigue_meter.gdshader" id="11_fatigue_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hp"]
+shader = ExtResource("10_hp_shader")
+shader_parameter/hp_ratio = 1.0
+shader_parameter/beat_progress = 0.0
+shader_parameter/time = 0.0
+shader_parameter/hit_flash = 0.0
+shader_parameter/glow_intensity = 0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fatigue"]
+shader = ExtResource("11_fatigue_shader")
+shader_parameter/afi_ratio = 0.0
+shader_parameter/time = 0.0
+shader_parameter/beat_intensity = 0.0
+
+[node name="BattleHUD" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_hud")
+
+[node name="HPBar" type="Control" parent="."]
+material = SubResource("ShaderMaterial_hp")
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -150.0
+offset_right = 400.0
+offset_bottom = 0.0
+mouse_filter = 2
+script = ExtResource("2_hp_bar")
+
+[node name="FatigueMeter" type="Control" parent="."]
+material = SubResource("ShaderMaterial_fatigue")
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -220.0
+offset_right = 0.0
+offset_bottom = 220.0
+mouse_filter = 2
+script = ExtResource("3_fatigue")
+
+[node name="BossHPBar" type="Control" parent="."]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -500.0
+offset_top = 0.0
+offset_right = 500.0
+offset_bottom = 120.0
+mouse_filter = 2
+script = ExtResource("4_boss_hp")
+
+[node name="ManualCastSlots" type="Control" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -100.0
+offset_right = 280.0
+offset_bottom = -10.0
+mouse_filter = 2
+script = ExtResource("5_cast")
+
+[node name="InfoPanel" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 210.0
+offset_bottom = 110.0
+mouse_filter = 2
+script = ExtResource("6_info")
+
+[node name="SummonHud" type="Control" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 10.0
+offset_right = 0.0
+offset_bottom = 340.0
+mouse_filter = 2
+script = ExtResource("7_summon")
+
+[node name="DamageNumberLayer" type="CanvasLayer" parent="."]
+layer = 6
+
+[node name="DamageNumberPool" type="Node2D" parent="DamageNumberLayer"]
+script = ExtResource("8_dmg_pool")
+
+[node name="NotificationManager" type="CanvasLayer" parent="."]
+layer = 11
+script = ExtResource("9_notif")

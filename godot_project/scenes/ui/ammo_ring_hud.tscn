@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://ammo_ring_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/ammo_ring_hud.gd" id="1_ammo"]
+[ext_resource type="Shader" path="res://shaders/ammo_ring.gdshader" id="2_ammo_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ammo"]
+shader = ExtResource("2_ammo_shader")
+shader_parameter/segment_count = 4
+shader_parameter/time = 0.0
+shader_parameter/active_index = 0
+
+[node name="AmmoRingHud" type="Node2D"]
+script = ExtResource("1_ammo")

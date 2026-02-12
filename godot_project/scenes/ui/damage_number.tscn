@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://damage_number_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/damage_number.gd" id="1_dmg"]
+[ext_resource type="Shader" path="res://shaders/damage_number.gdshader" id="2_dmg_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dmg"]
+shader = ExtResource("2_dmg_shader")
+shader_parameter/type_id = 0
+shader_parameter/time = 0.0
+shader_parameter/intensity = 1.0
+shader_parameter/base_color = null
+
+[node name="DamageNumber" type="Control"]
+material = SubResource("ShaderMaterial_dmg")
+custom_minimum_size = Vector2(100, 40)
+offset_right = 100.0
+offset_bottom = 40.0
+mouse_filter = 2
+script = ExtResource("1_dmg")

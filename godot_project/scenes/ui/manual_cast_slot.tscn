@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://manual_cast_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/manual_cast_slot.gd" id="1_cast"]
+
+[node name="ManualCastSlots" type="Control"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -100.0
+offset_right = 280.0
+offset_bottom = -10.0
+mouse_filter = 2
+script = ExtResource("1_cast")

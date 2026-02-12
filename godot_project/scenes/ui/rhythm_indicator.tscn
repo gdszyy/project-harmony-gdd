@@ -1,8 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://rhythm_indicator_001"]
+[gd_scene load_steps=3 format=3 uid="uid://rhythm_indicator_001"]
 
 [ext_resource type="Script" path="res://scripts/ui/rhythm_indicator.gd" id="1_rhythm"]
+[ext_resource type="Shader" path="res://shaders/rhythm_indicator.gdshader" id="2_rhythm_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rhythm"]
+shader = ExtResource("2_rhythm_shader")
+shader_parameter/beat_progress = 0.0
+shader_parameter/flash_intensity = 0.0
+shader_parameter/flash_color = null
+shader_parameter/time = 0.0
+shader_parameter/downbeat = 0.0
 
 [node name="RhythmIndicator" type="Control"]
+material = SubResource("ShaderMaterial_rhythm")
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0

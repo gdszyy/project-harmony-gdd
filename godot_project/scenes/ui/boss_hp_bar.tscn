@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://boss_hp_bar_module2"]
+
+[ext_resource type="Script" path="res://scripts/ui/boss_hp_bar_ui.gd" id="1_boss_hp"]
+[ext_resource type="Shader" path="res://shaders/boss_hp_bar.gdshader" id="2_boss_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_boss"]
+shader = ExtResource("2_boss_shader")
+shader_parameter/hp_ratio = 1.0
+shader_parameter/chapter_id = 0
+shader_parameter/time = 0.0
+shader_parameter/beat_intensity = 0.0
+shader_parameter/phase_count = 1
+shader_parameter/current_phase = 0
+
+[node name="BossHPBar" type="Control"]
+material = SubResource("ShaderMaterial_boss")
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -500.0
+offset_top = 0.0
+offset_right = 500.0
+offset_bottom = 120.0
+mouse_filter = 2
+script = ExtResource("1_boss_hp")

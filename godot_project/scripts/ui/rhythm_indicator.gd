@@ -1,11 +1,7 @@
-## rhythm_indicator.gd
-## 节拍指示器 UI
-## 在屏幕上显示当前节拍状态，提供完美卡拍的视觉反馈。
-## 包含：
-##   - 节拍环形进度条
-##   - 完美卡拍金色闪光
-##   - 节拍计数器（当前小节内的拍数）
-##   - BPM 显示
+## rhythm_indicator.gd — 节拍指示器 UI
+## 静态外环 + 动态内缩环 + 完美/良好/错过 冲击波反馈
+## 使用 _draw() + ShaderMaterial 实现
+## 节拍同步通过 GameManager.beat_tick 信号
 extends Control
 
 # ============================================================
@@ -18,158 +14,203 @@ signal miss_beat()
 # ============================================================
 # 配置
 # ============================================================
-## 指示器大小
-@export var indicator_size: float = 80.0
-## 环形进度条宽度
-@export var ring_width: float = 6.0
-## 完美卡拍窗口（占拍间隔的比例）
-@export var perfect_window: float = 0.15
-## 良好卡拍窗口
-@export var good_window: float = 0.3
+## 指示器直径 (px)
+@export var indicator_size: float = 100.0
+## 环形线宽
+@export var ring_width: float = 3.0
+## 完美卡拍窗口 (±ms)
+@export var perfect_window_ms: float = 50.0
+## 良好卡拍窗口 (±ms)
+@export var good_window_ms: float = 100.0
 
-## 颜色配置
-@export var ring_color: Color = Color(0.3, 0.6, 0.9, 0.6)
-@export var beat_color: Color = Color(0.0, 0.9, 1.0, 0.9)
-@export var perfect_color: Color = Color(1.0, 0.85, 0.2, 1.0)
-@export var good_color: Color = Color(0.4, 0.9, 0.4, 0.8)
-@export var miss_color: Color = Color(0.8, 0.2, 0.2, 0.6)
+# 颜色
+const COLOR_CRYSTAL_WHITE  := Color(0.918, 0.902, 1.0)   # #EAE6FF
+const COLOR_RESONANCE_CYAN := Color(0.0, 1.0, 0.831)     # #00FFD4
+const COLOR_HOLY_GOLD      := Color(1.0, 0.843, 0.0)     # #FFD700
+const COLOR_ERROR_RED      := Color(1.0, 0.133, 0.267)   # #FF2244
+const COLOR_STARRY_PURPLE  := Color(0.078, 0.063, 0.149) # #141026
 
 # ============================================================
 # 内部状态
 # ============================================================
-var _beat_progress: float = 0.0  ## 当前拍内的进度 [0, 1]
-var _beat_interval: float = 0.5  ## 拍间隔（秒）
+var _beat_progress: float = 0.0
+var _beat_interval: float = 0.5
 var _beat_timer: float = 0.0
 var _current_beat_in_measure: int = 0
 var _beats_per_measure: int = 4
+var _time: float = 0.0
 
-## 视觉反馈状态
+## 视觉反馈
 var _flash_intensity: float = 0.0
 var _flash_color: Color = Color.WHITE
-var _pulse_scale: float = 1.0
-var _beat_marker_alpha: float = 0.0
+var _shockwave_progress: float = 0.0
+var _shockwave_color: Color = COLOR_HOLY_GOLD
 
-## 完美卡拍判定
+## 卡拍判定
 var _last_beat_time: float = 0.0
-var _beat_accuracy: String = ""  ## "perfect" / "good" / "miss" / ""
+var _beat_accuracy: String = ""
+
+## 着色器
+var _shader_material: ShaderMaterial = null
 
 # ============================================================
 # 生命周期
 # ============================================================
 
 func _ready() -> void:
-	# 连接全局节拍信号
-	if GameManager.beat_tick.is_connected(_on_beat_tick) == false:
+	if not GameManager.beat_tick.is_connected(_on_beat_tick):
 		GameManager.beat_tick.connect(_on_beat_tick)
-	
-	# 设置最小尺寸
-	custom_minimum_size = Vector2(indicator_size + 20, indicator_size + 40)
-	
-	# 初始化
-	_beat_interval = 60.0 / GameManager.current_bpm
-	
-	# 应用局外升级的节拍判定窗口加成
+
+	custom_minimum_size = Vector2(indicator_size + 20, indicator_size + 20)
+	size = custom_minimum_size
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_beat_interval = 60.0 / max(GameManager.current_bpm, 1.0)
 	_apply_meta_timing_bonus()
+	_setup_shader()
 
 func _process(delta: float) -> void:
-	# 更新拍间隔
+	_time += delta
 	_beat_interval = 60.0 / max(GameManager.current_bpm, 1.0)
-	
+
 	# 更新节拍进度
 	_beat_timer += delta
-	_beat_progress = fmod(_beat_timer, _beat_interval) / _beat_interval
-	
+	_beat_progress = clamp(fmod(_beat_timer, _beat_interval) / _beat_interval, 0.0, 1.0)
+
 	# 衰减视觉效果
 	_flash_intensity = max(0.0, _flash_intensity - delta * 5.0)
-	_pulse_scale = lerp(_pulse_scale, 1.0, delta * 8.0)
-	_beat_marker_alpha = max(0.0, _beat_marker_alpha - delta * 3.0)
-	
+
+	# 冲击波扩散
+	if _shockwave_progress > 0.0:
+		_shockwave_progress = max(0.0, _shockwave_progress - delta * 4.0)
+
+	_beats_per_measure = GameManager.beats_per_measure if GameManager.has_method("get_beat_progress") else 4
+
+	_update_shader_params()
 	queue_redraw()
 
+# ============================================================
+# 着色器
+# ============================================================
+
+func _setup_shader() -> void:
+	var shader := load("res://shaders/rhythm_indicator.gdshader")
+	if shader:
+		_shader_material = ShaderMaterial.new()
+		_shader_material.shader = shader
+		material = _shader_material
+
+func _update_shader_params() -> void:
+	if _shader_material == null:
+		return
+	_shader_material.set_shader_parameter("beat_progress", _beat_progress)
+	_shader_material.set_shader_parameter("flash_intensity", _flash_intensity)
+	_shader_material.set_shader_parameter("flash_color", Vector3(_flash_color.r, _flash_color.g, _flash_color.b))
+	_shader_material.set_shader_parameter("time_sec", _time)
+	_shader_material.set_shader_parameter("current_beat", _current_beat_in_measure)
+	_shader_material.set_shader_parameter("beats_per_measure", _beats_per_measure)
+
+# ============================================================
+# 绘制
+# ============================================================
+
 func _draw() -> void:
-	var center := Vector2(size.x / 2.0, size.y / 2.0 - 10.0)
-	var radius := indicator_size / 2.0
-	
-	# 1. 背景环
-	_draw_ring(center, radius, ring_width, ring_color * 0.3)
-	
-	# 2. 进度环（随节拍填充）
-	_draw_progress_ring(center, radius, ring_width, ring_color, _beat_progress)
-	
-	# 3. 节拍标记点（四个方位，对应4/4拍）
-	for i in range(_beats_per_measure):
-		var angle := (TAU / _beats_per_measure) * i - PI / 2.0
-		var marker_pos := center + Vector2.from_angle(angle) * radius
-		var marker_color := beat_color if i == _current_beat_in_measure else ring_color * 0.5
-		var marker_size := 5.0 if i == _current_beat_in_measure else 3.0
-		draw_circle(marker_pos, marker_size, marker_color)
-	
-	# 4. 当前拍位置指示器
-	var indicator_angle := _beat_progress * TAU - PI / 2.0
-	var indicator_pos := center + Vector2.from_angle(indicator_angle) * radius
-	var indicator_color := beat_color.lerp(_flash_color, _flash_intensity)
-	draw_circle(indicator_pos, 4.0 * _pulse_scale, indicator_color)
-	
-	# 5. 中心节拍脉冲
-	if _beat_marker_alpha > 0.0:
-		var pulse_color := _flash_color
-		pulse_color.a = _beat_marker_alpha * 0.6
-		draw_circle(center, radius * 0.3 * _pulse_scale, pulse_color)
-	
-	# 6. 完美卡拍闪光
-	if _flash_intensity > 0.3:
-		var flash_ring_color := _flash_color
-		flash_ring_color.a = _flash_intensity * 0.4
-		_draw_ring(center, radius + 4.0, ring_width + 4.0, flash_ring_color)
-	
-	# 7. BPM 文本
+	var center := size / 2.0
+	var outer_radius := indicator_size / 2.0
+
+	# === 1. 静态外环 ===
+	_draw_outer_ring(center, outer_radius)
+
+	# === 2. 动态内缩环 ===
+	var inner_radius := outer_radius * (1.0 - _beat_progress)
+	_draw_inner_ring(center, inner_radius)
+
+	# === 3. 冲击波 ===
+	if _shockwave_progress > 0.01:
+		_draw_shockwave(center, outer_radius)
+
+	# === 4. 中心脉冲 ===
+	if _beat_progress < 0.15:
+		var pulse_alpha := (1.0 - _beat_progress / 0.15) * 0.3
+		draw_circle(center, outer_radius * 0.15, Color(COLOR_RESONANCE_CYAN, pulse_alpha))
+
+	# === 5. BPM 文字 ===
+	var font := ThemeDB.fallback_font
 	var bpm_text := "%d" % int(GameManager.current_bpm)
-	draw_string(ThemeDB.fallback_font, center + Vector2(-12, 6), bpm_text,
-		HORIZONTAL_ALIGNMENT_CENTER, -1, 14, beat_color)
-	
-	# 8. 卡拍精度文本
+	draw_string(font, center + Vector2(-10, 5), bpm_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 13, COLOR_RESONANCE_CYAN)
+
+	# === 6. 卡拍精度文字 ===
 	if _beat_accuracy != "" and _flash_intensity > 0.1:
 		var accuracy_text := ""
 		var accuracy_color := Color.WHITE
 		match _beat_accuracy:
 			"perfect":
 				accuracy_text = "PERFECT!"
-				accuracy_color = perfect_color
+				accuracy_color = COLOR_HOLY_GOLD
 			"good":
 				accuracy_text = "GOOD"
-				accuracy_color = good_color
+				accuracy_color = Color(0.4, 0.9, 0.4)
 			"miss":
 				accuracy_text = "MISS"
-				accuracy_color = miss_color
-		
+				accuracy_color = COLOR_ERROR_RED
 		accuracy_color.a = _flash_intensity
-		draw_string(ThemeDB.fallback_font, 
-			Vector2(center.x - 24, size.y - 4), accuracy_text,
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 12, accuracy_color)
+		draw_string(font, Vector2(center.x - 22, size.y - 2), accuracy_text,
+			HORIZONTAL_ALIGNMENT_CENTER, -1, 11, accuracy_color)
 
-# ============================================================
-# 绘制辅助
-# ============================================================
-
-func _draw_ring(center: Vector2, radius: float, width: float, color: Color) -> void:
+func _draw_outer_ring(center: Vector2, radius: float) -> void:
+	var total_ticks := _beats_per_measure * 4  # 16 ticks
 	var segments := 64
-	for i in range(segments):
-		var angle_start := (TAU / segments) * i
-		var angle_end := (TAU / segments) * (i + 1)
-		var p1 := center + Vector2.from_angle(angle_start) * radius
-		var p2 := center + Vector2.from_angle(angle_end) * radius
-		draw_line(p1, p2, color, width, true)
 
-func _draw_progress_ring(center: Vector2, radius: float, width: float, color: Color, progress: float) -> void:
-	var segments := int(64 * progress)
-	if segments < 1:
-		return
+	# 环形底色
 	for i in range(segments):
-		var angle_start := (TAU / 64) * i - PI / 2.0
-		var angle_end := (TAU / 64) * (i + 1) - PI / 2.0
-		var p1 := center + Vector2.from_angle(angle_start) * radius
-		var p2 := center + Vector2.from_angle(angle_end) * radius
-		draw_line(p1, p2, color, width + 1.0, true)
+		var a1 := (TAU / segments) * i
+		var a2 := (TAU / segments) * (i + 1)
+		var p1 := center + Vector2.from_angle(a1) * radius
+		var p2 := center + Vector2.from_angle(a2) * radius
+		draw_line(p1, p2, Color(COLOR_CRYSTAL_WHITE, 0.2), ring_width, true)
+
+	# 刻度标记
+	for i in range(total_ticks):
+		var angle := (TAU / total_ticks) * i - PI / 2.0
+		var is_downbeat := (i % _beats_per_measure) == 0
+		var tick_len := 8.0 if is_downbeat else 4.0
+		var tick_alpha := 0.8 if is_downbeat else 0.4
+		var tick_width := 2.0 if is_downbeat else 1.0
+
+		var p_outer := center + Vector2.from_angle(angle) * (radius + tick_len * 0.5)
+		var p_inner := center + Vector2.from_angle(angle) * (radius - tick_len * 0.5)
+		draw_line(p_inner, p_outer, Color(COLOR_CRYSTAL_WHITE, tick_alpha), tick_width, true)
+
+func _draw_inner_ring(center: Vector2, radius: float) -> void:
+	if radius < 2.0:
+		return
+	var segments := 48
+	# 内缩环
+	for i in range(segments):
+		var a1 := (TAU / segments) * i
+		var a2 := (TAU / segments) * (i + 1)
+		var p1 := center + Vector2.from_angle(a1) * radius
+		var p2 := center + Vector2.from_angle(a2) * radius
+		draw_line(p1, p2, Color(COLOR_RESONANCE_CYAN, 0.8), ring_width + 1.0, true)
+
+	# 辉光
+	for i in range(segments):
+		var a1 := (TAU / segments) * i
+		var a2 := (TAU / segments) * (i + 1)
+		var p1 := center + Vector2.from_angle(a1) * radius
+		var p2 := center + Vector2.from_angle(a2) * radius
+		draw_line(p1, p2, Color(COLOR_RESONANCE_CYAN, 0.2), ring_width + 5.0, true)
+
+func _draw_shockwave(center: Vector2, base_radius: float) -> void:
+	var shock_radius := base_radius + (1.0 - _shockwave_progress) * 20.0
+	var shock_alpha := _shockwave_progress * 0.6
+	var segments := 48
+	for i in range(segments):
+		var a1 := (TAU / segments) * i
+		var a2 := (TAU / segments) * (i + 1)
+		var p1 := center + Vector2.from_angle(a1) * shock_radius
+		var p2 := center + Vector2.from_angle(a2) * shock_radius
+		draw_line(p1, p2, Color(_shockwave_color, shock_alpha), 2.0 * _shockwave_progress, true)
 
 # ============================================================
 # 节拍回调
@@ -179,84 +220,62 @@ func _on_beat_tick(beat_index: int) -> void:
 	_beat_timer = 0.0
 	_current_beat_in_measure = beat_index % _beats_per_measure
 	_last_beat_time = Time.get_ticks_msec() / 1000.0
-	
-	# 节拍脉冲效果
-	_pulse_scale = 1.3
-	_beat_marker_alpha = 1.0
-	_flash_color = beat_color
-	_flash_intensity = 0.5
-	
-	# 更新拍号
-	_beats_per_measure = GameManager.beats_per_measure
+	_beats_per_measure = GameManager.beats_per_measure if GameManager.get("beats_per_measure") else 4
 
 # ============================================================
 # 卡拍判定接口
 # ============================================================
 
 ## 判定当前攻击的卡拍精度
-## 返回: "perfect" / "good" / "miss"
 func judge_beat_accuracy() -> String:
 	var current_time := Time.get_ticks_msec() / 1000.0
 	var time_since_beat := current_time - _last_beat_time
 	var time_to_next_beat := _beat_interval - time_since_beat
-	
-	# 取距离最近的拍的时间差
-	var min_offset: float = minf(time_since_beat, time_to_next_beat)
-	var offset_ratio: float = min_offset / _beat_interval
-	
-	if offset_ratio <= perfect_window:
+	var min_offset_ms: float = minf(time_since_beat, time_to_next_beat) * 1000.0
+
+	if min_offset_ms <= perfect_window_ms:
 		_beat_accuracy = "perfect"
-		_flash_color = perfect_color
+		_flash_color = COLOR_HOLY_GOLD
 		_flash_intensity = 1.0
-		_pulse_scale = 1.5
+		_shockwave_progress = 1.0
+		_shockwave_color = COLOR_HOLY_GOLD
 		perfect_beat_hit.emit()
-	elif offset_ratio <= good_window:
+	elif min_offset_ms <= good_window_ms:
 		_beat_accuracy = "good"
-		_flash_color = good_color
+		_flash_color = Color(0.4, 0.9, 0.4)
 		_flash_intensity = 0.7
-		_pulse_scale = 1.2
+		_shockwave_progress = 0.5
+		_shockwave_color = Color.WHITE
 		good_beat_hit.emit()
 	else:
 		_beat_accuracy = "miss"
-		_flash_color = miss_color
+		_flash_color = COLOR_ERROR_RED
 		_flash_intensity = 0.4
 		miss_beat.emit()
-	
+
 	return _beat_accuracy
 
-## 获取当前距离最近拍的偏移比例 [0, 0.5]
-func get_beat_offset_ratio() -> float:
+## 获取当前距离最近拍的偏移 (ms)
+func get_beat_offset_ms() -> float:
 	var current_time := Time.get_ticks_msec() / 1000.0
 	var time_since_beat := current_time - _last_beat_time
 	var time_to_next_beat := _beat_interval - time_since_beat
-	var min_offset: float = minf(time_since_beat, time_to_next_beat)
-	return min_offset / _beat_interval
+	return minf(time_since_beat, time_to_next_beat) * 1000.0
 
 ## 当前是否处于完美卡拍窗口内
 func is_in_perfect_window() -> bool:
-	return get_beat_offset_ratio() <= perfect_window
+	return get_beat_offset_ms() <= perfect_window_ms
 
 ## 当前是否处于良好卡拍窗口内
 func is_in_good_window() -> bool:
-	return get_beat_offset_ratio() <= good_window
+	return get_beat_offset_ms() <= good_window_ms
 
 # ============================================================
 # 局外升级加成
 # ============================================================
 
-## 应用节拍判定窗口加成（从 MetaProgressionManager 读取）
 func _apply_meta_timing_bonus() -> void:
-	# 从 SaveManager 获取窗口加成（已委托给 MetaProgressionManager）
-	var bonus_ms: float = SaveManager.get_timing_window_bonus()
-	if bonus_ms <= 0.0:
-		return
-	
-	# 将毫秒加成转换为比例加成
-	# 基础拍间隔 = 60/BPM 秒 = 500ms (120BPM)
-	# 每级 +15ms，最高5级 = +75ms
-	# 转换为比例: bonus_ms / (beat_interval_ms)
-	var beat_interval_ms: float = _beat_interval * 1000.0
-	if beat_interval_ms > 0.0:
-		var bonus_ratio: float = bonus_ms / beat_interval_ms
-		perfect_window += bonus_ratio
-		good_window += bonus_ratio
+	var bonus_ms: float = SaveManager.get_timing_window_bonus() if SaveManager.has_method("get_timing_window_bonus") else 0.0
+	if bonus_ms > 0.0:
+		perfect_window_ms += bonus_ms
+		good_window_ms += bonus_ms

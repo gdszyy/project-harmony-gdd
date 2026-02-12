@@ -112,21 +112,29 @@ layer = 10
 script = ExtResource("5_hud")
 
 [node name="HPBar" type="Control" parent="HUD"]
-anchors_preset = 0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 340.0
-offset_bottom = 70.0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -150.0
+offset_right = 400.0
+offset_bottom = 0.0
+mouse_filter = 2
 script = ExtResource("34_hp_bar")
 
 [node name="FatigueBar" type="Control" parent="HUD"]
-anchors_preset = 1
+anchors_preset = 6
 anchor_left = 1.0
+anchor_top = 0.5
 anchor_right = 1.0
-offset_left = -230.0
-offset_top = 20.0
-offset_right = -10.0
-offset_bottom = 150.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -220.0
+offset_right = 0.0
+offset_bottom = 220.0
+mouse_filter = 2
 
 [node name="GameMechanicsPanel" type="Control" parent="HUD"]
 anchors_preset = 1
@@ -196,10 +204,11 @@ visible = false
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -300.0
-offset_top = 20.0
-offset_right = 300.0
-offset_bottom = 60.0
+offset_left = -500.0
+offset_top = 0.0
+offset_right = 500.0
+offset_bottom = 120.0
+mouse_filter = 2
 script = ExtResource("23_boss_hp")
 
 [node name="SuggestionPanel" type="PanelContainer" parent="HUD"]
@@ -256,13 +265,16 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
 [node name="FatigueMeter" type="Control" parent="HUD"]
-anchors_preset = 1
+anchors_preset = 6
 anchor_left = 1.0
+anchor_top = 0.5
 anchor_right = 1.0
-offset_left = -220.0
-offset_top = 155.0
-offset_right = -10.0
-offset_bottom = 195.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -220.0
+offset_right = 0.0
+offset_bottom = 220.0
+mouse_filter = 2
 script = ExtResource("25_fatigue_meter")
 
 [node name="AmmoRingHud" type="Node2D" parent="HUD"]
@@ -271,11 +283,14 @@ script = ExtResource("26_ammo_ring")
 [node name="RhythmIndicator" parent="HUD" instance=ExtResource("27_rhythm")]
 
 [node name="SummonHud" type="Control" parent="HUD"]
-anchors_preset = 0
-offset_left = 20.0
-offset_top = 150.0
-offset_right = 280.0
-offset_bottom = 250.0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 10.0
+offset_right = 0.0
+offset_bottom = 340.0
+mouse_filter = 2
 script = ExtResource("28_summon_hud")
 
 [node name="CodexUnlockPopup" type="Control" parent="HUD"]
