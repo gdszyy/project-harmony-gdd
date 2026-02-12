@@ -87,6 +87,10 @@ const DENSITY_OVERLOAD_THRESHOLD: int = 8
 const DENSITY_OVERLOAD_ACCURACY_PENALTY: float = 0.3
 ## 密度过载严重精准度惩罚
 const DENSITY_OVERLOAD_SEVERE_PENALTY: float = 0.6
+## 密度过载伤害衰减系数（轻度过载）
+const DENSITY_OVERLOAD_DAMAGE_DECAY: float = 0.7
+## 密度过载伤害衰减系数（严重过载）
+const DENSITY_OVERLOAD_SEVERE_DAMAGE_DECAY: float = 0.4
 ## 密度过载检测窗口（秒）
 const DENSITY_OVERLOAD_WINDOW: float = 3.0
 
@@ -139,6 +143,9 @@ var is_density_overloaded: bool = false
 
 ## 当前精准度惩罚值 (0.0 = 无惩罚, 越高散射越大)
 var current_accuracy_penalty: float = 0.0
+
+## 当前密度过载伤害衰减倍率 (1.0 = 无衰减, 越低伤害越低)
+var current_density_damage_multiplier: float = 1.0
 
 # ============================================================
 # 衰减常数
@@ -196,6 +203,7 @@ func record_spell(event: Dictionary) -> Dictionary:
 	result["silenced_notes"] = get_silenced_notes()
 	result["density_overloaded"] = is_density_overloaded
 	result["accuracy_penalty"] = current_accuracy_penalty
+	result["density_damage_multiplier"] = current_density_damage_multiplier
 
 	fatigue_updated.emit(result)
 
@@ -215,6 +223,7 @@ func query_fatigue() -> Dictionary:
 	result["silenced_notes"] = get_silenced_notes()
 	result["density_overloaded"] = is_density_overloaded
 	result["accuracy_penalty"] = current_accuracy_penalty
+	result["density_damage_multiplier"] = current_density_damage_multiplier
 	return result
 
 ## 获取每个音符的独立疲劳度
@@ -341,15 +350,18 @@ func _update_density_overload() -> void:
 
 	if recent_count > effective_threshold:
 		is_density_overloaded = true
-		# 根据超出程度计算精准度惩罚
+		# 根据超出程度计算精准度惩罚和伤害衰减
 		var excess_ratio := float(recent_count - effective_threshold) / float(effective_threshold)
 		if excess_ratio > 0.5:
 			current_accuracy_penalty = DENSITY_OVERLOAD_SEVERE_PENALTY
+			current_density_damage_multiplier = DENSITY_OVERLOAD_SEVERE_DAMAGE_DECAY
 		else:
 			current_accuracy_penalty = DENSITY_OVERLOAD_ACCURACY_PENALTY
+			current_density_damage_multiplier = DENSITY_OVERLOAD_DAMAGE_DECAY
 	else:
 		is_density_overloaded = false
 		current_accuracy_penalty = 0.0
+		current_density_damage_multiplier = 1.0
 
 	# 状态变化时发出信号
 	if was_overloaded != is_density_overloaded:
@@ -628,6 +640,7 @@ func _calculate_penalty() -> Dictionary:
 		"silenced_notes": get_silenced_notes(),
 		"density_overloaded": is_density_overloaded,
 		"accuracy_penalty": current_accuracy_penalty,
+		"density_damage_multiplier": current_density_damage_multiplier,
 	}
 
 	match penalty_mode:
@@ -852,6 +865,16 @@ func _apply_rest_cleanse() -> void:
 	}
 	fatigue_updated.emit(result)
 
+## 获取寂静音符的伤害倍率（寂静状态下返回 0.0，否则返回 1.0）
+func get_note_silence_damage_multiplier(note) -> float:
+	if is_note_silenced(note):
+		return 0.0
+	return 1.0
+
+## 获取密度过载伤害倍率
+func get_density_damage_multiplier() -> float:
+	return current_density_damage_multiplier
+
 ## 获取当前疲劳度值（便捷接口）
 func get_current_fatigue() -> float:
 	return current_afi
@@ -890,5 +913,6 @@ func reset() -> void:
 	# 重置密度过载
 	is_density_overloaded = false
 	current_accuracy_penalty = 0.0
+	current_density_damage_multiplier = 1.0
 	# 重置留白计数器
 	_consecutive_rest_count = 0

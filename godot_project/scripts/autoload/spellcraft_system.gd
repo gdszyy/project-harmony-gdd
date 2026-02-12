@@ -352,15 +352,18 @@ func trigger_manual_cast(slot_index: int) -> void:
 	if is_near_half_beat:
 		timing_bonus = 1.15  # 精准时机 +15% 伤害
 
-	# 检查音符是否被寂静
+	# 检查音符是否被寂静（寂静音符仍可施法但伤害为0）
 	var note = slot.get("note", -1)
-	if note >= 0 and FatigueManager.is_note_silenced(note):
+	var is_silenced: bool = note >= 0 and FatigueManager.is_note_silenced(note)
+	if is_silenced:
 		spell_blocked_by_silence.emit(note)
-		return
+		monotone_silence_triggered.emit({"note": note})
 
 	var enhanced_slot := slot.duplicate()
 	enhanced_slot["timing_bonus"] = timing_bonus
 	enhanced_slot["is_manual"] = true
+	enhanced_slot["is_silenced"] = is_silenced
+	enhanced_slot["silence_damage_mult"] = FatigueManager.get_note_silence_damage_multiplier(note) if note >= 0 else 1.0
 
 	_execute_spell(enhanced_slot)
 	# 设置冷却（PD→D 效果可能已缩减冷却）
@@ -533,10 +536,12 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	if not ModeSystem.is_white_key_available(white_key):
 		return  # 静默跳过，不触发任何反馈
 
-	# ★ 单音寂静检查：被寂静的音符无法施放
-	if FatigueManager.is_note_silenced(white_key):
+	# ★ 单音寂静检查：被寂静的音符伤害降为0，视觉变灰
+	var is_silenced: bool = FatigueManager.is_note_silenced(white_key)
+	var silence_damage_mult: float = FatigueManager.get_note_silence_damage_multiplier(white_key)
+	if is_silenced:
 		spell_blocked_by_silence.emit(white_key)
-		return
+		monotone_silence_triggered.emit({"note": white_key})
 
 	var stats := GameManager.get_note_effective_stats(white_key)
 
@@ -565,8 +570,14 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	var mode_dmg_mult := ModeSystem.get_damage_multiplier()
 	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult * meta_dmg_mult * mode_dmg_mult
 
+	# ★ 单音寂静惩罚：伤害降为0
+	base_damage *= silence_damage_mult
+
+	# ★ 密度过载伤害衰减
+	base_damage *= FatigueManager.get_density_damage_multiplier()
+
 	# 应用增伤 Buff（T→D 和弦进行效果）
-	if _empower_buff_active:
+	if _empower_buff_active and not is_silenced:
 		base_damage *= _empower_buff_multiplier
 		_empower_buff_active = false
 		_empower_buff_multiplier = 1.0
@@ -576,6 +587,7 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	if FatigueManager.is_density_overloaded:
 		accuracy_offset = FatigueManager.current_accuracy_penalty
 		accuracy_penalized.emit(accuracy_offset)
+		noise_overload_triggered.emit({"density": FatigueManager.current_density_damage_multiplier})
 
 	# OPT02: 获取白键的音程度数（用于相对音高系统）
 	var pitch_degree: int = MusicData.WHITE_KEY_PITCH_DEGREE.get(white_key, 1)
@@ -603,13 +615,21 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"dodge_back": rhythm_data.get("dodge_back", false),
 		# ★ 密度过载精准度偏移
 		"accuracy_offset": accuracy_offset,
+		# ★ 单音寂静标记（供弹体管理器灰色渲染）
+		"is_silenced": is_silenced,
+		# ★ 密度过载伤害倍率（供弹体管理器显示）
+		"density_damage_multiplier": FatigueManager.get_density_damage_multiplier(),
 	}
+
+	# ★ 寂静音符颜色变灰
+	if is_silenced:
+		spell_data["color"] = Color(0.4, 0.4, 0.4, 0.5)
 
 	# 调式被动效果：多利亚自动回响 / 布鲁斯暴击
 	var mode_modifier := ModeSystem.on_spell_cast()
 	if mode_modifier >= 0 and spell_data["modifier"] == -1:
 		spell_data["modifier"] = mode_modifier
-	if ModeSystem.check_crit():
+	if ModeSystem.check_crit() and not is_silenced:
 		spell_data["damage"] *= 2.0
 		spell_data["is_crit"] = true
 
@@ -663,10 +683,12 @@ func _cast_single_note(note: int) -> void:
 			apply_black_key_modifier(black_key)
 		return
 
-	# ★ 单音寂静检查
-	if FatigueManager.is_note_silenced(white_key):
+	# ★ 单音寂静检查：被寂静的音符伤害降为0，视觉变灰
+	var is_silenced: bool = FatigueManager.is_note_silenced(white_key)
+	var silence_damage_mult: float = FatigueManager.get_note_silence_damage_multiplier(white_key)
+	if is_silenced:
 		spell_blocked_by_silence.emit(white_key)
-		return
+		monotone_silence_triggered.emit({"note": white_key})
 
 	var stats := GameManager.get_note_effective_stats(white_key)
 	var fatigue := FatigueManager.query_fatigue()
@@ -681,8 +703,14 @@ func _cast_single_note(note: int) -> void:
 	# 计算基础伤害
 	var base_damage: float = stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * damage_mult * timbre_fatigue_mult
 
+	# ★ 单音寂静惩罚：伤害降为0
+	base_damage *= silence_damage_mult
+
+	# ★ 密度过载伤害衰减
+	base_damage *= FatigueManager.get_density_damage_multiplier()
+
 	# 应用增伤 Buff
-	if _empower_buff_active:
+	if _empower_buff_active and not is_silenced:
 		base_damage *= _empower_buff_multiplier
 		_empower_buff_active = false
 		_empower_buff_multiplier = 1.0
@@ -692,6 +720,7 @@ func _cast_single_note(note: int) -> void:
 	if FatigueManager.is_density_overloaded:
 		accuracy_offset = FatigueManager.current_accuracy_penalty
 		accuracy_penalized.emit(accuracy_offset)
+		noise_overload_triggered.emit({"density": FatigueManager.current_density_damage_multiplier})
 
 	# OPT02: 获取白键的音程度数（用于相对音高系统）
 	var pitch_degree: int = MusicData.WHITE_KEY_PITCH_DEGREE.get(white_key, 1)
@@ -711,7 +740,13 @@ func _cast_single_note(note: int) -> void:
 		"timbre": timbre,
 		"timbre_name": timbre_data.get("name", "合成器"),
 		"accuracy_offset": accuracy_offset,
+		"is_silenced": is_silenced,
+		"density_damage_multiplier": FatigueManager.get_density_damage_multiplier(),
 	}
+
+	# ★ 寂静音符颜色变灰
+	if is_silenced:
+		spell_data["color"] = Color(0.4, 0.4, 0.4, 0.5)
 
 	FatigueManager.record_spell({
 		"time": GameManager.game_time,
@@ -783,6 +818,9 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	# 计算基础伤害
 	var base_damage: float = root_stats["dmg"] * MusicData.PARAM_CONVERSION["dmg_per_point"] * chord_multiplier * damage_mult * timbre_fatigue_mult
 
+	# ★ 密度过载伤害衰减
+	base_damage *= FatigueManager.get_density_damage_multiplier()
+
 	# 应用增伤 Buff
 	if _empower_buff_active:
 		base_damage *= _empower_buff_multiplier
@@ -793,6 +831,8 @@ func _cast_chord(chord_result: Dictionary) -> void:
 	var accuracy_offset: float = 0.0
 	if FatigueManager.is_density_overloaded:
 		accuracy_offset = FatigueManager.current_accuracy_penalty
+		accuracy_penalized.emit(accuracy_offset)
+		noise_overload_triggered.emit({"density": FatigueManager.current_density_damage_multiplier})
 
 	var chord_data := {
 		"type": "chord",
@@ -806,6 +846,7 @@ func _cast_chord(chord_result: Dictionary) -> void:
 		"timbre": timbre,
 		"timbre_name": timbre_data.get("name", "合成器"),
 		"accuracy_offset": accuracy_offset,
+		"density_damage_multiplier": FatigueManager.get_density_damage_multiplier(),
 	}
 
 	# 记录疲劳事件

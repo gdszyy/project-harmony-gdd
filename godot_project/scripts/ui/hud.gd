@@ -106,11 +106,15 @@ func _process(delta: float) -> void:
 	_current_fatigue = FatigueManager.current_afi
 	_update_fatigue_filter()
 
-	# 建议文字淡出
+	# 建议文字淡出（最后1秒渐隐）
 	if _suggestion_timer > 0:
 		_suggestion_timer -= delta
-		if _suggestion_timer <= 0 and _suggestion_label:
-			_suggestion_label.text = ""
+		if _suggestion_label:
+			if _suggestion_timer <= 1.0 and _suggestion_timer > 0:
+				_suggestion_label.modulate.a = _suggestion_timer
+			if _suggestion_timer <= 0:
+				_suggestion_label.text = ""
+				_suggestion_label.modulate.a = 1.0
 
 	# 和弦进行提示淡出
 	if _progression_timer > 0:
@@ -240,7 +244,22 @@ func _on_fatigue_updated(result: Dictionary) -> void:
 func _on_recovery_suggestion(message: String) -> void:
 	if _suggestion_label:
 		_suggestion_label.text = message
-		_suggestion_timer = 4.0
+		_suggestion_timer = 5.0
+
+		# ★ 根据疲劳等级设置建议文字颜色
+		var suggestion_color: Color
+		if _current_fatigue >= 0.8:
+			suggestion_color = Color(1.0, 0.3, 0.2)  # 红色警告
+		elif _current_fatigue >= 0.5:
+			suggestion_color = Color(1.0, 0.8, 0.2)  # 黄色提醒
+		else:
+			suggestion_color = Color(0.6, 0.9, 1.0)  # 青色提示
+		_suggestion_label.add_theme_color_override("font_color", suggestion_color)
+
+		# 淡入动画
+		_suggestion_label.modulate.a = 0.0
+		var tween := create_tween()
+		tween.tween_property(_suggestion_label, "modulate:a", 1.0, 0.3)
 
 # ============================================================
 # 信息面板
@@ -415,6 +434,16 @@ func _update_fatigue_filter() -> void:
 	if mat:
 		mat.set_shader_parameter("fatigue_level", _current_fatigue)
 
+		# ★ 三级疲劳视觉效果分级
+		var tier: int = 0
+		if _current_fatigue >= 0.8:
+			tier = 3  # 高疲劳：去饱和 + 故障 + 红色警告
+		elif _current_fatigue >= 0.5:
+			tier = 2  # 中疲劳：色差 + 噪点 + 扫描线
+		elif _current_fatigue >= 0.3:
+			tier = 1  # 低疲劳：暖色偏移 + 微弱暗角
+		mat.set_shader_parameter("fatigue_tier", tier)
+
 		# 节拍脉冲
 		var beat_progress := GameManager.get_beat_progress()
 		var beat_pulse = max(0.0, 1.0 - beat_progress * 3.0)
@@ -427,6 +456,13 @@ func _update_fatigue_filter() -> void:
 		if not silenced_list.is_empty():
 			dissonance_visual = min(float(silenced_list.size()) * 0.2, 1.0)
 		mat.set_shader_parameter("dissonance_level", dissonance_visual)
+
+		# ★ 密度过载视觉效果
+		var density_overload: float = 0.0
+		if FatigueManager.is_density_overloaded:
+			# 根据伤害衰减倍率反推过载强度 (1.0 = 无过载, 0.4 = 严重过载)
+			density_overload = 1.0 - FatigueManager.current_density_damage_multiplier
+		mat.set_shader_parameter("density_overload", density_overload)
 
 # ============================================================
 # 节拍响应
