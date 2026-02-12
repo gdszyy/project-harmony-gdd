@@ -607,6 +607,7 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 		"note": white_key,
 		"white_key": white_key,  # OPT02: 显式传递白键枚举值
 		"pitch_degree": pitch_degree,  # OPT02: 音程度数 (1-7)
+		"base_octave": 4,  # OPT02: 基础八度 (C4 = MIDI 60)
 		"stats": stats,
 		"damage": base_damage,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"] * meta_spd_mult,
@@ -740,6 +741,7 @@ func _cast_single_note(note: int) -> void:
 		"note": white_key,
 		"white_key": white_key,  # OPT02: 显式传递白键枚举值
 		"pitch_degree": pitch_degree,  # OPT02: 音程度数 (1-7)
+		"base_octave": 4,  # OPT02: 基础八度 (C4 = MIDI 60)
 		"stats": stats,
 		"damage": base_damage,
 		"speed": stats["spd"] * MusicData.PARAM_CONVERSION["spd_per_point"],
