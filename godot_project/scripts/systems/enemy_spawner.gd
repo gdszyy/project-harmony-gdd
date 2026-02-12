@@ -1175,13 +1175,10 @@ func get_wave_progress() -> float:
 func clear_all_enemies() -> void:
 	for enemy in _active_enemies:
 		if is_instance_valid(enemy):
-			var from_pool: bool = enemy.get_meta("from_pool", false)
 			var pool_type: String = enemy.get_meta("pool_type", "")
 			if _pool_manager and pool_type != "":
 				# Issue #116: 无论是否来自池，都尝试归还
-				# 如果池不存在，release 会 fallback 到 queue_free
-				_pool_manager.release_enemy(pool_type, enemy)
-			elif from_pool and _pool_manager and pool_type != "":
+				# 如果池中无此对象（非池化敌人），pool.release 会安全忽略
 				_pool_manager.release_enemy(pool_type, enemy)
 			else:
 				enemy.queue_free()
