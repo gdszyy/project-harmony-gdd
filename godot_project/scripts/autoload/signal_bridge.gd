@@ -1,21 +1,36 @@
 ## signal_bridge.gd
 ## 信号桥接器 (Autoload) — Issue #86 信号系统审计
 ##
-## 功能：
-##   - 集中连接项目中已触发(emit)但未被监听(connect)的核心信号
-##   - 将战斗、法术、升级、资源、章节、Boss等事件信号路由到对应的处理逻辑
-##   - 避免在各个脚本中分散添加连接，统一管理信号生命周期
+## 【架构说明 — ADR 002 (P2)】
+## 本模块处于向 EventBus 统一架构的过渡期。
+## 职责边界：
+##   - 负责：场景内动态节点（EnemySpawner、CircleOfFifthsUpgradeV3 等）的信号适配
+##   - 负责：原生 Signal 对象的连接管理（防重复连接、防御性检查）
+##   - 不负责：Autoload 之间的逻辑事件通信（应使用 EventBus）
 ##
 ## 设计原则：
 ##   - 使用 has_signal() 防御性检查，避免因信号不存在导致崩溃
 ##   - 使用 is_connected() 防止重复连接
 ##   - 所有回调函数以 _on_ 前缀命名，清晰标识信号来源
+##   - 使用防重入标志（_is_processing_xxx）防止信号链循环
 ##
 ## P1 修复记录 (tsk-491969c1-ad1):
 ##   1. 清理12个空回调函数 — 添加 TODO 注释和 push_warning() 替代纯空体
 ##   2. 补充 Boss 核心信号监听 — 新增 _connect_boss_signals() 方法
 ##   3. 优化 _find_node_in_tree() — 优先 Autoload 直接访问，其次 Group 查找
+##
+## P2 修复记录 (tsk-d643a7a8-9f4):
+##   1. 移除 _on_upgrade_chosen_v3 中的危险桥接 — 消除双重触发问题
+##   2. 新增防重入标志 _is_processing_upgrade — 防止信号链循环
+##   3. 添加架构说明注释 — 明确本模块的过渡期职责边界
 extends Node
+
+# ============================================================
+# 防重入标志 (Reentrancy Guards)
+# 防止信号链中的双重触发或潜在循环
+# ============================================================
+## 防止 upgrade_selected 在同一帧内被重复触发
+var _is_processing_upgrade: bool = false
 
 # ============================================================
 # 生命周期
@@ -65,9 +80,35 @@ func _on_player_died() -> void:
 # ============================================================
 # 升级事件信号
 # ============================================================
+## 【P2 修复说明 — ADR 002 循环依赖消除】
+##
+## 原始问题（双重触发链路）：
+##   CircleOfFifthsUpgradeV3._select_option()
+##     -> GameManager.apply_upgrade(option)        [line 768]
+##        -> GameManager.upgrade_selected.emit()   [在 apply_upgrade 内部，line 343]
+##           -> SignalBridge._on_upgrade_selected() [播放音效 ①]
+##     -> upgrade_chosen.emit(option)              [line 770]
+##        -> SignalBridge._on_upgrade_chosen_v3()
+##           -> GameManager.upgrade_selected.emit() [再次触发！]
+##              -> SignalBridge._on_upgrade_selected() [播放音效 ② — 重复！]
+##
+## 根本原因：
+##   CircleOfFifthsUpgradeV3 已在调用 apply_upgrade() 之前/之后 emit upgrade_chosen。
+##   apply_upgrade() 内部已经 emit upgrade_selected。
+##   因此 SignalBridge 不应再次 emit upgrade_selected，否则会造成双重触发。
+##
+## 修复方案：
+##   1. 移除 _on_upgrade_chosen_v3 中对 GameManager.upgrade_selected.emit() 的调用。
+##      理由：upgrade_selected 已由 GameManager.apply_upgrade() 内部负责触发，
+##            SignalBridge 不应承担此桥接职责（违反单一职责原则）。
+##   2. 保留防重入标志 _is_processing_upgrade 作为防御性保障。
+##   3. 如果将来需要在 upgrade_chosen 时做额外处理，直接在此回调中实现，
+##      而不是通过 emit 另一个信号来间接触发。
 func _connect_upgrade_signals() -> void:
-	# upgrade_chosen (CircleOfFifthsUpgradeV3) → GameManager.upgrade_selected 桥接
-	# 注意：v3.0 升级系统通过此信号通知外部升级已完成
+	# upgrade_chosen (CircleOfFifthsUpgradeV3) → 仅用于 SignalBridge 自身的适配逻辑
+	# 【P2 注意】不再桥接到 GameManager.upgrade_selected，避免双重触发
+	# CircleOfFifthsUpgradeV3 已在内部调用 GameManager.apply_upgrade()，
+	# apply_upgrade() 会自动 emit upgrade_selected。
 	var co5_upgrade := _find_node_in_tree("CircleOfFifthsUpgradeV3")
 	if co5_upgrade and co5_upgrade.has_signal("upgrade_chosen"):
 		if not co5_upgrade.upgrade_chosen.is_connected(_on_upgrade_chosen_v3):
@@ -87,17 +128,26 @@ func _connect_upgrade_signals() -> void:
 			GameManager.easter_egg_triggered.connect(_on_easter_egg_triggered)
 
 func _on_upgrade_selected(upgrade: Dictionary) -> void:
-	var upgrade_name: String = upgrade.get("name", "未知升级")
-	var category: String = upgrade.get("category", "unknown")
+	# 防重入保护：防止信号链中的意外重复触发
+	if _is_processing_upgrade:
+		push_warning("SignalBridge: _on_upgrade_selected 被重入调用，已忽略。检查信号链是否存在循环。")
+		return
+	_is_processing_upgrade = true
+
 	# 播放升级音效
 	var audio_mgr := _get_audio_manager()
 	if audio_mgr and audio_mgr.has_method("play_global_sfx"):
 		audio_mgr.play_global_sfx("upgrade_confirm")
 
+	_is_processing_upgrade = false
+
 func _on_upgrade_chosen_v3(upgrade: Dictionary) -> void:
-	# 桥接 v3 升级信号到 GameManager，确保全局监听者能收到通知
-	if GameManager.has_signal("upgrade_selected"):
-		GameManager.upgrade_selected.emit(upgrade)
+	## 【P2 修复】此回调不再桥接到 GameManager.upgrade_selected。
+	## 原因：GameManager.apply_upgrade() 已在 CircleOfFifthsUpgradeV3 内部被调用，
+	##       apply_upgrade() 末尾会自动 emit upgrade_selected。
+	## 如果需要在 upgrade_chosen 时执行额外的 SignalBridge 专属逻辑，在此处实现。
+	## 当前：无需额外操作，此回调保留为扩展点。
+	pass
 
 func _on_inscription_acquired(inscription: Dictionary) -> void:
 	var ins_name: String = inscription.get("name", "未知词条")
