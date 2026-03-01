@@ -487,9 +487,9 @@ func _connect_system_signals() -> void:
 
 	# --- 章节管理器信号 ---
 	if _chapter_manager:
-		if _chapter_manager.has_signal("boss_triggered"):
-			if not _chapter_manager.boss_triggered.is_connected(_on_chapter_boss_triggered):
-				_chapter_manager.boss_triggered.connect(_on_chapter_boss_triggered)
+		if _chapter_manager.has_signal("boss_wave_triggered"):
+			if not _chapter_manager.boss_wave_triggered.is_connected(_on_chapter_boss_triggered):
+				_chapter_manager.boss_wave_triggered.connect(_on_chapter_boss_triggered)
 		if _chapter_manager.has_signal("chapter_started"):
 			if not _chapter_manager.chapter_started.is_connected(_on_chapter_started):
 				_chapter_manager.chapter_started.connect(_on_chapter_started)

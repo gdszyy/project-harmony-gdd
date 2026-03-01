@@ -19,7 +19,7 @@ extends Node
 # 信号
 # ============================================================
 signal milestone_approaching(milestone_index: int, time_remaining: float)
-signal milestone_reached(milestone_index: int, boss_key: String)
+signal timed_milestone_reached(milestone_index: int, boss_key: String)
 signal milestone_boss_defeated(milestone_index: int)
 signal all_milestones_completed()
 
@@ -196,7 +196,7 @@ func _trigger_milestone() -> void:
 	var milestone: Dictionary = _milestones[_current_milestone_index]
 	var boss_key: String = milestone.get("boss_key", "")
 
-	milestone_reached.emit(_current_milestone_index, boss_key)
+	timed_milestone_reached.emit(_current_milestone_index, boss_key)
 
 	# 通知 BossSpawner 生成 Boss
 	var boss_spawner := get_tree().get_first_node_in_group("boss_spawner")

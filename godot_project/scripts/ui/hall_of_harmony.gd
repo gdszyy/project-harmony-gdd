@@ -13,7 +13,7 @@ extends Control
 signal start_game_pressed()
 signal back_pressed()
 signal module_selected(module_key: String)
-signal upgrade_selected(upgrade_id: String, category: String)
+signal ui_upgrade_selected(upgrade_id: String, category: String)
 
 # ============================================================
 # 颜色方案 — 全局 UI 主题规范
@@ -453,7 +453,7 @@ func _open_module(module_key: String) -> void:
 		_active_sub_screen.back_pressed.connect(_on_sub_screen_back)
 	if _active_sub_screen.has_signal("node_unlocked"):
 		_active_sub_screen.node_unlocked.connect(
-			func(nid: String, cat: String): upgrade_selected.emit(nid, cat))
+			func(nid: String, cat: String): ui_upgrade_selected.emit(nid, cat))
 
 func _on_sub_screen_back() -> void:
 	if _active_sub_screen:
