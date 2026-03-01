@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3 uid="uid://main_game"]
+[gd_scene load_steps=44 format=3 uid="uid://main_game"]
 
 [ext_resource type="Script" path="res://scripts/scenes/main_game.gd" id="1_main_game"]
 [ext_resource type="Script" path="res://scripts/entities/player.gd" id="2_player"]
@@ -32,7 +32,6 @@
 [ext_resource type="Script" path="res://scripts/ui/hp_bar.gd" id="34_hp_bar"]
 [ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
 [ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
-[ext_resource type="PackedScene" uid="uid://tutorial_hint_001" path="res://scenes/ui/tutorial_hint.tscn" id="37_tutorial"]
 [ext_resource type="PackedScene" uid="uid://phase_indicator_001" path="res://scenes/ui/phase_indicator.tscn" id="38_phase_ind"]
 [ext_resource type="PackedScene" uid="uid://phase_energy_bar_001" path="res://scenes/ui/phase_energy_bar.tscn" id="39_energy_bar"]
 [ext_resource type="PackedScene" uid="uid://spectral_fatigue_001" path="res://scenes/ui/spectral_fatigue_indicator.tscn" id="40_spectral"]
@@ -339,8 +338,6 @@ script = ExtResource("45_breakthrough")
 
 [node name="PauseMenu" parent="HUD" instance=ExtResource("8_pause")]
 visible = false
-
-[node name="TutorialHintManager" parent="HUD" instance=ExtResource("37_tutorial")]
 
 [node name="PerformanceMonitor" type="CanvasLayer" parent="."]
 layer = 20
