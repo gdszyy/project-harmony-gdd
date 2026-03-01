@@ -1,6 +1,6 @@
 # Archive 归档索引
 
-**最后更新：** 2026年2月10日
+**最后更新：** 2026年3月1日
 
 本目录包含 Project Harmony 项目的历史文档、旧版本设计方案和已完成的实现报告。所有归档文档均已被新版本替代或已完成其历史使命，但保留以供参考和追溯设计演进过程。
 
@@ -98,6 +98,34 @@ Archive/
 
 ---
 
+## 六（新增）、Project Harmony v11.0 修复任务报告（2026-03-01）
+
+本批报告记录了 2026-03-01 围绕 Project Harmony v11.0 代码审计与修复任务的完整过程，由 Multi-Agent Hub 协调多个 Agent 协作完成。
+
+### 6.1 诊断与规划
+
+| 文档名称 | 日期 | 摘要 |
+|---------|------|------|
+| [HARMONY_FIX_DIAGNOSIS_SUMMARY.md](Reports/HARMONY_FIX_DIAGNOSIS_SUMMARY.md) | 2026-03-01 | 修复任务规划与诊断摘要，综合三个诊断任务结果，确定 FIX-01/FIX-02/FIX-03 三个修复方向 |
+| [PROJECT_HARMONY_AUDIT_REPORT_v11.md](Reports/PROJECT_HARMONY_AUDIT_REPORT_v11.md) | 2026-03-01 | 代码架构与技术债务诊断报告，识别 ARCH-01、PERF-01、DOC-01 等关键问题 |
+
+### 6.2 修复执行报告
+
+| 文档名称 | PR | 日期 | 摘要 |
+|---------|-----|------|------|
+| [FIX_REPORT_TUTORIAL_HINT_MANAGER.md](Reports/FIX_REPORT_TUTORIAL_HINT_MANAGER.md) | #132 | 2026-03-01 | TutorialHintManager 路径断裂修复报告，将其注册为 Autoload 并移除 main_game.tscn 中的重复节点 |
+| [FIX_REPORT_UI_QUEUE_REDRAW_PERFORMANCE.md](Reports/FIX_REPORT_UI_QUEUE_REDRAW_PERFORMANCE.md) | #134 | 2026-03-01 | UI 重绘性能修复报告，为多个 UI 脚本添加可见性检查和条件触发机制 |
+| [TECH_DEBT_CLEANUP_REPORT_FIX03.md](Reports/TECH_DEBT_CLEANUP_REPORT_FIX03.md) | #131 | 2026-03-01 | FIX-03 技术债务清理报告，清理废弃脚本、未使用信号、调试 print 语句，迁移 SynthManager |
+
+### 6.3 验收报告
+
+| 文档名称 | 日期 | 摘要 |
+|---------|------|------|
+| [HARMONY_FIX_EXECUTION_REPORT.md](Reports/HARMONY_FIX_EXECUTION_REPORT.md) | 2026-03-01 | 修复任务执行报告，记录 Multi-Agent 协作流程和各 PR 的执行结果 |
+| [HARMONY_FIX_ACCEPTANCE_REPORT.md](Reports/HARMONY_FIX_ACCEPTANCE_REPORT.md) | 2026-03-01 | 修复任务验收报告，验收 PR #131、#132、#133 合并后的 main 分支状态 |
+
+---
+
 ## 六、归档文档使用指南
 
 ### 6.1 查阅目的
@@ -123,6 +151,7 @@ Archive/
 
 | 日期 | 操作 | 文档数量 | 说明 |
 |------|------|---------|------|
+| 2026-03-01 | 迁移 v11.0 修复任务报告 | 7 | 从 multi-agent-hub 仓库迁移 Project Harmony 修复任务相关报告 |
 | 2026-02-10 | 创建 Archive/Reports/ | 9 | 归档音频系统报告、Bug修复报告、实现报告 |
 | 2026-02-10 | 创建 INDEX.md | 1 | 创建本索引文档 |
 | 2026-02-09 | 归档旧版美术文档 | 3 | 移动到 Docs/Archive/ |
