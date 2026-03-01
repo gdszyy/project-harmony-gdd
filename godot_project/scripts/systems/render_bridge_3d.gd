@@ -17,8 +17,6 @@ extends Node
 # ============================================================
 # 信号
 # ============================================================
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal render_bridge_ready
 
 # ============================================================
 # 配置
@@ -81,7 +79,7 @@ var _follow_target_2d: Node2D  ## 通常是 Player
 func _ready() -> void:
 	if enable_3d_layer:
 		_build_3d_scene()
-		render_bridge_ready.emit()
+		# [Removed] render_bridge_ready signal was deprecated and removed (Issue #86)
 
 func _process(delta: float) -> void:
 	if not enable_3d_layer or not _sub_viewport:

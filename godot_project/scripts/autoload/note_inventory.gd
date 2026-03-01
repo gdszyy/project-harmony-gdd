@@ -84,6 +84,12 @@ var _next_spell_id: int = 1
 
 func _ready() -> void:
 	_init_inventory()
+	# 【Phase 1 重构】订阅 EventBus 事件
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
+
+## 响应 game_reset 事件
+func _on_game_reset_event(_payload: Variant = null) -> void:
+	reset()
 
 # ============================================================
 # 初始化

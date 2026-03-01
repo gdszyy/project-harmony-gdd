@@ -23,12 +23,8 @@ extends Node
 # ============================================================
 
 ## 当一批音效事件在节拍点被处理时发出
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal events_flushed(event_count: int)
 
 ## 当量化模式改变时发出
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal quantize_mode_changed(new_mode: QuantizeMode)
 
 # ============================================================
 # 量化模式
@@ -155,7 +151,7 @@ func enqueue(event: AudioEvent) -> void:
 func set_quantize_mode(mode: QuantizeMode) -> void:
 	if quantize_mode != mode:
 		quantize_mode = mode
-		quantize_mode_changed.emit(mode)
+		# [Removed] quantize_mode_changed signal was deprecated and removed (Issue #86)
 
 		# 如果切换到 OFF 模式，立即刷新队列中所有待处理事件
 		if mode == QuantizeMode.OFF:
@@ -214,7 +210,7 @@ func _flush_queue() -> void:
 	_queue.clear()
 
 	_total_processed += count
-	events_flushed.emit(count)
+	# [Removed] events_flushed signal was deprecated and removed (Issue #86)
 
 ## 检查并处理超时事件
 func _check_stale_events() -> void:

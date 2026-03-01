@@ -16,13 +16,6 @@
 ## - 统计监控：提供池使用率、命中率等性能指标
 class_name ObjectPool
 
-# ============================================================
-# 信号
-# ============================================================
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal pool_exhausted(pool_name: String)
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal pool_expanded(pool_name: String, new_size: int)
 
 # ============================================================
 # 配置
@@ -119,7 +112,7 @@ func acquire() -> Node:
 				obj = _available.pop_back()
 		
 		if obj == null:
-			pool_exhausted.emit(pool_name)
+			push_warning("ObjectPool '%s': Pool exhausted and cannot expand!" % pool_name)
 			return null
 	
 	# 激活对象
@@ -203,7 +196,6 @@ func _expand() -> void:
 			_available.append(obj)
 	
 	_expansion_count += 1
-	pool_expanded.emit(pool_name, _total_created)
 
 # ============================================================
 # 统计接口

@@ -10,6 +10,17 @@ signal chord_identified(chord_type: MusicData.ChordType, root_note: int)
 signal progression_triggered(effect_type: String, bonus_multiplier: float)
 
 # ============================================================
+# 生命周期
+# ============================================================
+func _ready() -> void:
+	# 【Phase 1 重构】订阅 EventBus 事件
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
+
+## 响应 game_reset 事件
+func _on_game_reset_event(_payload: Variant = null) -> void:
+	clear_history()
+
+# ============================================================
 # 和弦进行追踪
 # ============================================================
 var _chord_history: Array[Dictionary] = []  # { "type": ChordType, "function": ChordFunction, "time": float }

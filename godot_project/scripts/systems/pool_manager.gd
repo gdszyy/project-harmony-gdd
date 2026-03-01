@@ -23,12 +23,6 @@
 extends Node
 
 # ============================================================
-# 信号
-# ============================================================
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal pool_stats_updated(stats: Dictionary)
-
-# ============================================================
 # 池配置
 # ============================================================
 const POOL_CONFIG: Dictionary = {
@@ -549,10 +543,8 @@ func _reset_xp_pickup(pickup: Node) -> void:
 # ============================================================
 
 func _emit_stats() -> void:
-	var stats: Dictionary = {}
-	for pool_name in _pools:
-		stats[pool_name] = _pools[pool_name].get_stats()
-	pool_stats_updated.emit(stats)
+	# Stats are now available via get_all_stats() without signal emission
+	pass
 
 ## 获取所有池的统计信息
 func get_all_stats() -> Dictionary:

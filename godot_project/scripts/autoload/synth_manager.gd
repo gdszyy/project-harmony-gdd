@@ -25,16 +25,10 @@ extends Node
 # ============================================================
 
 ## 合成器音符播放时发出
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal synth_note_played(frequency: float, timbre: int)
 
 ## 合成器音符停止时发出
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal synth_note_stopped(voice_index: int)
 
 ## 合成模式变更
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal synthesis_mode_changed(enabled: bool)
 
 # ============================================================
 # 常量
@@ -113,7 +107,7 @@ func play_synth_note(frequency: float, position: Vector2 = Vector2.ZERO) -> void
 	var params := _cached_synth_params.duplicate(true)
 	voice.play_note(frequency, params)
 
-	synth_note_played.emit(frequency, _cached_timbre)
+	# [Removed] synth_note_played signal was deprecated and removed (Issue #86)
 
 ## 播放一个合成音符（使用自定义参数）
 ## frequency: 音符频率 (Hz)
@@ -129,7 +123,7 @@ func play_synth_note_with_params(frequency: float, timbre_params: Dictionary,
 	voice.play_note(frequency, timbre_params)
 
 	var timbre: int = timbre_params.get("chapter_timbre", MusicData.ChapterTimbre.NONE)
-	synth_note_played.emit(frequency, timbre)
+	# [Removed] synth_note_played signal was deprecated and removed (Issue #86)
 
 ## 播放一个合成音符（从 MusicData.Note 枚举）
 ## note: MusicData.Note 枚举值
@@ -155,7 +149,7 @@ func set_synthesis_enabled(enabled: bool) -> void:
 	_synthesis_enabled = enabled
 	if not enabled:
 		force_stop_all()
-	synthesis_mode_changed.emit(enabled)
+	# [Removed] synthesis_mode_changed signal was deprecated and removed (Issue #86)
 
 ## 程序化合成是否启用
 func is_synthesis_enabled() -> bool:
@@ -237,4 +231,4 @@ func _on_chapter_timbre_changed(new_timbre: int) -> void:
 
 ## 声部播放完成回调
 func _on_voice_finished(voice_index: int) -> void:
-	synth_note_stopped.emit(voice_index)
+	# [Removed] synth_note_stopped signal was deprecated and removed (Issue #86)

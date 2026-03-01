@@ -46,7 +46,8 @@ signal boss_intro_completed(boss_name: String)
 # Boss 场景注册（传统模式后备）
 # ============================================================
 const BOSS_SCENES: Dictionary = {
-	"conductor": "res://scenes/enemies/boss_dissonant_conductor.tscn",
+	# NOTE: "conductor" boss was archived (see Archive/Boss_DissonantConductor/)
+	# "conductor": "res://scenes/enemies/boss_dissonant_conductor.tscn",
 	"boss_pythagoras": "res://scenes/enemies/boss_pythagoras.tscn",
 	"boss_guido": "res://scenes/enemies/boss_guido.tscn",
 	"boss_bach": "res://scenes/enemies/boss_bach.tscn",
@@ -219,15 +220,12 @@ func spawn_timed_boss(boss_key: String, player_pos: Vector2, difficulty_bonus: f
 				var boss := scene.instantiate()
 				_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
 			else:
-				# 后备：从代码生成
-				var BossScript = load("res://scripts/entities/enemies/boss_dissonant_conductor.gd")
-				if BossScript:
-					var boss := CharacterBody2D.new()
-					boss.set_script(BossScript)
-					_create_boss_nodes(boss)
-					_setup_timed_boss(boss, player_pos, boss_key, difficulty_bonus)
-				else:
-					push_error("BossSpawner: Cannot create timed boss: %s" % boss_key)
+					# 后备：从代码生成
+					var fallback_boss := _spawn_boss_from_code_fallback(boss_key, player_pos)
+					if fallback_boss:
+						_setup_timed_boss(fallback_boss, player_pos, boss_key, difficulty_bonus)
+					else:
+						push_error("BossSpawner: Cannot create timed boss: %s" % boss_key)
 		)
 	)
 
@@ -396,15 +394,25 @@ func _setup_timed_boss(boss: Node, player_pos: Vector2, boss_key: String, diffic
 	boss_fight_started.emit(boss_display_name)
 
 func _spawn_boss_from_code(boss_key: String, player_pos: Vector2) -> void:
-	var BossScript = load("res://scripts/entities/enemies/boss_dissonant_conductor.gd")
+	var boss := _spawn_boss_from_code_fallback(boss_key, player_pos)
+	if boss:
+		_setup_boss(boss, player_pos, boss_key)
+
+func _spawn_boss_from_code_fallback(boss_key: String, _player_pos: Vector2) -> Node:
+	# Try to load the boss script from the bosses/ directory first
+	var script_path := "res://scripts/entities/enemies/bosses/boss_%s.gd" % boss_key
+	var BossScript = load(script_path)
 	if BossScript == null:
-		push_error("BossSpawner: Cannot load boss script!")
-		return
+		# Fallback to boss_base
+		BossScript = load("res://scripts/entities/enemies/boss_base.gd")
+	if BossScript == null:
+		push_error("BossSpawner: Cannot load boss script for: %s" % boss_key)
+		return null
 	
 	var boss := CharacterBody2D.new()
 	boss.set_script(BossScript)
 	_create_boss_nodes(boss)
-	_setup_boss(boss, player_pos, boss_key)
+	return boss
 
 func _create_boss_nodes(boss: Node) -> void:
 	# EnemyVisual（Boss用更大的多边形）

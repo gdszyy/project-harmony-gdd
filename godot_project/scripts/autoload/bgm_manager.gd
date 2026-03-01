@@ -205,6 +205,9 @@ func _connect_signals() -> void:
 	if GameManager.has_signal("game_state_changed"):
 		GameManager.game_state_changed.connect(_on_game_state_changed)
 	_connect_fatigue_signals()
+	# 【Phase 1 重构】订阅 EventBus 事件
+	EventBus.subscribe(Events.GAME_STARTED, _on_game_started_event)
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
 	# OPT01: 连接和声指挥官信号
 	if MusicTheoryEngine.has_signal("chord_identified"):
 		MusicTheoryEngine.chord_identified.connect(_on_player_chord_identified)
@@ -1498,3 +1501,19 @@ func get_current_tonality_chapter() -> int:
 ## 检查是否正在进行调式过渡
 func is_tonality_transitioning() -> bool:
 	return _is_tonality_transitioning
+
+
+# ============================================================
+# 【Phase 1 重构】EventBus 回调
+# ============================================================
+
+## 响应 game_started 事件（包含 bpm 信息）
+func _on_game_started_event(payload: Variant) -> void:
+	var bpm: float = 120.0
+	if payload and payload.has("bpm"):
+		bpm = payload["bpm"]
+	start_bgm(bpm)
+
+## 响应 game_reset 事件
+func _on_game_reset_event(_payload: Variant = null) -> void:
+	_reset_harmony_conductor()

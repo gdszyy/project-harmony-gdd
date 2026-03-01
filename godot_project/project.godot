@@ -14,6 +14,12 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+; === 基础工具类（无依赖） ===
+UIColors="*res://scripts/autoload/ui_colors.gd"
+InputSetup="*res://scripts/autoload/input_setup.gd"
+; === 事件总线（必须在其他系统之前注册） ===
+EventBus="*res://scripts/autoload/event_bus.gd"
+; === 核心系统 ===
 GameManager="*res://scripts/autoload/game_manager.gd"
 MusicTheoryEngine="*res://scripts/autoload/music_theory_engine.gd"
 SynthManager="*res://scripts/autoload/synth_manager.gd"
@@ -23,23 +29,24 @@ BGMManager="*res://scripts/autoload/bgm_manager.gd"
 FatigueManager="*res://scripts/autoload/fatigue_manager.gd"
 NoteInventory="*res://scripts/autoload/note_inventory.gd"
 SpellcraftSystem="*res://scripts/autoload/spellcraft_system.gd"
-InputSetup="*res://scripts/autoload/input_setup.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 ModeSystem="*res://scripts/autoload/mode_system.gd"
 MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
 CodexManager="*res://scripts/autoload/codex_manager.gd"
+ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
+; === 游戏系统 ===
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
-UIColors="*res://scripts/autoload/ui_colors.gd"
-SignalBridge="*res://scripts/autoload/signal_bridge.gd"
 DifficultyManager="*res://scripts/systems/difficulty_manager.gd"
 TutorialManager="*res://scripts/systems/tutorial_manager.gd"
 MutatorManager="*res://scripts/systems/mutator_manager.gd"
 TimedMilestoneManager="*res://scripts/systems/timed_milestone_manager.gd"
+; === UI 系统 ===
 UITransitionManager="*res://scripts/ui/ui_transition_manager.gd"
-ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
 TutorialHintManager="*res://scripts/ui/tutorial_hint_manager.gd"
+; === 信号桥接器（最后加载，依赖所有系统） ===
+SignalBridge="*res://scripts/autoload/signal_bridge.gd"
 
 [display]
 

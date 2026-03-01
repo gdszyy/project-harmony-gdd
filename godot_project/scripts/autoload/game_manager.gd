@@ -199,20 +199,10 @@ func reset_game() -> void:
 	current_chapter_inscription_pool.clear()
 	triggered_easter_eggs.clear()
 
-	# 重置所有子系统
-	if NoteInventory.has_method("reset"):
-		NoteInventory.reset()
-	if FatigueManager.has_method("reset"):
-		FatigueManager.reset()
-	if SpellcraftSystem.has_method("reset"):
-		SpellcraftSystem.reset()
-	if MusicTheoryEngine.has_method("clear_history"):
-		MusicTheoryEngine.clear_history()
-	if ModeSystem.has_method("reset"):
-		ModeSystem.reset()
-	# OPT01: 重置和声指挥官
-	if BGMManager.has_method("_reset_harmony_conductor"):
-		BGMManager._reset_harmony_conductor()
+	# 【Phase 1 重构】发布 game_reset 事件，由各子系统自行响应
+	# 替代了对 NoteInventory/FatigueManager/SpellcraftSystem/
+	# MusicTheoryEngine/ModeSystem/BGMManager 的直接调用
+	EventBus.publish(Events.GAME_RESET)
 
 	game_state_changed.emit(current_state)
 
@@ -225,17 +215,12 @@ func start_game() -> void:
 	SaveManager.apply_meta_bonuses()
 	player_current_hp = player_max_hp
 
-	# 应用调式系统
-	if ModeSystem.has_method("apply_mode"):
-		ModeSystem.apply_mode(SaveManager.get_selected_mode())
-
-	# 启动 BGM
-	if BGMManager.has_method("start_bgm"):
-		BGMManager.start_bgm(current_bpm)
-
-	# 重置疲劳系统
-	if FatigueManager.has_method("reset"):
-		FatigueManager.reset()
+	# 【Phase 1 重构】发布 game_started 事件
+	# 替代了对 ModeSystem/BGMManager/FatigueManager 的直接调用
+	EventBus.publish(Events.GAME_STARTED, {
+		"bpm": current_bpm,
+		"mode": SaveManager.get_selected_mode()
+	})
 
 	game_state_changed.emit(current_state)
 

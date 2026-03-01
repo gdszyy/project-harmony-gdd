@@ -23,8 +23,6 @@ extends Node
 ## 当空间音频参数发生显著变化时发出（供调试面板使用）
 signal spatial_params_changed(params: Dictionary)
 ## 当状态音效被应用或移除时发出
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal state_fx_changed(state: String, active: bool)
 
 # ============================================================
 # 导出配置 — 距离与衰减
@@ -308,17 +306,17 @@ func apply_state_fx(state: String) -> void:
 
 	# 清除旧状态
 	if _active_state != "":
-		state_fx_changed.emit(_active_state, false)
+		# [Removed] state_fx_changed signal was deprecated and removed (Issue #86)
 
 	_active_state = state
-	state_fx_changed.emit(state, true)
+	# [Removed] state_fx_changed signal was deprecated and removed (Issue #86)
 
 ## 清除当前状态音效
 func clear_state_fx() -> void:
 	if _active_state != "":
 		var old_state := _active_state
 		_active_state = ""
-		state_fx_changed.emit(old_state, false)
+		# [Removed] state_fx_changed signal was deprecated and removed (Issue #86)
 
 ## 获取当前状态对应的音频效果参数
 ## 返回一个 Dictionary，包含应用到 AudioStreamPlayer2D 的参数修改

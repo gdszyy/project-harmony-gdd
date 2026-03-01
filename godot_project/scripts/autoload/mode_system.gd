@@ -115,6 +115,18 @@ func _ready() -> void:
 	# 从存档读取当前调式
 	var saved_mode := SaveManager.get_selected_mode()
 	apply_mode(saved_mode)
+	# 【Phase 1 重构】订阅 EventBus 事件
+	EventBus.subscribe(Events.GAME_STARTED, _on_game_started_event)
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
+
+## 响应 game_started 事件（包含 mode 信息）
+func _on_game_started_event(payload: Variant) -> void:
+	if payload and payload.has("mode"):
+		apply_mode(payload["mode"])
+
+## 响应 game_reset 事件
+func _on_game_reset_event(_payload: Variant = null) -> void:
+	reset()
 
 # ============================================================
 # 调式应用

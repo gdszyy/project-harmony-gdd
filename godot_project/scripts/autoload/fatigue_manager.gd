@@ -158,6 +158,17 @@ var _decay_lambda: float = 0.0
 
 func _ready() -> void:
 	_decay_lambda = log(2.0) / decay_half_life
+	# 【Phase 1 重构】订阅 EventBus 事件，替代被 GameManager 直接调用
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset)
+	EventBus.subscribe(Events.GAME_STARTED, _on_game_started)
+
+## 响应 game_reset 事件
+func _on_game_reset(_payload: Variant = null) -> void:
+	reset()
+
+## 响应 game_started 事件
+func _on_game_started(_payload: Variant = null) -> void:
+	reset()
 
 func _process(delta: float) -> void:
 	# 更新单音寂静计时器

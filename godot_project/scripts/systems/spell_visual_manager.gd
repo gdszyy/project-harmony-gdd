@@ -16,8 +16,6 @@ extends Node2D
 # ============================================================
 # 信号
 # ============================================================
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal visual_effect_spawned(effect_type: String, position: Vector2)
 
 # ============================================================
 # 配置
@@ -276,7 +274,7 @@ func _modifier_vfx_pierce(pos: Vector2, aim_dir: Vector2, color: Color) -> void:
 	# 玩家核心锐利光刃扩散
 	_spawn_radial_particles(pos, color, 6, 40.0, 0.25)
 	
-	visual_effect_spawned.emit("modifier_pierce", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 追踪 (D#)：蓝色动态准星 + 数据流连接
 func _modifier_vfx_homing(pos: Vector2, color: Color) -> void:
@@ -324,7 +322,7 @@ func _modifier_vfx_homing(pos: Vector2, color: Color) -> void:
 		a_tween.tween_property(arrow, "modulate:a", 0.0, 0.4)
 		a_tween.tween_callback(arrow.queue_free)
 	
-	visual_effect_spawned.emit("modifier_homing", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 分裂 (F#)：三个不稳定核心 + 电弧跳跃
 func _modifier_vfx_split(pos: Vector2, color: Color) -> void:
@@ -372,7 +370,7 @@ func _modifier_vfx_split(pos: Vector2, color: Color) -> void:
 		c_tween.tween_property(core, "modulate:a", 0.0, 0.1)
 		c_tween.tween_callback(core.queue_free)
 	
-	visual_effect_spawned.emit("modifier_split", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 回响 (G#)：主发光 + 延迟回声发光 + 残影拖尾
 func _modifier_vfx_echo(pos: Vector2, color: Color) -> void:
@@ -405,7 +403,7 @@ func _modifier_vfx_echo(pos: Vector2, color: Color) -> void:
 		g_tween.tween_property(ghost, "modulate:a", 0.0, 0.4 + i * 0.1)
 		g_tween.tween_callback(ghost.queue_free)
 	
-	visual_effect_spawned.emit("modifier_echo", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 散射 (A#)：扇形弹道预示 + 虚拟光线
 func _modifier_vfx_scatter(pos: Vector2, aim_dir: Vector2, color: Color) -> void:
@@ -451,7 +449,7 @@ func _modifier_vfx_scatter(pos: Vector2, aim_dir: Vector2, color: Color) -> void
 	arc_tween.tween_property(arc, "modulate:a", 0.0, 0.35)
 	arc_tween.tween_callback(arc.queue_free)
 	
-	visual_effect_spawned.emit("modifier_scatter", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 增强版修饰符就绪指示器
 func _spawn_modifier_ready_indicator_enhanced(pos: Vector2, modifier: MusicData.ModifierEffect) -> void:
@@ -599,7 +597,7 @@ func _vfx_enhanced_projectile(pos: Vector2, _data: Dictionary) -> void:
 		orb_tween.parallel().tween_property(orb, "modulate:a", 0.0, 0.35)
 		orb_tween.tween_callback(orb.queue_free)
 	
-	visual_effect_spawned.emit("enhanced_projectile", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## DOT弹体（小三）：暗蓝色粘稠液体 + 漩涡 + 腐蚀滴落
 func _vfx_dot_projectile(pos: Vector2, _data: Dictionary) -> void:
@@ -641,7 +639,7 @@ func _vfx_dot_projectile(pos: Vector2, _data: Dictionary) -> void:
 			d_tween.tween_callback(drop.queue_free)
 		)
 	
-	visual_effect_spawned.emit("dot_projectile", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 爆炸弹体（增三）：烈焰橙 + 不稳定核心 + 火星迸发
 func _vfx_explosive(pos: Vector2, _data: Dictionary) -> void:
@@ -671,7 +669,7 @@ func _vfx_explosive(pos: Vector2, _data: Dictionary) -> void:
 	c_tween.tween_property(core, "modulate:a", 0.0, 0.15)
 	c_tween.tween_callback(core.queue_free)
 	
-	visual_effect_spawned.emit("explosive", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 冲击波（减三）：深紫色环形 + 空间涟漪 + 内爆
 func _vfx_shockwave(pos: Vector2, _data: Dictionary) -> void:
@@ -728,7 +726,7 @@ func _vfx_shockwave(pos: Vector2, _data: Dictionary) -> void:
 		if_tween.tween_callback(imp_flash.queue_free)
 	)
 	
-	visual_effect_spawned.emit("shockwave", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 法阵/区域（属七）：Dominant黄旋转几何法阵 + 光柱印记
 func _vfx_field(pos: Vector2, _data: Dictionary) -> void:
@@ -773,7 +771,7 @@ func _vfx_field(pos: Vector2, _data: Dictionary) -> void:
 		"color": color,
 	})
 	
-	visual_effect_spawned.emit("field", target_pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 天降打击（减七）：血红色预警 + 乌云闪电 + 全屏闪白
 func _vfx_divine_strike(pos: Vector2, _data: Dictionary) -> void:
@@ -840,7 +838,7 @@ func _vfx_divine_strike(pos: Vector2, _data: Dictionary) -> void:
 		_spawn_radial_particles(target_pos, color, 20, 70.0, 0.5)
 	)
 	
-	visual_effect_spawned.emit("divine_strike", target_pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 护盾/治疗（大七）：治愈绿半球护盾 + 蜂巢能量格 + 汇聚光点
 func _vfx_shield_heal(pos: Vector2, _data: Dictionary) -> void:
@@ -876,7 +874,7 @@ func _vfx_shield_heal(pos: Vector2, _data: Dictionary) -> void:
 		"color": color,
 	})
 	
-	visual_effect_spawned.emit("shield_heal", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 召唤/构造（小七）：深蓝色水晶生长 + 模块化拼接
 func _vfx_summon(pos: Vector2, _data: Dictionary) -> void:
@@ -927,7 +925,7 @@ func _vfx_summon(pos: Vector2, _data: Dictionary) -> void:
 		"color": color,
 	})
 	
-	visual_effect_spawned.emit("summon", summon_pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 蓄力弹体（挂留）：银白色能量球 + 空间扭曲 + 彗星尾迹
 func _vfx_charged(pos: Vector2, _data: Dictionary) -> void:
@@ -974,7 +972,7 @@ func _vfx_charged(pos: Vector2, _data: Dictionary) -> void:
 		_spawn_radial_particles(pos, color, 8, 50.0, 0.3)
 	)
 	
-	visual_effect_spawned.emit("charged", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 # ============================================================
 # 扩展和弦法术视觉效果
@@ -1011,7 +1009,7 @@ func _vfx_storm_field(pos: Vector2, _data: Dictionary) -> void:
 		"position": pos,
 	})
 	
-	visual_effect_spawned.emit("storm_field", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 圣光领域：金色光柱 + 治疗光环
 func _vfx_holy_domain(pos: Vector2, _data: Dictionary) -> void:
@@ -1038,7 +1036,7 @@ func _vfx_holy_domain(pos: Vector2, _data: Dictionary) -> void:
 		"color": color,
 	})
 	
-	visual_effect_spawned.emit("holy_domain", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 湮灭射线：紫色激光 + 灼烧痕迹
 func _vfx_annihilation_ray(pos: Vector2, _data: Dictionary) -> void:
@@ -1076,7 +1074,7 @@ func _vfx_annihilation_ray(pos: Vector2, _data: Dictionary) -> void:
 		var burn_pos := pos + aim_dir * 800.0 * t
 		_spawn_radial_particles(burn_pos, color, 3, 15.0, 0.3)
 	
-	visual_effect_spawned.emit("annihilation_ray", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 时空裂隙：紫色扭曲空间
 func _vfx_time_rift(pos: Vector2, _data: Dictionary) -> void:
@@ -1098,7 +1096,7 @@ func _vfx_time_rift(pos: Vector2, _data: Dictionary) -> void:
 		"position": pos,
 	})
 	
-	visual_effect_spawned.emit("time_rift", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 交响风暴：多色波次弹幕视觉
 func _vfx_symphony_storm(pos: Vector2, _data: Dictionary) -> void:
@@ -1120,7 +1118,7 @@ func _vfx_symphony_storm(pos: Vector2, _data: Dictionary) -> void:
 			tween.tween_callback(ring.queue_free)
 		)
 	
-	visual_effect_spawned.emit("symphony_storm", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
 ## 终焉乐章：全屏白色闪光 + 红色冲击
 func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
@@ -1148,7 +1146,7 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 			r_tween.tween_callback(ring.queue_free)
 		)
 	
-		visual_effect_spawned.emit("finale", pos)
+		# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 	
 	## 迟缓领域：紫蓝色减速波纹 + 旋转领域场
 	func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:
@@ -1205,7 +1203,7 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 			"color": color,
 		})
 		
-		visual_effect_spawned.emit("slow_field", target_pos)
+		# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 	
 	## 增幅爆发：橙色爆炸 + 护盾效果（2.2x伤害）
 	func _vfx_augmented_burst(pos: Vector2, _data: Dictionary) -> void:
@@ -1269,7 +1267,7 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 			sb_tween.tween_callback(shield_border.queue_free)
 		)
 		
-		visual_effect_spawned.emit("augmented_burst", pos)
+		# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 	
 	# ============================================================
 	# 层级三：攻击质感层（音色系别）
@@ -2030,4 +2028,4 @@ func _spawn_crit_flash(pos: Vector2) -> void:
 	tween.chain()
 	tween.tween_callback(flash.queue_free)
 	_spawn_floating_text(pos + Vector2(0, -20), "★CRIT★", Color(1.0, 0.85, 0.1))
-	visual_effect_spawned.emit("crit_flash", pos)
+	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)

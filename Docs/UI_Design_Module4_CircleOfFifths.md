@@ -453,7 +453,8 @@ extends Control
 ## 管理两阶段选择流程、动画序列和数据交互
 
 signal upgrade_selected(upgrade_data: UpgradeData)
-signal upgrade_cancelled
+# signal upgrade_cancelled  # 已废弃：取消逻辑由 GameManager.resume_game() 处理
+signal upgrade_skipped  # 实际实现中使用的信号名称
 
 enum Phase { INACTIVE, DIRECTION_SELECT, CARD_SELECT, THEORY_BREAKTHROUGH }
 

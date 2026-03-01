@@ -15,8 +15,6 @@ extends CanvasLayer
 # ============================================================
 # 信号
 # ============================================================
-## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
-signal vfx_finished(vfx_name: String)
 
 # ============================================================
 # 颜色配置 (和弦功能对应颜色)
@@ -229,7 +227,7 @@ func play_progression_shockwave(function_type: String = "tonic") -> void:
 	, 0.0, 1.5, 0.6)
 	tween.tween_callback(func():
 		_shockwave_rect.visible = false
-		vfx_finished.emit("progression_shockwave")
+		# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
 	)
 	
 	# 同时播放和弦进行增强特效 (v2.0)
@@ -297,7 +295,7 @@ func play_mode_switch(mode_name: String) -> void:
 	
 	tween.tween_callback(func():
 		_mode_border_rect.visible = false
-		vfx_finished.emit("mode_switch")
+		# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
 	)
 
 # ============================================================
@@ -311,7 +309,7 @@ func play_screen_flash(color: Color = Color.WHITE, duration: float = 0.15) -> vo
 	var tween := create_tween()
 	tween.tween_property(_flash_rect, "color:a", 0.0, duration).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func():
-		vfx_finished.emit("screen_flash")
+		# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
 	)
 
 # ============================================================
@@ -361,7 +359,7 @@ func switch_spectral_phase(phase: int) -> void:
 		, 1.0, 0.0, 0.5)
 		tween.tween_callback(func():
 			_spectral_rect.visible = false
-			vfx_finished.emit("phase_fundamental")
+			# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
 		)
 	else:
 		# 切换到高通或低通：渐显后处理
@@ -375,7 +373,7 @@ func switch_spectral_phase(phase: int) -> void:
 		, 0.0, 1.0, 0.3)
 		tween.tween_callback(func():
 			var phase_name := "overtone" if phase == 1 else "sub_bass"
-			vfx_finished.emit("phase_" + phase_name)
+			# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
 		)
 
 # ============================================================

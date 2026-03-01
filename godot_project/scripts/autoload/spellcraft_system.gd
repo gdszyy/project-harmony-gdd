@@ -128,6 +128,13 @@ func _ready() -> void:
 	GameManager.half_beat_tick.connect(_on_half_beat_tick)
 	GameManager.measure_complete.connect(_on_measure_complete)
 
+	# 【Phase 1 重构】订阅 EventBus 事件
+	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
+
+## 响应 game_reset 事件
+func _on_game_reset_event(_payload: Variant = null) -> void:
+	reset()
+
 func _process(delta: float) -> void:
 	# 和弦缓冲区超时处理
 	if not _chord_buffer.is_empty():
