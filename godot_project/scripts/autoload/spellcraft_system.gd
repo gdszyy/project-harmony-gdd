@@ -705,12 +705,20 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	else:
 		spell_cast.emit(spell_data)
 
-	# 节奏型行为：闪避射击（SYNCOPATED）玩家向后微位移
+	# 节奏型行为：闪避射击（SYNCOPATED）玩家向后微位移 + 残影 + 破空声
+	# 设计文档要求：发射时玩家向后微小位移，留下短暂残影，伴随"嗖"的破空声
 	if spell_data["dodge_back"]:
 		var player := get_tree().get_first_node_in_group("player")
 		if player and player is CharacterBody2D:
 			var aim_dir = (player.get_global_mouse_position() - player.global_position).normalized()
-			player.velocity -= aim_dir * 150.0  # 向后推
+			# 向后推力（与设计文档一致的微小位移）
+			player.velocity -= aim_dir * 150.0
+			# 创建残影效果：在玩家当前位置留下半透明副本
+			_spawn_dodge_afterimage(player)
+			# 播放破空声效
+			var audio_mgr = get_node_or_null("/root/AudioManager")
+			if audio_mgr and audio_mgr.has_method("play_spell_cast_sfx"):
+				audio_mgr.play_spell_cast_sfx(player.global_position)
 
 func _cast_single_note(note: int) -> void:
 	# 将 MIDI 音符转为白键
@@ -1282,3 +1290,52 @@ func get_timbre_info(timbre: MusicData.TimbreType) -> Dictionary:
 			base_info = base_info.duplicate()
 			base_info["synth_params"] = synth_info
 	return base_info
+
+# ============================================================
+# 闪避射击残影效果 (vfx_combat_engineer v2.0)
+# ============================================================
+
+## 在玩家当前位置生成闪避残影
+## 设计文档描述："玩家模型会有一个快速、模糊的向后闪现的视觉效果，并留下一道短暂的残影"
+func _spawn_dodge_afterimage(player: CharacterBody2D) -> void:
+	if player == null or not is_instance_valid(player):
+		return
+
+	# 创建 3 个逐渐消失的残影副本
+	var afterimage_count := 3
+	var aim_dir := (player.get_global_mouse_position() - player.global_position).normalized()
+
+	for i in range(afterimage_count):
+		var ghost := Sprite2D.new()
+		ghost.name = "DodgeAfterimage_%d" % i
+		ghost.global_position = player.global_position + aim_dir * (i * 8.0)
+		ghost.modulate = Color(0.4, 0.7, 1.0, 0.5 - i * 0.15)  # 淡蓝色半透明
+		ghost.z_index = player.z_index - 1
+
+		# 尝试复制玩家的纹理
+		var player_sprite := player.get_node_or_null("Sprite2D")
+		if player_sprite and player_sprite is Sprite2D and player_sprite.texture:
+			ghost.texture = player_sprite.texture
+			ghost.scale = player_sprite.global_scale
+		else:
+			# 回退：创建简单的圆形残影
+			var placeholder_tex := PlaceholderTexture2D.new()
+			placeholder_tex.size = Vector2(24, 24)
+			ghost.texture = placeholder_tex
+
+		# 添加到场景
+		var parent := player.get_parent()
+		if parent:
+			parent.add_child(ghost)
+
+		# 残影动画：向后滑动 + 淡出
+		var delay := i * 0.03
+		var tween := ghost.create_tween()
+		if delay > 0:
+			tween.tween_interval(delay)
+		tween.set_parallel(true)
+		tween.tween_property(ghost, "global_position",
+			ghost.global_position + aim_dir * 15.0, 0.25).set_ease(Tween.EASE_OUT)
+		tween.tween_property(ghost, "modulate:a", 0.0, 0.25).set_ease(Tween.EASE_IN)
+		tween.set_parallel(false)
+		tween.tween_callback(ghost.queue_free)

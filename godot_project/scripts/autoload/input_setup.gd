@@ -44,6 +44,19 @@ func _register_input_actions() -> void:
 	_add_action("phase_sub_bass", [KEY_X])     # X 键：切换到低通相位
 	_add_action("phase_fundamental", [KEY_C])  # C 键：返回全频相位
 
+	# === 音色切换快捷键 (Shift+数字键) ===
+	# 注意：Shift+数字键的实际处理在 timbre_hotkey_manager.gd 中
+	# 这里注册基础动作名称以便在 InputMap 中可查询
+	_add_action("timbre_switch_1", [])  # Shift+1: 里拉琴
+	_add_action("timbre_switch_2", [])  # Shift+2: 管风琴
+	_add_action("timbre_switch_3", [])  # Shift+3: 羽管键琴
+	_add_action("timbre_switch_4", [])  # Shift+4: 钢琴
+	_add_action("timbre_switch_5", [])  # Shift+5: 管弦全奏
+	_add_action("timbre_switch_6", [])  # Shift+6: 萨克斯
+	_add_action("timbre_switch_7", [])  # Shift+7: 合成主脑
+	_add_action("timbre_cycle_next", [])  # 循环切换下一个
+	_add_action("timbre_cycle_prev", [])  # 循环切换上一个
+
 	# === 系统 ===
 	_add_action("pause_game", [KEY_ESCAPE])
 	_add_action("toggle_sequencer", [KEY_TAB])
