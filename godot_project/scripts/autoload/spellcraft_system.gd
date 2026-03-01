@@ -91,6 +91,9 @@ const PHASE_NAMES: Array[String] = ["fundamental", "overtone", "sub_bass"]
 ## 当前音色系别
 var _current_timbre: MusicData.TimbreType = MusicData.TimbreType.NONE
 
+## 当前章节音色（用于战斗机制）
+var _current_chapter_timbre: MusicData.ChapterTimbre = MusicData.ChapterTimbre.NONE
+
 ## 和弦构建缓冲区
 var _chord_buffer: Array[int] = []
 var _chord_buffer_timeout: float = 0.0
@@ -712,8 +715,19 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 	else:
 		spell_cast.emit(spell_data)
 
+	# ★ 章节音色战斗机制：应用音色效果并通知 TimbreCombatHandler
+	var timbre_handler := get_node_or_null("/root/TimbreCombatHandler")
+	if timbre_handler != null and _current_chapter_timbre != MusicData.ChapterTimbre.NONE:
+		if timbre_handler.has_method("apply_timbre_mechanics_to_spell"):
+			timbre_handler.apply_timbre_mechanics_to_spell(spell_data, _current_chapter_timbre)
+		if timbre_handler.has_method("on_player_attack"):
+			timbre_handler.on_player_attack(_current_chapter_timbre)
+	else:
+		# 内联回退：当 TimbreCombatHandler 不可用时
+		_apply_chapter_timbre_mechanics(spell_data)
+
 	# 节奏型行为：闪避射击（SYNCOPATED）玩家向后微位移 + 残影 + 破空声
-	# 设计文档要求：发射时玩家向后微小位移，留下短暂残影，伴随"嗖"的破空声
+	# 设计文档要求：发射时玩家向后微小位移，留下短暂残影，伴随“嘱”的破空声
 	if spell_data["dodge_back"]:
 		var player := get_tree().get_first_node_in_group("player")
 		if player and player is CharacterBody2D:
@@ -1284,6 +1298,24 @@ func set_timbre(timbre: MusicData.TimbreType) -> void:
 ## 获取当前音色系别
 func get_current_timbre() -> MusicData.TimbreType:
 	return _current_timbre
+
+## 设置当前章节音色（用于战斗机制）
+func set_chapter_timbre(timbre: MusicData.ChapterTimbre) -> void:
+	_current_chapter_timbre = timbre
+
+## 获取当前章节音色
+func get_current_chapter_timbre() -> MusicData.ChapterTimbre:
+	return _current_chapter_timbre
+
+## 内联回退：当 TimbreCombatHandler 不可用时的简化音色机制应用
+func _apply_chapter_timbre_mechanics(spell_data: Dictionary) -> void:
+	if _current_chapter_timbre == MusicData.ChapterTimbre.NONE:
+		return
+	if not MusicData.CHAPTER_TIMBRE_ADSR.has(_current_chapter_timbre):
+		return
+	var core_mechanic: String = MusicData.CHAPTER_TIMBRE_ADSR[_current_chapter_timbre].get("core_mechanic", "")
+	if core_mechanic != "":
+		spell_data["core_mechanic"] = core_mechanic
 
 ## 获取音色系别信息
 ## 返回合并后的音色数据（基础 ADSR + OPT08 合成器参数）
