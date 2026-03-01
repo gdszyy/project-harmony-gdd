@@ -1,0 +1,135 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; but it can also be manually edited if needed.
+
+config_version=5
+
+[application]
+
+config/name="Project Harmony: Resonance Horizon"
+config/description="A survivor-like roguelike game that deeply integrates music theory with a magic system."
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+; === 基础工具类（无依赖） ===
+UIColors="*res://scripts/autoload/ui_colors.gd"
+InputSetup="*res://scripts/autoload/input_setup.gd"
+; === 事件总线（必须在其他系统之前注册） ===
+EventBus="*res://scripts/autoload/event_bus.gd"
+; === 核心系统 ===
+GameManager="*res://scripts/autoload/game_manager.gd"
+MusicTheoryEngine="*res://scripts/autoload/music_theory_engine.gd"
+SynthManager="*res://scripts/autoload/synth_manager.gd"
+GlobalMusicManager="*res://scripts/autoload/global_music_manager.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
+BGMManager="*res://scripts/autoload/bgm_manager.gd"
+FatigueManager="*res://scripts/autoload/fatigue_manager.gd"
+FatigueAudioFeedback="*res://scripts/autoload/fatigue_audio_feedback.gd"
+NoteInventory="*res://scripts/autoload/note_inventory.gd"
+SpellcraftSystem="*res://scripts/autoload/spellcraft_system.gd"
+SaveManager="*res://scripts/autoload/save_manager.gd"
+ModeSystem="*res://scripts/autoload/mode_system.gd"
+MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
+CodexManager="*res://scripts/autoload/codex_manager.gd"
+ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
+TimbreHotkeyManager="*res://scripts/autoload/timbre_hotkey_manager.gd"
+; === 游戏系统 ===
+TimbreCombatHandler="*res://scripts/systems/timbre_combat_handler.gd"
+HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
+GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
+ChapterManager="*res://scripts/systems/chapter_manager.gd"
+DifficultyManager="*res://scripts/systems/difficulty_manager.gd"
+TutorialManager="*res://scripts/systems/tutorial_manager.gd"
+MutatorManager="*res://scripts/systems/mutator_manager.gd"
+TimedMilestoneManager="*res://scripts/systems/timed_milestone_manager.gd"
+; === UI 系统 ===
+UITransitionManager="*res://scripts/ui/ui_transition_manager.gd"
+TutorialHintManager="*res://scripts/ui/tutorial_hint_manager.gd"
+; === 信号桥接器（最后加载，依赖所有系统） ===
+SignalBridge="*res://scripts/autoload/signal_bridge.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=2
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
+
+[input]
+
+move_up={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":87,"key_label":0,"unicode":119,"location":0,"echo":false,"script":null)
+]
+}
+move_down={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":83,"key_label":0,"unicode":115,"location":0,"echo":false,"script":null)
+]
+}
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":65,"key_label":0,"unicode":97,"location":0,"echo":false,"script":null)
+]
+}
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":68,"key_label":0,"unicode":100,"location":0,"echo":false,"script":null)
+]
+}
+manual_cast_1={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":74,"key_label":0,"unicode":106,"location":0,"echo":false,"script":null)
+]
+}
+manual_cast_2={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":75,"key_label":0,"unicode":107,"location":0,"echo":false,"script":null)
+]
+}
+manual_cast_3={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":76,"key_label":0,"unicode":108,"location":0,"echo":false,"script":null)
+]
+}
+pause_game={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+
+[layer_names]
+
+2d_physics/layer_1="player"
+2d_physics/layer_2="enemies"
+2d_physics/layer_3="player_projectiles"
+2d_physics/layer_4="enemy_projectiles"
+2d_physics/layer_5="pickups"
+
+[shader_globals]
+
+global_time={ "type": "float", "value": 0.0 }
+beat_phase={ "type": "float", "value": 0.0 }
+chapter_color={ "type": "vec3", "value": "Vector3(0, 1, 0.8)" }
+beat_glow_extra={ "type": "float", "value": 0.0 }
+worm_position={ "type": "vec3", "value": "Vector3(0, 0, 0)" }
+worm_corruption_radius={ "type": "float", "value": 40.0 }
+worm_corruption_fade={ "type": "float", "value": 1.0 }
+
+[audio]
+
+bus/default_bus_layout="res://audio_bus_layout.tres"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
+anti_aliasing/quality/msaa_2d=2
+
+[gui]
+
+theme/custom="res://themes/GlobalTheme.tres"
