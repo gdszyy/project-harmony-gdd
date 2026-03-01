@@ -27,7 +27,6 @@ extends Control
 # 信号
 # ============================================================
 signal upgrade_chosen(upgrade: Dictionary)
-signal upgrade_cancelled
 
 # ============================================================
 # 枚举

@@ -28,9 +28,6 @@ extends Node
 ## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal pool_stats_updated(stats: Dictionary)
 
-## Issue #116: 池扩容事件（供性能监控使用）
-signal pool_expanded_warning(pool_name: String, new_total: int, max_size: int)
-
 # ============================================================
 # 池配置
 # ============================================================
