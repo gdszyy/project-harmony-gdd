@@ -107,10 +107,8 @@ func _init_synth_manager_integration() -> void:
 	_synth_manager = get_node_or_null("/root/SynthManager")
 	if _synth_manager:
 		use_procedural_synthesis = true
-		print("[GlobalMusicManager] OPT08: 程序化音色合成已启用 (SynthManager 就绪)")
 	else:
 		use_procedural_synthesis = false
-		print("[GlobalMusicManager] OPT08: SynthManager 未找到，使用离线合成降级方案")
 
 func _process(_delta: float) -> void:
 	_update_spectrum_analysis()

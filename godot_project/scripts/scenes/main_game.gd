@@ -1513,7 +1513,6 @@ func _debug_log(text: String) -> void:
 	var timestamp := Time.get_time_string_from_system()
 	var msg := "[%s] %s" % [timestamp, text]
 	debug_message.emit(msg)
-	print("[MainGame:TestMode] %s" % msg)
 
 # ============================================================
 # 返回主菜单

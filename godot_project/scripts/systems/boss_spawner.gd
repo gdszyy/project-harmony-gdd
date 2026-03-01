@@ -145,7 +145,6 @@ func _init_boss_experience_systems() -> void:
 		_boss_bgm_controller.name = "BossBGMController"
 		add_child(_boss_bgm_controller)
 	
-	print("[BossSpawner] v3.1: Boss 战体验子系统已初始化 (对话/环境/BGM)")
 
 # ============================================================
 # 公共接口
@@ -490,7 +489,6 @@ func _on_boss_phase_changed(phase_index: int, phase_name: String) -> void:
 	if _boss_bgm_controller and _boss_bgm_controller.has_method("on_boss_phase_changed"):
 		_boss_bgm_controller.on_boss_phase_changed(phase_index)
 	
-	print("[BossSpawner] Boss 阶段切换: %d (%s)" % [phase_index, phase_name])
 
 func _on_boss_summon_minions(count: int, type: String) -> void:
 	var spawner := get_tree().get_first_node_in_group("enemy_spawner")

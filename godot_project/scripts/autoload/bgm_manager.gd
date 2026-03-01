@@ -219,7 +219,6 @@ func _connect_chapter_manager_signal() -> void:
 	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
 		if not chapter_mgr.chapter_started.is_connected(_on_chapter_started_tonality):
 			chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
-			print("[TonalityEvolution] 已连接 ChapterManager.chapter_started 信号")
 	else:
 		# ChapterManager 可能还未初始化，延迟重试
 		if get_tree():
@@ -232,7 +231,6 @@ func _connect_chapter_manager_signal_deferred() -> void:
 	if chapter_mgr and chapter_mgr.has_signal("chapter_started"):
 		if not chapter_mgr.chapter_started.is_connected(_on_chapter_started_tonality):
 			chapter_mgr.chapter_started.connect(_on_chapter_started_tonality)
-			print("[TonalityEvolution] (延迟) 已连接 ChapterManager.chapter_started 信号")
 	else:
 		push_warning("[TonalityEvolution] 未找到 ChapterManager，章节调性进化将不会自动触发，请手动调用 set_tonality()")
 
@@ -1142,7 +1140,6 @@ func _init_harmony_conductor() -> void:
 		_current_tonal_mode_name = config.get("name", "Ionian")
 		_current_tonal_mode = config.get("mode", MusicData.TonalMode.IONIAN)
 		_current_tonality_chapter_id = chapter_id
-		print("[HarmonyConductor] 初始化调式: %s (Ch%d)" % [_current_tonal_mode_name, chapter_id])
 	else:
 		# 回退: 使用 Ch1 Ionian 作为默认
 		current_scale = [0, 2, 4, 5, 7, 9, 11]  # C 大调
@@ -1153,7 +1150,6 @@ func _init_harmony_conductor() -> void:
 		_current_tonal_mode_name = "Ionian"
 		_current_tonal_mode = MusicData.TonalMode.IONIAN
 		_current_tonality_chapter_id = 1
-		print("[HarmonyConductor] 初始化默认调式: Ionian (Ch1)")
 	current_chord_notes = _calculate_chord_notes(current_chord_root, current_chord_type)
 
 ## 重置和声指挥官状态 (游戏开始/重启时调用)
@@ -1184,7 +1180,6 @@ func _reset_harmony_conductor() -> void:
 	_current_tonal_mode_name = "Ionian"
 	_current_tonal_mode = MusicData.TonalMode.IONIAN
 	_current_tonality_chapter_id = 1
-	print("[HarmonyConductor] 重置调式: Ionian (Ch1)")
 
 ## 响应玩家和弦输入 (由 MusicTheoryEngine.chord_identified 触发)
 func _on_player_chord_identified(chord_type: int, root_note: int) -> void:
@@ -1195,7 +1190,6 @@ func _on_player_chord_identified(chord_type: int, root_note: int) -> void:
 	}
 	# 玩家输入重置自动演进计时
 	_auto_evolve_countdown = AUTO_EVOLVE_THRESHOLD
-	print("[HarmonyConductor] 玩家和弦缓存: root=%d, type=%d (等待小节同步)" % [root_note % 12, chord_type])
 
 ## 小节同步处理 — 和声指挥官的核心调度
 func _on_harmony_measure_synced(measure_index: int) -> void:
@@ -1233,8 +1227,6 @@ func _apply_chord_change(root: int, type: int) -> void:
 	harmony_context_changed.emit(current_chord_root, current_chord_type, current_chord_notes)
 
 	if old_root != root:
-		print("[HarmonyConductor] 和弦切换: %s → %s (type=%d)" % [
-			_note_name(old_root), _note_name(root), type])
 
 ## 计算和弦包含的音高类
 func _calculate_chord_notes(root: int, type: int) -> Array[int]:
@@ -1386,8 +1378,6 @@ func _on_chapter_started_tonality(chapter_id: int, _chapter_name: String = "") -
 		push_warning("[TonalityEvolution] 未找到章节 %d 的调式配置" % chapter_id)
 		return
 
-	print("[TonalityEvolution] 章节切换: %d → %d (%s)" % [
-		_current_tonality_chapter_id, chapter_id, config.get("name", "Unknown")])
 
 	_current_tonality_chapter_id = chapter_id
 	_start_tonality_transition(config)
@@ -1410,8 +1400,6 @@ func _start_tonality_transition(new_config: Dictionary) -> void:
 		if note in new_scale:
 			common_tones.append(note)
 
-	print("[TonalityEvolution] 共同音数量: %d (旧=%d, 新=%d)" % [
-		common_tones.size(), old_scale.size(), new_scale.size()])
 
 	# 阶段1：使用共同音过渡（如果共同音不足3个，使用旧音阶）
 	if common_tones.size() >= 3:
@@ -1461,7 +1449,6 @@ func _complete_tonality_transition(new_config: Dictionary, new_scale: Array[int]
 		var new_matrix: Dictionary = MusicData.CHAPTER_MARKOV_MATRICES.get(matrix_key, {})
 		if not new_matrix.is_empty():
 			_markov_matrix = new_matrix
-			print("[TonalityEvolution] 加载马尔可夫矩阵: %s" % matrix_key)
 		else:
 			push_warning("[TonalityEvolution] 未找到马尔可夫矩阵: %s" % matrix_key)
 
@@ -1480,8 +1467,6 @@ func _complete_tonality_transition(new_config: Dictionary, new_scale: Array[int]
 
 	# 广播调式变更
 	tonality_changed.emit(_current_tonality_chapter_id, _current_tonal_mode_name, current_scale)
-	print("[TonalityEvolution] 调式过渡完成: %s (Ch%d)" % [
-		_current_tonal_mode_name, _current_tonality_chapter_id])
 
 ## 获取初始章节 ID（从 ChapterManager 查询，回退为 1）
 func _get_initial_chapter_id() -> int:

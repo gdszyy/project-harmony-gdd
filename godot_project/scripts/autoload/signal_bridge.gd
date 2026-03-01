@@ -27,7 +27,6 @@ func _connect_all_signals() -> void:
 	_connect_chapter_signals()
 	_connect_audio_signals()
 	_connect_meta_progression_signals()
-	print("[SignalBridge] All core signal connections established.")
 
 # ============================================================
 # 战斗事件信号
@@ -53,7 +52,6 @@ func _on_player_damaged(amount: float, source_position: Vector2) -> void:
 		audio_mgr.play_sfx_at_position("player_hit", source_position)
 
 func _on_player_died() -> void:
-	print("[SignalBridge] Player died — session ended.")
 
 # ============================================================
 # 升级事件信号
@@ -82,7 +80,6 @@ func _connect_upgrade_signals() -> void:
 func _on_upgrade_selected(upgrade: Dictionary) -> void:
 	var upgrade_name: String = upgrade.get("name", "未知升级")
 	var category: String = upgrade.get("category", "unknown")
-	print("[SignalBridge] Upgrade applied: %s (category: %s)" % [upgrade_name, category])
 	# 播放升级音效
 	var audio_mgr := _get_audio_manager()
 	if audio_mgr and audio_mgr.has_method("play_global_sfx"):
@@ -95,11 +92,9 @@ func _on_upgrade_chosen_v3(upgrade: Dictionary) -> void:
 
 func _on_inscription_acquired(inscription: Dictionary) -> void:
 	var ins_name: String = inscription.get("name", "未知词条")
-	print("[SignalBridge] Inscription acquired: %s" % ins_name)
 
 func _on_easter_egg_triggered(egg: Dictionary) -> void:
 	var egg_name: String = egg.get("name", "未知彩蛋")
-	print("[SignalBridge] Easter egg triggered: %s" % egg_name)
 
 # ============================================================
 # 资源事件信号
@@ -119,14 +114,12 @@ func _connect_resource_signals() -> void:
 			NoteInventory.inventory_changed.connect(_on_inventory_changed)
 
 func _on_insufficient_notes(note_key: int) -> void:
-	print("[SignalBridge] Insufficient notes for key: %d" % note_key)
 	var audio_mgr := _get_audio_manager()
 	if audio_mgr and audio_mgr.has_method("play_global_sfx"):
 		audio_mgr.play_global_sfx("error_buzz")
 
 func _on_chord_spell_crafted(chord_spell: Dictionary) -> void:
 	var spell_name: String = chord_spell.get("name", "未知和弦")
-	print("[SignalBridge] Chord spell crafted: %s" % spell_name)
 	var audio_mgr := _get_audio_manager()
 	if audio_mgr and audio_mgr.has_method("play_global_sfx"):
 		audio_mgr.play_global_sfx("chord_craft_success")
@@ -198,10 +191,8 @@ func _deferred_connect_chapter_signals() -> void:
 			chapter_mgr.boss_health_changed.connect(_on_boss_health_changed)
 
 func _on_wave_completed(wave_number: int) -> void:
-	print("[SignalBridge] Wave %d completed." % wave_number)
 
 func _on_wave_started(wave_number: int, wave_type: String) -> void:
-	print("[SignalBridge] Wave %d started (type: %s)." % [wave_number, wave_type])
 
 func _on_chapter_timer_updated(elapsed: float, total: float) -> void:
 	# 由 HUD 轮询处理，此处仅作为备用连接点
@@ -209,16 +200,12 @@ func _on_chapter_timer_updated(elapsed: float, total: float) -> void:
 
 func _on_bpm_changed(new_bpm: float) -> void:
 	GameManager.current_bpm = new_bpm
-	print("[SignalBridge] BPM changed to: %.1f" % new_bpm)
 
 func _on_wave_started_in_chapter(chapter: int, wave: int, wave_type: String) -> void:
-	print("[SignalBridge] Chapter %d, Wave %d started (type: %s)." % [chapter, wave, wave_type])
 
 func _on_elite_wave_triggered(chapter: int, elite_type: String) -> void:
-	print("[SignalBridge] Elite wave triggered in chapter %d: %s" % [chapter, elite_type])
 
 func _on_endless_mode_started(loop_count: int) -> void:
-	print("[SignalBridge] Endless mode started — loop %d." % loop_count)
 
 func _on_boss_health_changed(boss_key: String, current_hp: float, max_hp: float) -> void:
 	# Boss 血条由 BossHpBarUI 处理，此处仅作为备用
@@ -261,10 +248,8 @@ func _on_tonality_changed(chapter_id: int, mode_name: String, scale_notes: Array
 	pass  # 可用于更新 UI 调性显示
 
 func _on_progression_triggered(effect_type: String, bonus_multiplier: float) -> void:
-	print("[SignalBridge] Music progression triggered: %s (x%.2f)" % [effect_type, bonus_multiplier])
 
 func _on_transpose_changed(semitone_offset: int) -> void:
-	print("[SignalBridge] Transpose changed: %d semitones" % semitone_offset)
 
 # ============================================================
 # 局外成长信号
@@ -294,16 +279,12 @@ func _connect_meta_progression_signals() -> void:
 			SaveManager.resonance_changed.connect(_on_resonance_changed)
 
 func _on_mode_unlocked(mode_name: String) -> void:
-	print("[SignalBridge] Mode unlocked: %s" % mode_name)
 
 func _on_mode_selected(mode_name: String) -> void:
-	print("[SignalBridge] Mode selected: %s" % mode_name)
 
 func _on_theory_unlocked(theory_id: String) -> void:
-	print("[SignalBridge] Theory unlocked: %s" % theory_id)
 
 func _on_resonance_changed(amount: int) -> void:
-	print("[SignalBridge] Resonance fragments: %d" % amount)
 
 # ============================================================
 # 辅助函数
