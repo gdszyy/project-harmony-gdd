@@ -57,6 +57,8 @@ func _ready() -> void:
 		SpellcraftSystem.manual_slot_updated.connect(_on_slot_updated)
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_beat_intensity = max(0.0, _beat_intensity - delta * 4.0)
 

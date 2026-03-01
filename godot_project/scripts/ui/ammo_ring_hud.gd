@@ -62,6 +62,8 @@ func _ready() -> void:
 		SpellcraftSystem.weapon_switched.connect(_on_weapon_switched)
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_beat_progress = GameManager.get_beat_progress() if GameManager.has_method("get_beat_progress") else 0.0
 	_update_ammo_data()

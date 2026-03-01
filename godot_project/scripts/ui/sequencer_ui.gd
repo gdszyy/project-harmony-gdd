@@ -84,8 +84,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 func _process(delta: float) -> void:
-	_beat_flash = max(0.0, _beat_flash - delta * 4.0)
-	queue_redraw()
+	if not visible:
+		return
+	if _beat_flash > 0.0:
+		_beat_flash = max(0.0, _beat_flash - delta * 4.0)
+		queue_redraw()
+	else:
+		_beat_flash = 0.0
 
 # ============================================================
 # 绘制

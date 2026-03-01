@@ -82,6 +82,8 @@ func _process(delta: float) -> void:
 
 	# 更新视觉效果
 	_update_visual(progress)
+	# 触发重绘以更新波纹和治疗粒子
+	queue_redraw()
 
 # ============================================================
 # 设置

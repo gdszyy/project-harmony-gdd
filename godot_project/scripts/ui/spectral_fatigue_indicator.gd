@@ -58,6 +58,8 @@ func _ready() -> void:
 		_fragment_offsets[i] = 0.0
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_display_value = lerp(_display_value, _sof_value, delta * 10.0)
 

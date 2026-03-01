@@ -65,6 +65,8 @@ func _ready() -> void:
 	_init_flow_particles()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_beat_pulse = max(0.0, _beat_pulse - delta * 3.0)
 

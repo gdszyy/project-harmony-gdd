@@ -67,6 +67,8 @@ func _ready() -> void:
 	_setup_shader()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_beat_interval = 60.0 / max(GameManager.current_bpm, 1.0)
 

@@ -60,6 +60,8 @@ func _ready() -> void:
 	set_process(true)
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 
 	# 解锁动画

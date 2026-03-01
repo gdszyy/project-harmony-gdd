@@ -183,6 +183,8 @@ func _ready() -> void:
 	_show_crit = (ModeSystem.current_mode_id == "blues")
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 
 	# 平滑过渡
