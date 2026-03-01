@@ -10,6 +10,11 @@
 ##
 ## 风格排斥：惩罚纯单音攻击（声部孤立Debuff）
 ## 三阶段：吟诵(Chant) → 记谱(Notation) → 升华(Ascension)
+##
+## GDD参考：
+## - 阶段一（齐唱之墙）：圣咏轨迹 + 圣歌护盾 + 声部孤立检测
+## - 阶段二（双声部圣咏）：双轨迹 + Silence加入 + 圣咏加速
+## - 阶段三（升华）：升华光柱 + 神圣合唱 + 全面强化
 extends "res://scripts/entities/enemies/boss_base.gd"
 
 # ============================================================
@@ -24,21 +29,37 @@ const STAFF_WIDTH: float = 600.0
 const NOTE_PROJECTILE_SPEED: float = 150.0
 const NOTE_DAMAGE: float = 12.0
 
-## 圣咏音墙参数
+## 圣咏音墙参数（GDD：横向推进的音墙）
 const CHANT_WALL_SPEED: float = 100.0
 const CHANT_WALL_DAMAGE: float = 20.0
 const CHANT_WALL_WIDTH: float = 500.0
+const CHANT_WALL_INTERVAL_PHASE1: int = 16  # 阶段一：每16拍
+const CHANT_WALL_INTERVAL_PHASE2: int = 16  # 阶段二：每16拍
+const CHANT_WALL_INTERVAL_ENRAGED: int = 12  # HP<30%：每12拍
 
-## 声部孤立参数
+## 圣歌护盾参数（GDD：清除轨迹上Static后护盾消失4秒）
+const SACRED_SHIELD_REAPPEAR_TIME: float = 4.0
+const SACRED_SHIELD_HP: float = 250.0
+
+## 声部孤立参数（GDD：10秒内只用单音攻击触发Debuff）
+const ISOLATION_CHECK_WINDOW: float = 10.0
 const ISOLATION_DAMAGE: float = 10.0
 const ISOLATION_FATIGUE: float = 0.15
 const ISOLATION_THRESHOLD: int = 4  # 连续使用单一音色次数阈值
-const ISOLATION_IMMUNITY_DURATION: float = 3.5  # 免疫持续时间
-const ISOLATION_DAMAGE_REDUCTION: float = 0.7  # 免疫时伤害减免
+const ISOLATION_IMMUNITY_DURATION: float = 3.5
+const ISOLATION_DAMAGE_REDUCTION: float = 0.7
+const ISOLATION_HEAL_REDUCTION: float = 0.5  # GDD：治疗和护盾效果降低50%
 
 ## 升华阶段参数
 const ASCENSION_BEAM_DAMAGE: float = 30.0
 const ASCENSION_BEAM_WIDTH: float = 60.0
+const ASCENSION_BEAM_COUNT: int = 5
+
+## 唱名弹幕参数（Do-Re-Mi-Fa-Sol-La）
+const SOLMIZATION_NOTES: PackedStringArray = ["Do", "Re", "Mi", "Fa", "Sol", "La"]
+
+## 双轨迹参数（阶段二）
+const DUAL_TRACK_SPACING: float = 160.0
 
 # ============================================================
 # 内部状态
@@ -51,23 +72,40 @@ var _staff_active: bool = false
 var _staff_visual_nodes: Array[Node2D] = []
 var _staff_center_y: float = 0.0
 
+## 圣咏轨迹系统（GDD核心机制）
+var _chant_track_active: bool = false
+var _chant_track_nodes: Array[Node2D] = []  # 轨迹上的Static编队
+var _chant_track_count: int = 0  # 当前活跃轨迹数
+var _chant_track_statics_alive: int = 0  # 轨迹上存活的Static数量
+var _sacred_shield_down: bool = false  # 圣歌护盾是否被打破
+var _sacred_shield_timer: float = 0.0  # 护盾消失倒计时
+
 ## 书写系统
 var _writing_position: Vector2 = Vector2.ZERO
 var _writing_target: Vector2 = Vector2.ZERO
 var _is_writing: bool = false
 
-## 圣咏计数器
+## 圣咏节拍计数器
 var _chant_beat_counter: int = 0
+var _current_chant_interval: int = CHANT_WALL_INTERVAL_PHASE1
 
 ## 升华光柱
 var _ascension_beams: Array[Dictionary] = []
 
-## 声部孤立追踪（参考 boss_noise.gd 的单一诅咒机制）
+## 声部孤立追踪（GDD：10秒内只用单音攻击则触发Debuff）
 var _last_player_timbre: String = ""
 var _same_timbre_count: int = 0
 var _isolation_immune: bool = false
 var _isolation_immune_timer: float = 0.0
 var _immune_timbre: String = ""
+var _isolation_debuff_active: bool = false
+var _isolation_debuff_timer: float = 0.0
+var _single_note_timer: float = 0.0  # 追踪单音使用时间
+var _has_used_chord: bool = false  # 是否在窗口内使用过和弦
+
+## 双轨迹状态（阶段二）
+var _dual_track_active: bool = false
+var _silence_spawned: bool = false
 
 # ============================================================
 # Boss 初始化
@@ -100,18 +138,20 @@ func _on_boss_ready() -> void:
 	_setup_staff_lines()
 
 # ============================================================
-# 阶段定义
+# 阶段定义（GDD：齐唱之墙 → 双声部圣咏 → 升华）
 # ============================================================
 
 func _define_phases() -> void:
 	_phase_configs = [
+		# 阶段一：齐唱之墙 (Chant Wall)
+		# GDD：圣咏轨迹 + 圣歌护盾 + 声部孤立检测
 		{
-			"name": "吟诵 · Chant",
+			"name": "齐唱之墙 · Chant Wall",
 			"hp_threshold": 1.0,
 			"speed_mult": 1.0,
 			"damage_mult": 1.0,
 			"color": Color(0.9, 0.75, 0.2),
-			"shield_hp": 250.0,
+			"shield_hp": SACRED_SHIELD_HP,
 			"music_layer": "boss_guido_chant",
 			"summon_enabled": false,
 			"attack_selection": "sequence",
@@ -139,8 +179,10 @@ func _define_phases() -> void:
 				},
 			],
 		},
+		# 阶段二：双声部圣咏 (Dual Chant)
+		# GDD：双轨迹 + Silence加入 + 圣咏加速（HP<30%时16拍→12拍）
 		{
-			"name": "记谱 · Notation",
+			"name": "双声部圣咏 · Dual Chant",
 			"hp_threshold": 0.55,
 			"speed_mult": 1.2,
 			"damage_mult": 1.3,
@@ -153,17 +195,17 @@ func _define_phases() -> void:
 			"attack_selection": "random",
 			"attacks": [
 				{
+					"name": "dual_chant_wall",
+					"duration": 3.0,
+					"cooldown": 3.0,
+					"damage": CHANT_WALL_DAMAGE * 1.3,
+					"weight": 3.0,
+				},
+				{
 					"name": "staff_notation",
 					"duration": 3.0,
 					"cooldown": 2.5,
 					"damage": NOTE_DAMAGE * 1.3,
-					"weight": 2.5,
-				},
-				{
-					"name": "chant_wall",
-					"duration": 2.0,
-					"cooldown": 3.0,
-					"damage": CHANT_WALL_DAMAGE * 1.3,
 					"weight": 2.0,
 				},
 				{
@@ -171,7 +213,7 @@ func _define_phases() -> void:
 					"duration": 3.5,
 					"cooldown": 4.0,
 					"damage": NOTE_DAMAGE * 1.2,
-					"weight": 3.0,
+					"weight": 2.5,
 				},
 				{
 					"name": "voice_isolation",
@@ -182,6 +224,8 @@ func _define_phases() -> void:
 				},
 			],
 		},
+		# 阶段三：升华 (Ascension)
+		# GDD：升华光柱 + 神圣合唱 + 全面强化
 		{
 			"name": "升华 · Ascension",
 			"hp_threshold": 0.2,
@@ -196,30 +240,30 @@ func _define_phases() -> void:
 			"attack_selection": "random",
 			"attacks": [
 				{
-					"name": "staff_notation",
-					"duration": 3.0,
-					"cooldown": 2.0,
-					"damage": NOTE_DAMAGE * 1.6,
-					"weight": 2.0,
-				},
-				{
 					"name": "ascension_beams",
 					"duration": 4.0,
-					"cooldown": 4.0,
+					"cooldown": 3.5,
 					"damage": ASCENSION_BEAM_DAMAGE,
 					"weight": 3.0,
+				},
+				{
+					"name": "divine_chorus",
+					"duration": 5.0,
+					"cooldown": 4.5,
+					"damage": CHANT_WALL_DAMAGE * 1.6,
+					"weight": 2.5,
 				},
 				{
 					"name": "solmization_barrage",
 					"duration": 3.5,
 					"cooldown": 3.0,
 					"damage": NOTE_DAMAGE * 1.5,
-					"weight": 2.5,
+					"weight": 2.0,
 				},
 				{
-					"name": "divine_chorus",
-					"duration": 5.0,
-					"cooldown": 5.0,
+					"name": "dual_chant_wall",
+					"duration": 3.0,
+					"cooldown": 2.5,
 					"damage": CHANT_WALL_DAMAGE * 1.6,
 					"weight": 2.0,
 				},
@@ -243,7 +287,7 @@ func _setup_staff_lines() -> void:
 			"index": i,
 		})
 		
-		# 视觉：发光线条
+		# 视觉：发光线条（金色五线谱，GDD视觉方案）
 		var line := Line2D.new()
 		line.width = 2.0
 		line.default_color = Color(0.8, 0.7, 0.3, 0.3)
@@ -257,8 +301,11 @@ func _setup_staff_lines() -> void:
 # ============================================================
 
 func _on_boss_process(delta: float) -> void:
-	# 更新升华光柱
-	_update_ascension_beams(delta)
+	# 更新圣歌护盾状态（GDD：清除Static后护盾消失4秒）
+	_update_sacred_shield(delta)
+	
+	# 声部孤立检测计时（GDD：10秒窗口）
+	_update_isolation_tracking(delta)
 	
 	# 声部孤立免疫计时
 	if _isolation_immune:
@@ -266,6 +313,70 @@ func _on_boss_process(delta: float) -> void:
 		if _isolation_immune_timer <= 0.0:
 			_isolation_immune = false
 			_immune_timbre = ""
+	
+	# 声部孤立Debuff计时
+	if _isolation_debuff_active:
+		_isolation_debuff_timer -= delta
+		if _isolation_debuff_timer <= 0.0:
+			_isolation_debuff_active = false
+	
+	# 圣咏加速检测（GDD：HP<30%时从16拍变为12拍）
+	_check_chant_acceleration()
+
+## 圣歌护盾机制（GDD核心机制）
+## 只有在圣咏轨迹上的所有Static被清除后，护盾才会短暂消失4秒
+func _update_sacred_shield(delta: float) -> void:
+	if _sacred_shield_down:
+		_sacred_shield_timer -= delta
+		if _sacred_shield_timer <= 0.0:
+			_sacred_shield_down = false
+			# 护盾重新激活
+			_shield_hp = _max_shield_hp
+			_shield_active = true
+			# 视觉：护盾重现
+			if _sprite:
+				var tween := create_tween()
+				tween.tween_property(_sprite, "modulate",
+					base_color.lerp(Color(0.5, 0.8, 1.0), 0.3), 0.5)
+
+## 声部孤立追踪（GDD：10秒内只使用单音则触发）
+func _update_isolation_tracking(delta: float) -> void:
+	_single_note_timer += delta
+	if _single_note_timer >= ISOLATION_CHECK_WINDOW:
+		if not _has_used_chord and _current_phase >= 1:
+			# 10秒内没有使用和弦，触发声部孤立Debuff
+			_trigger_isolation_debuff()
+		# 重置窗口
+		_single_note_timer = 0.0
+		_has_used_chord = false
+
+## 触发声部孤立Debuff（GDD：治疗和护盾效果大幅降低）
+func _trigger_isolation_debuff() -> void:
+	_isolation_debuff_active = true
+	_isolation_debuff_timer = 8.0  # Debuff持续8秒
+	
+	# 视觉：屏幕边缘灰暗羊皮纸纹理 + 锁链特效
+	if _target and is_instance_valid(_target):
+		if _target.has_method("take_damage"):
+			_target.take_damage(ISOLATION_DAMAGE)
+		if FatigueManager and FatigueManager.has_method("add_external_fatigue"):
+			FatigueManager.add_external_fatigue(ISOLATION_FATIGUE)
+	
+	# Boss视觉反馈：金色脉冲
+	if _sprite:
+		var tween := create_tween()
+		tween.tween_property(_sprite, "modulate", Color(1.0, 0.9, 0.4), 0.2)
+		tween.tween_property(_sprite, "modulate", base_color, 0.5)
+
+## 圣咏加速检测（GDD：HP<30%时频率从16拍变为12拍）
+func _check_chant_acceleration() -> void:
+	var hp_ratio := current_hp / max_hp
+	if hp_ratio < 0.3:
+		_current_chant_interval = CHANT_WALL_INTERVAL_ENRAGED
+	elif _current_phase >= 1:
+		_current_chant_interval = CHANT_WALL_INTERVAL_PHASE2
+	else:
+		_current_chant_interval = CHANT_WALL_INTERVAL_PHASE1
 
 # ============================================================
 # 攻击实现
@@ -286,12 +397,15 @@ func _perform_attack(attack: Dictionary) -> void:
 			_attack_solmization_barrage(attack, damage_mult)
 		"voice_isolation":
 			_attack_voice_isolation(attack, damage_mult)
+		"dual_chant_wall":
+			_attack_dual_chant_wall(attack, damage_mult)
 		"ascension_beams":
 			_attack_ascension_beams(attack, damage_mult)
 		"divine_chorus":
 			_attack_divine_chorus(attack, damage_mult)
 
 ## 攻击1：四线谱记谱 — 在四线谱上书写音符弹幕
+## GDD：6只Static被吸附在轨迹上排成一列，同步发射缓慢直线弹幕形成"音墙"
 func _attack_staff_notation(attack: Dictionary, damage_mult: float) -> void:
 	var damage: float = attack.get("damage", NOTE_DAMAGE) * damage_mult
 	var notes_per_line := 4
@@ -317,6 +431,7 @@ func _attack_staff_notation(attack: Dictionary, damage_mult: float) -> void:
 			)
 
 ## 攻击2：圣咏音墙 — 横向推进的音墙
+## GDD：形成"音墙"，玩家需横向移动躲避
 func _attack_chant_wall(attack: Dictionary, damage_mult: float) -> void:
 	var damage: float = attack.get("damage", CHANT_WALL_DAMAGE) * damage_mult
 	
@@ -327,7 +442,7 @@ func _attack_chant_wall(attack: Dictionary, damage_mult: float) -> void:
 	
 	var perp := dir.rotated(PI / 2.0)
 	
-	# 生成宽幅音墙
+	# 生成宽幅音墙（GDD：横贯战场的音墙）
 	var segments := 8
 	for i in range(segments):
 		var offset := perp * ((i - segments / 2.0) * (CHANT_WALL_WIDTH / segments))
@@ -346,11 +461,11 @@ func _attack_neume_scatter(attack: Dictionary, damage_mult: float) -> void:
 		_spawn_note_projectile(global_position, angle, speed, damage)
 
 ## 攻击4：唱名弹幕 — Do-Re-Mi-Fa-Sol-La 六连发
+## GDD：圭多发明了唱名法，以此作为标志性攻击
 func _attack_solmization_barrage(attack: Dictionary, damage_mult: float) -> void:
 	var damage: float = attack.get("damage", NOTE_DAMAGE * 1.2) * damage_mult
-	var solmization := ["Do", "Re", "Mi", "Fa", "Sol", "La"]
 	
-	for i in range(solmization.size()):
+	for i in range(SOLMIZATION_NOTES.size()):
 		get_tree().create_timer(i * 0.4).timeout.connect(func():
 			if _is_dead or not is_instance_valid(self):
 				return
@@ -360,7 +475,7 @@ func _attack_solmization_barrage(attack: Dictionary, damage_mult: float) -> void
 			
 			# 每个唱名对应不同的弹幕模式
 			var base_angle := (global_position.direction_to(_target.global_position)).angle()
-			var count := 3 + i  # 逐渐增加弹幕数
+			var count := 3 + i  # 逐渐增加弹幕数（Do=3, La=8）
 			var spread := PI / 6.0 + i * PI / 18.0
 			
 			for j in range(count):
@@ -372,7 +487,8 @@ func _attack_solmization_barrage(attack: Dictionary, damage_mult: float) -> void
 					NOTE_PROJECTILE_SPEED * (1.0 + i * 0.1), damage * 0.6)
 		)
 
-## 攻击5：声部孤立 — 惩罚单音攻击
+## 攻击5：声部孤立 — 主动惩罚单音攻击
+## GDD：10秒内只用单音攻击则触发"声部孤立"Debuff
 func _attack_voice_isolation(attack: Dictionary, _damage_mult: float) -> void:
 	if _target and is_instance_valid(_target):
 		if _target.has_method("take_damage"):
@@ -380,17 +496,57 @@ func _attack_voice_isolation(attack: Dictionary, _damage_mult: float) -> void:
 		if FatigueManager and FatigueManager.has_method("add_external_fatigue"):
 			FatigueManager.add_external_fatigue(ISOLATION_FATIGUE)
 
-## 攻击6：升华光柱 — 第三阶段专属，从天而降的光柱
+## 攻击6：双轨迹圣咏 — 阶段二专属
+## GDD：同时出现两条圣咏轨迹（上下平行），形成双层音墙
+func _attack_dual_chant_wall(attack: Dictionary, damage_mult: float) -> void:
+	var damage: float = attack.get("damage", CHANT_WALL_DAMAGE * 1.3) * damage_mult
+	
+	# 上下两条平行轨迹
+	var center_y := global_position.y
+	var upper_y := center_y - DUAL_TRACK_SPACING / 2.0
+	var lower_y := center_y + DUAL_TRACK_SPACING / 2.0
+	
+	# 两条轨迹的方向（向玩家推进）
+	var dir := Vector2.RIGHT
+	if _target:
+		dir = (global_position.direction_to(_target.global_position)).normalized()
+	var perp := dir.rotated(PI / 2.0)
+	
+	# 上层音墙
+	var segments := 6
+	for i in range(segments):
+		var offset := perp * ((i - segments / 2.0) * (CHANT_WALL_WIDTH * 0.8 / segments))
+		var start_pos := Vector2(global_position.x, upper_y) + offset
+		_spawn_wall_segment(start_pos, dir, CHANT_WALL_SPEED * 1.1, damage * 0.7, CHANT_WALL_WIDTH * 0.8 / segments)
+	
+	# 下层音墙（延迟0.5秒，制造走位压力）
+	get_tree().create_timer(0.5).timeout.connect(func():
+		if _is_dead or not is_instance_valid(self):
+			return
+		for i in range(segments):
+			var offset := perp * ((i - segments / 2.0) * (CHANT_WALL_WIDTH * 0.8 / segments))
+			var start_pos := Vector2(global_position.x, lower_y) + offset
+			_spawn_wall_segment(start_pos, dir, CHANT_WALL_SPEED * 1.1, damage * 0.7, CHANT_WALL_WIDTH * 0.8 / segments)
+	)
+	
+	# GDD：阶段二 Silence加入（首次触发时召唤）
+	if _current_phase >= 1 and not _silence_spawned:
+		_silence_spawned = true
+		# 通过信号召唤Silence到两条轨迹之间
+		boss_summon_minions.emit(1, "silence")
+
+## 攻击7：升华光柱 — 第三阶段专属，从天而降的光柱
+## GDD：升华阶段的核心攻击，光柱落在玩家附近
 func _attack_ascension_beams(attack: Dictionary, damage_mult: float) -> void:
 	var damage: float = attack.get("damage", ASCENSION_BEAM_DAMAGE) * damage_mult
-	var beam_count := 5
+	var beam_count := ASCENSION_BEAM_COUNT
 	
 	for i in range(beam_count):
 		get_tree().create_timer(i * 0.6).timeout.connect(func():
 			if _is_dead or not is_instance_valid(self):
 				return
 			
-			# 光柱落在玩家附近
+			# 光柱落在玩家附近（预判位置）
 			var target_pos := Vector2.ZERO
 			if _target:
 				target_pos = _target.global_position + Vector2(
@@ -402,7 +558,8 @@ func _attack_ascension_beams(attack: Dictionary, damage_mult: float) -> void:
 			_spawn_ascension_beam(target_pos, damage)
 		)
 
-## 攻击7：神圣合唱 — 终极攻击，全屏圣咏
+## 攻击8：神圣合唱 — 终极攻击，四方向同时推进音墙
+## GDD：升华阶段的终极攻击，全屏圣咏压迫
 func _attack_divine_chorus(attack: Dictionary, damage_mult: float) -> void:
 	var damage: float = attack.get("damage", CHANT_WALL_DAMAGE * 1.6) * damage_mult
 	
@@ -414,6 +571,7 @@ func _attack_divine_chorus(attack: Dictionary, damage_mult: float) -> void:
 			if _is_dead or not is_instance_valid(self):
 				return
 			
+			# 每波选择不同方向
 			var dir: Vector2 = directions[wave % directions.size()]
 			var perp := dir.rotated(PI / 2.0)
 			
@@ -422,6 +580,14 @@ func _attack_divine_chorus(attack: Dictionary, damage_mult: float) -> void:
 				var offset := perp * ((i - segments / 2.0) * 60.0)
 				var start_pos := global_position + offset - dir * 200.0
 				_spawn_wall_segment(start_pos, dir, CHANT_WALL_SPEED * 1.3, damage * 0.5, 60.0)
+			
+			# 同时在对角方向释放音符弹幕
+			var diag_dirs := [dir.rotated(PI / 4.0), dir.rotated(-PI / 4.0)]
+			for d in diag_dirs:
+				for j in range(3):
+					var angle := d.angle() + (j - 1) * 0.15
+					_spawn_note_projectile(global_position, angle,
+						NOTE_PROJECTILE_SPEED * 1.2, damage * 0.3)
 		)
 
 # ============================================================
@@ -432,7 +598,7 @@ func _spawn_note_projectile(pos: Vector2, angle: float, speed: float, damage: fl
 	var proj := Area2D.new()
 	proj.add_to_group("boss_projectiles")
 	
-	# 音符形状视觉
+	# 音符形状视觉（GDD：纽姆记谱法风格）
 	var visual := Polygon2D.new()
 	visual.polygon = PackedVector2Array([
 		Vector2(-4, -3), Vector2(4, -3), Vector2(4, 3), Vector2(-4, 3),
@@ -513,7 +679,7 @@ func _spawn_wall_segment(pos: Vector2, dir: Vector2, speed: float, damage: float
 	)
 
 func _spawn_ascension_beam(target_pos: Vector2, damage: float) -> void:
-	# 预警标记
+	# 预警标记（GDD视觉：金色光环预警）
 	var warning := Polygon2D.new()
 	var points := PackedVector2Array()
 	for i in range(16):
@@ -548,26 +714,25 @@ func _spawn_ascension_beam(target_pos: Vector2, damage: float) -> void:
 	)
 
 # ============================================================
-# 升华光柱更新
-# ============================================================
-
-func _update_ascension_beams(delta: float) -> void:
-	pass  # 光柱通过timer自管理
-
-# ============================================================
 # 阶段进入回调
 # ============================================================
 
 func _on_phase_entered(phase_index: int, _config: Dictionary) -> void:
 	match phase_index:
+		0:
+			_current_chant_interval = CHANT_WALL_INTERVAL_PHASE1
 		1:
+			# 阶段二：双声部圣咏
+			_dual_track_active = true
 			_summon_cooldown_time = 12.0
+			_current_chant_interval = CHANT_WALL_INTERVAL_PHASE2
 		2:
+			# 阶段三：升华
 			_summon_cooldown_time = 10.0
-			# 四线谱发光增强
+			# 四线谱发光增强（GDD视觉：升华时谱线更亮）
 			for node in _staff_visual_nodes:
 				if is_instance_valid(node) and node is Line2D:
-					node.default_color = Color(1.0, 0.9, 0.4, 0.5)
+					node.default_color = Color(1.0, 0.9, 0.4, 0.6)
 					node.width = 3.0
 
 # ============================================================
@@ -578,8 +743,13 @@ func _on_enrage(level: int) -> void:
 	match level:
 		1:
 			base_color = base_color.lerp(Color(1.0, 0.4, 0.1), 0.3)
+			_current_chant_interval = CHANT_WALL_INTERVAL_ENRAGED
 		2:
 			base_color = Color(1.0, 0.2, 0.0)
+			# 狂暴2：所有攻击冷却缩短
+			for phase in _phase_configs:
+				for attack in phase.get("attacks", []):
+					attack["cooldown"] = attack.get("cooldown", 2.0) * 0.7
 
 # ============================================================
 # 节拍回调
@@ -587,6 +757,13 @@ func _on_enrage(level: int) -> void:
 
 func _on_boss_beat(_beat_index: int) -> void:
 	_chant_beat_counter += 1
+	
+	# 按节拍间隔自动发射圣咏音墙（GDD核心机制）
+	if _chant_beat_counter % _current_chant_interval == 0:
+		if not _is_attacking and not _is_dead:
+			if _target:
+				var angle := (global_position.direction_to(_target.global_position)).angle()
+				_spawn_note_projectile(global_position, angle, NOTE_PROJECTILE_SPEED * 0.6, 6.0)
 	
 	# 每 8 拍在非攻击状态时自动发射一次音符
 	if not _is_attacking and _chant_beat_counter % 8 == 0:
@@ -605,7 +782,7 @@ func _calculate_movement_direction() -> Vector2:
 	var to_player := _target.global_position - global_position
 	var dist := to_player.length()
 	
-	# 保持中远距离
+	# 保持中远距离（修道士风格：庄严缓慢）
 	if dist > 300.0:
 		return to_player.normalized() * 0.5
 	elif dist < 150.0:
@@ -613,10 +790,10 @@ func _calculate_movement_direction() -> Vector2:
 	return Vector2.ZERO
 
 # ============================================================
-# 声部孤立机制（参考 Issue #127）
+# 声部孤立机制（GDD：10秒内只用单音攻击触发Debuff）
 # ============================================================
 
-## 外部调用：记录玩家使用的音色（参考 boss_noise.gd）
+## 外部调用：记录玩家使用的音色
 ## 供玩家攻击系统调用，用于追踪单一音色使用
 func register_player_timbre(timbre: String) -> void:
 	if timbre == _last_player_timbre:
@@ -628,19 +805,25 @@ func register_player_timbre(timbre: String) -> void:
 	if _same_timbre_count >= ISOLATION_THRESHOLD:
 		_trigger_isolation_immunity(timbre)
 
+## 外部调用：记录玩家使用了和弦（非单音）
+func register_player_chord_use() -> void:
+	_has_used_chord = true
+	# 重置单音计时
+	_single_note_timer = 0.0
+
 func _trigger_isolation_immunity(timbre: String) -> void:
 	_isolation_immune = true
 	_isolation_immune_timer = ISOLATION_IMMUNITY_DURATION
 	_immune_timbre = timbre
 	_same_timbre_count = 0
 	
-	# 视觉：获得免疫效果（金色护盾）
+	# 视觉：获得免疫效果（金色护盾闪烁）
 	if _sprite:
 		var tween := create_tween()
 		tween.tween_property(_sprite, "modulate", Color(1.0, 0.9, 0.4), 0.3)
 		tween.tween_property(_sprite, "modulate", base_color, ISOLATION_IMMUNITY_DURATION)
 
-## 重写伤害处理：声部孤立免疫
+## 重写伤害处理：声部孤立免疫 + 圣歌护盾机制
 func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
 	# 如果玩家使用单一音色且触发免疫，大幅减伤
 	var final_damage := amount
@@ -664,5 +847,8 @@ func _notification(what: int) -> void:
 				if is_instance_valid(child):
 					child.queue_free()
 		for node in _staff_visual_nodes:
+			if is_instance_valid(node):
+				node.queue_free()
+		for node in _chant_track_nodes:
 			if is_instance_valid(node):
 				node.queue_free()
