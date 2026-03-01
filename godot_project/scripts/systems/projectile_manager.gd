@@ -34,6 +34,9 @@ var _collision_optimizer: CollisionOptimizer = null
 ## 回响延迟队列：[{ "spell_data": Dictionary, "delay_remaining": float }]
 var _echo_queue: Array[Dictionary] = []
 
+## 音色战斗机制处理器引用（可选，不存在时跳过音色机制）
+var _timbre_handler: Node = null
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -43,6 +46,8 @@ func _ready() -> void:
 	_multi_mesh_instance = get_node_or_null("MultiMeshInstance2D") as MultiMeshInstance2D
 	_setup_multi_mesh()
 	_setup_collision_optimizer()
+	# 尝试获取音色战斗机制处理器
+	_timbre_handler = get_node_or_null("/root/TimbreCombatHandler")
 	# 演示模式下不连接全局信号，避免节点释放后产生 Lambda capture freed 错误
 	if _demo_mode:
 		return
@@ -110,6 +115,42 @@ func spawn_from_spell(spell_data: Dictionary, origin: Vector2, direction: Vector
 	# 应用节奏型
 	var rhythm = spell_data.get("rhythm_pattern", -1)
 	_apply_rhythm_to_projectile(projectile, rhythm, spell_data)
+
+	# ★ 音色核心机制：传递 core_mechanic 到弹体
+	var core_mechanic: String = spell_data.get("core_mechanic", "")
+	if core_mechanic != "":
+		projectile["core_mechanic"] = core_mechanic
+		# 里拉琴：记录生成位置用于飞行距离计算
+		if core_mechanic == "harmonic_resonance":
+			projectile["spawn_position"] = player_pos
+			projectile["base_distance"] = spell_data.get("base_distance", 600.0)
+		# 羽管键琴：标记需要生成对位弹体
+		elif core_mechanic == "counterpoint_weave":
+			projectile["needs_counterpoint"] = spell_data.get("needs_counterpoint", false)
+			projectile["counterpoint_delay"] = spell_data.get("counterpoint_delay", 0.2)
+		# 管风琴：传递圣咏状态
+		elif core_mechanic == "harmonic_stacking":
+			projectile["is_chanting"] = spell_data.get("is_chanting", false)
+			projectile["organ_layers"] = spell_data.get("organ_layers", 0)
+		# 钢琴：传递力度动态
+		elif core_mechanic == "velocity_dynamics":
+			projectile["velocity_dynamics"] = spell_data.get("velocity_dynamics", "mezzo")
+			if spell_data.get("has_knockback", false):
+				projectile["knockback"] = true
+		# 管弦全奏：传递高潮状态
+		elif core_mechanic == "emotional_crescendo":
+			projectile["is_climax"] = spell_data.get("is_climax", false)
+		# 萨克斯：传递即兴独奏状态
+		elif core_mechanic == "swing_attack":
+			if spell_data.get("homing", false):
+				projectile["homing"] = true
+				projectile["homing_strength"] = spell_data.get("homing_strength", 6.0)
+		# 合成主脑：传递波形穿透状态
+		elif core_mechanic == "waveform_morph":
+			if spell_data.get("pierce", false):
+				projectile["pierce"] = true
+				projectile["max_pierce"] = spell_data.get("max_pierce", 2)
+				projectile["pierce_count"] = 0
 
 	_projectiles.append(projectile)
 
@@ -271,6 +312,42 @@ func _create_projectile(spell_data: Dictionary) -> void:
 	# 应用节奏型
 	var rhythm = spell_data.get("rhythm_pattern", -1)
 	_apply_rhythm_to_projectile(projectile, rhythm, spell_data)
+
+	# ★ 音色核心机制：传递 core_mechanic 到弹体
+	var core_mechanic: String = spell_data.get("core_mechanic", "")
+	if core_mechanic != "":
+		projectile["core_mechanic"] = core_mechanic
+		# 里拉琴：记录生成位置用于飞行距离计算
+		if core_mechanic == "harmonic_resonance":
+			projectile["spawn_position"] = player_pos
+			projectile["base_distance"] = spell_data.get("base_distance", 600.0)
+		# 羽管键琴：标记需要生成对位弹体
+		elif core_mechanic == "counterpoint_weave":
+			projectile["needs_counterpoint"] = spell_data.get("needs_counterpoint", false)
+			projectile["counterpoint_delay"] = spell_data.get("counterpoint_delay", 0.2)
+		# 管风琴：传递圣咏状态
+		elif core_mechanic == "harmonic_stacking":
+			projectile["is_chanting"] = spell_data.get("is_chanting", false)
+			projectile["organ_layers"] = spell_data.get("organ_layers", 0)
+		# 钢琴：传递力度动态
+		elif core_mechanic == "velocity_dynamics":
+			projectile["velocity_dynamics"] = spell_data.get("velocity_dynamics", "mezzo")
+			if spell_data.get("has_knockback", false):
+				projectile["knockback"] = true
+		# 管弦全奏：传递高潮状态
+		elif core_mechanic == "emotional_crescendo":
+			projectile["is_climax"] = spell_data.get("is_climax", false)
+		# 萨克斯：传递即兴独奏状态
+		elif core_mechanic == "swing_attack":
+			if spell_data.get("homing", false):
+				projectile["homing"] = true
+				projectile["homing_strength"] = spell_data.get("homing_strength", 6.0)
+		# 合成主脑：传递波形穿透状态
+		elif core_mechanic == "waveform_morph":
+			if spell_data.get("pierce", false):
+				projectile["pierce"] = true
+				projectile["max_pierce"] = spell_data.get("max_pierce", 2)
+				projectile["pierce_count"] = 0
 
 	_projectiles.append(projectile)
 
@@ -1174,8 +1251,17 @@ func _update_projectiles(delta: float) -> void:
 				var new_dir = current_dir.lerp(to_enemy, homing_strength * delta).normalized()
 				proj["velocity"] = new_dir * proj["velocity"].length()
 
+		# ★ 音色战斗机制：弹体运行时处理
+		var _core_mech: String = proj.get("core_mechanic", "")
+		if _core_mech != "":
+			if _timbre_handler != null:
+				_timbre_handler.process_projectile_timbre_mechanics(proj, delta, self)
+			else:
+				# 内联处理（当 TimbreCombatHandler 不可用时的回退）
+				_process_timbre_inline(proj, delta)
+
 		# 摇摆弹道 (SWING S型轨迹)
-		if proj.get("wave_trajectory", false):
+		if proj.get("wave_trajectory", false) or proj.get("_wave_trajectory", false):
 			# 正弦波横向偏移：频率随时间递减（S型收敛），振幅受弹体速度影响
 			var wave_freq: float = proj.get("wave_freq", 8.0)
 			var wave_amp: float = proj.get("wave_amp", 80.0)
@@ -1447,6 +1533,120 @@ func _update_projectiles(delta: float) -> void:
 
 		# 风暴旋转（已在增强版法阵逻辑中统一处理）
 
+# ============================================================
+# 音色机制内联处理（TimbreCombatHandler 不可用时的回退）
+# ============================================================
+
+func _process_timbre_inline(proj: Dictionary, delta: float) -> void:
+	var mech: String = proj.get("core_mechanic", "")
+	match mech:
+		"counterpoint_weave":
+			# 羽管键琴：延迟生成对位弹体
+			if proj.get("needs_counterpoint", false) and proj["time_alive"] >= proj.get("counterpoint_delay", 0.2):
+				proj["needs_counterpoint"] = false
+				var player = get_tree().get_first_node_in_group("player")
+				var player_pos: Vector2 = player.global_position if player else Vector2.ZERO
+				var offset: Vector2 = proj["position"] - player_pos
+				var mirror_pos: Vector2 = player_pos - offset
+				var counterpoint := proj.duplicate()
+				counterpoint["position"] = mirror_pos
+				counterpoint["velocity"] = -proj["velocity"]
+				counterpoint["damage"] = proj["damage"] * 0.5
+				counterpoint["needs_counterpoint"] = false
+				counterpoint["is_counterpoint"] = true
+				var trail_copy: Array[Vector2] = [] as Array[Vector2]
+				counterpoint["trail_positions"] = trail_copy
+				var pid: int = proj.get("id", randi())
+				proj["id"] = pid
+				counterpoint["parent_id"] = pid
+				_projectiles.append(counterpoint)
+		"harmonic_resonance":
+			# 里拉琴：更新飞行距离
+			if not proj.has("spawn_position"):
+				proj["spawn_position"] = proj["position"]
+			proj["travel_distance"] = proj["position"].distance_to(proj["spawn_position"])
+
+## 处理弹体命中时的音色机制（由碰撞检测调用）
+func apply_timbre_hit_mechanics(proj: Dictionary, enemy_pos: Vector2) -> void:
+	var mech: String = proj.get("core_mechanic", "")
+	if mech == "":
+		return
+
+	if _timbre_handler != null:
+		_timbre_handler.process_hit_timbre_mechanics(proj, enemy_pos, self)
+		return
+
+	# 内联回退处理
+	match mech:
+		"harmonic_resonance":
+			# 里拉琴：泛音波纹 AOE
+			var base_dist: float = proj.get("base_distance", 600.0)
+			var travel_dist: float = proj.get("travel_distance", 0.0)
+			if base_dist > 0:
+				var ratio: float = travel_dist / base_dist
+				var bonus: float = 0.0
+				if abs(ratio - 2.0) < 0.1:
+					bonus = 0.30
+				elif abs(ratio - 1.5) < 0.1:
+					bonus = 0.20
+				elif abs(ratio - 1.33) < 0.1:
+					bonus = 0.10
+				if bonus > 0:
+					proj["damage"] *= (1.0 + bonus)
+			var resonance := {
+				"position": enemy_pos,
+				"velocity": Vector2.ZERO,
+				"damage": proj["damage"] * 0.15,
+				"size": 60.0,
+				"duration": 0.3,
+				"time_alive": 0.0,
+				"color": Color(1.0, 0.9, 0.5, 0.6),
+				"active": true,
+				"is_explosion_effect": true,
+				"modifier": -1
+			}
+			_projectiles.append(resonance)
+		"harmonic_stacking":
+			# 管风琴：圣咏区域
+			if proj.get("is_chanting", false):
+				var chant_field := {
+					"position": enemy_pos,
+					"velocity": Vector2.ZERO,
+					"damage": proj["damage"] * 0.2,
+					"size": proj["size"] * 1.5,
+					"duration": 2.0,
+					"time_alive": 0.0,
+					"color": Color(0.8, 0.8, 1.0, 0.4),
+					"active": true,
+					"is_field": true,
+					"field_type": "chant",
+					"field_tick_interval": 0.5,
+					"field_tick_timer": 0.0,
+					"field_tick_count": 0,
+					"rotation": 0.0,
+					"rotation_speed": 0.0,
+					"pulse_phase": 0.0,
+					"modifier": -1
+				}
+				_projectiles.append(chant_field)
+		"counterpoint_weave":
+			# 羽管键琴：对位共鸣爆发
+			var parent_id: int = proj.get("parent_id", proj.get("id", -1))
+			if parent_id != -1:
+				var resonance := {
+					"position": enemy_pos,
+					"velocity": Vector2.ZERO,
+					"damage": proj["damage"] * 0.30,
+					"size": proj["size"] * 2.0,
+					"duration": 0.2,
+					"time_alive": 0.0,
+					"color": Color(0.9, 0.7, 0.2, 0.8),
+					"active": true,
+					"is_explosion_effect": true,
+					"modifier": -1
+				}
+				_projectiles.append(resonance)
+
 func _trigger_explosion(proj: Dictionary) -> void:
 	# 在爆炸位置创建一个短暂的大范围伤害区域
 	var explosion := {
@@ -1700,6 +1900,10 @@ func _check_collisions_bruteforce(enemies: Array) -> Array[Dictionary]:
 
 				if proj.get("split_on_hit", false):
 					_split_projectile(proj)
+
+				# ★ 音色命中机制处理
+				if proj.get("core_mechanic", "") != "":
+					apply_timbre_hit_mechanics(proj, enemy["position"])
 
 				if not proj.get("is_field", false) and not proj.get("is_shockwave", false):
 					break  # 每帧每个非区域弹体只命中一个敌人
