@@ -1,0 +1,139 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-03-01T00:00:00Z",
+  "default_safe_response": "抱歉，我无法回答这个问题。请换一个话题继续我们的对话。",
+  "category_safe_responses": {
+    "violence": "抱歉，我不能提供与暴力相关的内容。让我们聊些积极的话题吧。",
+    "illegal": "抱歉，我不能提供任何违法相关的信息或建议。",
+    "harmful": "抱歉，我不能提供可能造成伤害的信息。如果您需要帮助，请联系专业机构。",
+    "privacy": "抱歉，我不能协助获取他人的隐私信息。请尊重他人隐私。",
+    "adult": "抱歉，我不能生成此类内容。让我们聊些其他话题吧。"
+  },
+  "words": [
+    {
+      "word": "如何制造炸弹",
+      "category": "violence",
+      "severity": "block"
+    },
+    {
+      "word": "如何制造武器",
+      "category": "violence",
+      "severity": "block"
+    },
+    {
+      "word": "如何制造毒品",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "如何入侵系统",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "如何破解密码",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "如何盗取账号",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "自杀方法",
+      "category": "harmful",
+      "severity": "block"
+    },
+    {
+      "word": "自残方法",
+      "category": "harmful",
+      "severity": "block"
+    },
+    {
+      "word": "如何跟踪他人",
+      "category": "privacy",
+      "severity": "block"
+    },
+    {
+      "word": "如何获取他人隐私",
+      "category": "privacy",
+      "severity": "block"
+    },
+    {
+      "word": "色情",
+      "category": "adult",
+      "severity": "block"
+    },
+    {
+      "word": "赌博网站",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "暴力",
+      "category": "violence",
+      "severity": "warning"
+    },
+    {
+      "word": "血腥",
+      "category": "violence",
+      "severity": "warning"
+    },
+    {
+      "word": "恐怖袭击",
+      "category": "violence",
+      "severity": "block"
+    },
+    {
+      "word": "仇恨言论",
+      "category": "harmful",
+      "severity": "warning"
+    },
+    {
+      "word": "歧视",
+      "category": "harmful",
+      "severity": "warning"
+    },
+    {
+      "word": "种族歧视",
+      "category": "harmful",
+      "severity": "block"
+    },
+    {
+      "word": "性别歧视",
+      "category": "harmful",
+      "severity": "warning"
+    },
+    {
+      "word": "诈骗",
+      "category": "illegal",
+      "severity": "warning"
+    },
+    {
+      "word": "洗钱",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "非法集资",
+      "category": "illegal",
+      "severity": "block"
+    },
+    {
+      "word": "传销",
+      "category": "illegal",
+      "severity": "warning"
+    },
+    {
+      "word": "虐待",
+      "category": "harmful",
+      "severity": "block"
+    },
+    {
+      "word": "人身攻击",
+      "category": "harmful",
+      "severity": "warning"
+    }
+  ]
+}
