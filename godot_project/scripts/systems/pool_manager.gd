@@ -28,9 +28,6 @@ extends Node
 ## DEPRECATED: Signal emitted but no active consumer connected (Issue #86 audit)
 signal pool_stats_updated(stats: Dictionary)
 
-## Issue #116: 池扩容事件（供性能监控使用）
-signal pool_expanded_warning(pool_name: String, new_total: int, max_size: int)
-
 # ============================================================
 # 池配置
 # ============================================================
@@ -306,7 +303,6 @@ func warmup_chapter(chapter_index: int) -> void:
 	if chapter_index in _warmed_chapters:
 		return  # 已预热过
 	
-	print("PoolManager: Warming up pools for chapter %d" % chapter_index)
 	
 	# 预加载章节场景
 	_preload_chapter_scenes(chapter_index)
@@ -329,7 +325,6 @@ func warmup_chapter(chapter_index: int) -> void:
 				pool._expand()  # 手动扩容
 	
 	_warmed_chapters.append(chapter_index)
-	print("PoolManager: Chapter %d warmup complete" % chapter_index)
 
 # ============================================================
 # Issue #116: 动态池注册 — 运行时按需创建新敌人类型的池
@@ -359,7 +354,6 @@ func register_enemy_pool(type_name: String, scene: PackedScene) -> void:
 	pool.expand_increment = config["expand"]
 	pool.preallocate()
 	_pools[pool_name] = pool
-	print("PoolManager: Dynamically registered pool '%s'" % pool_name)
 
 ## 检查指定敌人类型是否有可用的对象池
 func has_enemy_pool(type_name: String) -> bool:
@@ -415,7 +409,6 @@ func _precompile_shaders() -> void:
 	precompile_container.queue_free()
 	
 	_shaders_precompiled = true
-	print("PoolManager: Shader precompilation complete (%d shaders)" % shader_paths.size())
 
 # ============================================================
 # 公共接口：获取对象

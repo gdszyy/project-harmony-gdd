@@ -27,7 +27,6 @@ extends Control
 # 信号
 # ============================================================
 signal upgrade_chosen(upgrade: Dictionary)
-signal upgrade_cancelled
 
 # ============================================================
 # 枚举
@@ -134,8 +133,6 @@ func _load_upgrade_database() -> void:
 	DEFENSE_UPGRADES = _resolve_timbre_enums(data.get("defense_upgrades", []))
 	BREAKTHROUGH_EVENTS = data.get("breakthrough_events", [])
 	_upgrade_db_loaded = true
-	print("[CircleOfFifthsUpgradeV3] 已加载升级数据库: %d/%d/%d + %d 突破" % [
-		OFFENSE_UPGRADES.size(), CORE_UPGRADES.size(), DEFENSE_UPGRADES.size(), BREAKTHROUGH_EVENTS.size()])
 
 ## 将 JSON 中的音色字符串转换为 MusicData.ChapterTimbre 枚举值
 func _resolve_timbre_enums(upgrades: Array) -> Array:

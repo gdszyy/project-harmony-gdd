@@ -65,7 +65,6 @@ func _load_tutorial_sequences() -> void:
 		push_error("TutorialSequence: JSON 解析失败: %s" % json.get_error_message())
 		return
 	TUTORIAL_SEQUENCES = json.data
-	print("[TutorialSequence] 已加载 %d 个教学序列" % TUTORIAL_SEQUENCES.size())
 
 # 以下为原始硬编码数据的备份引用（已迁移至 data/tutorials/tutorial_sequences.json）
 const _TUTORIAL_SEQUENCES_LEGACY: Dictionary = {

@@ -86,7 +86,6 @@ func _load_boss_dialogues() -> void:
 		push_error("BossDialogue: JSON 解析失败: %s" % json.get_error_message())
 		return
 	BOSS_DIALOGUES = json.data
-	print("[BossDialogue] 已加载 %d 个 Boss 对话数据" % BOSS_DIALOGUES.size())
 
 # 以下为原始硬编码数据的备份引用（已迁移至 data/dialogues/boss_dialogues.json）
 const _BOSS_DIALOGUES_LEGACY: Dictionary = {

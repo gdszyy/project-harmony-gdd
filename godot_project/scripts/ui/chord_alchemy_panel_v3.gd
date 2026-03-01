@@ -86,7 +86,6 @@ func _load_chord_patterns() -> void:
 		CHORD_PATTERNS = _CHORD_PATTERNS_LEGACY.duplicate(true)
 		return
 	CHORD_PATTERNS = json.data
-	print("[ChordAlchemyPanelV3] 已加载 %d 个和弦配方" % CHORD_PATTERNS.size())
 
 # 以下为原始硬编码数据的备份引用（已迁移至 data/upgrades/chord_patterns.json）
 const _CHORD_PATTERNS_LEGACY := {

@@ -70,7 +70,6 @@ func _load_skill_trees() -> void:
 		SKILL_TREES = _SKILL_TREES_LEGACY.duplicate(true)
 		return
 	SKILL_TREES = json.data
-	print("[MetaProgressionVisualizer] 已加载 %d 个技能树模块" % SKILL_TREES.size())
 
 # 以下为原始硬编码数据的备份引用（已迁移至 data/skill_trees/skill_trees.json）
 const _SKILL_TREES_LEGACY := {

@@ -230,7 +230,6 @@ func enter_boss_bgm(boss_key: String) -> void:
 	_apply_boss_bgm_config(config)
 
 	boss_bgm_started.emit(boss_key)
-	print("[BossBGM] 进入 Boss BGM: %s" % boss_key)
 
 ## 退出 Boss 战 BGM 模式，恢复之前的状态
 func exit_boss_bgm() -> void:
@@ -244,7 +243,6 @@ func exit_boss_bgm() -> void:
 
 	_current_boss_key = ""
 	boss_bgm_ended.emit()
-	print("[BossBGM] 退出 Boss BGM")
 
 ## 响应 Boss 阶段切换
 func on_boss_phase_changed(phase_index: int) -> void:
@@ -259,7 +257,6 @@ func on_boss_phase_changed(phase_index: int) -> void:
 		var phase_config: Dictionary = phase_configs[phase_index]
 		_apply_phase_config(config, phase_config)
 		boss_bgm_phase_changed.emit(phase_index)
-		print("[BossBGM] Boss 阶段切换: %d (%s)" % [phase_index, _current_boss_key])
 
 ## 检查 Boss BGM 是否激活
 func is_boss_bgm_active() -> bool:

@@ -16,7 +16,7 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/autoload/game_manager.gd"
 MusicTheoryEngine="*res://scripts/autoload/music_theory_engine.gd"
-SynthManager="*res://scripts/audio/synth/synth_manager.gd"
+SynthManager="*res://scripts/autoload/synth_manager.gd"
 GlobalMusicManager="*res://scripts/autoload/global_music_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 BGMManager="*res://scripts/autoload/bgm_manager.gd"

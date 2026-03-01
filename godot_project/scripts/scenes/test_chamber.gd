@@ -1178,7 +1178,6 @@ func _log(text: String) -> void:
 	var timestamp := Time.get_time_string_from_system()
 	var msg := "[%s] %s" % [timestamp, text]
 	debug_message.emit(msg)
-	print("[TestChamber] %s" % msg)
 
 ## 获取统计摘要
 func get_stats_summary() -> Dictionary:
