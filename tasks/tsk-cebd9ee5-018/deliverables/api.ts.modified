@@ -1,0 +1,224 @@
+/**
+ * api.ts - API 接口定义
+ *
+ * 使用全局 http 客户端，自动享有：
+ * - 401 自动跳转登录
+ * - 通用错误 Toast 提示
+ * - 网络错误重试机制
+ * - 请求超时处理
+ *
+ * [SEC-P0-1] 新增 Token 刷新逻辑：
+ * - 401 错误时自动尝试通过 Refresh Token 获取新的 Access Token
+ * - Refresh Token 通过 HttpOnly Cookie 自动携带
+ */
+import http from '@/utils/http'
+import type { Article, ArticleRecommendation, Highlight, ChatMessage } from '@/types'
+import type { StarmapResponse, ShareRequest, ShareResponse } from '@/types/starmap'
+
+// ---- Token 刷新管理 ----
+
+let isRefreshing = false
+let refreshSubscribers: Array<(success: boolean) => void> = []
+
+function subscribeTokenRefresh(callback: (success: boolean) => void) {
+  refreshSubscribers.push(callback)
+}
+
+function onTokenRefreshed(success: boolean) {
+  refreshSubscribers.forEach(callback => callback(success))
+  refreshSubscribers = []
+}
+
+/**
+ * [SEC-P0-1] 刷新 Access Token
+ * Refresh Token 通过 HttpOnly Cookie 自动携带
+ */
+async function refreshAccessToken(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.code === 0) {
+        return true
+      }
+    }
+
+    return false
+  } catch {
+    return false
+  }
+}
+
+/**
+ * [SEC-P0-1] 尝试刷新 Token 并重试请求
+ * 当 http 客户端收到 401 时，可以调用此函数尝试刷新
+ */
+export async function tryRefreshAndRetry<T>(
+  retryFn: () => Promise<T>
+): Promise<T> {
+  if (!isRefreshing) {
+    isRefreshing = true
+
+    const success = await refreshAccessToken()
+    isRefreshing = false
+    onTokenRefreshed(success)
+
+    if (success) {
+      return retryFn()
+    } else {
+      window.dispatchEvent(new CustomEvent('auth:expired'))
+      throw new Error('Authentication failed: please login again')
+    }
+  } else {
+    return new Promise<T>((resolve, reject) => {
+      subscribeTokenRefresh((success) => {
+        if (success) {
+          resolve(retryFn())
+        } else {
+          reject(new Error('Authentication failed: please login again'))
+        }
+      })
+    })
+  }
+}
+
+// ---- 文章接口 ----
+export const articleApi = {
+  getRecommendations(limit = 5, refresh = false) {
+    return http.get<{ recommendations: ArticleRecommendation[] }>(
+      `/articles/recommendations?limit=${limit}&refresh=${refresh}`
+    )
+  },
+
+  getArticle(id: number | string) {
+    return http.get<Article>(`/articles/${id}`)
+  },
+}
+
+// ---- 阅读进度接口 ----
+export const readingApi = {
+  updateProgress(articleId: number, progressPercent: number) {
+    return http.post(`/reading/progress`, { articleId, progressPercent })
+  },
+
+  createHighlight(highlight: Omit<Highlight, 'id' | 'createdAt'>) {
+    return http.post<Highlight>(`/reading/highlights`, highlight)
+  },
+
+  getHighlights(articleId: number) {
+    return http.get<Highlight[]>(`/reading/highlights?articleId=${articleId}`)
+  },
+}
+
+// ---- 碎碎念接口 ----
+export const murmurApi = {
+  submit(data: {
+    articleId: number
+    highlightId?: string
+    content: string
+    selectedText?: string
+    paragraphIndex?: number
+  }) {
+    return http.post<{ messageId: string }>(`/murmurs`, data)
+  },
+
+  getHistory(articleId: number) {
+    return http.get<ChatMessage[]>(`/murmurs?articleId=${articleId}`)
+  },
+}
+
+// ---- 用户反馈接口 ----
+export const feedbackApi = {
+  submitMessageFeedback(messageId: string, helpful: boolean) {
+    return http.post(`/feedback/message`, { messageId, helpful })
+  },
+
+  dismissRecommendation(articleId: number) {
+    return http.post(`/feedback/dismiss`, { articleId })
+  },
+}
+
+// ---- 认证接口 ----
+export const authApi = {
+  getCurrentUser() {
+    return http.get<{ id: number; name: string; avatarUrl: string }>(`/auth/me`, { silent: true })
+  },
+
+  /**
+   * [SEC-P0-1] 刷新 Access Token
+   * Refresh Token 通过 HttpOnly Cookie 自动携带
+   */
+  refresh() {
+    return http.post<{ access_token: string; access_token_expires_at: number }>(
+      `/v1/auth/refresh`
+    )
+  },
+
+  /**
+   * 登出
+   * [SEC-P0-1] 撤销所有 Refresh Token 并清除 Cookie
+   */
+  logout() {
+    return http.post(`/auth/logout`)
+  },
+
+  /**
+   * 兼容旧接口名称
+   */
+  me() {
+    return http.get<{ id: number; name: string; avatarUrl: string }>(`/auth/me`, { silent: true })
+  },
+}
+
+// ---- 认知星图接口 ----
+export const starmapApi = {
+  /**
+   * [Sprint2-T19] 获取用户认知星图数据
+   * @param userId 用户 ID 或 'me' 表示当前用户
+   */
+  getStarmap(userId: string | number = 'me') {
+    return http.get<StarmapResponse>(`/users/${userId}/starmap`)
+  },
+
+  /**
+   * [Sprint2-T19] 创建星图分享链接
+   */
+  createShare(data: ShareRequest) {
+    return http.post<ShareResponse>(`/starmap/share`, data)
+  },
+
+  /**
+   * [Sprint2-T19] 获取分享详情（公开接口）
+   */
+  getShare(shareId: string) {
+    return http.get<any>(`/starmap/share/${shareId}`)
+  },
+}
+
+// ---- 账户注销接口 ----
+export const accountApi = {
+  getDeletionStatus() {
+    return http.get<{ status: string; scheduledAt: number; requestedAt: number }>(
+      `/v1/auth/deletion-status`,
+      { silent: true }
+    )
+  },
+
+  requestDeletion(confirmation: string) {
+    return http.post<{ status: string; scheduledAt: number; requestedAt: number }>(
+      `/v1/auth/delete-account`,
+      { confirmation }
+    )
+  },
+
+  cancelDeletion() {
+    return http.post<{ status: string }>(`/v1/auth/cancel-deletion`)
+  },
+}

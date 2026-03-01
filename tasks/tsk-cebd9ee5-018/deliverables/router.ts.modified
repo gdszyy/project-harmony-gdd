@@ -1,0 +1,116 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: '/feed',
+  },
+  {
+    path: '/feed',
+    name: 'Feed',
+    component: () => import('@/views/FeedView.vue'),
+    meta: {
+      title: '发现 - 界外 EdgeReader',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/read/:id',
+    name: 'Reader',
+    component: () => import('@/views/ReaderView.vue'),
+    meta: {
+      title: '阅读 - 界外 EdgeReader',
+      requiresAuth: false,
+      hideNav: true, // 阅读器页面隐藏导航栏
+    },
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: {
+      title: '登录 - 界外 EdgeReader',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: {
+      title: '个人中心 - 界外 EdgeReader',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/SettingsView.vue'),
+    meta: {
+      title: '设置 - 界外 EdgeReader',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/starmap',
+    name: 'Starmap',
+    component: () => import('@/views/StarmapView.vue'),
+    meta: {
+      title: '认知星图 - 界外 EdgeReader',
+      requiresAuth: true,
+      hideNav: true,
+    },
+  },
+  {
+    path: '/share/:shareId',
+    name: 'ShareView',
+    component: () => import('@/views/ShareView.vue'),
+    meta: {
+      title: '认知星图分享 - 界外 EdgeReader',
+      requiresAuth: false,
+      hideNav: true,
+    },
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('@/views/PrivacyPolicyView.vue'),
+    meta: {
+      title: '隐私政策 - 界外 EdgeReader',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFoundView.vue'),
+    meta: {
+      title: '页面未找到 - 界外 EdgeReader',
+    },
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    if (to.hash) {
+      return { el: to.hash, behavior: 'smooth' }
+    }
+    return { top: 0 }
+  },
+})
+
+// 路由守卫：更新页面标题
+router.afterEach((to) => {
+  const title = to.meta?.title as string | undefined
+  if (title) {
+    document.title = title
+  }
+})
+
+export default router
