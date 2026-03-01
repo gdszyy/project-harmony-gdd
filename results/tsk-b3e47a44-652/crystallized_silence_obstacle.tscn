@@ -1,0 +1,56 @@
+[gd_scene load_steps=7 format=3 uid="uid://cryst_silence_obs_001"]
+
+[ext_resource type="Script" path="res://scripts/entities/obstacle.gd" id="1_obstacle"]
+[ext_resource type="Script" path="res://scripts/systems/crystallized_obstacle.gd" id="2_crystal"]
+[ext_resource type="Shader" path="res://shaders/basalt_column.gdshader" id="3_basalt_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_basalt"]
+shader = ExtResource("3_basalt_shader")
+shader_parameter/eq_intensity = 0.5
+shader_parameter/eq_speed = 2.0
+shader_parameter/eq_band_count = 16.0
+shader_parameter/hit_glow = 0.0
+shader_parameter/beat_energy = 0.0
+shader_parameter/edge_glow_width = 0.04
+shader_parameter/basalt_color = Color(0.08, 0.08, 0.1, 1)
+shader_parameter/crack_glow_color = Color(0.15, 0.1, 0.35, 0.8)
+shader_parameter/eq_bar_color = Color(0.2, 0.15, 0.5, 0.7)
+shader_parameter/hit_glow_color = Color(0.4, 0.3, 0.8, 1)
+shader_parameter/edge_color = Color(0.1, 0.05, 0.3, 0.6)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_basalt"]
+size = Vector2(32, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(28, 60)
+
+[node name="CrystallizedSilenceObstacle" type="StaticBody2D"]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_obstacle")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_basalt")
+scale = Vector2(1, 2)
+region_enabled = true
+region_rect = Rect2(0, 0, 32, 64)
+
+[node name="CrystallizedObstacle" type="Node" parent="Sprite2D"]
+script = ExtResource("2_crystal")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_basalt")
+
+[node name="HitArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HitShape" type="CollisionShape2D" parent="HitArea"]
+shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="ResonanceParticles" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 8
+lifetime = 0.8
+one_shot = true
+explosiveness = 0.9
