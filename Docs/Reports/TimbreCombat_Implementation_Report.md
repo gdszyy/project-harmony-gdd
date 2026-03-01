@@ -68,7 +68,7 @@
 
 **GameManager 接口确认**：`GameManager.get_beat_progress()` 需要确保返回准确的 [0.0, 1.0) 浮点数，用于钢琴和萨克斯的精准度判定。
 
-**Autoload 配置**：需要确保 `TimbreCombatHandler`（`res://scripts/systems/timbre_combat_handler.gd`）被添加到项目设置的 Autoload 列表中，建议命名为 `TimbreCombatHandler`。
+**Autoload 配置**：已修复。`TimbreCombatHandler`（`res://scripts/systems/timbre_combat_handler.gd`）已被添加到项目设置的 Autoload 列表中，确保音色战斗机制能正确激活。
 
 **敌人接口优化**：羽管键琴的对位共鸣目前通过 `parent_id` 命中触发，更严谨的实现可在敌人实体上短暂记录被命中的弹体 ID，以实现真正的"双弹体同时命中同一敌人"检测。
 
@@ -77,6 +77,7 @@
 所有代码修改已通过以下 Git 提交推送到 `gdszyy/project-harmony-gdd` 仓库的 `main` 分支：
 
 - `c9fbe29` — `feat: 实现7种音色核心战斗机制`（包含 `timbre_combat_handler.gd`、`projectile_manager.gd`、`spellcraft_system.gd` 的全部修改）
+- `eb34c53` — `fix(autoload): 注册 TimbreCombatHandler 为 Autoload 节点`（确保机制能够正确激活而不走内联回退路径）
 
 ---
 *此报告由 combat_system_engineer Agent 自动生成。*
