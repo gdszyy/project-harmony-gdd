@@ -37,6 +37,7 @@ CodexManager="*res://scripts/autoload/codex_manager.gd"
 ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
 TimbreHotkeyManager="*res://scripts/autoload/timbre_hotkey_manager.gd"
 ; === 游戏系统 ===
+TimbreCombatHandler="*res://scripts/systems/timbre_combat_handler.gd"
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"
 GlobalVisualEnvironment3D="*res://scripts/systems/global_visual_environment_3d.gd"
 ChapterManager="*res://scripts/systems/chapter_manager.gd"
