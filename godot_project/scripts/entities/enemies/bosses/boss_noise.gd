@@ -11,9 +11,8 @@
 ## 每种波形对应不同的攻击模式和弱点。
 ## 玩家必须用对应的"音色"来克制当前波形。
 ##
-## 风格排斥：【单一的诅咒 (The Monotone Curse)】
-## 如果玩家持续使用同一种音色/波形攻击，Boss 会"适应"并免疫。
-## 玩家必须不断切换音色，体现现代音乐的多样性。
+## 风格排斥：无
+## 在这场最终的战斗中，任何策略都是被允许的，只要你能活下来。
 ##
 ## 四阶段：初始化(Init) → 波形切换(Waveform Shift) →
 ##         频率风暴(Frequency Storm) → 奇点(Singularity)
@@ -63,9 +62,11 @@ const GLITCH_AFTERIMAGE_COUNT: int = 3
 const FREQ_SHIFT_INTERVAL: float = 8.0
 const FREQ_SHIFT_DURATION: float = 3.0
 
-## 单一诅咒参数
-const MONOTONE_THRESHOLD: int = 5  # 连续使用同一音色次数
-const MONOTONE_IMMUNITY_DURATION: float = 4.0
+## 最终阶段参数
+const SPECTRUM_COLLAPSE_THRESHOLD: float = 0.1  # HP < 10% 触发频谱崩溃
+var _is_spectrum_collapse: bool = false
+var _final_chord_timer: float = 0.0
+const FINAL_CHORD_DELAY: float = 4.0  # 减十三和弦延迟 4 拍
 
 # ============================================================
 # 内部状态
@@ -98,12 +99,9 @@ var _freq_shift_active: bool = false
 var _freq_shift_timer: float = 0.0
 var _freq_shift_cooldown: float = 0.0
 
-## 单一诅咒追踪
-var _last_timbre_used: String = ""
-var _same_timbre_count: int = 0
-var _monotone_immune: bool = false
-var _monotone_immune_timer: float = 0.0
-var _immune_timbre: String = ""
+## 相位系统
+# 1 = 低通, 2 = 高通, 3 = 全频
+var _current_player_phase: int = 3
 
 ## 残影系统
 var _afterimages: Array[Node2D] = []
@@ -125,8 +123,8 @@ func _on_boss_ready() -> void:
 	boss_title = "噪音 · The Digital Void"
 	
 	# 数值设定（最终Boss，最高数值）
-	max_hp = 7000.0
-	current_hp = 7000.0
+	max_hp = 10000.0
+	current_hp = 10000.0
 	move_speed = 100.0
 	contact_damage = 22.0
 	xp_value = 350
@@ -367,12 +365,10 @@ func _on_boss_process(delta: float) -> void:
 	if _freq_shift_cooldown > 0.0:
 		_freq_shift_cooldown -= delta
 	
-	# 单一诅咒免疫
-	if _monotone_immune:
-		_monotone_immune_timer -= delta
-		if _monotone_immune_timer <= 0.0:
-			_monotone_immune = false
-			_immune_timbre = ""
+		# 频谱崩溃阶段逻辑
+		if _is_spectrum_collapse:
+			_update_spectrum_collapse(delta)
+			return # 崩溃阶段停止常规逻辑
 	
 	# 残影更新
 	_update_afterimages(delta)
@@ -809,40 +805,80 @@ func _attack_singularity_collapse(attack: Dictionary, damage_mult: float) -> voi
 	)
 
 # ============================================================
-# 单一诅咒系统 (The Monotone Curse)
+# 频谱崩溃与终结机制
 # ============================================================
 
-## 外部调用：记录玩家使用的音色
-func register_player_timbre(timbre: String) -> void:
-	if timbre == _last_timbre_used:
-		_same_timbre_count += 1
-	else:
-		_same_timbre_count = 1
-		_last_timbre_used = timbre
-	
-	if _same_timbre_count >= MONOTONE_THRESHOLD:
-		_trigger_monotone_curse(timbre)
+## 外部调用：更新玩家当前相位
+func set_player_phase(phase: int) -> void:
+	_current_player_phase = phase
 
-func _trigger_monotone_curse(timbre: String) -> void:
-	_monotone_immune = true
-	_monotone_immune_timer = MONOTONE_IMMUNITY_DURATION
-	_immune_timbre = timbre
-	_same_timbre_count = 0
-	
-	# 视觉：适应效果
-	if _sprite:
-		var tween := create_tween()
-		tween.tween_property(_sprite, "modulate", Color(0.5, 0.5, 0.5), 0.2)
-		tween.tween_property(_sprite, "modulate", base_color, MONOTONE_IMMUNITY_DURATION)
-
-## 重写伤害处理：单一诅咒免疫
+## 重写伤害处理：频谱崩溃触发与相位判断
 func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
+	if _is_spectrum_collapse:
+		return # 崩溃阶段只能被终结技能伤害
+		
 	# 降采样区域内玩家伤害降低
 	var final_amount := amount
 	if is_player_in_bitcrush():
 		final_amount *= BITCRUSH_DAMAGE_REDUCTION
 	
 	super.take_damage(final_amount, knockback_dir, is_perfect_beat)
+	
+	# 检查频谱崩溃触发
+	if current_hp <= max_hp * SPECTRUM_COLLAPSE_THRESHOLD and not _is_spectrum_collapse:
+		_trigger_spectrum_collapse()
+
+func _trigger_spectrum_collapse() -> void:
+	_is_spectrum_collapse = true
+	boss_title = "噪音 · 频谱崩溃"
+	
+	# 清除所有现有弹幕
+	if _projectile_container:
+		for child in _projectile_container.get_children():
+			child.queue_free()
+			
+	# 视觉表现：全屏混乱
+	if _sprite:
+		var tween := create_tween().set_loops()
+		tween.tween_property(_sprite, "modulate", Color.RED, 0.1)
+		tween.tween_property(_sprite, "modulate", Color.BLUE, 0.1)
+		tween.tween_property(_sprite, "modulate", Color.GREEN, 0.1)
+		tween.tween_property(_sprite, "scale", Vector2(2.0, 2.0), 0.2)
+		tween.tween_property(_sprite, "scale", Vector2(0.5, 0.5), 0.2)
+
+func _update_spectrum_collapse(delta: float) -> void:
+	_glitch_intensity = 1.0
+	
+	# 疯狂释放所有四种波形的攻击
+	_waveform_timer += delta
+	if _waveform_timer >= 0.5:
+		_waveform_timer = 0.0
+		var angle := randf() * TAU
+		_spawn_sine_projectile(global_position, angle, SINE_PROJECTILE_SPEED, SINE_DAMAGE)
+		_spawn_square_projectile(global_position, angle + 1.0, SQUARE_PROJECTILE_SPEED, SQUARE_DAMAGE)
+		_spawn_saw_projectile(global_position, angle + 2.0, SAW_SWEEP_SPEED, SAW_DAMAGE)
+		_spawn_noise_projectile(global_position, angle + 3.0, NOISE_PROJECTILE_SPEED, NOISE_DAMAGE)
+
+## 外部调用：玩家释放终焉乐章（减十三和弦）
+func cast_final_chord() -> void:
+	if not _is_spectrum_collapse:
+		return
+		
+	# 4拍延迟施法
+	_final_chord_timer = FINAL_CHORD_DELAY
+	
+	# 视觉提示：屏幕变暗，准备终结
+	# 这里可以触发全局事件通知GameManager
+	
+	get_tree().create_timer(FINAL_CHORD_DELAY * 0.5).timeout.connect(func(): # 假设每拍0.5秒
+		if is_instance_valid(self) and _is_spectrum_collapse:
+			_execute_final_blow()
+	)
+
+func _execute_final_blow() -> void:
+	# 强制击杀Boss
+	current_hp = 0
+	super.take_damage(99999.0) # 触发死亡逻辑
 
 # ============================================================
 # 弹幕生成辅助
@@ -1015,13 +1051,23 @@ func _add_projectile_to_container(proj: Area2D, is_sine: bool) -> void:
 			var phase: float = proj.get_meta("phase_offset")
 			var forward := Vector2.from_angle(base_angle) * speed
 			var perp := Vector2(-forward.y, forward.x).normalized()
-			var sine_offset := sin(age * SINE_WAVE_FREQUENCY + phase) * SINE_WAVE_AMPLITUDE
-			proj.global_position += (forward + perp * sine_offset * 0.1) * get_process_delta_time()
-			if _target and is_instance_valid(_target):
-				if proj.global_position.distance_to(_target.global_position) < 18.0:
-					if _target.has_method("take_damage"):
-						_target.take_damage(proj.get_meta("damage"))
-					proj.queue_free()
+				var sine_offset := sin(age * SINE_WAVE_FREQUENCY + phase) * SINE_WAVE_AMPLITUDE
+				proj.global_position += (forward + perp * sine_offset * 0.1) * get_process_delta_time()
+				
+				# 检查相位：正弦波只在低通(1)和全频(3)生效
+				var is_active = (_current_player_phase == 1 or _current_player_phase == 3)
+				if _is_spectrum_collapse: is_active = true # 崩溃阶段全部生效
+				
+				if not is_active:
+					proj.modulate.a = 0.2
+				else:
+					proj.modulate.a = 1.0
+					
+				if is_active and _target and is_instance_valid(_target):
+					if proj.global_position.distance_to(_target.global_position) < 18.0:
+						if _target.has_method("take_damage"):
+							_target.take_damage(proj.get_meta("damage"))
+						proj.queue_free()
 	else:
 		# 直线轨迹
 		move_callable = func():
@@ -1031,14 +1077,30 @@ func _add_projectile_to_container(proj: Area2D, is_sine: bool) -> void:
 			proj.global_position += vel * get_process_delta_time()
 			var age: float = proj.get_meta("age") + get_process_delta_time()
 			proj.set_meta("age", age)
-			if age >= proj.get_meta("lifetime"):
-				proj.queue_free()
-				return
-			if _target and is_instance_valid(_target):
-				if proj.global_position.distance_to(_target.global_position) < 18.0:
-					if _target.has_method("take_damage"):
-						_target.take_damage(proj.get_meta("damage"))
+				if age >= proj.get_meta("lifetime"):
 					proj.queue_free()
+					return
+					
+				var wave_type = proj.get_meta("wave_type", "")
+				var is_active = true
+				
+				if not _is_spectrum_collapse:
+					if wave_type == "square" and _current_player_phase != 3: # 方波只在全频(3)生效
+						is_active = false
+					elif wave_type == "sawtooth" and _current_player_phase != 2 and _current_player_phase != 3: # 锯齿波只在高通(2)和全频(3)生效
+						is_active = false
+					# 噪音波(noise)全相位生效，is_active 保持 true
+				
+				if not is_active:
+					proj.modulate.a = 0.2
+				else:
+					proj.modulate.a = 1.0
+					
+				if is_active and _target and is_instance_valid(_target):
+					if proj.global_position.distance_to(_target.global_position) < 18.0:
+						if _target.has_method("take_damage"):
+							_target.take_damage(proj.get_meta("damage"))
+						proj.queue_free()
 	
 	get_tree().process_frame.connect(move_callable)
 	proj.tree_exiting.connect(func():
