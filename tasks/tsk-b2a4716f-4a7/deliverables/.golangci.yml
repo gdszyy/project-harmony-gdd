@@ -1,0 +1,64 @@
+# ============================================================
+# 界外 EdgeReader — golangci-lint 配置
+# ============================================================
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  tests: true
+
+output:
+  formats:
+    - format: colored-line-number
+  sort-results: true
+
+linters:
+  enable:
+    - errcheck        # 检查未处理的错误
+    - gosimple        # 简化代码建议
+    - govet           # Go vet 检查
+    - ineffassign     # 无效赋值检查
+    - staticcheck     # 静态分析
+    - typecheck       # 类型检查
+    - unused          # 未使用代码检查
+    - gofmt           # 格式化检查
+    - goimports       # import 排序检查
+    - misspell        # 拼写检查
+    - bodyclose       # HTTP body 关闭检查
+    - gosec           # 安全检查
+    - unconvert       # 不必要的类型转换
+    - unparam         # 未使用的参数
+    - prealloc        # 预分配 slice
+  disable:
+    - depguard        # 依赖限制（暂不启用）
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # 字段对齐（暂不强制）
+  gosec:
+    excludes:
+      - G104  # 允许未检查的错误（部分场景）
+      - G304  # 允许文件路径变量
+  misspell:
+    locale: US
+  goimports:
+    local-prefixes: github.com/gdszyy/edge-reader
+
+issues:
+  exclude-rules:
+    # 测试文件放宽规则
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - unparam
+    # 迁移文件跳过
+    - path: migrations/
+      linters:
+        - errcheck
+  max-issues-per-linter: 50
+  max-same-issues: 5
