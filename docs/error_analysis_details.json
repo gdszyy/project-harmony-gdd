@@ -1,0 +1,194 @@
+{
+  "results": [
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/bosses/boss_noise.gd",
+      "output": {
+        "file_name": "boss_noise.gd",
+        "error_lines": "Line 761: ._on_phase_changed(new_phase_index, old_phase_index)",
+        "error_type": "syntax_error",
+        "fix_suggestion": "在GDScript中，使用`.`来调用方法时，它必须是某个对象或类的成员。在第761行，`.`前面缺少了对象。根据上下文，这里很可能是想调用父类的同名方法，正确的关键字是`super`。\n\n**修复建议：**\n将`.`替换为`super.`以正确调用父类的方法。\n\n*   **修改前:**\n    ```gdscript\n    ._on_phase_changed(new_phase_index, old_phase_index)\n    ```\n\n*   **修改后:**\n    ```gdscript\n    super._on_phase_changed(new_phase_index, old_phase_index)\n    ```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/chapter_enemies/ch3_counterpoint_crawler.gd",
+      "output": {
+        "file_name": "ch3_counterpoint_crawler.gd",
+        "error_lines": "Line 333: var ideal_foot_pos := global_position + leg[\"coxa_rest_pos\"] + Vector2(\nLine 345: var dist_to_target := leg[\"foot_current\"].distance_to(leg[\"foot_target\"])\nLine 364: var lerped := leg[\"step_start\"].lerp(leg[\"step_end\"], t_val)\nLine 633: var tween := leg[\"coxa\"].create_tween()",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "所有错误都是由于从未经类型转换的字典中读取值，导致变量类型无法被推断。GDScript 引擎在这种情况下无法确定右侧表达式的类型，因此无法为使用 `:=` 声明的变量推断出类型。修复方案是为所有这些变量显式声明类型。\n\n**Line 333:**\n- **Before:** `var ideal_foot_pos := global_position + leg[\"coxa_rest_pos\"] + Vector2(...)`\n- **After:** `var ideal_foot_pos: Vector2 = global_position + leg[\"coxa_rest_pos\"] + Vector2(...)`\n\n**Line 345:**\n- **Before:** `var dist_to_target := leg[\"foot_current\"].distance_to(leg[\"foot_target\"])`\n- **After:** `var dist_to_target: float = (leg[\"foot_current\"] as Vector2).distance_to(leg[\"foot_target\"] as Vector2)`\n\n**Line 364:**\n- **Before:** `var lerped := leg[\"step_start\"].lerp(leg[\"step_end\"], t_val)`\n- **After:** `var lerped: Vector2 = (leg[\"step_start\"] as Vector2).lerp(leg[\"step_end\"] as Vector2, t_val)`\n\n**Line 633:**\n- **Before:** `var tween := leg[\"coxa\"].create_tween()`\n- **After:** `var tween: Tween = (leg[\"coxa\"] as Node2D).create_tween()`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/chapter_enemies/ch5_fury_spirit.gd",
+      "output": {
+        "file_name": "ch5_fury_spirit.gd",
+        "error_lines": "Line 258: var double_beat := max(sin(_core_phase * 2.0) * 0.15, 0.0)\nLine 259: var total_pulse := heartbeat + double_beat\nLine 572: var fade := trail[\"timer\"] / arc_trail_duration",
+        "error_type": "mixed",
+        "fix_suggestion": "文件中存在两种类型的错误：变量类型推断错误和因Variant类型导致的警告升级为错误。这两种错误都与GDScript的静态类型系统有关。\n\n**错误分析与修复建议:**\n\n1.  **第 258 行 和 259 行 (Variant警告 和 类型推断错误)**\n\n    *   **错误代码:**\n        ```gdscript\n        # Line 258\n        var double_beat := max(sin(_core_phase * 2.0) * 0.15, 0.0)\n        # Line 259\n        var total_pulse := heartbeat + double_beat\n        ```\n    *   **错误原因:**\n        *   在第258行，`max()` 函数的第二个参数 `0.0` 虽然看起来是浮点数，但在某些情况下编译器可能无法完全确定其类型，导致 `max()` 的返回类型被推断为 `Variant`。当编译器开启“警告即错误”时，这种不明确的类型推断会成为一个错误。\n        *   在第259行，因为 `double_beat` 的类型是 `Variant`，所以 `heartbeat` (一个浮点数) 与其相加的结果 `total_pulse` 的类型也无法被正确推断，导致了类型推断错误。\n    *   **修复方案:**\n        为 `double_beat` 和 `total_pulse` 显式声明类型为 `float`，以消除类型不确定性。\n\n        *   **修改后代码:**\n            ```gdscript\n            var double_beat: float = max(sin(_core_phase * 2.0) * 0.15, 0.0)\n            var total_pulse: float = heartbeat + double_beat\n            ```\n\n2.  **第 572 行 (类型推断错误)**\n\n    *   **错误代码:**\n        ```gdscript\n        # Line 572\n        var fade := trail[\"timer\"] / arc_trail_duration\n        ```\n    *   **错误原因:**\n        变量 `trail` 是一个字典 (`Dictionary`)，通过键 `\"timer\"` 获取的值是 `Variant` 类型。`arc_trail_duration` 是一个 `float`。`Variant` 类型与 `float` 类型进行除法运算，结果仍然是 `Variant`，因此编译器无法为 `fade` 推断出具体的静态类型。\n    *   **修复方案:**\n        在进行计算前，将从字典中取出的值显式转换为 `float` 类型，并为 `fade` 变量声明 `float` 类型。\n\n        *   **修改后代码:**\n            ```gdscript\n            var fade: float = float(trail[\"timer\"]) / arc_trail_duration\n            ```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/chapter_enemies/ch6_atonal_shifter.gd",
+      "output": {
+        "file_name": "ch6_atonal_shifter.gd",
+        "error_lines": "Line 680: var color := _pattern_colors.get(patterns[i], Color.WHITE)",
+        "error_type": "variant_warning_as_error",
+        "fix_suggestion": "错误原因为 GDScript 编译器无法从 `Dictionary.get()` 方法的返回值中推断出变量 `color` 的确切类型，因为该方法在找不到键时可能返回 `null` 或默认值，从而导致返回类型是 `Variant`。当警告被视为错误时，此问题会中断编译。\n\n为了解决这个问题，需要为 `color` 变量显式声明其类型为 `Color`。\n\n**修复前:**\n```gdscript\nvar color := _pattern_colors.get(patterns[i], Color.WHITE)\n```\n\n**修复后:**\n```gdscript\nvar color: Color = _pattern_colors.get(patterns[i], Color.WHITE)\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd",
+      "output": {
+        "file_name": "ch6_walking_bass.gd",
+        "error_lines": "Line 280: var c := glow_gradient.get_color(i)\nLine 491: var bounce := create_tween()",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "该文件中的两个错误都是由于Godot 4的静态类型检查器无法在循环或复杂调用链中自动推断出变量类型所导致的“类型推断错误”。修复方案是为这些变量显式声明其类型。\n\n1. **针对第280行的错误**:\n   - **错误分析**: `glow_gradient.get_color(i)` 返回一个 `Color` 类型的对象，但在 `for` 循环内部，类型推断器未能确定 `c` 的类型。\n   - **修复建议**: 将变量 `c` 显式声明为 `Color` 类型。\n     - **修改前**: `var c := glow_gradient.get_color(i)`\n     - **修改后**: `var c: Color = glow_gradient.get_color(i)`\n\n2. **针对第491行的错误**:\n   - **错误分析**: `create_tween()` 方法返回一个 `Tween` 对象。由于该行后续紧跟着一长串的方法链式调用，导致类型推断失败，变量 `bounce` 的类型未能被正确识别。\n   - **修复建议**: 将变量 `bounce` 显式声明为 `Tween` 类型。\n     - **修改前**: `var bounce := create_tween()`\n     - **修改后**: `var bounce: Tween = create_tween()`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/enemies/chapter_enemies/ch7_bitcrusher_worm.gd",
+      "output": {
+        "file_name": "ch7_bitcrusher_worm.gd",
+        "error_lines": "Line 255: var current_beat := mat.get_shader_parameter(\"beat_energy\")\nLine 289: var fade_ratio := zone[\"timer\"] / bitcrush_duration",
+        "error_type": "mixed",
+        "fix_suggestion": "### 修复建议\n\n#### 1. 针对第 255 行的 `variant_warning_as_error`\n\n**错误原因**：\n`mat.get_shader_parameter(\"beat_energy\")` 返回一个 `Variant` 类型，因为着色器参数的类型在编译时是未知的。使用 `:=` 进行类型推断时，变量 `current_beat` 的类型被推断为 `Variant`。由于项目配置将此类推断警告视为错误，因此编译失败。\n\n**修复方案**：\n为了解决这个问题，需要为变量 `current_beat` 显式声明类型。由于后续代码 `if current_beat is float` 检查了其是否为浮点数，最安全的做法是将其声明为 `Variant`，以避免因类型不匹配而导致的潜在运行时错误。\n\n**代码改动**：\n\n- **修改前**：\n```gdscript\nvar current_beat := mat.get_shader_parameter(\"beat_energy\")\n```\n\n- **修改后**：\n```gdscript\nvar current_beat: Variant = mat.get_shader_parameter(\"beat_energy\")\n```\n\n#### 2. 针对第 289 行的 `type_inference_error`\n\n**错误原因**：\n在 `var fade_ratio := zone[\"timer\"] / bitcrush_duration` 这一行，`zone[\"timer\"]` 是从一个字典中获取的，其类型被推断为 `Variant`。`bitcrush_duration` 是一个 `float` 类型的导出变量。GDScript 的类型系统无法在 `Variant` 和 `float` 之间安全地推断出除法运算的结果类型，因此导致类型推断错误。\n\n**修复方案**：\n为了解决这个问题，需要为变量 `fade_ratio` 显式声明类型。由于该变量表示一个比例，应将其声明为 `float`。\n\n**代码改动**：\n\n- **修改前**：\n```gdscript\nvar fade_ratio := zone[\"timer\"] / bitcrush_duration\n```\n\n- **修改后**：\n```gdscript\nvar fade_ratio: float = zone[\"timer\"] / bitcrush_duration\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/entities/summon_construct.gd",
+      "output": {
+        "file_name": "summon_construct.gd",
+        "error_lines": "Line 296: var push_dir := (enemy.global_position - global_position).normalized()\nLine 323: var push_dir := (enemy.global_position - global_position).normalized()",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "The error message \"Cannot infer the type\" indicates that the GDScript static type checker is unable to determine the data type of the `push_dir` variable automatically. Although the `.normalized()` method on a vector subtraction always returns a `Vector2`, it's necessary to explicitly declare the type to resolve the ambiguity for the type checker.\n\n**Line 296 Fix:**\n*   **Before:** `var push_dir := (enemy.global_position - global_position).normalized()`\n*   **After:** `var push_dir: Vector2 = (enemy.global_position - global_position).normalized()`\n\n**Line 323 Fix:**\n*   **Before:** `var push_dir := (enemy.global_position - global_position).normalized()`\n*   **After:** `var push_dir: Vector2 = (enemy.global_position - global_position).normalized()`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/systems/enemy_spawner.gd",
+      "output": {
+        "file_name": "enemy_spawner.gd",
+        "error_lines": "Line 1133: var pickup := XpPickupScript.create(pos, value)",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "The error 'Cannot infer the type of \"pickup\" variable' occurs because the value returned by `XpPickupScript.create(pos, value)` does not have a clearly defined type that Godot's static analyzer can infer. To resolve this, you must explicitly declare the type of the `pickup` variable.\n\nAssuming the `create` function returns an instance of a node, you can specify its type as `Node` or a more specific type if known (e.g., `Node2D` or a custom class like `XpPickup`).\n\n**Before:**\n```gdscript\nvar pickup := XpPickupScript.create(pos, value)\n```\n\n**After (Recommended Fix):**\n```gdscript\nvar pickup: Node = XpPickupScript.create(pos, value)\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/systems/spell_visual_manager.gd",
+      "output": {
+        "file_name": "spell_visual_manager.gd",
+        "error_lines": "Line 1152: func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:",
+        "error_type": "lambda_error",
+        "fix_suggestion": "The error on line 1152 is a misleading parse error caused by an issue in the preceding lines. The actual problem is an unterminated lambda function call within the `_vfx_nova` function. The `connect` method call starting on line 1139 is not properly closed.\n\n**Before:**\n```gdscript\n# ... inside _vfx_nova function\n\t\tfor i in range(5):\n\t\t\tget_tree().create_timer(i * 0.05).timeout.connect(func():\n\t\t\t\tvar ring := _create_ring(pos, 10.0, color.lightened(i * 0.1), 0.8 - i * 0.1)\n\t\t\t\tvar r_tween := ring.create_tween()\n\t\t\t\tr_tween.set_parallel(true)\n\t\t\t\tr_tween.tween_property(ring, \"scale\", Vector2(100.0, 100.0), 0.8)\n\t\t\t\tr_tween.tween_property(ring, \"modulate:a\", 0.0, 1.0)\n\t\t\t\tr_tween.chain()\n\t\t\t\tr_tween.tween_callback(ring.queue_free)\n\t\t\t)\n```\n\n**After:**\nTo fix this, you need to add a closing parenthesis for the `connect` call after the lambda function's body on a new line.\n\n```gdscript\n# ... inside _vfx_nova function\n\t\tfor i in range(5):\n\t\t\tget_tree().create_timer(i * 0.05).timeout.connect(func():\n\t\t\t\tvar ring := _create_ring(pos, 10.0, color.lightened(i * 0.1), 0.8 - i * 0.1)\n\t\t\t\tvar r_tween := ring.create_tween()\n\t\t\t\tr_tween.set_parallel(true)\n\t\t\t\tr_tween.tween_property(ring, \"scale\", Vector2(100.0, 100.0), 0.8)\n\t\t\t\tr_tween.tween_property(ring, \"modulate:a\", 0.0, 1.0)\n\t\t\t\tr_tween.chain()\n\t\t\t\tr_tween.tween_callback(ring.queue_free)\n\t\t\t)\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/circle_of_fifths_upgrade_v3.gd",
+      "output": {
+        "file_name": "circle_of_fifths_upgrade_v3.gd",
+        "error_lines": "Line 1439: var title_text := \"◆ \" + _breakthrough_event.get(\"name\", \"???\")",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "错误原因: 在 GDScript 中，当使用 `:=` 进行变量声明和初始化时，编译器会尝试从右侧表达式的类型推断出变量的类型。在此例中，`_breakthrough_event.get(\"name\", \"???\")` 的返回类型是 `Variant`，因为它从一个字典中获取值，而字典的值可以是任意类型。因此，`\"◆ \" + ...` 这个表达式的结果也被推断为 `Variant`。当项目启用了将 `Variant` 警告视为错误时，此行代码会引发一个类型推断错误。\n\n修复建议: 为了解决这个问题，需要为变量 `title_text` 显式声明类型为 `String`，或者将 `get` 方法返回的值强制转换为 `String` 类型。这可以帮助类型检查器确定变量的类型，消除歧义。\n\n修改前:\n```gdscript\nvar title_text := \"◆ \" + _breakthrough_event.get(\"name\", \"???\")\n```\n\n修改后 (推荐方案):\n```gdscript\nvar title_text: String = \"◆ \" + _breakthrough_event.get(\"name\", \"???\")\n```\n\n或者:\n```gdscript\nvar title_text := \"◆ \" + String(_breakthrough_event.get(\"name\", \"???\"))\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/codex_ui.gd",
+      "output": {
+        "file_name": "codex_ui.gd",
+        "error_lines": "Line 982: var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})\nLine 1116: var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})",
+        "error_type": "variant_warning_as_error",
+        "fix_suggestion": "The error \"The variable type is being inferred from a Variant value, so it will be typed as Variant\" indicates that the GDScript compiler cannot determine a specific type for the variable at compile time, and it defaults to the general `Variant` type. This is often caused by using methods like `Dictionary.get()` with a default value, as the return type can be ambiguous. The project settings treat this warning as an error.\n\nTo resolve this, you must provide an explicit type declaration for the variable.\n\n**具体修复方案:**\n\n1.  **针对 982 行:**\n\n    *   **错误代码:**\n        ```gdscript\n        var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})\n        ```\n    *   **修复后代码:**\n        ```gdscript\n        var demo_config: Dictionary = CodexData.DEMO_CONFIGS.get(entry_id, {})\n        ```\n\n2.  **针对 1116 行:**\n\n    *   **错误代码:**\n        ```gdscript\n        var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})\n        ```\n    *   **修复后代码:**\n        ```gdscript\n        var demo_config: Dictionary = CodexData.DEMO_CONFIGS.get(entry_id, {})\n        ```\n\n通过将变量 `demo_config` 的类型显式声明为 `Dictionary`，可以解决类型不明确的问题，从而消除错误。"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/fatigue_meter.gd",
+      "output": {
+        "file_name": "fatigue_meter.gd",
+        "error_lines": "Line 116: var wave_strength := clamp((_display_afi - 0.4) / 0.6, 0.0, 1.0)\nLine 128: var freq := lerp(4.0, 15.0, wave_strength)\nLine 176: var mark_y := bar_bottom - BAR_HEIGHT * threshold\nLine 210: var py := fill_top + abs(seed_y) * fill_height\nLine 211: var p_size := 1.5 + abs(seed_x) * 2.0",
+        "error_type": "mixed",
+        "fix_suggestion": "报告中包含两种类型的错误：\n\n1.  **Variant 警告升级为错误 (Variant warning as error)**：当变量的类型是从一个 Variant 值推断出来时，该变量本身也会被输入为 Variant。在 GDScript 的严格类型模式下，这被视为一个错误。\n2.  **类型推断错误 (Type inference error)**：编译器无法自动推断变量的类型，因为赋值的值没有明确的类型。\n\n**修复建议：**\n\n对所有检测到的错误，建议的修复方法是为变量显式声明类型。这可以消除歧义，并使代码更健壮、更易于维护。\n\n**代码修改：**\n\n1.  **第 116 行:**\n    *   **之前:** `var wave_strength := clamp((_display_afi - 0.4) / 0.6, 0.0, 1.0)`\n    *   **之后:** `var wave_strength: float = clamp((_display_afi - 0.4) / 0.6, 0.0, 1.0)`\n\n2.  **第 128 行:**\n    *   **之前:** `var freq := lerp(4.0, 15.0, wave_strength)`\n    *   **之后:** `var freq: float = lerp(4.0, 15.0, wave_strength)`\n\n3.  **第 176 行:**\n    *   **之前:** `var mark_y := bar_bottom - BAR_HEIGHT * threshold`\n    *   **之后:** `var mark_y: float = bar_bottom - BAR_HEIGHT * threshold`\n\n4.  **第 210 行:**\n    *   **之前:** `var py := fill_top + abs(seed_y) * fill_height`\n    *   **之后:** `var py: float = fill_top + abs(seed_y) * fill_height`\n\n5.  **第 211 行:**\n    *   **之前:** `var p_size := 1.5 + abs(seed_x) * 2.0`\n    *   **之后:** `var p_size: float = 1.5 + abs(seed_x) * 2.0`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/hp_bar.gd",
+      "output": {
+        "file_name": "hp_bar.gd",
+        "error_lines": "Line 187: var bw := 4.0 + abs(sin(float(i) * 17.3)) * 20.0\nLine 188: var bh := 2.0 + abs(cos(float(i) * 23.1)) * 6.0\nLine 198: var tri_val := abs(fmod(t / PI, 2.0) - 1.0) * 2.0 - 1.0",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "在 GDScript 中，`:=` 用于类型推断，但有时复杂的表达式（如此处包含 `abs`, `sin`, `cos`, `fmod` 等函数）会导致编译器无法自动推断出变量的最终类型。为了解决这个问题，需要为变量显式声明类型。\n\n**Line 187: `bw` 变量**\n- **错误原因**: 编译器无法推断出 `bw` 变量的类型。\n- **修复建议**: 将 `:=` 更改为 `: float =`，显式声明其为浮点型。\n  - **Before**: `var bw := 4.0 + abs(sin(float(i) * 17.3)) * 20.0`\n  - **After**: `var bw: float = 4.0 + abs(sin(float(i) * 17.3)) * 20.0`\n\n**Line 188: `bh` 变量**\n- **错误原因**: 编译器无法推断出 `bh` 变量的类型。\n- **修复建议**: 将 `:=` 更改为 `: float =`，显式声明其为浮点型。\n  - **Before**: `var bh := 2.0 + abs(cos(float(i) * 23.1)) * 6.0`\n  - **After**: `var bh: float = 2.0 + abs(cos(float(i) * 23.1)) * 6.0`\n\n**Line 198: `tri_val` 变量**\n- **错误原因**: 编译器无法推断出 `tri_val` 变量的类型。\n- **修复建议**: 将 `:=` 更改为 `: float =`，显式声明其为浮点型。\n  - **Before**: `var tri_val := abs(fmod(t / PI, 2.0) - 1.0) * 2.0 - 1.0`\n  - **After**: `var tri_val: float = abs(fmod(t / PI, 2.0) - 1.0) * 2.0 - 1.0`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/hud.gd",
+      "output": {
+        "file_name": "hud.gd",
+        "error_lines": "Line 673: var beat_pulse := max(0.0, 1.0 - beat_progress * 3.0)",
+        "error_type": "variant_warning_as_error",
+        "fix_suggestion": "错误原因为变量 `beat_pulse` 的类型被推断为 `Variant`，而项目设置将此类警告视为错误。根本原因是 `beat_progress` 变量是从一个返回 `Variant` 类型的函数 `GameManager.get_beat_progress()` 中获取的，导致 `beat_pulse` 的计算结果也被推断为 `Variant`。\n\n为了解决这个问题，需要显式地将 `beat_progress` 的类型声明为 `float`。\n\n**修改建议：**\n\n修改 `hud.gd` 文件第 672 行：\n\n**Before:**\n```gdscript\nvar beat_progress := GameManager.get_beat_progress()\n```\n\n**After:**\n```gdscript\nvar beat_progress: float = GameManager.get_beat_progress()\n```\n\n通过此修改，`beat_progress` 将被强制转换为 `float` 类型，从而确保 `beat_pulse` 在第 673 行的计算中也被正确推断为 `float` 类型，符合项目类型检查的要求。"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/meta_progression_visualizer.gd",
+      "output": {
+        "file_name": "meta_progression_visualizer.gd",
+        "error_lines": "Line 327: var nodes: Array = tree.get(\"nodes\", [])\nLine 328: var start_x := center.x - (num_nodes - 1) * spacing / 2.0\nLine 332: var x := start_x + i * spacing\nLine 453: var progress := float(level) / float(max_level)\nLine 581: var seg_len := min(dash_len, total_len - drawn)\nLine 582: var end_pos := pos + dir * seg_len\nLine 845: var click_pos := event.position",
+        "error_type": "mixed",
+        "fix_suggestion": "混合了类型推断错误和Variant警告升级为错误。GDScript的静态类型检查要求在某些情况下为变量显式声明类型，以避免在运行时出现意外的类型转换或不确定性。\n\n**修复方案如下:**\n\n1.  **Line 327: `variant_warning_as_error`**\n    *   **原因:** `Dictionary.get()` 方法返回一个 `Variant` 类型，即使提供了默认值。在严格类型检查下，将 `Variant` 赋值给期望 `Array` 类型的变量会触发此警告（已升级为错误）。\n    *   **修改前:** `var nodes: Array = tree.get(\"nodes\", [])`\n    *   **修改后:** `var nodes: Array = tree.get(\"nodes\", []) as Array`\n\n2.  **Line 328: `type_inference_error`**\n    *   **原因:** 编译器无法从表达式 `center.x - (num_nodes - 1) * spacing / 2.0` 中安全地推断出 `start_x` 的类型，因为涉及多种数字类型（`float`, `int`）的运算。\n    *   **修改前:** `var start_x := center.x - (num_nodes - 1) * spacing / 2.0`\n    *   **修改后:** `var start_x: float = center.x - (num_nodes - 1) * spacing / 2.0`\n\n3.  **Line 332: `type_inference_error`**\n    *   **原因:** 与上一个错误类似，编译器无法推断 `x` 的类型。\n    *   **修改前:** `var x := start_x + i * spacing`\n    *   **修改后:** `var x: float = start_x + i * spacing`\n\n4.  **Line 453: `type_inference_error`**\n    *   **原因:** 编译器无法推断 `progress` 的类型。\n    *   **修改前:** `var progress := float(level) / float(max_level)`\n    *   **修改后:** `var progress: float = float(level) / float(max_level)`\n\n5.  **Line 581: `variant_warning_as_error`**\n    *   **原因:** `min()` 函数返回一个 `Variant` 类型。需要显式转换为 `float`。\n    *   **修改前:** `var seg_len := min(dash_len, total_len - drawn)`\n    *   **修改后:** `var seg_len: float = min(dash_len, total_len - drawn)`\n\n6.  **Line 582: `type_inference_error`**\n    *   **原因:** 编译器无法从向量运算中推断 `end_pos` 的类型。\n    *   **修改前:** `var end_pos := pos + dir * seg_len`\n    *   **修改后:** `var end_pos: Vector2 = pos + dir * seg_len`\n\n7.  **Line 845: `type_inference_error`**\n    *   **原因:** `event.position` 是一个 `Vector2`，但编译器需要显式类型声明。\n    *   **修改前:** `var click_pos := event.position`\n    *   **修改后:** `var click_pos: Vector2 = event.position`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/note_inventory_ui.gd",
+      "output": {
+        "file_name": "note_inventory_ui.gd",
+        "error_lines": "Line 290: var desc := NOTE_DESCRIPTIONS.get(idx, \"\")\nLine 301: var desc := BLACK_KEY_DESCRIPTIONS.get(idx, \"\")",
+        "error_type": "variant_warning_as_error",
+        "fix_suggestion": "在 GDScript 中，当从一个字典（Dictionary）中使用 `get` 方法获取值时，返回的类型是 `Variant`。如果一个变量的类型是从一个 `Variant` 值推断出来的，编译器会发出警告，而在当前项目中，这个警告被视为错误。\n\n**修复方案：**\n为这些变量显式声明类型，以消除类型推断的不确定性。\n\n**Line 290:**\n- **Before:** `var desc := NOTE_DESCRIPTIONS.get(idx, \"\")`\n- **After:** `var desc: String = NOTE_DESCRIPTIONS.get(idx, \"\")`\n\n**Line 301:**\n- **Before:** `var desc := BLACK_KEY_DESCRIPTIONS.get(idx, \"\")`\n- **After:** `var desc: String = BLACK_KEY_DESCRIPTIONS.get(idx, \"\")`"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/pause_menu.gd",
+      "output": {
+        "file_name": "pause_menu.gd",
+        "error_lines": "Line 258: var settings_menu := settings_scene.instantiate()",
+        "error_type": "type_inference_error",
+        "fix_suggestion": "错误 “Cannot infer the type of 'settings_menu' variable” 发生在第 258 行，因为 `instantiate()` 方法返回的是一个通用的 `Node` 类型，GDScript 无法自行推断出更具体的类型。在本项目中，这种类型不确定性被视为错误。\n\n为了解决这个问题，需要为 `settings_menu` 变量提供一个明确的类型提示。由于它是一个UI菜单，`Control` 是一个合适的类型。\n\n**Before:**\n'''gdscript\nvar settings_menu := settings_scene.instantiate()\n'''\n\n**After:**\n'''gdscript\nvar settings_menu: Control = settings_scene.instantiate()\n'''\n\n此项改动向编译器明确了变量的类型，从而解决了该错误。"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/spectral_fatigue_indicator.gd",
+      "output": {
+        "file_name": "spectral_fatigue_indicator.gd",
+        "error_lines": "Line 184: var jitter_freq := lerp(0.5, 5.0, jitter_strength)",
+        "error_type": "variant_warning_as_error",
+        "fix_suggestion": "The error on line 184 indicates that the compiler cannot determine the return type of the `lerp` function, so it defaults to `Variant`, which is treated as an error. To resolve this, explicitly declare the variable's type as `float`.\n\n**Before:**\n```gdscript\nvar jitter_freq := lerp(0.5, 5.0, jitter_strength)\n```\n\n**After:**\n```gdscript\nvar jitter_freq: float = lerp(0.5, 5.0, jitter_strength)\n```"
+      },
+      "error": ""
+    },
+    {
+      "input": "/home/ubuntu/project-harmony-gdd/godot_project/scripts/ui/summon_hud.gd",
+      "output": {
+        "file_name": "summon_hud.gd",
+        "error_lines": "Line 135: var total_height := max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28\nLine 213: var time_ratio := clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0",
+        "error_type": "mixed",
+        "fix_suggestion": "### 错误分析与修复建议\n\n#### 1. `summon_hud.gd:135` - 类型推断错误\n\n**错误代码:**\n```gdscript\nvar total_height := max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28\n```\n\n**错误原因:**\nGDScript 的类型推断器无法从此复杂的表达式中确定 `total_height` 变量的精确类型。表达式中混合了函数调用 (`max`)、整数 (`1`, `28`)、浮点数 (`CARD_SIZE.y`, `CARD_MARGIN`) 和乘法/加法运算，导致最终结果的类型不明确，从而引发类型推断错误。\n\n**修复方案:**\n为 `total_height` 变量显式声明类型为 `float`，以消除歧义。\n\n**修改后代码:**\n```gdscript\nvar total_height: float = max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28\n```\n\n---\n\n#### 2. `summon_hud.gd:213` - Variant警告升级为错误\n\n**错误代码:**\n```gdscript\nvar time_ratio := clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0\n```\n\n**错误原因:**\n此错误是由于项目设置将 GDScript 的类型推断警告（inferred from a Variant value）视为错误。在使用三元运算符 (`if ... else ...`) 时，如果编译器无法保证两个分支返回完全相同的类型，它会为了安全起见将结果推断为 `Variant` 类型。尽管此处的 `clamp(...)` 和 `0.0` 都是浮点数，但编译器在处理三元表达式时采取了更保守的策略，触发了此警告/错误。\n\n**修复方案:**\n为 `time_ratio` 变量显式声明类型为 `float`，以解决类型推断的不确定性。\n\n**修改后代码:**\n```gdscript\nvar time_ratio: float = clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0\n```"
+      },
+      "error": ""
+    }
+  ]
+}
