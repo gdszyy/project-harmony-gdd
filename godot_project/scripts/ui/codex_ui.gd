@@ -2127,7 +2127,7 @@ func _create_chapter_enemy_model(entry_id: String, root: Node3D) -> void:
 			for i in range(5):
 				var segment := MeshInstance3D.new()
 				var seg_box := BoxMesh.new()
-				var sz := worm_sizes[i]
+				var sz: float = worm_sizes[i]
 				seg_box.size = Vector3(sz, sz, sz)
 				segment.mesh = seg_box
 				var mat_seg := StandardMaterial3D.new()
