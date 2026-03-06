@@ -1146,8 +1146,9 @@ func _demo_cast_note_modifier(config: Dictionary) -> void:
 	])
 
 func _demo_cast_chord(config: Dictionary) -> void:
-	var chord_type: String = config.get("demo_chord_type", "major_triad")
-	_update_demo_status("施放 %s 和弦" % chord_type)
+	var chord_type: int = config.get("demo_chord_type", 0)
+	var chord_name: String = MusicData.CHORD_SPELL_MAP.get(chord_type, {}).get("name", "未知")
+	_update_demo_status("施放 %s 和弦" % chord_name)
 	# 创建简单的和弦视觉效果
 	if _demo_3d_entity_layer:
 		var sphere := MeshInstance3D.new()
