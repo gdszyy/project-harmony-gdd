@@ -1297,7 +1297,7 @@ func navigate_to_entry(entry_id: String) -> void:
 	for vol_idx in range(VOLUME_CONFIG.size()):
 		var vol := VOLUME_CONFIG[vol_idx] as Dictionary
 		for sub_idx in range(vol["subcategories"].size()):
-			var subcat := vol["subcategories"][sub_idx] as Dictionary
+			var subcat: Dictionary = vol["subcategories"][sub_idx] as Dictionary
 			var data := _get_data_dict(subcat["data_source"])
 			if data.has(entry_id):
 				_current_volume_idx = vol_idx

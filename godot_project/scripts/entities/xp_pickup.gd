@@ -114,7 +114,7 @@ func _connect_signals() -> void:
 	GameManager.beat_tick.connect(_on_beat)
 
 func _get_tier_color() -> Color:
-	var result_color := COLOR_TIERS[0]["color"]
+	var result_color: Color = COLOR_TIERS[0]["color"]
 	for tier in COLOR_TIERS:
 		if xp_value >= tier["min_xp"]:
 			result_color = tier["color"]

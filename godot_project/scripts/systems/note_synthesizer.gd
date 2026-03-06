@@ -356,7 +356,7 @@ func _apply_timbre_character(wave: float, t: float, freq: float, timbre: int) ->
 		MusicData.TimbreType.WIND:
 			# 吹奏系：添加气息噪声
 			var breath_noise := randf_range(-0.08, 0.08)
-			var breath_envelope := clampf(t * 10.0, 0.0, 1.0) * 0.5 + 0.5
+			var breath_envelope: float = clampf(t * 10.0, 0.0, 1.0) * 0.5 + 0.5
 			wave += breath_noise * breath_envelope * 0.3
 			# 管乐特有的轻微颤音
 			wave *= 1.0 + sin(t * 4.8 * TAU) * 0.004
@@ -397,7 +397,7 @@ func _apply_timbre_post_processing(buffer: Array[float], timbre: int,
 
 ## 简单一阶低通滤波器
 func _apply_simple_lowpass(buffer: Array[float], cutoff_factor: float) -> void:
-	var prev := buffer[0]
+	var prev: float = buffer[0]
 	for i in range(1, buffer.size()):
 		buffer[i] = prev + cutoff_factor * (buffer[i] - prev)
 		prev = buffer[i]
@@ -405,7 +405,7 @@ func _apply_simple_lowpass(buffer: Array[float], cutoff_factor: float) -> void:
 ## 软压缩
 func _apply_soft_compression(buffer: Array[float], threshold: float) -> void:
 	for i in range(buffer.size()):
-		var sample := buffer[i]
+		var sample: float = buffer[i]
 		var abs_sample := absf(sample)
 		if abs_sample > threshold:
 			var excess := abs_sample - threshold

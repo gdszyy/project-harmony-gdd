@@ -340,8 +340,8 @@ func _modifier_vfx_split(pos: Vector2, color: Color) -> void:
 	
 	# 核心间电弧（Line2D）
 	for i in range(3):
-		var from_offset := core_offsets[i]
-		var to_offset := core_offsets[(i + 1) % 3]
+		var from_offset: float = core_offsets[i]
+		var to_offset: float = core_offsets[(i + 1) % 3]
 		var arc := Line2D.new()
 		arc.width = 1.5
 		arc.default_color = Color(color.r, color.g, color.b, 0.7)
@@ -362,8 +362,8 @@ func _modifier_vfx_split(pos: Vector2, color: Color) -> void:
 	
 	# 核心分裂动画：先分开再合一
 	for i in range(3):
-		var core := cores[i]
-		var expand_offset := core_offsets[i] * 2.5
+		var core: Polygon2D = cores[i]
+		var expand_offset: float = core_offsets[i] * 2.5
 		var c_tween := core.create_tween()
 		c_tween.tween_property(core, "global_position", pos + expand_offset, 0.15)
 		c_tween.tween_property(core, "global_position", pos, 0.15)
@@ -1750,7 +1750,7 @@ func _update_effects(delta: float) -> void:
 	var expired: Array[int] = []
 	
 	for i in range(_active_effects.size()):
-		var effect := _active_effects[i]
+		var effect: Dictionary = _active_effects[i]
 		effect["time_alive"] += delta
 		
 		if effect["time_alive"] >= effect["duration"]:
@@ -1807,7 +1807,7 @@ func _update_effects(delta: float) -> void:
 	
 	# 清理过期效果
 	for i in range(expired.size() - 1, -1, -1):
-		var effect := _active_effects[expired[i]]
+		var effect: Dictionary = _active_effects[expired[i]]
 		for node in effect.get("nodes", []):
 			if is_instance_valid(node):
 				node.queue_free()
@@ -1816,7 +1816,7 @@ func _update_effects(delta: float) -> void:
 func _cleanup_expired() -> void:
 	var to_remove: Array[int] = []
 	for i in range(_active_effects.size()):
-		var effect := _active_effects[i]
+		var effect: Dictionary = _active_effects[i]
 		var all_invalid := true
 		for node in effect.get("nodes", []):
 			if is_instance_valid(node):

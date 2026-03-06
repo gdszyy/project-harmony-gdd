@@ -187,7 +187,7 @@ func _draw_sector(center: Vector2, phase_id: int) -> void:
 
 	# 填充颜色
 	var fill_color := phase_color
-	var brightness := lerp(0.15, 1.0, progress)
+	var brightness: float = lerp(0.15, 1.0, progress)
 	fill_color = fill_color * brightness
 	fill_color.a = lerp(0.15, 0.6, progress)
 
@@ -201,7 +201,7 @@ func _draw_sector(center: Vector2, phase_id: int) -> void:
 	# 边框辉光
 	var border_color := phase_color
 	border_color.a = lerp(0.2, 0.8, progress)
-	var border_width := lerp(0.5, 2.0, progress)
+	var border_width: float = lerp(0.5, 2.0, progress)
 
 	for i in range(points.size() - 1):
 		draw_line(points[i], points[i + 1], border_color, border_width)

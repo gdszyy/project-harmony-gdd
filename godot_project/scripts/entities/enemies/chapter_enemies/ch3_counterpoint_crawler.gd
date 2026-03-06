@@ -260,7 +260,7 @@ func _create_procedural_geometry() -> void:
 
 	# 腿部几何体 — 每条腿由 2 段圆柱(矩形)组成
 	for i in range(_leg_bones.size()):
-		var leg_data := _leg_bones[i]
+		var leg_data: Dictionary = _leg_bones[i]
 		var leg_segments: Array = []
 
 		# 上腿段 (coxa → femur)
@@ -314,7 +314,7 @@ func _create_procedural_geometry() -> void:
 func _initialize_ik_walking() -> void:
 	# 初始化每条腿的静止位置
 	for i in range(_leg_bones.size()):
-		var leg := _leg_bones[i]
+		var leg: Dictionary = _leg_bones[i]
 		var rest_pos: Vector2 = global_position + leg["coxa_rest_pos"] + Vector2(leg["side"] * leg_length, leg["coxa_rest_pos"].y * 0.3)
 		leg["foot_rest"] = rest_pos
 		leg["foot_target"] = rest_pos
@@ -327,7 +327,7 @@ func _initialize_ik_walking() -> void:
 func _update_procedural_walking(delta: float) -> void:
 	# 更新每条腿的理想落脚点
 	for i in range(_leg_bones.size()):
-		var leg := _leg_bones[i]
+		var leg: Dictionary = _leg_bones[i]
 
 		# 理想落脚点 = 身体位置 + 腿根偏移 + 腿伸展方向
 		var ideal_foot_pos: Vector2 = global_position + leg["coxa_rest_pos"] + Vector2(
@@ -384,7 +384,7 @@ func _can_leg_step(leg_index: int) -> bool:
 
 ## 开始迈步
 func _start_step(leg_index: int) -> void:
-	var leg := _leg_bones[leg_index]
+	var leg: Dictionary = _leg_bones[leg_index]
 	leg["is_stepping"] = true
 	leg["step_progress"] = 0.0
 	leg["step_start"] = leg["foot_current"]
@@ -393,7 +393,7 @@ func _start_step(leg_index: int) -> void:
 ## 简化 2D IK 求解器
 ## 根据脚部位置反算 coxa 和 femur 的旋转角度
 func _solve_leg_ik(leg_index: int) -> void:
-	var leg := _leg_bones[leg_index]
+	var leg: Dictionary = _leg_bones[leg_index]
 	var coxa: Node2D = leg["coxa"]
 	var femur: Node2D = leg["femur"]
 	var tibia: Node2D = leg["tibia"]
@@ -626,7 +626,7 @@ func _on_death_effect() -> void:
 
 	# 腿部散落效果
 	for i in range(_leg_bones.size()):
-		var leg := _leg_bones[i]
+		var leg: Dictionary = _leg_bones[i]
 		if is_instance_valid(leg["coxa"]):
 			# 腿部飞散
 			var scatter_dir := Vector2(leg["side"], randf_range(-1, 1)).normalized()

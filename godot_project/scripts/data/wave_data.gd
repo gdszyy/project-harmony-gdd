@@ -144,7 +144,7 @@ func validate() -> Array[String]:
 		errors.append("events array is empty")
 	
 	for i in range(events.size()):
-		var event := events[i]
+		var event: Dictionary = events[i]
 		if not event.has("timestamp"):
 			errors.append("Event %d missing 'timestamp'" % i)
 		if not event.has("type"):

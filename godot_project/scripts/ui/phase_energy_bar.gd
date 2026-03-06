@@ -230,7 +230,7 @@ func _init_flow_particles() -> void:
 		})
 
 func _update_flow_particles(delta: float) -> void:
-	var speed_mult := lerp(0.1, 1.5, _display_ratio)
+	var speed_mult: float = lerp(0.1, 1.5, _display_ratio)
 	var visible_count := int(float(MAX_PARTICLES) * _display_ratio)
 	var energy_color := _get_energy_color()
 

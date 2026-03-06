@@ -171,7 +171,7 @@ func _update_jitter(_delta: float) -> void:
 	var total_glitch := _glitch_intensity + _damage_glitch_boost
 
 	for i in range(_arcs.size()):
-		var arc := _arcs[i]
+		var arc: MeshInstance3D = _arcs[i]
 
 		# 随机触发抽搐
 		if randf() < total_glitch * 0.15:

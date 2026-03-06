@@ -147,7 +147,7 @@ func _on_elite_process(delta: float) -> void:
 func _update_bitcrush_zones(delta: float) -> void:
 	var expired: Array[int] = []
 	for i in range(_bitcrush_zones.size()):
-		var zone := _bitcrush_zones[i]
+		var zone: Color = _bitcrush_zones[i]
 		zone["timer"] -= delta
 		if zone["timer"] <= 0.0:
 			expired.append(i)

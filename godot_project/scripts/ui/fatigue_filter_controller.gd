@@ -133,7 +133,7 @@ func _apply_shader_params(_delta: float) -> void:
 	# 节拍脉冲（高疲劳时增强）
 	if GameManager.has_method("get_beat_progress"):
 		var beat_progress := GameManager.get_beat_progress()
-		var base_pulse := max(0.0, 1.0 - beat_progress * 3.0)
+		var base_pulse: float = max(0.0, 1.0 - beat_progress * 3.0)
 		# 高疲劳时脉冲更强
 		var fatigue_pulse_mult := 1.0
 		if _current_tier >= 2:

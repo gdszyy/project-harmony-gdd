@@ -285,7 +285,7 @@ func _update_color_flow(delta: float) -> void:
 ## 更新琴弦振动效果
 func _update_string_vibration(delta: float) -> void:
 	for i in range(_strings.size()):
-		var string_line := _strings[i]
+		var string_line: Line2D = _strings[i]
 		if not is_instance_valid(string_line):
 			continue
 		
@@ -332,7 +332,7 @@ func _spawn_note_trail() -> void:
 	
 	# 使用当前流动色彩
 	var color_index := randi() % _neon_palette.size()
-	var note_color := _neon_palette[color_index]
+	var note_color: Color = _neon_palette[color_index]
 	note_node.modulate = note_color
 	
 	get_parent().add_child(note_node)
@@ -441,7 +441,7 @@ func _generate_bass_path() -> void:
 	var base_angle := randf() * TAU
 	
 	for i in range(scale_degrees.size()):
-		var degree := scale_degrees[i]
+		var degree: int = scale_degrees[i]
 		# 每个音阶度数对应一个方向偏移
 		var angle := base_angle + degree * deg_to_rad(12.0)
 		var pos := start_pos + Vector2.from_angle(angle) * path_step_distance * (i + 1)
@@ -495,7 +495,7 @@ func _update_bass_sway(delta: float) -> void:
 func _update_note_trails(delta: float) -> void:
 	var expired: Array[int] = []
 	for i in range(_note_trail_nodes.size()):
-		var note := _note_trail_nodes[i]
+		var note: Dictionary = _note_trail_nodes[i]
 		note["timer"] -= delta
 		if note["timer"] <= 0.0:
 			expired.append(i)
@@ -513,7 +513,7 @@ func _update_note_trails(delta: float) -> void:
 func _update_trails(delta: float) -> void:
 	var expired: Array[int] = []
 	for i in range(_trail_segments.size()):
-		var seg := _trail_segments[i]
+		var seg: Color = _trail_segments[i]
 		seg["timer"] -= delta
 		if seg["timer"] <= 0.0:
 			expired.append(i)
@@ -543,7 +543,7 @@ func _calculate_movement_direction() -> Vector2:
 		_generate_bass_path()
 		return Vector2.ZERO
 	
-	var target_pos := _path_nodes[_current_path_index]
+	var target_pos: Vector2 = _path_nodes[_current_path_index]
 	var dir := (target_pos - global_position)
 	var dist := dir.length()
 	
@@ -571,7 +571,7 @@ func _regenerate_path_toward_player() -> void:
 	var base_angle := (global_position.direction_to(_target.global_position)).angle()
 	
 	for i in range(scale_degrees.size()):
-		var degree := scale_degrees[i]
+		var degree: int = scale_degrees[i]
 		var angle := base_angle + degree * deg_to_rad(8.0) - deg_to_rad(40.0)
 		var pos := start_pos + Vector2.from_angle(angle) * path_step_distance * (i + 1)
 		_path_nodes.append(pos)

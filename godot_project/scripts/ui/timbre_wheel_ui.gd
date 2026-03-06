@@ -452,15 +452,15 @@ func _draw() -> void:
 	draw_colored_polygon(center_points, center_fill)
 
 	# 中心边框
-	var center_border := CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_LOCKED
+	var center_border: Color = CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_LOCKED
 	center_border.a = 0.6 * alpha
 	for i in range(center_points.size()):
 		var next_idx := (i + 1) % center_points.size()
 		draw_line(center_points[i], center_points[next_idx], center_border, 1.0)
 
 	# 中心文字
-	var center_name := CENTER_TIMBRE["name"]
-	var center_name_color := CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_SECONDARY
+	var center_name: Color = CENTER_TIMBRE["name"]
+	var center_name_color: Color = CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_SECONDARY
 	center_name_color.a = alpha
 	draw_string(font, _center + Vector2(-16, -4), center_name,
 		HORIZONTAL_ALIGNMENT_CENTER, -1, 9, center_name_color)

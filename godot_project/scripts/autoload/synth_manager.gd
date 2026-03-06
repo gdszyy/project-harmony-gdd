@@ -179,7 +179,7 @@ func get_synth_params_for_timbre(chapter_timbre: int,
 
 ## 分配一个声部（Round-Robin 策略）
 func _allocate_voice() -> SynthVoice:
-	var voice := _voices[_voice_index]
+	var voice: SynthVoice = _voices[_voice_index]
 	_voice_index = (_voice_index + 1) % MAX_VOICES
 
 	# 如果该声部正在使用，强制停止以释放

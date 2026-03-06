@@ -322,7 +322,7 @@ func _attack_fugue_subject(attack: Dictionary, damage_mult: float, voices: int) 
 				return
 			# 应答变换
 			for i in range(subject_angles.size()):
-				var transformed_angle := subject_angles[i]
+				var transformed_angle: float = subject_angles[i]
 				match voice_idx % 3:
 					0: transformed_angle = subject_angles[i] + PI      # 逆行
 					1: transformed_angle = -subject_angles[i]          # 倒影
@@ -420,7 +420,7 @@ func _attack_gear_barrage(attack: Dictionary, damage_mult: float) -> void:
 			if _is_dead or not is_instance_valid(self):
 				return
 			var count := GEAR_PROJECTILE_COUNT
-			var offset := _gear_angles[0] + wave_idx * 0.3
+			var offset: float = _gear_angles[0] + wave_idx * 0.3
 			for i in range(count):
 				var angle := (TAU / count) * i + offset
 				_spawn_gear_projectile(global_position, angle,

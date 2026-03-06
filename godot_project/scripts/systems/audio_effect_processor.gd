@@ -128,11 +128,11 @@ static func _apply_high_pass_filter(
 	var dt := 1.0 / float(sample_rate)
 	var alpha := rc / (rc + dt)
 	
-	var prev_input := buffer[0]
-	var prev_output := buffer[0]
+	var prev_input: float = buffer[0]
+	var prev_output: float = buffer[0]
 	
 	for i in range(1, buffer.size()):
-		var current_input := buffer[i]
+		var current_input: float = buffer[i]
 		var output := alpha * (prev_output + current_input - prev_input)
 		buffer[i] = output
 		prev_input = current_input
@@ -151,7 +151,7 @@ static func _apply_low_pass_filter(
 	var dt := 1.0 / float(sample_rate)
 	var alpha := dt / (rc + dt)
 	
-	var prev_output := buffer[0]
+	var prev_output: float = buffer[0]
 	
 	for i in range(1, buffer.size()):
 		var output := prev_output + alpha * (buffer[i] - prev_output)
@@ -223,7 +223,7 @@ static func _apply_simple_chorus(
 		for i in range(buffer.size()):
 			# 简化版：通过时间偏移模拟音高变化
 			var offset := int(i * detune)
-			var idx := clampi(i + offset, 0, buffer.size() - 1)
+			var idx: int = clampi(i + offset, 0, buffer.size() - 1)
 			buffer[i] += original[idx] * inv_voices
 
 ## LFO音高调制
@@ -244,7 +244,7 @@ static func _apply_pitch_lfo(
 		var lfo := sin(t * lfo_rate * TAU) * lfo_depth
 		# 计算采样偏移
 		var offset := int(lfo * sample_rate * 0.01)  # 转换为样本偏移
-		var idx := clampi(i + offset, 0, buffer.size() - 1)
+		var idx: int = clampi(i + offset, 0, buffer.size() - 1)
 		buffer[i] = original[idx]
 
 ## Tremolo（音量调制，不改变音高）
@@ -280,7 +280,7 @@ static func _apply_distortion(buffer: Array[float], drive: float, mix: float) ->
 		return
 	
 	for i in range(buffer.size()):
-		var original := buffer[i]
+		var original: float = buffer[i]
 		# 软削波失真
 		var distorted := tanh(original * (1.0 + drive * 5.0))
 		buffer[i] = lerp(original, distorted, mix)
@@ -298,7 +298,7 @@ static func _apply_ring_modulation(
 	for i in range(buffer.size()):
 		var t := float(i) / float(sample_rate)
 		var modulator := sin(t * mod_freq * TAU)
-		var modulated := buffer[i] * modulator
+		var modulated: float = buffer[i] * modulator
 		buffer[i] = lerp(buffer[i], modulated, mix)
 
 ## 软压缩
@@ -311,7 +311,7 @@ static func _apply_soft_compression(
 		return
 	
 	for i in range(buffer.size()):
-		var sample := buffer[i]
+		var sample: float = buffer[i]
 		var abs_sample := absf(sample)
 		
 		if abs_sample > threshold:

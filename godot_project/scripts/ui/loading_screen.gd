@@ -188,7 +188,7 @@ func finish_loading() -> void:
 	_target_progress = 1.0
 
 	# 等待最小显示时间
-	var wait_time := max(min_display_time - _min_time_elapsed, 0.0)
+	var wait_time: float = max(min_display_time - _min_time_elapsed, 0.0)
 
 	get_tree().create_timer(wait_time).timeout.connect(func():
 		_play_transition()

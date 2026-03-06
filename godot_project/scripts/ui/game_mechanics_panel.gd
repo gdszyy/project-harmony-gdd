@@ -313,7 +313,7 @@ func _draw() -> void:
 
 	# 5. 暴击率
 	if _show_crit:
-		var crit_ratio := clampf(_crit_chance / 0.3, 0.0, 1.0)
+		var crit_ratio: float = clampf(_crit_chance / 0.3, 0.0, 1.0)
 		_draw_bar_section(font, x, y, "CRIT", crit_ratio,
 			CRIT_COLOR, "%.0f%%" % (_crit_chance * 100), content_alpha)
 		y += bar_height + bar_gap
@@ -332,7 +332,7 @@ func _draw() -> void:
 				var note_alpha := 0.5 + sin(_time * 4.0) * 0.3
 				draw_string(font, Vector2(note_x, y + 9), note_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10,
 					UIColors.with_alpha(UIColors.DANGER, note_alpha * content_alpha))
-				var timer_ratio := clampf(remaining / 5.0, 0.0, 1.0)
+				var timer_ratio: float = clampf(remaining / 5.0, 0.0, 1.0)
 				draw_rect(Rect2(Vector2(note_x, y + 12), Vector2(20.0 * timer_ratio, 2)),
 					UIColors.with_alpha(UIColors.DANGER, 0.6 * content_alpha))
 				note_x += 30
@@ -350,7 +350,7 @@ func _draw_bar_section(font: Font, x: float, y: float, label: String,
 	draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH, BAR_HEIGHT)),
 		UIColors.with_alpha(UIColors.PANEL_DARK, 0.5 * alpha))
 
-	var fill_ratio := clampf(ratio, 0.0, 1.0)
+	var fill_ratio: float = clampf(ratio, 0.0, 1.0)
 	if fill_ratio > 0.001:
 		draw_rect(Rect2(Vector2(bar_x, y + 1), Vector2(BAR_WIDTH * fill_ratio, BAR_HEIGHT)),
 			UIColors.with_alpha(bar_color, bar_color.a * alpha))

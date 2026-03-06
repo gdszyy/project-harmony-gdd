@@ -472,7 +472,7 @@ func _update_flame_animation(delta: float) -> void:
 ## 更新装饰卷曲微动
 func _update_ornament_animation(_delta: float) -> void:
 	for i in range(_candlestick_ornaments.size()):
-		var ornament := _candlestick_ornaments[i]
+		var ornament: Polygon2D = _candlestick_ornaments[i]
 		if not is_instance_valid(ornament):
 			continue
 		# 每个装饰以不同相位轻微摇摆

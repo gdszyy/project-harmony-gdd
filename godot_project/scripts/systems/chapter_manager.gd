@@ -662,7 +662,7 @@ func _enter_endless_mode() -> void:
 	endless_mode_started.emit(_endless_loop_count)
 	
 	# 随机循环已完成的章节，持续增加难度
-	var random_chapter := _completed_chapters[randi() % _completed_chapters.size()]
+	var random_chapter: int = _completed_chapters[randi() % _completed_chapters.size()]
 	_start_chapter(random_chapter)
 
 # ============================================================

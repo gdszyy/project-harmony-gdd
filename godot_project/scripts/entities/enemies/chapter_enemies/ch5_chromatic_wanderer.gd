@@ -193,8 +193,8 @@ func _fire_chromatic_projectile() -> void:
 		return
 
 	var dir := global_position.direction_to(_target.global_position)
-	var color := _chromatic_palette[_current_hue_index]
-	var effect := _effect_map[_current_hue_index]
+	var color: Color = _chromatic_palette[_current_hue_index]
+	var effect: ChromaticEffect = _effect_map[_current_hue_index]
 
 	# OPT03: 攻击时触发音高层
 	if _audio_controller:
@@ -237,7 +237,7 @@ func _fire_chromatic_projectile() -> void:
 
 	# 弹幕颜色渐变动画
 	var color_tween := proj.create_tween()
-	var next_color := _chromatic_palette[(_current_hue_index + 1) % 12]
+	var next_color: Color = _chromatic_palette[(_current_hue_index + 1) % 12]
 	color_tween.tween_property(visual, "color", next_color, 2.5)
 
 	# 碰撞检测
@@ -365,7 +365,7 @@ func _on_death_effect() -> void:
 	for i in range(12):
 		var angle := float(i) / 12.0 * TAU
 		var dir := Vector2.from_angle(angle)
-		var color := _chromatic_palette[i]
+		var color: Color = _chromatic_palette[i]
 
 		var proj := Area2D.new()
 		proj.add_to_group("enemy_projectiles")

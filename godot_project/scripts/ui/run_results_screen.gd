@@ -312,7 +312,7 @@ func _draw_stats_phase(canvas: Control, center: Vector2, font: Font, vp: Vector2
 	for i in range(min(_stat_reveal_index, _stat_items.size())):
 		var item: Dictionary = _stat_items[i]
 		var y := start_y + i * row_h
-		var reveal_progress := min((_phase_time - i * STAT_REVEAL_INTERVAL) * 3.0, 1.0)
+		var reveal_progress: float = min((_phase_time - i * STAT_REVEAL_INTERVAL) * 3.0, 1.0)
 		var alpha := reveal_progress
 		canvas.draw_string(font, Vector2(center.x - 180, y + 18),
 			item["icon"], HORIZONTAL_ALIGNMENT_LEFT, -1, 16,
@@ -360,7 +360,7 @@ func _draw_fragments_phase(canvas: Control, center: Vector2, font: Font, vp: Vec
 	canvas.draw_string(font, Vector2(center.x - 60, center.y + 30),
 		count_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 36,
 		UIColors.with_alpha(FRAGMENT_COLOR, 1.0))
-	var total := _result.get("total_fragments", _fragment_count_display)
+	var total: int = _result.get("total_fragments", _fragment_count_display)
 	canvas.draw_string(font, Vector2(center.x - 80, center.y + 65),
 		"总计: %d 共鸣碎片" % total, HORIZONTAL_ALIGNMENT_CENTER, 160, 13, UIColors.TEXT_SECONDARY)
 	if _result.get("harmony_bonus", false):

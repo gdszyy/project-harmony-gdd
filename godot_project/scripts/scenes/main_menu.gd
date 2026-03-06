@@ -237,7 +237,7 @@ func _play_entrance_animation() -> void:
 			visible_buttons.append(btn)
 
 	for i in range(visible_buttons.size()):
-		var button := visible_buttons[i]
+		var button: Color = visible_buttons[i]
 		button.modulate.a = 0.0
 		button.position.x += 20.0  # 从右侧轻微滑入
 		var delay := 0.4 + i * 0.08

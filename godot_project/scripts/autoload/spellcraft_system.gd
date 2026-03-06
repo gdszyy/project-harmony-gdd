@@ -270,7 +270,7 @@ func clear_sequencer() -> void:
 func _unequip_sequencer_slot(position: int) -> void:
 	if position < 0 or position >= SEQUENCER_LENGTH:
 		return
-	var slot := sequencer[position]
+	var slot: Dictionary = sequencer[position]
 	var slot_type: String = slot.get("type", "rest")
 
 	match slot_type:
@@ -324,7 +324,7 @@ func clear_manual_slot(slot_index: int) -> void:
 func _unequip_manual_slot(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= MAX_MANUAL_SLOTS:
 		return
-	var slot := manual_cast_slots[slot_index]
+	var slot: Dictionary = manual_cast_slots[slot_index]
 	var slot_type: String = slot.get("type", "empty")
 
 	match slot_type:
@@ -346,7 +346,7 @@ func trigger_manual_cast(slot_index: int) -> void:
 	if _manual_slot_cooldowns[slot_index] > 0.0:
 		return
 
-	var slot := manual_cast_slots[slot_index]
+	var slot: Dictionary = manual_cast_slots[slot_index]
 	if slot.get("type", "empty") == "empty":
 		return
 
@@ -527,7 +527,7 @@ func _on_measure_complete(measure_index: int) -> void:
 
 	# 获取当前小节的节奏型
 	var measure_idx := measure_index % MEASURES
-	var rhythm := _measure_rhythm_patterns[measure_idx]
+	var rhythm: MusicData.RhythmPattern = _measure_rhythm_patterns[measure_idx]
 
 	# 计算小节内的休止符数量（用于精准蓄力加成的视觉/音效反馈）
 	var start_pos := measure_idx * BEATS_PER_MEASURE
@@ -547,7 +547,7 @@ func _on_measure_complete(measure_index: int) -> void:
 # ============================================================
 
 func _execute_sequencer_position(pos: int) -> void:
-	var slot := sequencer[pos]
+	var slot: Dictionary = sequencer[pos]
 	var slot_type: String = slot.get("type", "rest")
 
 	match slot_type:
@@ -582,7 +582,7 @@ func _cast_single_note_from_sequencer(slot: Dictionary, pos: int) -> void:
 
 	# 应用节奏型修饰
 	var measure_idx := pos / BEATS_PER_MEASURE
-	var rhythm := _measure_rhythm_patterns[measure_idx]
+	var rhythm: MusicData.RhythmPattern = _measure_rhythm_patterns[measure_idx]
 	stats = _apply_rhythm_modifier(stats, rhythm, measure_idx)
 
 	# 应用疲劳惩罚

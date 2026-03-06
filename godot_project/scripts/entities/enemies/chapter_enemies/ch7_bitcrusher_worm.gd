@@ -233,7 +233,7 @@ func _on_enemy_process(delta: float) -> void:
 ## 更新身体段位置 — 经典蛇/蠕虫式跟随运动
 func _update_segments() -> void:
 	for i in range(_segments.size()):
-		var seg := _segments[i]
+		var seg: Dictionary = _segments[i]
 		if not is_instance_valid(seg["node"]):
 			continue
 
@@ -251,7 +251,7 @@ func _update_segments() -> void:
 
 		# 动态更新着色器的 beat_energy（衰减）
 		if seg["node"].material is ShaderMaterial:
-			var mat := seg["node"].material as ShaderMaterial
+			var mat: ShaderMaterial = seg["node"].material as ShaderMaterial
 			var current_beat: Variant = mat.get_shader_parameter("beat_energy")
 			if current_beat is float and current_beat > 0.0:
 				mat.set_shader_parameter("beat_energy", maxf(current_beat - 0.05, 0.0))
@@ -277,7 +277,7 @@ func _update_bitcrush_zones(delta: float) -> void:
 	var expired: Array[int] = []
 
 	for i in range(_bitcrush_zones.size()):
-		var zone := _bitcrush_zones[i]
+		var zone: Color = _bitcrush_zones[i]
 		zone["timer"] -= delta
 		if zone["timer"] <= 0.0:
 			expired.append(i)
@@ -291,7 +291,7 @@ func _update_bitcrush_zones(delta: float) -> void:
 
 				# 更新腐蚀区域着色器的衰减参数
 				if zone["node"].material is ShaderMaterial:
-					var mat := zone["node"].material as ShaderMaterial
+					var mat: ShaderMaterial = zone["node"].material as ShaderMaterial
 					mat.set_shader_parameter("fade_progress", 1.0 - fade_ratio)
 
 	for i in range(expired.size() - 1, -1, -1):
@@ -511,7 +511,7 @@ func _on_beat(_beat_index: int) -> void:
 
 			# 着色器节拍能量
 			if seg["node"].material is ShaderMaterial:
-				var mat := seg["node"].material as ShaderMaterial
+				var mat: ShaderMaterial = seg["node"].material as ShaderMaterial
 				mat.set_shader_parameter("beat_energy", 1.0)
 
 # ============================================================

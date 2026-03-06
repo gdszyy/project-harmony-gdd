@@ -128,7 +128,7 @@ func setup_as_leader(members: Array[Node2D]) -> void:
 	# 为成员分配编队位置
 	var count := members.size()
 	for i in range(count):
-		var member := members[i]
+		var member: Node2D = members[i]
 		if member == self:
 			continue
 		if member.has_method("set_choir_leader"):

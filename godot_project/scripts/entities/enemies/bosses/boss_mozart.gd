@@ -671,7 +671,7 @@ func _spawn_mirror_projectile(pos: Vector2, angle: float, speed: float, damage: 
 		# 检测镜面边界反射（GDD：弹幕碰到镜面后反射）
 		if _mirror_active and reflect_count < MIRROR_MAX_REFLECTS:
 			for i in range(_mirror_boundaries.size()):
-				var boundary := _mirror_boundaries[i]
+				var boundary: Vector2 = _mirror_boundaries[i]
 				var dist := proj.global_position.distance_to(boundary)
 				
 				if dist < 30.0:

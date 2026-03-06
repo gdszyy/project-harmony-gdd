@@ -184,8 +184,8 @@ func _update_rings(delta: float) -> void:
 		if i >= ring_speeds.size():
 			continue
 
-		var ring := _rings[i]
-		var speed := ring_speeds[i]
+		var ring: Node2D = _rings[i]
+		var speed: float = ring_speeds[i]
 		ring.rotation += deg_to_rad(speed) * delta
 
 		# 节拍脉冲效果

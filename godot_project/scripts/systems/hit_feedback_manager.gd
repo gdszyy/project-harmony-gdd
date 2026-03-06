@@ -266,7 +266,7 @@ func trigger_hit(damage: float, direction: Vector2 = Vector2.ZERO, is_heavy: boo
 	var combo_bonus: float = minf((_combo_hit_count - 1) * COMBO_HIT_MULTIPLIER, 0.5)
 
 	# 根据伤害计算强度
-	var intensity := clampf(damage / 50.0, 0.1, 1.0) + combo_bonus
+	var intensity: float = clampf(damage / 50.0, 0.1, 1.0) + combo_bonus
 	intensity = clampf(intensity, 0.0, 1.0)
 	if is_heavy:
 		intensity = clampf(intensity * 1.5, 0.3, 1.0)

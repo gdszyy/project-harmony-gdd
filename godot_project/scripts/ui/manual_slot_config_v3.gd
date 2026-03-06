@@ -131,7 +131,7 @@ func _draw() -> void:
 		var rect := Rect2(Vector2(slot_x, slot_y), SLOT_SIZE)
 		_slot_rects.append(rect)
 
-		var config := _slot_configs[i]
+		var config: Dictionary = _slot_configs[i]
 		var slot_type: String = config.get("type", "empty")
 		var is_hover := (_hover_slot == i)
 		var is_drop_hover := (_drop_hover_slot == i)
@@ -231,7 +231,7 @@ func _update_hover(pos: Vector2) -> void:
 
 ## 发送槽位信息
 func _emit_slot_info(idx: int) -> void:
-	var config := _slot_configs[idx]
+	var config: Dictionary = _slot_configs[idx]
 	var slot_type: String = config.get("type", "empty")
 
 	match slot_type:
@@ -270,7 +270,7 @@ func _emit_slot_info(idx: int) -> void:
 func _get_drag_data(at_position: Vector2) -> Variant:
 	for i in range(_slot_rects.size()):
 		if _slot_rects[i].has_point(at_position):
-			var config := _slot_configs[i]
+			var config: Dictionary = _slot_configs[i]
 			var slot_type: String = config.get("type", "empty")
 
 			if slot_type == "note":

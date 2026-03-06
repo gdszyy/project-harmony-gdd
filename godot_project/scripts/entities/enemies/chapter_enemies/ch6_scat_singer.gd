@@ -97,7 +97,7 @@ func _update_mimic_queue(delta: float) -> void:
 	
 	# 执行到期的模仿
 	for i in range(to_execute.size() - 1, -1, -1):
-		var pattern := _mimic_queue[to_execute[i]]
+		var pattern: Dictionary = _mimic_queue[to_execute[i]]
 		_execute_mimic(pattern)
 		_mimic_queue.remove_at(to_execute[i])
 

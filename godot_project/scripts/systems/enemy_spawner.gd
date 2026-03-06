@@ -413,7 +413,7 @@ func _scripted_spawn(params: Dictionary) -> void:
 	
 	# 获取刚生成的敌人并应用剧本参数
 	if not _active_enemies.is_empty():
-		var enemy := _active_enemies[-1]
+		var enemy: Node2D = _active_enemies[-1]
 		if is_instance_valid(enemy):
 			_apply_scripted_params(enemy, params)
 			enemy.set_meta("scripted", true)
@@ -438,7 +438,7 @@ func _scripted_spawn_swarm(params: Dictionary) -> void:
 		_spawn_enemy_at(spawn_pos, enemy_type)
 		
 		if not _active_enemies.is_empty():
-			var enemy := _active_enemies[-1]
+			var enemy: Node2D = _active_enemies[-1]
 			if is_instance_valid(enemy):
 				enemy.set("move_speed", speed)
 				enemy.set_meta("scripted", true)
@@ -465,7 +465,7 @@ func _scripted_spawn_escort(params: Dictionary) -> void:
 		_spawn_enemy_at(spawn_pos, enemy_type)
 		
 		if not _active_enemies.is_empty():
-			var enemy := _active_enemies[-1]
+			var enemy: Node2D = _active_enemies[-1]
 			if is_instance_valid(enemy):
 				enemy.set("move_speed", speed)
 				enemy.set_meta("scripted", true)

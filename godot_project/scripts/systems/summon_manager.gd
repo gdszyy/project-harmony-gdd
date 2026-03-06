@@ -630,7 +630,7 @@ func _beat_pulse_visual(summon: Dictionary) -> void:
 func _remove_summon(summon_id: int) -> void:
 	for i in range(_active_summons.size()):
 		if _active_summons[i]["id"] == summon_id:
-			var summon := _active_summons[i]
+			var summon: Dictionary = _active_summons[i]
 			
 			# 移除视觉节点
 			var visual: Node2D = summon.get("visual_node")

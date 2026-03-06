@@ -69,7 +69,7 @@ func _update_visual(delta: float) -> void:
 			mat.emission_ring_radius = aura_radius * pulse
 
 	# 低 HP 时视觉增强
-	var rage_factor := clampf((1.0 - _hp_ratio) * 2.0, 0.0, 1.0)
+	var rage_factor: float = clampf((1.0 - _hp_ratio) * 2.0, 0.0, 1.0)
 	set_shader_param("rage_factor", rage_factor)
 	set_shader_param("hp_ratio", _hp_ratio)
 	

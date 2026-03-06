@@ -243,7 +243,7 @@ func _draw() -> void:
 		var rect := Rect2(Vector2(slot_x, y), slot_size)
 		_slot_rects.append(rect)
 
-		var is_filled := _slots[i] >= 0
+		var is_filled: bool = _slots[i] >= 0
 		var is_hover := (_hover_slot == i)
 		var is_drop_hover := (_drop_hover_slot == i)
 
@@ -275,7 +275,7 @@ func _draw() -> void:
 
 		## 内容
 		if is_filled:
-			var note_key := _slots[i]
+			var note_key: Color = _slots[i]
 			var note_color: Color = get_note_color(note_key)
 			## 色块背景
 			draw_rect(rect.grow(-3), UIColors.with_alpha(note_color, 0.25))
@@ -351,7 +351,7 @@ func _update_hover(pos: Vector2) -> void:
 ## 发送槽位信息
 func _emit_slot_info(idx: int) -> void:
 	if _slots[idx] >= 0:
-		var note_key := _slots[idx]
+		var note_key: Color = _slots[idx]
 		var name_str: String = get_note_display_name(note_key)
 		var color: Color = get_note_color(note_key)
 		var key_type := "黑键" if note_key >= 7 else "白键"
@@ -376,7 +376,7 @@ func _emit_slot_info(idx: int) -> void:
 func _get_drag_data(at_position: Vector2) -> Variant:
 	for i in range(_slot_rects.size()):
 		if _slot_rects[i].has_point(at_position) and _slots[i] >= 0:
-			var note_key := _slots[i]
+			var note_key: Color = _slots[i]
 			var name_str: String = get_note_display_name(note_key)
 			var color: Color = get_note_color(note_key)
 
@@ -507,7 +507,7 @@ func _update_preview() -> void:
 	var best_note_count: int = 0
 
 	for root_idx in range(unique_notes.size()):
-		var root := unique_notes[root_idx]
+		var root: int = unique_notes[root_idx]
 		var intervals: Array[int] = []
 		for i in range(unique_notes.size()):
 			var interval: int = (unique_notes[(root_idx + i) % unique_notes.size()] - root + 12) % 12

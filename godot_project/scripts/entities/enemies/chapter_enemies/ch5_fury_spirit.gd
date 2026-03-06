@@ -163,7 +163,7 @@ func _update_cloud_particles(delta: float) -> void:
 	var radius_factor := lerpf(0.6, 1.3, music_intensity)
 	
 	for i in range(_cloud_particles.size()):
-		var particle := _cloud_particles[i]
+		var particle: Polygon2D = _cloud_particles[i]
 		if not is_instance_valid(particle):
 			continue
 		
@@ -552,7 +552,7 @@ func _update_arc_trails(delta: float) -> void:
 	var expired: Array[int] = []
 	
 	for i in range(_arc_trails.size()):
-		var trail := _arc_trails[i]
+		var trail: Color = _arc_trails[i]
 		trail["timer"] -= delta
 		
 		if trail["timer"] <= 0.0:

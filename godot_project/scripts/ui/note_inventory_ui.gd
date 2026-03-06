@@ -147,7 +147,7 @@ func _draw() -> void:
 			bg = CELL_HOVER_BG
 		## 库存不足闪烁
 		if _flash_timers[i] > 0:
-			var flash_t := _flash_timers[i] / FLASH_DURATION
+			var flash_t: float = _flash_timers[i] / FLASH_DURATION
 			bg = bg.lerp(INSUFFICIENT_FLASH_COLOR, flash_t)
 
 		draw_rect(rect, bg)
@@ -211,7 +211,7 @@ func _draw() -> void:
 		if is_hover:
 			bg = CELL_HOVER_BG
 		if _black_flash_timers[i] > 0:
-			var flash_t := _black_flash_timers[i] / FLASH_DURATION
+			var flash_t: float = _black_flash_timers[i] / FLASH_DURATION
 			bg = bg.lerp(INSUFFICIENT_FLASH_COLOR, flash_t)
 
 		draw_rect(rect, bg)

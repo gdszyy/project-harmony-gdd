@@ -88,7 +88,7 @@ func _draw() -> void:
 
 	# 几何图案粒子
 	for p in _particles:
-		var life_ratio := p["life"] / p["max_life"]
+		var life_ratio: float = p["life"] / p["max_life"]
 		var alpha := life_ratio * 0.8
 		var col := UIColors.with_alpha(p["color"], alpha)
 		var s: float = p["size"] * life_ratio

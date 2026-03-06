@@ -231,7 +231,7 @@ func setup_boss(boss_name: String, chapter: int, max_hp: float, phase_names: Arr
 ## 更新 Boss 血量
 func update_hp(current_hp: float, max_hp: float) -> void:
 	_max_hp = max_hp
-	var new_ratio := clampf(current_hp / max_hp, 0.0, 1.0)
+	var new_ratio: float = clampf(current_hp / max_hp, 0.0, 1.0)
 
 	if new_ratio < _target_hp:
 		_damage_flash_timer = DAMAGE_FLASH_DURATION

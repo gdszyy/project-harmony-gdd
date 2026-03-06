@@ -113,7 +113,7 @@ func _draw() -> void:
 
 		# === 4. 冷却遮罩 ===
 		if is_cooling:
-			var cd_ratio := slot["cooldown_current"] / max(slot["cooldown_max"], 0.001)
+			var cd_ratio: float = slot["cooldown_current"] / max(slot["cooldown_max"], 0.001)
 			var mask_height := SLOT_SIZE * cd_ratio
 			var mask_rect := Rect2(
 				Vector2(slot_x, slot_y),

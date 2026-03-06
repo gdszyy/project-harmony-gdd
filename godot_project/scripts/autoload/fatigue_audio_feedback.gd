@@ -211,7 +211,7 @@ func _play_sfx(path: String, pitch_scale: float = 1.0, volume_db: float = -6.0) 
 		return
 
 	# Round-robin 分配播放器
-	var player := _audio_players[_player_index]
+	var player: AudioStreamPlayer = _audio_players[_player_index]
 	_player_index = (_player_index + 1) % AUDIO_POOL_SIZE
 
 	player.stream = stream

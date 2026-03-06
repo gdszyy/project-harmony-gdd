@@ -136,8 +136,8 @@ func _draw_fill_bar(start: Vector2) -> void:
 
 	for i in range(segment_count):
 		var seg_start := start + Vector2(seg_width * float(i), 0)
-		var y_offset := _fragment_offsets[i] * break_strength * 3.0
-		var x_offset := _fragment_offsets[i] * break_strength * 2.0
+		var y_offset: float = _fragment_offsets[i] * break_strength * 3.0
+		var x_offset: float = _fragment_offsets[i] * break_strength * 2.0
 		var offset := Vector2(x_offset, y_offset) + _jitter_offset
 
 		# 随机可见性（模拟破碎）

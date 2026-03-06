@@ -195,7 +195,7 @@ func _draw_cell_content(rect: Rect2, slot: Dictionary, font: Font) -> void:
 func _draw_playhead() -> void:
 	var pos := SpellcraftSystem.get_sequencer_position()
 	if pos >= 0 and pos < _cell_rects.size():
-		var rect := _cell_rects[pos]
+		var rect: Rect2 = _cell_rects[pos]
 		var flash_alpha := 0.3 + _beat_flash * 0.5
 		var ph_rect := Rect2(
 			rect.position - Vector2(2, 2),

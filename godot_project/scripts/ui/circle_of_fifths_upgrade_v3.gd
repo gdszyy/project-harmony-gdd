@@ -750,7 +750,7 @@ func _select_option(option_index: int) -> void:
 	if option_index < 0 or option_index >= _current_options.size():
 		return
 
-	var option := _current_options[option_index]
+	var option: Dictionary = _current_options[option_index]
 
 	# 更新指针方向
 	match _selected_direction:
@@ -1039,7 +1039,7 @@ func _draw_current_key_highlight(font: Font, alpha: float) -> void:
 # ============================================================
 
 func _draw_title(font: Font, alpha: float) -> void:
-	var title_alpha := clampf(alpha * 2.0, 0.0, 1.0)
+	var title_alpha: float = clampf(alpha * 2.0, 0.0, 1.0)
 
 	# 主标题
 	var tc := UIColors.TEXT_PRIMARY
@@ -1087,7 +1087,7 @@ func _draw_direction_runes(font: Font) -> void:
 	for i in range(directions.size()):
 		var dir_info: Dictionary = directions[i]
 		var dir_key: String = dir_info["key"]
-		var progress := clampf(_phase_transition * 2.0 - i * 0.15, 0.0, 1.0)
+		var progress: float = clampf(_phase_transition * 2.0 - i * 0.15, 0.0, 1.0)
 		if progress < 0.01:
 			continue
 
@@ -1161,7 +1161,7 @@ func _draw_direction_trail(direction: String, color: Color, alpha: float) -> voi
 			return  ## 核心方向无轨迹
 
 	for s in range(steps):
-		var t := clampf(_direction_trail_progress - float(s) * 0.2, 0.0, 1.0)
+		var t: float = clampf(_direction_trail_progress - float(s) * 0.2, 0.0, 1.0)
 		if t < 0.01:
 			continue
 		var idx := (_current_key_index + step_dir * (s + 1) + CIRCLE_SIZE) % CIRCLE_SIZE
@@ -1186,7 +1186,7 @@ func _draw_upgrade_cards(font: Font) -> void:
 	var card_count := _current_options.size()
 
 	# 返回提示
-	var back_alpha := clampf(_phase_transition * 2.0, 0.0, 1.0)
+	var back_alpha: float = clampf(_phase_transition * 2.0, 0.0, 1.0)
 	var back_text := "[Right-click / ESC to go back]"
 	var back_width := font.get_string_size(back_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 10).x
 	draw_string(font, Vector2(_center.x - back_width / 2.0, _center.y + compass_outer_radius + 200),
@@ -1199,7 +1199,7 @@ func _draw_upgrade_cards(font: Font) -> void:
 	var base_y := _center.y - card_height / 2.0 + 20.0
 
 	for i in range(card_count):
-		var progress := _card_appear[i] if i < _card_appear.size() else 0.0
+		var progress: float = _card_appear[i] if i < _card_appear.size() else 0.0
 		if progress < 0.01:
 			_card_rects.append(Rect2())
 			continue
@@ -1216,7 +1216,7 @@ func _draw_upgrade_cards(font: Font) -> void:
 		var card_rect := Rect2(Vector2(card_x, card_y), Vector2(card_w, card_h))
 		_card_rects.append(card_rect)
 
-		var option := _current_options[i]
+		var option: Dictionary = _current_options[i]
 		var card_alpha := (1.0 if is_hover else 0.7) * progress
 		_draw_single_card(card_rect, option, is_hover, font, card_alpha, dir_color)
 
@@ -1371,7 +1371,7 @@ func _draw_breakthrough_event(font: Font) -> void:
 	if _breakthrough_event.is_empty():
 		return
 
-	var progress := clampf(_phase_transition, 0.0, 1.0)
+	var progress: float = clampf(_phase_transition, 0.0, 1.0)
 	var pulse := sin(_breakthrough_pulse) * 0.15 + 0.85
 
 	# 屏幕变暗至10%

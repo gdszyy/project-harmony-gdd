@@ -921,8 +921,8 @@ func _update_spotlights(delta: float) -> void:
 		if not is_instance_valid(_spotlight_nodes[i]):
 			continue
 		
-		var spotlight := _spotlight_nodes[i]
-		var target := _spotlight_targets[i]
+		var spotlight: Node2D = _spotlight_nodes[i]
+		var target: Vector2 = _spotlight_targets[i]
 		
 		spotlight.global_position = spotlight.global_position.lerp(target, delta * 0.5)
 		
