@@ -328,7 +328,7 @@ func _execute_laser_beam() -> void:
 	query.collide_with_areas = true
 	var result = space_state.intersect_ray(query)
 	if result and result.collider.is_in_group("player"):
-		result.collider.take_damage(damage * 1.5)
+		result.collider.take_damage(contact_damage * 1.5)
 
 func _execute_shockwave_burst() -> void:
 	if not is_instance_valid(_shockwave_layer): return
@@ -345,7 +345,7 @@ func _execute_shockwave_burst() -> void:
 	# 全屏伤害
 	var player = get_tree().get_first_node_in_group("player")
 	if player and player.has_method("take_damage"):
-		player.take_damage(damage * 0.8)
+		player.take_damage(contact_damage * 0.8)
 
 func _on_death_effect() -> void:
 	# Pulse 死亡时释放最后一波弱弹幕

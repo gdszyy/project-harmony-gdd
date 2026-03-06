@@ -976,7 +976,7 @@ func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 			_build_boss_beethoven_model(root)
 		_:
 			# 未知类型：使用通用几何体，颜色从 ENEMY_TYPE_COLORS 获取
-			var color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color(0.6, 0.6, 0.6))
+			color = ENEMY_TYPE_COLORS.get(enemy_type, Color(0.6, 0.6, 0.6))
 			var mi := MeshInstance3D.new()
 			mi.mesh = BoxMesh.new()
 			var mat := StandardMaterial3D.new()
