@@ -8,6 +8,8 @@ extends Node
 # ============================================================
 signal chord_identified(chord_type: MusicData.ChordType, root_note: int)
 signal progression_triggered(effect_type: String, bonus_multiplier: float)
+## 转发 VFXTimingController 的节拍信号
+signal beat_signal(beat_index: int, is_strong_beat: bool)
 
 # ============================================================
 # 生命周期
@@ -15,6 +17,15 @@ signal progression_triggered(effect_type: String, bonus_multiplier: float)
 func _ready() -> void:
 	# 【Phase 1 重构】订阅 EventBus 事件
 	EventBus.subscribe(Events.GAME_RESET, _on_game_reset_event)
+	
+	# 延迟连接 VFXTimingController，确保其已初始化
+	call_deferred("_connect_vfx_timing")
+
+## 连接 VFXTimingController 的节拍信号
+func _connect_vfx_timing() -> void:
+	var vfx_timing = get_node_or_null("/root/VFXTimingController")
+	if vfx_timing and vfx_timing.has_signal("beat_signal"):
+		vfx_timing.beat_signal.connect(func(idx: int, is_strong: bool): beat_signal.emit(idx, is_strong))
 
 ## 响应 game_reset 事件
 func _on_game_reset_event(_payload: Variant = null) -> void:

@@ -36,6 +36,8 @@ MetaProgressionManager="*res://scripts/autoload/meta_progression_manager.gd"
 CodexManager="*res://scripts/autoload/codex_manager.gd"
 ResonanceSlicingManager="*res://scripts/autoload/resonance_slicing_manager.gd"
 TimbreHotkeyManager="*res://scripts/autoload/timbre_hotkey_manager.gd"
+; === VFX 节拍同步引擎（依赖 BGMManager，必须在 BGMManager 之后） ===
+VFXTimingController="*res://scripts/systems/vfx_timing_controller.gd"
 ; === 游戏系统 ===
 TimbreCombatHandler="*res://scripts/systems/timbre_combat_handler.gd"
 HitFeedbackManager="*res://scripts/systems/hit_feedback_manager.gd"

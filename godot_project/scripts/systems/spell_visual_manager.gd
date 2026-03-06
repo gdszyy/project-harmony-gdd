@@ -1,5 +1,6 @@
 ## spell_visual_manager.gd
-## 法术视觉效果管理器 v2.0 — 基于《法术系统视觉增强设计文档》全面重构
+## 法术视觉效果管理器 v2.1 — 接入 VFXTimingController 节拍同步引擎
+## 基于《法术系统视觉增强设计文档》全面重构
 ## 为所有法术形态提供独特的视觉表现，与 ProjectileManager 的数据层分离。
 ## ProjectileManager 负责弹体逻辑（碰撞、伤害），本管理器负责纯视觉效果。
 ##
@@ -71,6 +72,12 @@ var _current_phase: String = "fundamental"  # "fundamental", "overtone", "sub_ba
 ## 当前音色（层级三）
 var _current_timbre: int = MusicData.ChapterTimbre.NONE
 
+## VFXTimingController 引用（节拍同步）
+var _vfx_timing: Node = null
+
+## 节拍脉冲效果节点列表（在每个 beat_tick 时触发脉冲）
+var _beat_pulse_nodes: Array[Node2D] = []
+
 # ============================================================
 # 生命周期
 # ============================================================
@@ -95,6 +102,9 @@ func _ready() -> void:
 	SpellcraftSystem.chord_cast.connect(_on_chord_cast)
 	SpellcraftSystem.progression_resolved.connect(_on_progression_resolved)
 	SpellcraftSystem.modifier_applied.connect(_on_modifier_applied)
+
+	# 延迟连接 VFXTimingController（确保 Autoload 已初始化）
+	call_deferred("_connect_vfx_timing")
 	
 	# 连接音色系统信号（如果存在）
 	if SpellcraftSystem.has_signal("timbre_changed"):
@@ -230,6 +240,65 @@ func _on_noise_overload(overload_data: Dictionary) -> void:
 func _on_dissonance_corrosion(corrosion_data: Dictionary) -> void:
 	var player_pos := _get_player_position()
 	_spawn_dissonance_corrosion_vfx(player_pos, corrosion_data)
+
+# ============================================================
+# 节拍同步：VFXTimingController 集成
+# ============================================================
+
+## 连接 VFXTimingController 的节拍信号
+func _connect_vfx_timing() -> void:
+	_vfx_timing = get_node_or_null("/root/VFXTimingController")
+	if _vfx_timing:
+		_vfx_timing.beat_signal.connect(_on_beat_signal)
+		_vfx_timing.tick_signal.connect(_on_tick_signal)
+	else:
+		# 回退：直接监听 BGMManager
+		if BGMManager.has_signal("bgm_beat_synced"):
+			BGMManager.bgm_beat_synced.connect(func(idx): _on_beat_signal(idx, idx % 4 == 0))
+
+## 节拍信号处理：驱动持续效果的节拍脉冲
+func _on_beat_signal(beat_index: int, is_strong_beat: bool) -> void:
+	# 清理失效的节点
+	var i = _beat_pulse_nodes.size() - 1
+	while i >= 0:
+		if not is_instance_valid(_beat_pulse_nodes[i]):
+			_beat_pulse_nodes.remove_at(i)
+		i -= 1
+	
+	# 对所有注册的节拍脉冲节点触发脉冲效果
+	for node in _beat_pulse_nodes:
+		if is_instance_valid(node):
+			var scale_target = Vector2(1.3, 1.3) if is_strong_beat else Vector2(1.15, 1.15)
+			var pulse_tween = node.create_tween()
+			pulse_tween.set_parallel(true)
+			pulse_tween.tween_property(node, "scale", scale_target, 0.05)
+			pulse_tween.chain()
+			pulse_tween.tween_property(node, "scale", Vector2.ONE, 0.1)
+
+## 十六分音符信号处理：驱动微动效果
+func _on_tick_signal(_tick_index: int) -> void:
+	# 预留扩展点：未来可用于拖尾波动、修饰符闪烁等
+	pass
+
+## 获取当前一拍的绝对时间（秒）— 将节拍相对时间转换为绝对时间
+func _get_beat_duration() -> float:
+	if _vfx_timing and _vfx_timing.has_method("get_beat_duration"):
+		return _vfx_timing.get_beat_duration()
+	# 回退：直接从 GameManager 读取 BPM
+	var bpm = GameManager.get_bpm() if GameManager.has_method("get_bpm") else 120.0
+	if bpm <= 0:
+		bpm = 120.0
+	return 60.0 / bpm
+
+## 将 Beat 单位转换为绝对时间（秒）
+func _beats_to_seconds(beats: float) -> float:
+	return beats * _get_beat_duration()
+
+## 获取疲劳缩放系数
+func _get_fatigue_scale() -> float:
+	if _vfx_timing and _vfx_timing.has_method("get_fatigue_time_scale"):
+		return _vfx_timing.get_fatigue_time_scale()
+	return 1.0
 
 # ============================================================
 # 层级一：一次性修饰层（黑键修饰符）— 增强版
@@ -773,18 +842,23 @@ func _vfx_field(pos: Vector2, _data: Dictionary) -> void:
 	# 法阵边框环
 	var border := _create_ring(target_pos, 60.0, color, 0.3)
 	
-	# 上升能量粒子
+	# 上升能量粒子（持续时间基于 BPM：4 拍 = 4 * beat_duration）
+	var field_duration = _beats_to_seconds(4.0) * _get_fatigue_scale()
+	var field_particle_interval = _beats_to_seconds(0.5)  # 每半拍升起一次粒子
 	_active_effects.append({
 		"nodes": [outer, inner, border],
 		"type": "field",
-		"duration": 4.0,
+		"duration": field_duration,
 		"time_alive": 0.0,
 		"rotation_speed": 1.5,
 		"position": target_pos,
 		"particle_timer": 0.0,
-		"particle_interval": 0.2,
+		"particle_interval": field_particle_interval,
 		"color": color,
 	})
+	
+	# 注册法阵边框环为节拍脉冲节点
+	_beat_pulse_nodes.append(border)
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
@@ -877,17 +951,22 @@ func _vfx_shield_heal(pos: Vector2, _data: Dictionary) -> void:
 		p_tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.6)
 		p_tween.tween_callback(particle.queue_free)
 	
-	# 治疗粒子上升
+	# 治疗粒子上升（持续时间基于 BPM：4 拍）
+	var shield_duration = _beats_to_seconds(4.0) * _get_fatigue_scale()
+	var shield_particle_interval = _beats_to_seconds(0.25)  # 每四分之一拍一次粒子
 	_active_effects.append({
 		"nodes": [shield, border, inner_hex],
 		"type": "shield",
-		"duration": 4.0,
+		"duration": shield_duration,
 		"time_alive": 0.0,
 		"position": pos,
 		"particle_timer": 0.0,
-		"particle_interval": 0.25,
+		"particle_interval": shield_particle_interval,
 		"color": color,
 	})
+	
+	# 注册护盾边框为节拍脉冲节点
+	_beat_pulse_nodes.append(border)
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
@@ -928,21 +1007,23 @@ func _vfx_summon(pos: Vector2, _data: Dictionary) -> void:
 		p_tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.6)
 		p_tween.tween_callback(particle.queue_free)
 	
-	# 核心脉冲光
+	# 核心脉冲光（持续时间基于 BPM：3 拍）
+	var summon_duration = _beats_to_seconds(3.0) * _get_fatigue_scale()
+	var summon_particle_interval = _beats_to_seconds(0.5)  # 每半拍一次脉冲
 	_active_effects.append({
 		"nodes": [],
 		"type": "summon_pulse",
-		"duration": 3.0,
+		"duration": summon_duration,
 		"time_alive": 0.0,
 		"position": summon_pos,
 		"particle_timer": 0.0,
-		"particle_interval": 0.5,
+		"particle_interval": summon_particle_interval,
 		"color": color,
 	})
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
-## 蓄力弹体（挂留）：银白色能量球 + 空间扭曲 + 彗星尾迹
+## 蓄力弹体（挂留）：銀白色能量球 + 空间扔曲 + 彗星尾迹
 func _vfx_charged(pos: Vector2, _data: Dictionary) -> void:
 	var color := Color(0.9, 0.9, 1.0)  # 银白色
 	
@@ -1015,14 +1096,18 @@ func _vfx_storm_field(pos: Vector2, _data: Dictionary) -> void:
 		add_child(arm)
 		arms.append(arm)
 	
+	var storm_duration = _beats_to_seconds(5.0) * _get_fatigue_scale()
 	_active_effects.append({
 		"nodes": [center] + arms,
 		"type": "storm",
-		"duration": 5.0,
+		"duration": storm_duration,
 		"time_alive": 0.0,
 		"rotation_speed": 3.0,
 		"position": pos,
 	})
+	
+	# 注册风暴中心为节拍脉冲节点
+	_beat_pulse_nodes.append(center)
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
@@ -1040,20 +1125,25 @@ func _vfx_holy_domain(pos: Vector2, _data: Dictionary) -> void:
 	
 	var aura := _create_ring(pos, 100.0, color, 0.2)
 	
+	var holy_duration = _beats_to_seconds(6.0) * _get_fatigue_scale()
+	var holy_particle_interval = _beats_to_seconds(0.3)  # 每 0.3 拍一次粒子
 	_active_effects.append({
 		"nodes": [pillar, aura],
 		"type": "holy",
-		"duration": 6.0,
+		"duration": holy_duration,
 		"time_alive": 0.0,
 		"position": pos,
 		"particle_timer": 0.0,
-		"particle_interval": 0.3,
+		"particle_interval": holy_particle_interval,
 		"color": color,
 	})
 	
+	# 注册光环为节拍脉冲节点
+	_beat_pulse_nodes.append(aura)
+	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
-## 湮灭射线：紫色激光 + 灼烧痕迹
+## 湮灭射线：紫色激光 + 灸烧痕迹
 func _vfx_annihilation_ray(pos: Vector2, _data: Dictionary) -> void:
 	var aim_dir := _get_aim_direction()
 	var color := Color(0.8, 0.0, 0.8)
@@ -1102,14 +1192,18 @@ func _vfx_time_rift(pos: Vector2, _data: Dictionary) -> void:
 			Color(color.r, color.g, color.b, 0.3 - i * 0.08), 0.3)
 		rings.append(ring)
 	
+	var rift_duration = _beats_to_seconds(4.0) * _get_fatigue_scale()
 	_active_effects.append({
 		"nodes": [rift] + rings,
 		"type": "time_rift",
-		"duration": 4.0,
+		"duration": rift_duration,
 		"time_alive": 0.0,
 		"rotation_speed": -2.0,
 		"position": pos,
 	})
+	
+	# 注册裂隙为节拍脉冲节点
+	_beat_pulse_nodes.append(rift)
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
@@ -1205,18 +1299,23 @@ func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:
 			w_tween.tween_callback(wave.queue_free)
 		)
 	
-	# 持续的减速粒子效果
+	# 持续的减速粒子效果（持续时间基于 BPM：5 拍）
+	var slow_duration = _beats_to_seconds(5.0) * _get_fatigue_scale()
+	var slow_particle_interval = _beats_to_seconds(0.3)
 	_active_effects.append({
 		"nodes": [outer, inner, border],
 		"type": "slow_field",
-		"duration": 5.0,
+		"duration": slow_duration,
 		"time_alive": 0.0,
 		"rotation_speed": -1.0,  # 反向旋转表示减速
 		"position": target_pos,
 		"particle_timer": 0.0,
-		"particle_interval": 0.3,
+		"particle_interval": slow_particle_interval,
 		"color": slow_color,
 	})
+	
+	# 注册减速领域边框为节拍脉冲节点
+	_beat_pulse_nodes.append(border)
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)
 
