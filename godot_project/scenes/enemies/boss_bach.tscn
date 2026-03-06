@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid://boss_bach_001]
+[gd_scene load_steps=4 format=3 uid="uid://boss_bach_001"]
 
 [ext_resource type="Script" path="res://scripts/entities/enemies/bosses/boss_bach.gd" id="1_boss_script"]
 [ext_resource type="Shader" path="res://shaders/enemy_glitch.gdshader" id="2_glitch"]

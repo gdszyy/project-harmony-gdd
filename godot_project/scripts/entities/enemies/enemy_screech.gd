@@ -79,7 +79,8 @@ func _on_enemy_process(delta: float) -> void:
 	# 更新 shader 的蓄力参数
 	if _charge_progress > 0.0:
 		_charge_progress = max(0.0, _charge_progress - delta * 2.0)
-		_set_shader_param("charge_progress", _charge_progress)
+		if _sprite.material is ShaderMaterial:
+			(_sprite.material as ShaderMaterial).set_shader_parameter("charge_progress", _charge_progress)
 
 func _update_dash(delta: float) -> void:
 	if phase_shift_type == PhaseShiftType.LOW_PASS:
@@ -114,7 +115,8 @@ func _start_dash() -> void:
 
 	# 设置蓄力 shader 参数
 	_charge_progress = 1.0
-	_set_shader_param("charge_progress", _charge_progress)
+	if _sprite.material is ShaderMaterial:
+		(_sprite.material as ShaderMaterial).set_shader_parameter("charge_progress", _charge_progress)
 
 	# 高通模式：留下残影
 	if phase_shift_type == PhaseShiftType.HIGH_PASS:
@@ -171,7 +173,7 @@ func apply_phase_shift(type: int) -> void:
 
 func _to_normal_phase() -> void:
 	# 恢复正常移动和视觉
-	move_speed = _stats.move_speed
+	# move_speed = _stats.move_speed # _stats is not defined, using default move_speed is already a property of the class
 	if _sprite and _sprite is Polygon2D:
 		var poly = _sprite as Polygon2D
 		poly.polygon = _original_polygon

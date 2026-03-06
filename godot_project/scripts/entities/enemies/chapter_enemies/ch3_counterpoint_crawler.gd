@@ -224,8 +224,8 @@ func _create_procedural_geometry() -> void:
 
 	for i in range(pipe_widths.size()):
 		var pipe := Polygon2D.new()
-		var w := pipe_widths[i]
-		var h := pipe_heights[i]
+		var w: float = pipe_widths[i]
+		var h: float = pipe_heights[i]
 		pipe.polygon = PackedVector2Array([
 			Vector2(-w, 0), Vector2(w, 0),
 			Vector2(w, -h), Vector2(-w, -h)
@@ -315,7 +315,7 @@ func _initialize_ik_walking() -> void:
 	# 初始化每条腿的静止位置
 	for i in range(_leg_bones.size()):
 		var leg := _leg_bones[i]
-		var rest_pos := global_position + leg["coxa_rest_pos"] + Vector2(leg["side"] * leg_length, 0)
+		var rest_pos: Vector2 = global_position + leg["coxa_rest_pos"] + Vector2(leg["side"] * leg_length, leg["coxa_rest_pos"].y * 0.3)
 		leg["foot_rest"] = rest_pos
 		leg["foot_target"] = rest_pos
 		leg["foot_current"] = rest_pos

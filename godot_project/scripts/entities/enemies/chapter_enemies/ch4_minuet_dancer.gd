@@ -211,7 +211,7 @@ func _build_rococo_ornaments() -> void:
 			var t := float(i) / float(segments)
 			var angle := t * PI * 1.2 - PI * 0.1
 			var r := (3.0 + sin(t * PI) * 2.0) * candlestick_scale
-			var x := cos(angle) * r * side + side * 4.0 * candlestick_scale
+			var x: float = cos(angle) * r * side + side * 4.0 * candlestick_scale
 			var y := sin(angle) * r * 0.6 + 2.0 * candlestick_scale
 			points.append(Vector2(x, y))
 		
@@ -220,7 +220,7 @@ func _build_rococo_ornaments() -> void:
 			var t := float(i) / float(segments)
 			var angle := t * PI * 1.2 - PI * 0.1
 			var r := (1.5 + sin(t * PI) * 1.0) * candlestick_scale
-			var x := cos(angle) * r * side + side * 4.0 * candlestick_scale
+			var x: float = cos(angle) * r * side + side * 4.0 * candlestick_scale
 			var y := sin(angle) * r * 0.6 + 2.0 * candlestick_scale
 			points.append(Vector2(x, y))
 		

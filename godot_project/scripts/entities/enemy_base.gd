@@ -110,7 +110,7 @@ var _stun_timer: float = 0.0
 var _is_stunned: bool = false
 
 ## OPT06: 空间音频控制器引用
-var _spatial_audio_ctrl: SpatialAudioController = null
+var _spatial_audio_ctrl: Node = null
 
 # ============================================================
 # 生命周期

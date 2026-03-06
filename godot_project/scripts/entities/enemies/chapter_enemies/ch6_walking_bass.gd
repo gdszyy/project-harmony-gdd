@@ -196,8 +196,8 @@ func _generate_bass_outline() -> PackedVector2Array:
 		
 		ry = 18.0  # 纵向高度
 		
-		var x := cos(angle) * rx
-		var y := sin(angle) * ry
+		var x: float = cos(angle) * rx
+		var y: float = sin(angle) * ry
 		
 		points.append(Vector2(x, y))
 	
@@ -212,7 +212,7 @@ func _build_strings() -> void:
 	for i in range(string_count):
 		var string_line := Line2D.new()
 		string_line.width = 1.0
-		var x := start_x + i * string_spacing
+		var x: float = start_x + i * string_spacing
 		string_line.add_point(Vector2(x, -14.0))
 		string_line.add_point(Vector2(x, 14.0))
 		string_line.default_color = Color(0.8, 0.7, 0.5, 0.5)
@@ -229,14 +229,14 @@ func _build_f_holes() -> void:
 		var segments := 8
 		for i in range(segments + 1):
 			var t := float(i) / float(segments)
-			var x := sin(t * PI * 1.5) * 2.0 * side + side * 4.0
+			var x: float = sin(t * PI * 1.5) * 2.0 * side + side * 4.0
 			var y := lerpf(-5.0, 5.0, t)
 			points.append(Vector2(x, y))
 		
 		# 回程
 		for i in range(segments, -1, -1):
 			var t := float(i) / float(segments)
-			var x := sin(t * PI * 1.5) * 1.0 * side + side * 4.0
+			var x: float = sin(t * PI * 1.5) * 1.0 * side + side * 4.0
 			var y := lerpf(-5.0, 5.0, t)
 			points.append(Vector2(x, y))
 		

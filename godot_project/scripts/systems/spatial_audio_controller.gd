@@ -306,6 +306,7 @@ func apply_state_fx(state: String) -> void:
 
 	# 清除旧状态
 	if _active_state != "":
+		pass
 		# [Removed] state_fx_changed signal was deprecated and removed (Issue #86)
 
 	_active_state = state

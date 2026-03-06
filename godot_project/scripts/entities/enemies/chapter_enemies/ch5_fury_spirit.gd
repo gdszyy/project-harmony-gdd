@@ -137,7 +137,7 @@ func _build_cloud_particles() -> void:
 		particle.polygon = points
 		
 		# 闪电白/蓝色，带随机透明度
-		var t := randf()
+		var t: float = randf()
 		particle.color = lightning_color.lerp(arc_color, t)
 		particle.color.a = randf_range(0.3, 0.8)
 		
@@ -175,7 +175,7 @@ func _update_cloud_particles(delta: float) -> void:
 		var seed_val: float = _noise_seeds[i] if i < _noise_seeds.size() else 0.0
 		
 		# 伪噪声位移
-		var time := _cloud_phase * spd * intensity_factor
+		var time: float = _cloud_phase * spd * intensity_factor
 		var noise_x := sin(time * noise_f + seed_val) * cos(time * 0.7 + seed_val * 0.5)
 		var noise_y := cos(time * noise_f * 0.8 + seed_val * 1.3) * sin(time * 0.5 + seed_val)
 		
@@ -200,7 +200,7 @@ func _update_cloud_particles(delta: float) -> void:
 		
 		# 蓄力时粒子向核心收缩
 		if _fury_state == FuryState.CHARGING:
-			var charge_t := _charge_timer / charge_duration
+			var charge_t: float = _charge_timer / charge_duration
 			particle.position *= lerpf(1.0, 0.3, charge_t)
 			particle.color = particle.color.lerp(Color.WHITE, charge_t * 0.5)
 
@@ -275,7 +275,7 @@ func _update_core_visual(delta: float) -> void:
 	
 	# 蓄力时核心极度明亮
 	if _fury_state == FuryState.CHARGING:
-		var charge_t := _charge_timer / charge_duration
+		var charge_t: float = _charge_timer / charge_duration
 		_core_visual.scale *= lerpf(1.0, 1.8, charge_t)
 		if _core_sphere:
 			_core_sphere.color = _core_sphere.color.lerp(Color.WHITE, charge_t)
@@ -355,7 +355,7 @@ func _update_lightning_tendrils(delta: float) -> void:
 		
 		# 蓄力时触须收缩并变亮
 		if _fury_state == FuryState.CHARGING:
-			var charge_t := _charge_timer / charge_duration
+			var charge_t: float = _charge_timer / charge_duration
 			tendril.default_color = Color(1.0, 1.0, 1.0, alpha * (1.0 + charge_t))
 			tendril.width = lerpf(1.0, 4.0, charge_t)
 

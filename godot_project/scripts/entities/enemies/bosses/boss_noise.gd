@@ -405,867 +405,603 @@ func _switch_waveform() -> void:
 		WaveformType.SAWTOOTH:
 			_form_target_scale = Vector2(0.8, 1.3)  # 尖锐
 		WaveformType.NOISE:
-			_form_target_scale = Vector2(1.5, 1.5)  # 膨胀
-
-func _update_glitch_visual(delta: float) -> void:
-	# 故障强度随HP降低而增加
-	var hp_ratio := current_hp / max_hp
-	_glitch_intensity = (1.0 - hp_ratio) * 0.5
+			_form_target_scale = Vector2(1.5, 1.5)  # 混沌放大
 	
-	_glitch_timer += delta
-	if _glitch_timer >= 0.1:
-		_glitch_timer = 0.0
-		if _sprite and randf() < _glitch_intensity:
-			# 随机偏移（故障效果）
-			var offset := Vector2(randf_range(-5, 5), randf_range(-5, 5)) * _glitch_intensity
-			_sprite.position = offset
-
-func _update_afterimages(delta: float) -> void:
-	for afterimage in _afterimages:
-		if is_instance_valid(afterimage):
-			afterimage.modulate.a -= delta * 2.0
-			if afterimage.modulate.a <= 0.0:
-				afterimage.queue_free()
-	
-	_afterimages = _afterimages.filter(func(n): return is_instance_valid(n))
+	# 播放切换音效
+	AudioManager.play_sfx("boss_noise_waveform_switch", global_position)
 
 # ============================================================
-# 攻击实现
+# 核心攻击逻辑
 # ============================================================
 
-func _perform_attack(attack: Dictionary) -> void:
-	var config: Dictionary = _phase_configs[_current_phase] if _current_phase < _phase_configs.size() else {}
-	var damage_mult: float = config.get("damage_mult", 1.0)
+## 正弦波扫射
+func _attack_sine_wave_sweep(attack_data: Dictionary) -> void:
+	var num_projectiles := 24
+	var angle_step := 2.0 * PI / num_projectiles
+	var base_angle := randf_range(0, 2 * PI)
 	
-	match attack["name"]:
-		"sine_wave_sweep":
-			_attack_sine_wave_sweep(attack, damage_mult)
-		"square_grid":
-			_attack_square_grid(attack, damage_mult)
-		"sawtooth_slash":
-			_attack_sawtooth_slash(attack, damage_mult)
-		"noise_burst":
-			_attack_noise_burst(attack, damage_mult)
-		"data_stream":
-			_attack_data_stream(attack, damage_mult)
-		"bitcrush_zone":
-			_attack_bitcrush_zone(attack, damage_mult)
-		"waveform_combo":
-			_attack_waveform_combo(attack, damage_mult)
-		"frequency_sweep":
-			_attack_frequency_sweep(attack, damage_mult)
-		"glitch_teleport_assault":
-			_attack_glitch_teleport_assault(attack, damage_mult)
-		"singularity_collapse":
-			_attack_singularity_collapse(attack, damage_mult)
+	for i in range(num_projectiles):
+		var angle := base_angle + i * angle_step
+		var spawn_pos := global_position + Vector2.from_angle(angle) * 80.0
+		var proj := ProjectileManager.spawn_projectile({
+			"name": "NoiseSineWave",
+			"type": "enemy",
+			"texture": "res://assets/projectiles/projectile_sine.png",
+			"position": spawn_pos,
+			"velocity": Vector2.from_angle(angle) * SINE_PROJECTILE_SPEED,
+			"damage": attack_data.damage,
+			"scale": 1.2,
+			"lifetime": 5.0,
+			"collision_radius": 12.0,
+			"homing_factor": 0.0,
+			"custom_logic": "sine_wave_movement",
+			"custom_data": {
+				"amplitude": SINE_WAVE_AMPLITUDE,
+				"frequency": SINE_WAVE_FREQUENCY,
+				"phase_offset": i * 0.2
+			}
+		})
+		if proj:
+			_projectile_container.add_child(proj)
+	
+	AudioManager.play_sfx("boss_noise_sine_attack", global_position)
 
-# ============================================================
-# 攻击1：正弦波扫射 (Sine Wave Sweep)
-# 弹幕沿正弦波轨迹移动
-# ============================================================
-
-func _attack_sine_wave_sweep(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SINE_DAMAGE) * damage_mult
-	
-	if not _target or not is_instance_valid(_target):
-		return
-	
-	var base_dir := (global_position.direction_to(_target.global_position))
-	var base_angle := base_dir.angle()
-	
-	# 发射正弦波弹幕
-	var count := 12
-	for i in range(count):
-		var delay := i * 0.1
-		var phase_offset := i * 0.5
-		
-		get_tree().create_timer(delay).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			_spawn_sine_projectile(global_position, base_angle, 
-				SINE_PROJECTILE_SPEED, damage * 0.5, phase_offset)
-		)
-	
-	# 视觉
-	if _sprite:
-		var tween := create_tween()
-		tween.tween_property(_sprite, "scale", Vector2(1.4, 0.7), 0.15)
-		tween.tween_property(_sprite, "scale", Vector2(1.0, 1.0), 0.3)
-
-# ============================================================
-# 攻击2：方波网格 (Square Grid)
-# 生成网格状弹幕阵列
-# ============================================================
-
-func _attack_square_grid(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SQUARE_DAMAGE) * damage_mult
-	
-	# 以Boss为中心生成方形网格弹幕
-	var grid_count := 5
+## 方波网格
+func _attack_square_grid(attack_data: Dictionary) -> void:
+	var grid_size := 8
 	var spacing := SQUARE_GRID_SIZE
+	var start_pos := _target.global_position - Vector2(spacing * (grid_size - 1) / 2.0, spacing * (grid_size - 1) / 2.0)
 	
-	for x in range(-grid_count / 2, grid_count / 2 + 1):
-		for y in range(-grid_count / 2, grid_count / 2 + 1):
-			if x == 0 and y == 0:
+	for y in range(grid_size):
+		for x in range(grid_size):
+			# 棋盘格模式
+			if (x + y) % 2 == 0:
 				continue
 			
-			var offset := Vector2(x * spacing, y * spacing)
-			var spawn_pos := global_position + offset
-			
-			# 延迟生成
-			var delay: float = (abs(x) + abs(y)) * 0.1
-			var pos_copy = spawn_pos
-			
-			get_tree().create_timer(delay).timeout.connect(func():
-				if _is_dead or not is_instance_valid(self):
-					return
-				# 方形弹幕向外扩散
-				var dir := offset.normalized()
-				_spawn_square_projectile(pos_copy, dir.angle(),
-					SQUARE_PROJECTILE_SPEED * 0.5, damage * 0.4)
-			)
+			var spawn_pos := start_pos + Vector2(x * spacing, y * spacing)
+			var proj := ProjectileManager.spawn_projectile({
+				"name": "NoiseSquare",
+				"type": "enemy",
+				"texture": "res://assets/projectiles/projectile_square.png",
+				"position": spawn_pos,
+				"velocity": Vector2.ZERO, # 静止
+				"damage": attack_data.damage,
+				"scale": 1.5,
+				"lifetime": 2.0,
+				"collision_radius": 18.0,
+				"fade_in_duration": 0.5,
+			})
+			if proj:
+				_projectile_container.add_child(proj)
+	
+	AudioManager.play_sfx("boss_noise_square_attack", global_position)
 
-# ============================================================
-# 攻击3：锯齿波斩击 (Sawtooth Slash) — 阶段二
-# 锯齿形弹幕快速扫过战场
-# ============================================================
-
-func _attack_sawtooth_slash(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SAW_DAMAGE) * damage_mult
+## 锯齿波斩击
+func _attack_sawtooth_slash(attack_data: Dictionary) -> void:
+	var num_slashes := 3
+	var slash_delay := 0.3
 	
-	if not _target or not is_instance_valid(_target):
-		return
-	
-	var dir := (global_position.direction_to(_target.global_position))
-	var base_angle := dir.angle()
-	
-	# 锯齿形弹幕：交替上下偏移
-	for i in range(SAW_TOOTH_COUNT):
-		var delay := i * 0.12
-		var offset_y := (20.0 if i % 2 == 0 else -20.0) * (1.0 + i * 0.2)
+	for i in range(num_slashes):
+		var angle := (_target.global_position - global_position).angle() + randf_range(-0.4, 0.4)
+		var spawn_pos := global_position
 		
-		get_tree().create_timer(delay).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			var perp := Vector2(-dir.y, dir.x)
-			var spawn_pos := global_position + perp * offset_y
-			_spawn_saw_projectile(spawn_pos, base_angle, SAW_SWEEP_SPEED, damage * 0.5)
-		)
-
-# ============================================================
-# 攻击4：噪音爆发 (Noise Burst)
-# 完全随机方向的弹幕爆发
-# ============================================================
-
-func _attack_noise_burst(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", NOISE_DAMAGE) * damage_mult
-	
-	for i in range(NOISE_BURST_COUNT):
-		var angle := randf() * TAU
-		var speed := NOISE_PROJECTILE_SPEED * randf_range(0.6, 1.4)
-		var delay := randf() * 0.5
-		
-		get_tree().create_timer(delay).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			_spawn_noise_projectile(global_position, angle, speed, damage * 0.3)
-		)
-	
-	# 故障视觉爆发
-	if _sprite:
 		var tween := create_tween()
-		tween.tween_property(_sprite, "modulate", Color(1.0, 0.0, 0.5), 0.05)
-		tween.tween_property(_sprite, "modulate", base_color, 0.2)
-
-# ============================================================
-# 攻击5：数据流 (Data Stream) — 阶段一
-# 连续的定向弹幕流
-# ============================================================
-
-func _attack_data_stream(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SINE_DAMAGE) * damage_mult
-	var stream_count := 8
-	
-	for i in range(stream_count):
-		get_tree().create_timer(i * 0.15).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			if not _target or not is_instance_valid(_target):
-				return
-			var dir := (global_position.direction_to(_target.global_position)).angle()
-			dir += randf_range(-0.1, 0.1)
-			_spawn_data_projectile(global_position, dir, 
-				SINE_PROJECTILE_SPEED * 1.2, damage * 0.4)
+		tween.set_delay(i * slash_delay)
+		tween.tween_callback(func():
+			for j in range(SAW_TOOTH_COUNT):
+				var tooth_angle := angle + (j - SAW_TOOTH_COUNT / 2.0) * 0.15
+				var proj := ProjectileManager.spawn_projectile({
+					"name": "NoiseSawtooth",
+					"type": "enemy",
+					"texture": "res://assets/projectiles/projectile_saw.png",
+					"position": spawn_pos,
+					"velocity": Vector2.from_angle(tooth_angle) * SAW_SWEEP_SPEED,
+					"damage": attack_data.damage,
+					"scale": 1.3,
+					"lifetime": 3.0,
+					"collision_radius": 14.0,
+				})
+				if proj:
+					_projectile_container.add_child(proj)
+			AudioManager.play_sfx("boss_noise_saw_attack", global_position)
 		)
 
-# ============================================================
-# 攻击6：降采样区域 (Bitcrush Zone) — 阶段二
-# 在战场上放置降低玩家伤害的区域
-# ============================================================
-
-func _attack_bitcrush_zone(_attack: Dictionary, _damage_mult: float) -> void:
-	if not _target or not is_instance_valid(_target):
-		return
-	
-	# 在玩家附近放置降采样区域
-	var zone_pos := _target.global_position + Vector2.from_angle(randf() * TAU) * 80.0
-	
-	var zone := Polygon2D.new()
-	var points := PackedVector2Array()
-	# 像素化的方形区域
-	var size := BITCRUSH_RADIUS
-	points.append(Vector2(-size, -size))
-	points.append(Vector2(size, -size))
-	points.append(Vector2(size, size))
-	points.append(Vector2(-size, size))
-	zone.polygon = points
-	zone.color = Color(0.0, 1.0, 0.5, 0.15)
-	zone.global_position = zone_pos
-	get_parent().add_child(zone)
-	_bitcrush_zones.append(zone)
-	
-	# 像素化边框效果
-	var tween := zone.create_tween().set_loops()
-	tween.tween_property(zone, "modulate:a", 0.6, 0.3)
-	tween.tween_property(zone, "modulate:a", 0.2, 0.3)
-	
-	# 持续时间后消失
-	get_tree().create_timer(8.0).timeout.connect(func():
-		if is_instance_valid(zone):
-			var fade := zone.create_tween()
-			fade.tween_property(zone, "modulate:a", 0.0, 0.5)
-			fade.tween_callback(zone.queue_free)
-	)
-
-## 检查玩家是否在降采样区域内
-func is_player_in_bitcrush() -> bool:
-	if not _target or not is_instance_valid(_target):
-		return false
-	
-	for zone in _bitcrush_zones:
-		if is_instance_valid(zone):
-			if _target.global_position.distance_to(zone.global_position) < BITCRUSH_RADIUS:
-				return true
-	return false
-
-# ============================================================
-# 攻击7：波形组合 (Waveform Combo) — 阶段三
-# 同时释放多种波形的弹幕
-# ============================================================
-
-func _attack_waveform_combo(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SINE_DAMAGE) * damage_mult
-	
-	# 同时释放四种波形弹幕
-	_attack_sine_wave_sweep({"damage": damage * 0.4}, 1.0)
-	
-	get_tree().create_timer(0.5).timeout.connect(func():
-		if _is_dead or not is_instance_valid(self):
-			return
-		_attack_noise_burst({"damage": damage * 0.3}, 1.0)
-	)
-	
-	get_tree().create_timer(1.0).timeout.connect(func():
-		if _is_dead or not is_instance_valid(self):
-			return
-		_attack_square_grid({"damage": damage * 0.3}, 1.0)
-	)
-
-# ============================================================
-# 攻击8：频率扫射 (Frequency Sweep) — 阶段三
-# 弹幕速度从极慢到极快变化
-# ============================================================
-
-func _attack_frequency_sweep(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SAW_DAMAGE) * damage_mult
-	var sweep_count := 15
-	
-	for i in range(sweep_count):
-		var delay := i * 0.15
-		var speed_ratio := float(i) / sweep_count  # 0.0 → 1.0
-		var speed: float = lerpf(80.0, 350.0, speed_ratio)
+## 噪音爆发
+func _attack_noise_burst(attack_data: Dictionary) -> void:
+	for _i in range(NOISE_BURST_COUNT):
+		var angle := randf_range(0, 2 * PI)
+		var speed := randf_range(0.8, 1.2) * NOISE_PROJECTILE_SPEED
+		var spawn_pos := global_position
 		
-		get_tree().create_timer(delay).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			if not _target or not is_instance_valid(_target):
-				return
-			var dir := (global_position.direction_to(_target.global_position)).angle()
-			_spawn_data_projectile(global_position, dir, speed, damage * 0.3)
-		)
-
-# ============================================================
-# 攻击9：故障传送突袭 (Glitch Teleport Assault) — 阶段三
-# 快速传送并在每个位置释放弹幕
-# ============================================================
-
-func _attack_glitch_teleport_assault(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SQUARE_DAMAGE) * damage_mult
-	var teleport_count := 4
+		var proj := ProjectileManager.spawn_projectile({
+			"name": "NoiseParticle",
+			"type": "enemy",
+			"texture": "res://assets/projectiles/projectile_noise.png",
+			"position": spawn_pos,
+			"velocity": Vector2.from_angle(angle) * speed,
+			"damage": attack_data.damage,
+			"scale": randf_range(0.8, 1.5),
+			"lifetime": 2.5,
+			"collision_radius": 10.0,
+			"custom_logic": "random_walk",
+			"custom_data": {
+				"turn_speed": randf_range(2.0, 5.0)
+			}
+		})
+		if proj:
+			_projectile_container.add_child(proj)
 	
-	for i in range(teleport_count):
-		get_tree().create_timer(i * 0.5).timeout.connect(func():
-			if _is_dead or not is_instance_valid(self):
-				return
-			
-			# 留下残影
-			_spawn_afterimage()
-			
-			# 传送到玩家附近
-			if _target and is_instance_valid(_target):
-				var offset := Vector2.from_angle(randf() * TAU) * randf_range(100, 200)
-				global_position = _target.global_position + offset
-			
-			# 释放环形弹幕
-			for j in range(8):
-				var angle := (TAU / 8) * j
-				_spawn_noise_projectile(global_position, angle,
-					NOISE_PROJECTILE_SPEED, damage * 0.3)
-		)
+	AudioManager.play_sfx("boss_noise_burst_attack", global_position)
 
-func _spawn_afterimage() -> void:
-	if _sprite == null:
-		return
+## 数据流（追踪弹幕）
+func _attack_data_stream(attack_data: Dictionary) -> void:
+	var num_streams := 5
+	var stream_delay := 0.2
 	
-	var afterimage := Polygon2D.new()
-	# 简单的方形残影
-	afterimage.polygon = PackedVector2Array([
-		Vector2(-15, -15), Vector2(15, -15), Vector2(15, 15), Vector2(-15, 15)
-	])
-	afterimage.color = base_color
-	afterimage.modulate.a = 0.5
-	afterimage.global_position = global_position
-	afterimage.scale = _sprite.scale
-	get_parent().add_child(afterimage)
-	_afterimages.append(afterimage)
-
-# ============================================================
-# 攻击10：奇点坍缩 (Singularity Collapse) — 阶段四终极攻击
-# 全屏吸引 + 大爆炸
-# ============================================================
-
-func _attack_singularity_collapse(attack: Dictionary, damage_mult: float) -> void:
-	var damage: float = attack.get("damage", SAW_DAMAGE * 2.5) * damage_mult
-	
-	# 阶段1：收缩（2秒）— 吸引玩家
-	_form_target_scale = Vector2(0.3, 0.3)
-	
-	if _sprite:
+	for i in range(num_streams):
 		var tween := create_tween()
-		tween.tween_property(_sprite, "modulate", Color.WHITE, 1.0)
-	
-	# 吸引效果
-	var pull_timer := 0.0
-	var pull_callable := func():
-		if not is_instance_valid(self) or _is_dead:
-			return
-		pull_timer += get_process_delta_time()
-		if pull_timer >= 2.5:
-			return
-		if _target and is_instance_valid(_target):
-			var dir := (global_position - _target.global_position).normalized()
-			if _target.has_method("apply_external_force"):
-				_target.apply_external_force(dir * 150.0)
-			else:
-				_target.global_position += dir * 80.0 * get_process_delta_time()
-	
-	get_tree().process_frame.connect(pull_callable)
-	
-	# 阶段2：爆发（2.5秒后）
-	get_tree().create_timer(2.5).timeout.connect(func():
-		if _is_dead or not is_instance_valid(self):
-			if get_tree().process_frame.is_connected(pull_callable):
-				get_tree().process_frame.disconnect(pull_callable)
-			return
-		
-		if get_tree().process_frame.is_connected(pull_callable):
-			get_tree().process_frame.disconnect(pull_callable)
-		
-		# 大爆炸
-		_form_target_scale = Vector2(3.0, 3.0)
-		
-		# 全方位弹幕爆发
-		for ring in range(3):
-			var count := 16 + ring * 4
-			for i in range(count):
-				var angle := (TAU / count) * i + ring * 0.1
-				var speed := 120.0 + ring * 60.0
-				_spawn_noise_projectile(global_position, angle, speed, damage * 0.15)
-		
-		# 冲击波
-		_spawn_shockwave(global_position, 400.0, damage * 0.5)
-		
-		# 恢复正常大小
-		get_tree().create_timer(0.5).timeout.connect(func():
-			_form_target_scale = Vector2.ONE
-			if _sprite:
-				var tween2 := create_tween()
-				tween2.tween_property(_sprite, "modulate", base_color, 0.5)
+		tween.set_delay(i * stream_delay)
+		tween.tween_callback(func():
+			var angle := randf_range(0, 2 * PI)
+			var spawn_pos := global_position + Vector2.from_angle(angle) * 100.0
+			var proj := ProjectileManager.spawn_projectile({
+				"name": "DataStream",
+				"type": "enemy",
+				"texture": "res://assets/projectiles/projectile_stream.png",
+				"position": spawn_pos,
+				"velocity": (_target.global_position - spawn_pos).normalized() * SINE_PROJECTILE_SPEED * 0.8,
+				"damage": attack_data.damage,
+				"scale": 1.0,
+				"lifetime": 6.0,
+				"collision_radius": 10.0,
+				"homing_factor": 0.3,
+				"homing_target": _target
+			})
+			if proj:
+				_projectile_container.add_child(proj)
+			AudioManager.play_sfx("boss_noise_stream_attack", global_position)
 		)
-	)
 
-# ============================================================
-# 频谱崩溃与终结机制
-# ============================================================
-
-## 外部调用：更新玩家当前相位
-func set_player_phase(phase: int) -> void:
-	_current_player_phase = phase
-
-## 重写伤害处理：频谱崩溃触发与相位判断
-func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
-	if _is_spectrum_collapse:
-		return # 崩溃阶段只能被终结技能伤害
+## 降采样区域
+func _attack_bitcrush_zone(_attack_data: Dictionary) -> void:
+	var num_zones := 2
+	for _i in range(num_zones):
+		var zone := Area2D.new()
+		var shape := CircleShape2D.new()
+		shape.radius = BITCRUSH_RADIUS
+		var col := CollisionShape2D.new()
+		col.shape = shape
+		zone.add_child(col)
 		
-	# 降采样区域内玩家伤害降低
-	var final_amount := amount
-	if is_player_in_bitcrush():
-		final_amount *= BITCRUSH_DAMAGE_REDUCTION
+		var spawn_pos := _target.global_position + Vector2(randf_range(-300, 300), randf_range(-300, 300))
+		zone.global_position = spawn_pos
+		
+		# 视觉效果
+		var visual := Polygon2D.new()
+		var points: PackedVector2Array
+		for i in range(32):
+			var angle := i / 32.0 * 2 * PI
+			points.append(Vector2.from_angle(angle) * BITCRUSH_RADIUS)
+		visual.polygon = points
+		visual.color = Color(0.5, 0.2, 0.8, 0.3)
+		zone.add_child(visual)
+		
+		add_child(zone)
+		_bitcrush_zones.append(zone)
+		
+		var tween := create_tween()
+		tween.tween_property(visual, "modulate:a", 0.0, 4.0).from(0.4)
+		tween.tween_callback(func():
+			_bitcrush_zones.erase(zone)
+			zone.queue_free()
+		)
 	
-	super.take_damage(final_amount, knockback_dir, is_perfect_beat)
-	
-	# 检查频谱崩溃触发
-	if current_hp <= max_hp * SPECTRUM_COLLAPSE_THRESHOLD and not _is_spectrum_collapse:
-		_trigger_spectrum_collapse()
+	AudioManager.play_sfx("boss_noise_bitcrush_spawn", global_position)
 
-func _trigger_spectrum_collapse() -> void:
-	_is_spectrum_collapse = true
-	boss_title = "噪音 · 频谱崩溃"
-	
-	# 清除所有现有弹幕
-	if _projectile_container:
-		for child in _projectile_container.get_children():
-			child.queue_free()
-			
-	# 视觉表现：全屏混乱
-	if _sprite:
-		var tween := create_tween().set_loops()
-		tween.tween_property(_sprite, "modulate", Color.RED, 0.1)
-		tween.tween_property(_sprite, "modulate", Color.BLUE, 0.1)
-		tween.tween_property(_sprite, "modulate", Color.GREEN, 0.1)
-		tween.tween_property(_sprite, "scale", Vector2(2.0, 2.0), 0.2)
-		tween.tween_property(_sprite, "scale", Vector2(0.5, 0.5), 0.2)
-
-func _update_spectrum_collapse(delta: float) -> void:
-	_glitch_intensity = 1.0
-	
-	# 疯狂释放所有四种波形的攻击
-	_waveform_timer += delta
-	if _waveform_timer >= 0.5:
-		_waveform_timer = 0.0
-		var angle := randf() * TAU
-		_spawn_sine_projectile(global_position, angle, SINE_PROJECTILE_SPEED, SINE_DAMAGE)
-		_spawn_square_projectile(global_position, angle + 1.0, SQUARE_PROJECTILE_SPEED, SQUARE_DAMAGE)
-		_spawn_saw_projectile(global_position, angle + 2.0, SAW_SWEEP_SPEED, SAW_DAMAGE)
-		_spawn_noise_projectile(global_position, angle + 3.0, NOISE_PROJECTILE_SPEED, NOISE_DAMAGE)
-
-## 外部调用：玩家释放终焉乐章（减十三和弦）
-func cast_final_chord() -> void:
-	if not _is_spectrum_collapse:
+## 故障传送突袭
+func _attack_glitch_teleport_assault(attack_data: Dictionary) -> void:
+	if _glitch_teleport_timer > 0.0:
 		return
+	
+	_glitch_teleport_timer = GLITCH_TELEPORT_COOLDOWN
+	
+	var original_pos := global_position
+	
+	# 创建残影
+	for i in range(GLITCH_AFTERIMAGE_COUNT):
+		var afterimage := Polygon2D.new()
+		afterimage.polygon = _sprite.polygon
+		afterimage.material = _sprite.material
+		afterimage.global_position = global_position
+		afterimage.rotation = _sprite.rotation
+		afterimage.scale = _sprite.scale
+		afterimage.modulate = Color(1,1,1, 0.5 - i * 0.1)
+		get_parent().add_child(afterimage)
 		
-	# 4拍延迟施法
-	_final_chord_timer = FINAL_CHORD_DELAY
+		var tween := create_tween()
+		tween.tween_property(afterimage, "modulate:a", 0.0, 0.5).set_delay(i * 0.1)
+		tween.tween_callback(afterimage.queue_free)
 	
-	# 视觉提示：屏幕变暗，准备终结
-	# 这里可以触发全局事件通知GameManager
+	# 传送到玩家附近
+	var target_pos := _target.global_position + Vector2(randf_range(-150, 150), randf_range(-150, 150))
+	global_position = target_pos
 	
-	get_tree().create_timer(FINAL_CHORD_DELAY * 0.5).timeout.connect(func(): # 假设每拍0.5秒
-		if is_instance_valid(self) and _is_spectrum_collapse:
-			_execute_final_blow()
+	# 传送后立即发动一次噪音爆发
+	_attack_noise_burst(attack_data)
+	
+	AudioManager.play_sfx("boss_noise_teleport", original_pos)
+	AudioManager.play_sfx("boss_noise_teleport_reappear", global_position)
+
+## 波形组合技
+func _attack_waveform_combo(attack_data: Dictionary) -> void:
+	# 正弦波背景
+	_attack_sine_wave_sweep(attack_data)
+	
+	# 延迟发动方波
+	var tween := create_tween()
+	tween.set_delay(0.5)
+	tween.tween_callback(func():
+		_attack_square_grid(attack_data)
 	)
 
-func _execute_final_blow() -> void:
-	# 强制击杀Boss
-	current_hp = 0
-	super.take_damage(99999.0) # 触发死亡逻辑
-
-# ============================================================
-# 弹幕生成辅助
-# ============================================================
-
-func _spawn_sine_projectile(pos: Vector2, angle: float, speed: float, damage: float, phase_offset: float = 0.0) -> void:
-	var proj := Area2D.new()
-	proj.add_to_group("boss_projectiles")
-	proj.collision_layer = 8
-	proj.collision_mask = 1
+## 频率扫描
+func _attack_frequency_sweep(attack_data: Dictionary) -> void:
+	var sweep_arc := PI * 1.5
+	var sweep_duration := 2.0
+	var start_angle := (_target.global_position - global_position).angle() - sweep_arc / 2.0
 	
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([
-		Vector2(-6, 0), Vector2(-3, -4), Vector2(3, -4),
-		Vector2(6, 0), Vector2(3, 4), Vector2(-3, 4)
-	])
-	visual.color = _waveform_colors[WaveformType.SINE]
-	proj.add_child(visual)
+	var sweep_node := Node2D.new()
+	add_child(sweep_node)
+	sweep_node.global_position = global_position
 	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 5.0
-	col.shape = shape
-	proj.add_child(col)
+	var tween := create_tween()
+	tween.tween_property(sweep_node, "rotation", sweep_arc, sweep_duration).from(0.0)
+	tween.tween_callback(sweep_node.queue_free)
 	
-	proj.global_position = pos
-	proj.set_meta("base_angle", angle)
-	proj.set_meta("speed", speed)
-	proj.set_meta("damage", damage)
-	proj.set_meta("lifetime", 5.0)
-	proj.set_meta("age", 0.0)
-	proj.set_meta("phase_offset", phase_offset)
-	proj.set_meta("wave_type", "sine")
+	var fire_timer := Timer.new()
+	fire_timer.wait_time = 0.05
+	fire_timer.autostart = true
+	sweep_node.add_child(fire_timer)
 	
-	_add_projectile_to_container(proj, true)
-
-func _spawn_square_projectile(pos: Vector2, angle: float, speed: float, damage: float) -> void:
-	var proj := Area2D.new()
-	proj.add_to_group("boss_projectiles")
-	proj.collision_layer = 8
-	proj.collision_mask = 1
-	
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([
-		Vector2(-5, -5), Vector2(5, -5), Vector2(5, 5), Vector2(-5, 5)
-	])
-	visual.color = _waveform_colors[WaveformType.SQUARE]
-	proj.add_child(visual)
-	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 5.0
-	col.shape = shape
-	proj.add_child(col)
-	
-	proj.global_position = pos
-	proj.set_meta("velocity", Vector2.from_angle(angle) * speed)
-	proj.set_meta("damage", damage)
-	proj.set_meta("lifetime", 5.0)
-	proj.set_meta("age", 0.0)
-	
-	_add_projectile_to_container(proj, false)
-
-func _spawn_saw_projectile(pos: Vector2, angle: float, speed: float, damage: float) -> void:
-	var proj := Area2D.new()
-	proj.add_to_group("boss_projectiles")
-	proj.collision_layer = 8
-	proj.collision_mask = 1
-	
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([
-		Vector2(-8, 4), Vector2(0, -6), Vector2(8, 4)
-	])
-	visual.color = _waveform_colors[WaveformType.SAWTOOTH]
-	visual.rotation = angle
-	proj.add_child(visual)
-	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 6.0
-	col.shape = shape
-	proj.add_child(col)
-	
-	proj.global_position = pos
-	proj.set_meta("velocity", Vector2.from_angle(angle) * speed)
-	proj.set_meta("damage", damage)
-	proj.set_meta("lifetime", 4.0)
-	proj.set_meta("age", 0.0)
-	
-	_add_projectile_to_container(proj, false)
-
-func _spawn_noise_projectile(pos: Vector2, angle: float, speed: float, damage: float) -> void:
-	var proj := Area2D.new()
-	proj.add_to_group("boss_projectiles")
-	proj.collision_layer = 8
-	proj.collision_mask = 1
-	
-	# 随机形状（噪音感）
-	var visual := Polygon2D.new()
-	var point_count := randi_range(3, 6)
-	var points := PackedVector2Array()
-	for i in range(point_count):
-		var a := (TAU / point_count) * i + randf() * 0.5
-		var r := randf_range(3.0, 7.0)
-		points.append(Vector2.from_angle(a) * r)
-	visual.polygon = points
-	visual.color = _waveform_colors[WaveformType.NOISE]
-	proj.add_child(visual)
-	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 5.0
-	col.shape = shape
-	proj.add_child(col)
-	
-	proj.global_position = pos
-	proj.set_meta("velocity", Vector2.from_angle(angle) * speed)
-	proj.set_meta("damage", damage)
-	proj.set_meta("lifetime", 4.0)
-	proj.set_meta("age", 0.0)
-	
-	_add_projectile_to_container(proj, false)
-
-func _spawn_data_projectile(pos: Vector2, angle: float, speed: float, damage: float) -> void:
-	var proj := Area2D.new()
-	proj.add_to_group("boss_projectiles")
-	proj.collision_layer = 8
-	proj.collision_mask = 1
-	
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([
-		Vector2(-3, -3), Vector2(3, -3), Vector2(3, 3), Vector2(-3, 3)
-	])
-	visual.color = Color(0.0, 1.0, 0.8, 0.8)
-	proj.add_child(visual)
-	
-	var col := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = 4.0
-	col.shape = shape
-	proj.add_child(col)
-	
-	proj.global_position = pos
-	proj.set_meta("velocity", Vector2.from_angle(angle) * speed)
-	proj.set_meta("damage", damage)
-	proj.set_meta("lifetime", 5.0)
-	proj.set_meta("age", 0.0)
-	
-	_add_projectile_to_container(proj, false)
-
-func _add_projectile_to_container(proj: Area2D, is_sine: bool) -> void:
-	if _projectile_container and is_instance_valid(_projectile_container):
-		_projectile_container.add_child(proj)
-	else:
-		get_parent().add_child(proj)
-	
-	var move_callable: Callable
-	if is_sine:
-		# 正弦波轨迹
-		move_callable = func():
-			if not is_instance_valid(proj):
-				return
-			var age: float = proj.get_meta("age") + get_process_delta_time()
-			proj.set_meta("age", age)
-			if age >= proj.get_meta("lifetime"):
-				proj.queue_free()
-				return
-			var base_angle: float = proj.get_meta("base_angle")
-			var speed: float = proj.get_meta("speed")
-			var phase: float = proj.get_meta("phase_offset")
-			var forward := Vector2.from_angle(base_angle) * speed
-			var perp := Vector2(-forward.y, forward.x).normalized()
-				var sine_offset := sin(age * SINE_WAVE_FREQUENCY + phase) * SINE_WAVE_AMPLITUDE
-				proj.global_position += (forward + perp * sine_offset * 0.1) * get_process_delta_time()
-				
-				# 检查相位：正弦波只在低通(1)和全频(3)生效
-				var is_active = (_current_player_phase == 1 or _current_player_phase == 3)
-				if _is_spectrum_collapse: is_active = true # 崩溃阶段全部生效
-				
-				if not is_active:
-					proj.modulate.a = 0.2
-				else:
-					proj.modulate.a = 1.0
-					
-				if is_active and _target and is_instance_valid(_target):
-					if proj.global_position.distance_to(_target.global_position) < 18.0:
-						if _target.has_method("take_damage"):
-							_target.take_damage(proj.get_meta("damage"))
-						proj.queue_free()
-	else:
-		# 直线轨迹
-		move_callable = func():
-			if not is_instance_valid(proj):
-				return
-			var vel: Vector2 = proj.get_meta("velocity")
-			proj.global_position += vel * get_process_delta_time()
-			var age: float = proj.get_meta("age") + get_process_delta_time()
-			proj.set_meta("age", age)
-				if age >= proj.get_meta("lifetime"):
-					proj.queue_free()
-					return
-					
-				var wave_type = proj.get_meta("wave_type", "")
-				var is_active = true
-				
-				if not _is_spectrum_collapse:
-					if wave_type == "square" and _current_player_phase != 3: # 方波只在全频(3)生效
-						is_active = false
-					elif wave_type == "sawtooth" and _current_player_phase != 2 and _current_player_phase != 3: # 锯齿波只在高通(2)和全频(3)生效
-						is_active = false
-					# 噪音波(noise)全相位生效，is_active 保持 true
-				
-				if not is_active:
-					proj.modulate.a = 0.2
-				else:
-					proj.modulate.a = 1.0
-					
-				if is_active and _target and is_instance_valid(_target):
-					if proj.global_position.distance_to(_target.global_position) < 18.0:
-						if _target.has_method("take_damage"):
-							_target.take_damage(proj.get_meta("damage"))
-						proj.queue_free()
-	
-	get_tree().process_frame.connect(move_callable)
-	proj.tree_exiting.connect(func():
-		if get_tree().process_frame.is_connected(move_callable):
-			get_tree().process_frame.disconnect(move_callable)
+	fire_timer.timeout.connect(func():
+		var angle := start_angle + sweep_node.rotation
+		var proj := ProjectileManager.spawn_projectile({
+			"name": "FreqSweep",
+			"type": "enemy",
+			"texture": "res://assets/projectiles/projectile_saw.png",
+			"position": global_position,
+			"velocity": Vector2.from_angle(angle) * SAW_SWEEP_SPEED * 1.2,
+			"damage": attack_data.damage,
+			"scale": 1.1,
+			"lifetime": 3.0,
+			"collision_radius": 13.0,
+		})
+		if proj:
+			_projectile_container.add_child(proj)
 	)
-
-func _spawn_shockwave(pos: Vector2, radius: float, damage: float) -> void:
-	var ring := Polygon2D.new()
-	var points := PackedVector2Array()
-	for i in range(32):
-		var angle := (TAU / 32) * i
-		points.append(Vector2.from_angle(angle) * 10.0)
-	ring.polygon = points
-	ring.color = base_color
-	ring.global_position = pos
-	get_parent().add_child(ring)
 	
-	var tween := ring.create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(ring, "scale", Vector2(radius / 10.0, radius / 10.0), 0.4).set_ease(Tween.EASE_OUT)
-	tween.tween_property(ring, "modulate:a", 0.0, 0.5)
-	tween.chain()
-	tween.tween_callback(ring.queue_free)
+	AudioManager.play_sfx("boss_noise_sweep_start", global_position)
+
+## 奇点坍缩
+func _attack_singularity_collapse(attack_data: Dictionary) -> void:
+	# 全屏吸附
+	var pull_center := global_position
+	var pull_strength := 400.0
+	var pull_duration := 4.0
 	
-	if damage > 0.0 and _target and is_instance_valid(_target):
-		if pos.distance_to(_target.global_position) < radius:
-			if _target.has_method("take_damage"):
-				_target.take_damage(damage)
-
-# ============================================================
-# 阶段进入回调
-# ============================================================
-
-func _on_phase_entered(phase_index: int, _config: Dictionary) -> void:
-	match phase_index:
-		0:
-			_current_waveform = WaveformType.SINE
-			_waveform_switch_interval = 999.0  # 阶段一不切换
-		1:
-			_waveform_switch_interval = 12.0
-			_switch_waveform()
-		2:
-			_waveform_switch_interval = 8.0
-			_summon_cooldown_time = 12.0
-		3:
-			# 奇点阶段：极快切换
-			_waveform_switch_interval = 4.0
-			_summon_cooldown_time = 8.0
-			# 清除所有弹幕
-			if _projectile_container:
-				for child in _projectile_container.get_children():
-					child.queue_free()
-			# 清除降采样区域
-			for zone in _bitcrush_zones:
-				if is_instance_valid(zone):
-					zone.queue_free()
-			_bitcrush_zones.clear()
-
-# ============================================================
-# 狂暴回调
-# ============================================================
-
-func _on_enrage(level: int) -> void:
-	match level:
-		1:
-			base_color = base_color.lerp(Color(1.0, 0.3, 0.0), 0.3)
-			_waveform_switch_interval *= 0.7
-		2:
-			base_color = Color(1.0, 0.0, 0.0)
-			_start_enrage_noise()
-
-func _start_enrage_noise() -> void:
-	get_tree().create_timer(0.3).timeout.connect(func():
-		if _is_dead or not is_instance_valid(self):
-			return
-		# 持续噪音弹幕
-		for i in range(5):
-			var angle := randf() * TAU
-			_spawn_noise_projectile(global_position, angle,
-				NOISE_PROJECTILE_SPEED * 0.8, 10.0)
-		if _enrage_level >= 2 and not _is_dead:
-			_start_enrage_noise()
+	# 创建视觉效果
+	var vortex := Polygon2D.new()
+	var points: PackedVector2Array
+	for i in range(64):
+		var angle := i / 64.0 * 2 * PI
+		points.append(Vector2.from_angle(angle) * 20.0)
+	vortex.polygon = points
+	vortex.color = Color(0.1, 0.1, 0.1, 0.8)
+	vortex.global_position = pull_center
+	add_child(vortex)
+	
+	var tween := create_tween().set_parallel()
+	tween.tween_property(vortex, "scale", Vector2.ONE * 50, pull_duration)
+	tween.tween_property(vortex, "modulate:a", 0.0, pull_duration).from(0.9)
+	tween.tween_callback(vortex.queue_free)
+	
+	# 施加引力
+	GameManager.get_player().apply_central_force(pull_center, pull_strength, pull_duration)
+	
+	# 延迟爆发
+	var explosion_tween := create_tween()
+	explosion_tween.set_delay(pull_duration)
+	explosion_tween.tween_callback(func():
+		for i in range(100):
+			var angle := randf_range(0, 2 * PI)
+			var speed := randf_range(200, 400)
+			var proj := ProjectileManager.spawn_projectile({
+				"name": "SingularityFragment",
+				"type": "enemy",
+				"texture": "res://assets/projectiles/projectile_noise.png",
+				"position": pull_center,
+				"velocity": Vector2.from_angle(angle) * speed,
+				"damage": attack_data.damage,
+				"scale": randf_range(1.0, 2.0),
+				"lifetime": 4.0,
+				"collision_radius": 15.0,
+			})
+			if proj:
+				_projectile_container.add_child(proj)
+		
+		# 屏幕震动
+		GameManager.camera_shake(1.5, 0.8)
+		AudioManager.play_sfx("boss_noise_singularity_explode", pull_center)
 	)
+	
+	AudioManager.play_sfx("boss_noise_singularity_pull", pull_center)
 
 # ============================================================
-# 节拍回调
+# 节拍 & 阶段 & 伤害 & 死亡
 # ============================================================
 
-func _on_boss_beat(_beat_index: int) -> void:
+func _on_beat(beat_index: int) -> void:
 	_noise_beat_counter += 1
 	
-	# 每 2 拍在非攻击状态时发射波形弹幕
-	if not _is_attacking and _noise_beat_counter % 2 == 0:
-		if _target and not _is_dead:
-			var angle := (_target.global_position - global_position).angle()
-			match _current_waveform:
-				WaveformType.SINE:
-					_spawn_sine_projectile(global_position, angle,
-						SINE_PROJECTILE_SPEED * 0.5, 6.0)
-				WaveformType.SQUARE:
-					_spawn_square_projectile(global_position, angle,
-						SQUARE_PROJECTILE_SPEED * 0.5, 7.0)
-				WaveformType.SAWTOOTH:
-					_spawn_saw_projectile(global_position, angle,
-						SAW_SWEEP_SPEED * 0.5, 8.0)
-				WaveformType.NOISE:
-					_spawn_noise_projectile(global_position, randf() * TAU,
-						NOISE_PROJECTILE_SPEED * 0.5, 5.0)
-
-# ============================================================
-# 移动逻辑
-# ============================================================
-
-func _calculate_movement_direction() -> Vector2:
-	if _target == null:
-		return Vector2.ZERO
+	# 频谱崩溃阶段的特殊节拍逻辑
+	if _is_spectrum_collapse:
+		_final_chord_timer += 1
+		# 减十三和弦的节拍触发
+		if _final_chord_timer == FINAL_CHORD_DELAY:
+			_play_diminished_13th_chord()
+			# 之后每拍都尝试触发，直到Boss死亡
+			_final_chord_timer = FINAL_CHORD_DELAY - 1 
+		return
 	
-	var dir := (_target.global_position - global_position)
-	var dist := dir.length()
+	# 每 4 拍执行一次频率偏移
+	if _noise_beat_counter % 4 == 0 and _freq_shift_cooldown <= 0.0:
+		_start_frequency_shift()
+
+func _on_phase_changed(new_phase_index: int, old_phase_index: int) -> void:
+	._on_phase_changed(new_phase_index, old_phase_index)
 	
-	# 根据波形改变移动模式
+	# 进入波形切换阶段
+	if new_phase_index == 1:
+		_waveform_switch_interval = 10.0
+		_switch_waveform()
+	
+	# 进入频率风暴阶段
+	if new_phase_index == 2:
+		_waveform_switch_interval = 7.0
+		_freq_shift_cooldown = 0.0 # 立刻允许频率偏移
+		_start_frequency_shift()
+	
+	# 进入奇点阶段
+	if new_phase_index == 3:
+		_waveform_switch_interval = 5.0
+		# 停止所有现有弹幕
+		for child in _projectile_container.get_children():
+			child.queue_free()
+		# 立即发动一次奇点坍缩
+		_attack_singularity_collapse(_get_current_attack_data("singularity_collapse"))
+
+func take_damage(damage_info: Dictionary) -> void:
+	# 根据波形调整伤害
+	var timbre_type = damage_info.get("timbre_type", "default")
+	var damage_multiplier := 1.0
+	
 	match _current_waveform:
 		WaveformType.SINE:
-			# 正弦波移动：平滑曲线
-			var time := Time.get_ticks_msec() * 0.001
-			return Vector2(cos(time * 2.0), sin(time * 3.0)).normalized()
+			if timbre_type == "square": damage_multiplier = 1.5 # 方波克制正弦波
 		WaveformType.SQUARE:
-			# 方波移动：只走直线（水平/垂直）
-			if abs(dir.x) > abs(dir.y):
-				return Vector2(sign(dir.x), 0)
-			else:
-				return Vector2(0, sign(dir.y))
+			if timbre_type == "sawtooth": damage_multiplier = 1.5 # 锯齿波克制方波
 		WaveformType.SAWTOOTH:
-			# 锯齿波：快速冲刺
-			if dist > 200.0:
-				return dir.normalized()
-			else:
-				return -dir.normalized()
+			if timbre_type == "sine": damage_multiplier = 1.5 # 正弦波克制锯齿波
 		WaveformType.NOISE:
-			# 噪音：随机移动
-			return Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+			if timbre_type == "noise": damage_multiplier = 1.5 # 噪音波互相克制
 	
-	return Vector2.ZERO
+	# 频率偏移期间，伤害减半
+	if _freq_shift_active:
+		damage_multiplier *= 0.5
+	
+	var final_damage_info := damage_info.duplicate()
+	final_damage_info["amount"] *= damage_multiplier
+	
+	.take_damage(final_damage_info)
+	
+	# 检查是否进入频谱崩溃
+	if not _is_spectrum_collapse and current_hp / max_hp <= SPECTRUM_COLLAPSE_THRESHOLD:
+		_start_spectrum_collapse()
+
+func _on_death() -> void:
+	# 停止所有攻击
+	_stop_all_attacks()
+	
+	# 清除所有弹幕和效果
+	for child in _projectile_container.get_children():
+		child.queue_free()
+	for zone in _bitcrush_zones:
+		zone.queue_free()
+	_bitcrush_zones.clear()
+	
+	# 停止音乐，播放死亡音效
+	BGMManager.stop_all_music(2.0)
+	AudioManager.play_sfx("boss_noise_death", global_position)
+	
+	# 死亡视觉效果：数字瓦解
+	var death_tween := create_tween()
+	death_tween.tween_property(_sprite.material, "shader_parameter/pixel_size", 20.0, 2.0).from(1.0)
+	death_tween.tween_property(_sprite, "modulate:a", 0.0, 2.5).from(1.0)
+	death_tween.tween_callback(func():
+		.die() # 调用基类死亡处理
+	)
 
 # ============================================================
-# 类型名称
+# 特殊机制
 # ============================================================
+
+## 频率偏移
+func _start_frequency_shift() -> void:
+	_freq_shift_active = true
+	_freq_shift_timer = FREQ_SHIFT_DURATION
+	_freq_shift_cooldown = FREQ_SHIFT_INTERVAL
+	
+	# 视觉效果
+	var tween := create_tween()
+	tween.tween_property(_sprite.material, "shader_parameter/chromatic_offset", 15.0, 0.3)
+	tween.tween_property(_sprite.material, "shader_parameter/chromatic_offset", 2.0, FREQ_SHIFT_DURATION).set_delay(0.3)
+	
+	AudioManager.play_sfx("boss_noise_freq_shift", global_position)
+
+## 频谱崩溃（最终阶段）
+func _start_spectrum_collapse() -> void:
+	_is_spectrum_collapse = true
+	_stop_all_attacks()
+	
+	# 视觉：变成纯白，剧烈抖动
+	base_color = Color.WHITE
+	_glitch_intensity = 1.0
+	max_glitch_intensity = 1.0
+	
+	# 音乐：进入最终的减十三和弦背景
+	BGMManager.play_music_layer("boss_noise_final_chord_bg", true)
+	
+	# 禁用移动
+	move_speed = 0.0
+	
+	# 重置节拍器，准备最终和弦
+	_final_chord_timer = 0
+
+func _update_spectrum_collapse(_delta: float) -> void:
+	# 持续的屏幕震动和视觉故障
+	GameManager.camera_shake(0.2, 0.1)
+	_glitch_intensity = 1.0
+	_update_glitch_visual(_delta)
+
+## 播放减十三和弦（秒杀技）
+func _play_diminished_13th_chord() -> void:
+	# 对玩家造成巨大伤害
+	var player := GameManager.get_player()
+	if player:
+		player.take_damage({
+			"amount": 9999,
+			"type": "spectral",
+			"source": self
+		})
+	
+	# 播放毁灭性的和弦音效
+	AudioManager.play_sfx("boss_noise_dim13_chord", global_position)
+	
+	# 屏幕白闪
+	GameManager.screen_flash(Color.WHITE, 0.8)
+
+# ============================================================
+# 视觉效果 & 辅助函数
+# ============================================================
+
+func _update_glitch_visual(delta: float) -> void:
+	_glitch_timer += delta
+	
+	var material: ShaderMaterial = _sprite.material
+	if not material:
+		return
+	
+	# 基础故障强度
+	var hp_ratio := current_hp / max_hp
+	_hp_glitch_intensity = (1.0 - hp_ratio) * max_glitch_intensity
+	_glitch_intensity = base_glitch_intensity + _hp_glitch_intensity
+	
+	# 频率偏移时故障加剧
+	if _freq_shift_active:
+		_glitch_intensity = min(_glitch_intensity + 0.5, 1.0)
+	
+	material.set_shader_parameter("glitch_intensity", _glitch_intensity)
+	material.set_shader_parameter("hp_ratio", hp_ratio)
+	material.set_shader_parameter("base_tint", base_color)
+
+func _update_afterimages(delta: float) -> void:
+	# 清理旧的残影
+	_afterimages = _afterimages.filter(func(img): return is_instance_valid(img))
+	
+	# 每隔一段时间创建新残影
+	# (逻辑可根据需要添加)
 
 func _get_type_name() -> String:
-	return "boss_noise"
+	return "BossNoise"
+
 
 # ============================================================
-# 清理
+# 自定义弹幕逻辑
 # ============================================================
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		if _projectile_container and is_instance_valid(_projectile_container):
-			for child in _projectile_container.get_children():
-				if is_instance_valid(child):
-					child.queue_free()
-		for zone in _bitcrush_zones:
-			if is_instance_valid(zone):
-				zone.queue_free()
-		for afterimage in _afterimages:
-			if is_instance_valid(afterimage):
-				afterimage.queue_free()
+## 挂载到 ProjectileManager 的自定义逻辑
+func _get_custom_projectile_logics() -> Dictionary:
+	return {
+		"sine_wave_movement": Callable(self, "_sine_wave_projectile_logic"),
+		"random_walk": Callable(self, "_random_walk_projectile_logic"),
+	}
+
+func _sine_wave_projectile_logic(proj: Node2D) -> void:
+	var age: float = proj.get_meta("age")
+	var base_angle: float = proj.get_meta("base_angle")
+	var speed: float = proj.get_meta("speed")
+	var phase: float = proj.get_meta("phase_offset")
+	var forward := Vector2.from_angle(base_angle) * speed
+	var perp := Vector2(-forward.y, forward.x).normalized()
+	var sine_offset := sin(age * SINE_WAVE_FREQUENCY + phase) * SINE_WAVE_AMPLITUDE
+	proj.global_position += (forward + perp * sine_offset * 0.1) * get_process_delta_time()
+	
+	# 检查相位：正弦波只在低通(1)和全频(3)生效
+	var is_active = (_current_player_phase == 1 or _current_player_phase == 3)
+	if _is_spectrum_collapse: is_active = true # 崩溃阶段全部生效
+	
+	if not is_active:
+		proj.modulate.a = 0.2
+	else:
+		proj.modulate.a = 1.0
+
+func _random_walk_projectile_logic(proj: Node2D) -> void:
+	var turn_speed: float = proj.get_meta("turn_speed")
+	var velocity: Vector2 = proj.get("velocity") # 假设速度存储在弹丸上
+	
+	var angle_change := randf_range(-1.0, 1.0) * turn_speed * get_process_delta_time()
+	var new_velocity := velocity.rotated(angle_change)
+	
+	proj.set("velocity", new_velocity)
+	proj.global_position += new_velocity * get_process_delta_time()
+
+# ============================================================
+# 玩家相位系统交互
+# ============================================================
+
+func _on_player_phase_changed(phase_id: int) -> void:
+	_current_player_phase = phase_id
+	
+	# 根据玩家相位调整 Boss 行为
+	match phase_id:
+		1: # 低通
+			# 增加方波和锯齿波攻击频率
+			_set_attack_weight("square_grid", 3.0)
+			_set_attack_weight("sawtooth_slash", 3.0)
+			_set_attack_weight("sine_wave_sweep", 1.0)
+		2: # 高通
+			# 增加正弦波和噪音波攻击频率
+			_set_attack_weight("sine_wave_sweep", 3.0)
+			_set_attack_weight("noise_burst", 3.0)
+			_set_attack_weight("square_grid", 1.0)
+		3: # 全频
+			# 所有攻击权重恢复正常
+			_reset_attack_weights()
+
+func _set_attack_weight(attack_name: String, weight: float) -> void:
+	for phase_cfg in _phase_configs:
+		for attack_cfg in phase_cfg.attacks:
+			if attack_cfg.name == attack_name:
+				attack_cfg.weight = weight
+
+func _reset_attack_weights() -> void:
+	# 重新加载初始阶段定义以恢复权重
+	var temp_boss := load("res://scripts/entities/enemies/bosses/boss_noise.gd").new()
+	temp_boss._define_phases()
+	var original_configs = temp_boss._phase_configs
+	
+	for i in range(_phase_configs.size()):
+		for j in range(_phase_configs[i].attacks.size()):
+			_phase_configs[i].attacks[j].weight = original_configs[i].attacks[j].weight
+	
+	temp_boss.queue_free()

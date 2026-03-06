@@ -150,7 +150,7 @@ func _add_segment() -> void:
 	])
 
 	# 颜色渐变：头部亮绿 → 尾部暗绿
-	var t := float(_segments.size()) / max_segments
+	var t: float = float(_segments.size()) / max_segments
 	var seg_color := base_color.lerp(Color(0.0, 0.3, 0.2), t)
 	seg_visual.color = seg_color
 

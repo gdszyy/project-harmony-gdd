@@ -167,7 +167,7 @@ func _select_next_pattern() -> AttackPattern:
 		if pattern not in _used_patterns:
 			available.append(pattern)
 
-	var selected := available[randi() % available.size()]
+	var selected: AttackPattern = available[randi() % available.size()]
 	_used_patterns.append(selected)
 	return selected
 
@@ -264,7 +264,7 @@ func _attack_homing() -> void:
 	get_parent().add_child(proj)
 
 	# 追踪逻辑通过 tween 模拟
-	var target_ref := _target
+	var target_ref: Node2D = _target
 	var lifetime := 0.0
 	var vel := dir * base_projectile_speed * 0.7
 	proj.set_meta("velocity", vel)
@@ -531,7 +531,7 @@ func _spawn_bounce_projectile(dir: Vector2, damage: float, speed: float) -> void
 	tween.tween_property(proj, "global_position", mid_pos, 0.8)
 
 	# 中途变向（朝向玩家当前位置）
-	var target_ref := _target
+	var target_ref: Node2D = _target
 	var captured_damage := damage
 	tween.tween_callback(func():
 		if is_instance_valid(proj) and is_instance_valid(target_ref):

@@ -140,7 +140,7 @@ func _update_wall_visual(_delta: float) -> void:
 				_shield_visual.material.set_shader_parameter("shield_strength", shield_ratio)
 		Phase.HIGH_PASS:
 			# 线框闪烁效果
-			_high_pass_visual.modulate.a = 0.5 + sin(TIME * 20.0) * 0.5
+			_high_pass_visual.modulate.a = 0.5 + sin(Time.get_ticks_msec() * 0.02) * 0.5
 		Phase.LOW_PASS:
 			# 裂缝强度可以随 HP 变化
 			if _cracks_visual and _cracks_visual.material:
@@ -254,7 +254,10 @@ func apply_phase_shift(type: int) -> void:
 func _update_spectrum_data() -> void:
 	# ## 从总线获取频谱数据
 	# ## 注意：这需要在项目设置中启用音频频谱分析
-	var spectrum: PackedFloat32Array = AudioServer.get_spectrum_for_bus(0, 2048, AudioServer.FFT_SIZE_2048)
+	var spectrum_instance = AudioServer.get_bus_effect_instance(0, 0)
+	if not spectrum_instance:
+		return
+	var spectrum: PackedFloat32Array = spectrum_instance.get_magnitude_for_frequency_range(20, 20000)
 	if spectrum.is_empty(): return
 
 	_spectrum_image.lock()

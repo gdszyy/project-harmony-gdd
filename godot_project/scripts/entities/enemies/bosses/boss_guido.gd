@@ -585,7 +585,7 @@ func _attack_divine_chorus(attack: Dictionary, damage_mult: float) -> void:
 			var diag_dirs := [dir.rotated(PI / 4.0), dir.rotated(-PI / 4.0)]
 			for d in diag_dirs:
 				for j in range(3):
-					var angle := d.angle() + (j - 1) * 0.15
+					var angle: float = d.angle() + (j - 1) * 0.15
 					_spawn_note_projectile(global_position, angle,
 						NOTE_PROJECTILE_SPEED * 1.2, damage * 0.3)
 		)

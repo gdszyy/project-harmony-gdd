@@ -270,7 +270,7 @@ func _perform_action(is_strong: bool, multiplier: float) -> void:
 
 ## C — 节拍哨塔：射击最近敌人
 func _action_rhythm_tower(mult: float) -> void:
-	var nearest := _find_nearest_enemy(attack_range)
+	var nearest: CharacterBody2D = _find_nearest_enemy(attack_range)
 	if nearest == null:
 		return
 	

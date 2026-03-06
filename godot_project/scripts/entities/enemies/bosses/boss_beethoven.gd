@@ -958,7 +958,7 @@ func _check_repetition_penalty() -> void:
 	# 检查最近N次攻击是否完全相同
 	var recent_attacks := _player_attack_history.slice(-REPETITION_THRESHOLD)
 	var is_repetitive := true
-	var first_pattern := recent_attacks[0]
+	var first_pattern: Dictionary = recent_attacks[0]
 	
 	for pattern in recent_attacks:
 		if pattern != first_pattern:
