@@ -7,8 +7,12 @@
 [ext_resource type="Script" path="res://scripts/ui/chord_alchemy_panel_v3.gd" id="5_alchemy"]
 [ext_resource type="Script" path="res://scripts/ui/spellbook_panel_v3.gd" id="6_spellbook"]
 
-[node name="IntegratedComposer" type="CanvasLayer"]
-layer = 100
+[node name="IntegratedComposer" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 process_mode = 3
 script = ExtResource("1_main")
 

@@ -21,7 +21,7 @@
 ## 使用 Godot 内置拖拽 API（_get_drag_data / _can_drop_data / _drop_data）
 ## 与 SpellcraftSystem、NoteInventory 等全局单例对接
 class_name IntegratedComposer
-extends CanvasLayer
+extends Control
 
 # ============================================================
 # 信号
@@ -96,7 +96,6 @@ var _is_open: bool = false
 func _ready() -> void:
 	## 初始时隐藏
 	visible = false
-	layer = 100  # 确保在所有游戏内容之上
 
 	## 连接关闭按钮
 	if _close_btn:

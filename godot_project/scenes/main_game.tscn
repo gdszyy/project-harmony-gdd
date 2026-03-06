@@ -30,7 +30,7 @@
 [ext_resource type="Script" path="res://scripts/systems/character_class_manager.gd" id="32_class_mgr"]
 [ext_resource type="Script" path="res://scripts/systems/obstacle_spawner.gd" id="33_obstacle_spawner"]
 [ext_resource type="Script" path="res://scripts/ui/hp_bar.gd" id="34_hp_bar"]
-[ext_resource type="Script" path="res://scripts/ui/integrated_composer.gd" id="35_composer"]
+[ext_resource type="PackedScene" uid="uid://integrated_composer_001" path="res://scenes/ui/integrated_composer.tscn" id="35_composer"]
 [ext_resource type="Script" path="res://scripts/ui/meta_progression_visualizer.gd" id="36_meta_viz"]
 [ext_resource type="PackedScene" uid="uid://phase_indicator_001" path="res://scenes/ui/phase_indicator.tscn" id="38_phase_ind"]
 [ext_resource type="PackedScene" uid="uid://phase_energy_bar_001" path="res://scenes/ui/phase_energy_bar.tscn" id="39_energy_bar"]
@@ -180,12 +180,8 @@ offset_right = 280.0
 offset_bottom = 140.0
 script = ExtResource("10_note_inv")
 
-[node name="IntegratedComposer" type="Control" parent="HUD"]
+[node name="IntegratedComposer" parent="HUD" instance=ExtResource("35_composer")]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-script = ExtResource("35_composer")
 
 [node name="TimbreWheelUI" type="Control" parent="HUD"]
 anchors_preset = 15
