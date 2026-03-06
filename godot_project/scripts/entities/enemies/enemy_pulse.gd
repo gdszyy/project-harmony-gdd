@@ -87,11 +87,11 @@ func _update_charge_visual(delta: float) -> void:
 
 	if _is_charging:
 		# 蓄力时的脉冲膨胀效果
-			var charge_progress := float(_beat_counter) / float(charge_beats)
-			# 更新 LED Shader
-			if _sprite.material and _sprite.material.has_param("countdown_progress"):
-				_sprite.material.set("countdown_progress", charge_progress)
-			_charge_visual_scale = 1.0 + charge_progress * 0.4
+		var charge_progress := float(_beat_counter) / float(charge_beats)
+		# 更新 LED Shader
+		if _sprite.material and _sprite.material.has_param("countdown_progress"):
+			_sprite.material.set("countdown_progress", charge_progress)
+		_charge_visual_scale = 1.0 + charge_progress * 0.4
 		# 蓄力时颜色逐渐变亮
 		var charge_color := base_color.lerp(Color.WHITE, charge_progress * 0.5)
 		_sprite.modulate = charge_color
