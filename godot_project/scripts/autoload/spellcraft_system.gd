@@ -1153,18 +1153,18 @@ func _midi_to_black_key(note: int) -> int:
 		10: return MusicData.BlackKey.AS
 		_: return -1
 
-	func _execute_spell(spell_data: Dictionary) -> void:
-		# 应用手动施法的时机奖励
-		var timing_bonus: float = spell_data.get("timing_bonus", 1.0)
-		if timing_bonus != 1.0:
-			spell_data["damage"] = spell_data.get("damage", 0.0) * timing_bonus
-		
-		# ★ Issue #100: 应用寂静惩罚和密度过载惩罚
-		var silence_damage_mult: float = spell_data.get("silence_damage_mult", 1.0)
-		var density_damage_multiplier: float = spell_data.get("density_damage_multiplier", 1.0)
-		spell_data["damage"] = spell_data.get("damage", 0.0) * silence_damage_mult * density_damage_multiplier
+func _execute_spell(spell_data: Dictionary) -> void:
+	# 应用手动施法的时机奖励
+	var timing_bonus: float = spell_data.get("timing_bonus", 1.0)
+	if timing_bonus != 1.0:
+		spell_data["damage"] = spell_data.get("damage", 0.0) * timing_bonus
+	
+	# ★ Issue #100: 应用寂静惩罚和密度过载惩罚
+	var silence_damage_mult: float = spell_data.get("silence_damage_mult", 1.0)
+	var density_damage_multiplier: float = spell_data.get("density_damage_multiplier", 1.0)
+	spell_data["damage"] = spell_data.get("damage", 0.0) * silence_damage_mult * density_damage_multiplier
 
-		spell_cast.emit(spell_data)
+	spell_cast.emit(spell_data)
 
 ## 获取序列器当前位置
 func get_sequencer_position() -> int:
