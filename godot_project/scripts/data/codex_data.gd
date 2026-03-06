@@ -748,6 +748,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 1,
 		"rarity": Rarity.UNCOMMON,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch1_metronome_pulse": {
 		"name": "节拍脉冲",
@@ -756,6 +757,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 1,
 		"rarity": Rarity.UNCOMMON,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch2_scribe": {
 		"name": "抄谱员",
@@ -764,6 +766,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 2,
 		"rarity": Rarity.UNCOMMON,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch2_choir": {
 		"name": "唱诗班",
@@ -772,6 +775,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 2,
 		"rarity": Rarity.RARE,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch3_counterpoint_crawler": {
 		"name": "对位爬虫",
@@ -780,6 +784,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 3,
 		"rarity": Rarity.RARE,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch4_minuet_dancer": {
 		"name": "小步舞者",
@@ -788,6 +793,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 4,
 		"rarity": Rarity.RARE,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch5_crescendo_surge": {
 		"name": "渐强浪潮",
@@ -796,6 +802,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 5,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch5_fate_knocker": {
 		"name": "命运叩门者",
@@ -804,6 +811,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 5,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch5_fury_spirit": {
 		"name": "狂怒精魂",
@@ -812,6 +820,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 5,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch6_walking_bass": {
 		"name": "摇摆贝斯",
@@ -820,6 +829,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 6,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch6_scat_singer": {
 		"name": "拟声歌手",
@@ -828,6 +838,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 6,
 		"rarity": Rarity.RARE,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch7_bitcrusher_worm": {
 		"name": "比特破碎虫",
@@ -836,6 +847,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 7,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch7_glitch_phantom": {
 		"name": "故障幻影",
@@ -844,6 +856,7 @@ const VOL3_CHAPTER_ENEMIES: Dictionary = {
 		"chapter": 7,
 		"rarity": Rarity.RARE,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 }
 
@@ -855,6 +868,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 1,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch1_frequency_sentinel": {
 		"name": "频率哨兵",
@@ -863,6 +877,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 1,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch2_cantor_commander": {
 		"name": "领唱指挥",
@@ -871,6 +886,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 2,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch3_fugue_weaver": {
 		"name": "赋格织者",
@@ -879,6 +895,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 3,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch4_court_kapellmeister": {
 		"name": "宫廷乐长",
@@ -887,6 +904,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 4,
 		"rarity": Rarity.EPIC,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch5_symphony_commander": {
 		"name": "交响指挥",
@@ -895,6 +913,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 5,
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch6_bebop_virtuoso": {
 		"name": "波普大师",
@@ -903,6 +922,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 6,
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 	"ch7_frequency_overlord": {
 		"name": "频率霸主",
@@ -911,6 +931,7 @@ const VOL3_ELITES: Dictionary = {
 		"chapter": 7,
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"is_enemy": true,
 	},
 }
 
