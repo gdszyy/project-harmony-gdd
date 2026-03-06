@@ -874,7 +874,14 @@ func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) 
 # ============================================================
 
 func _is_enemy_entry(entry_id: String, entry: Dictionary) -> bool:
-	return entry.has("enemy_type") or entry_id.begins_with("enemy_") or entry_id.begins_with("boss_") or entry_id.begins_with("elite_")
+	# 检查 is_enemy 标记字段（用于章节敌人和精英敌人）
+	if entry.get("is_enemy", false):
+		return true
+	# 检查 enemy_type 字段（用于基础敌人）
+	if entry.has("enemy_type"):
+		return true
+	# 检查 entry_id 前缀（用于 Boss 和基础敌人）
+	return entry_id.begins_with("enemy_") or entry_id.begins_with("boss_") or entry_id.begins_with("elite_")
 
 func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 	_cleanup_enemy_preview()
@@ -920,7 +927,15 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 
 func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 	var root := Node3D.new()
-	var enemy_type: String = entry.get("enemy_type", "")
+
+	# 章节敌人和精英敌人：使用独特的3D预览模型
+	if entry.get("is_enemy", false):
+		_create_chapter_enemy_model(entry_id, root)
+		return root
+
+	# 基础敌人和 Boss：使用原有逻辑
+	var enemy_type: String = entry.get("enemy_type", "static")
+	var color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color.WHITE)
 
 	# 若 enemy_type 为空，尝试从 entry_id 推断
 	if enemy_type.is_empty():
@@ -1685,6 +1700,825 @@ func _build_boss_beethoven_model(root: Node3D) -> void:
 	omni2.omni_range = 3.0
 	omni2.position = Vector3(0.5, 0.5, 0.5)
 	root.add_child(omni2)
+## 创建章节敌人和精英敌人的独特 3D 预览模型
+func _create_chapter_enemy_model(entry_id: String, root: Node3D) -> void:
+	match entry_id:
+		# ============================================================
+		# 第一章敌人：数学几何风格
+		# ============================================================
+		"ch1_grid_static":
+			# 网格阵列排列的小方块
+			var grid_color := Color(0.4, 0.8, 1.0)
+			for row in range(3):
+				for col in range(3):
+					var cube := MeshInstance3D.new()
+					var box := BoxMesh.new()
+					box.size = Vector3(0.25, 0.25, 0.25)
+					cube.mesh = box
+					var mat := StandardMaterial3D.new()
+					mat.albedo_color = grid_color
+					mat.emission_enabled = true
+					mat.emission = grid_color
+					mat.emission_energy_multiplier = 1.5
+					cube.material_override = mat
+					cube.position = Vector3((col - 1) * 0.4, (row - 1) * 0.4, 0)
+					root.add_child(cube)
+
+		"ch1_metronome_pulse":
+			# 节拍器形状：中心球体 + 摆锤杆
+			var met_color := Color(0.9, 0.7, 0.2)
+			# 中心球体
+			var center_ball := MeshInstance3D.new()
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.3
+			sphere.height = 0.6
+			center_ball.mesh = sphere
+			var mat_ball := StandardMaterial3D.new()
+			mat_ball.albedo_color = met_color
+			mat_ball.emission_enabled = true
+			mat_ball.emission = met_color
+			mat_ball.emission_energy_multiplier = 2.0
+			center_ball.material_override = mat_ball
+			center_ball.position = Vector3(0, -0.3, 0)
+			root.add_child(center_ball)
+			# 摆锤杆
+			var pendulum := MeshInstance3D.new()
+			var cyl := CylinderMesh.new()
+			cyl.top_radius = 0.05
+			cyl.bottom_radius = 0.05
+			cyl.height = 1.2
+			pendulum.mesh = cyl
+			var mat_pend := StandardMaterial3D.new()
+			mat_pend.albedo_color = Color(0.8, 0.8, 0.8)
+			mat_pend.emission_enabled = true
+			mat_pend.emission = Color(0.8, 0.8, 0.8)
+			mat_pend.emission_energy_multiplier = 0.8
+			pendulum.material_override = mat_pend
+			pendulum.position = Vector3(0, 0.3, 0)
+			root.add_child(pendulum)
+
+		# ============================================================
+		# 第二章敌人：中世纪风格
+		# ============================================================
+		"ch2_scribe":
+			# 羽毛笔形状：主体圆柱 + 尖端渐细
+			var scribe_color := Color(0.9, 0.95, 0.7)
+			# 笔杆主体
+			var quill_body := MeshInstance3D.new()
+			var quill_cyl := CylinderMesh.new()
+			quill_cyl.top_radius = 0.05
+			quill_cyl.bottom_radius = 0.15
+			quill_cyl.height = 1.4
+			quill_body.mesh = quill_cyl
+			var mat_quill := StandardMaterial3D.new()
+			mat_quill.albedo_color = scribe_color
+			mat_quill.emission_enabled = true
+			mat_quill.emission = scribe_color
+			mat_quill.emission_energy_multiplier = 1.5
+			quill_body.material_override = mat_quill
+			quill_body.rotation_degrees = Vector3(0, 0, 30)
+			root.add_child(quill_body)
+			# 笔尖光点
+			var tip := MeshInstance3D.new()
+			var tip_sphere := SphereMesh.new()
+			tip_sphere.radius = 0.08
+			tip_sphere.height = 0.16
+			tip.mesh = tip_sphere
+			var mat_tip := StandardMaterial3D.new()
+			mat_tip.albedo_color = Color(1.0, 0.8, 0.3)
+			mat_tip.emission_enabled = true
+			mat_tip.emission = Color(1.0, 0.8, 0.3)
+			mat_tip.emission_energy_multiplier = 3.0
+			tip.material_override = mat_tip
+			tip.position = Vector3(-0.35, -0.6, 0)
+			root.add_child(tip)
+
+		"ch2_choir":
+			# 多个小球组成的合唱团：圆弧排列
+			var choir_colors := [
+				Color(0.8, 0.4, 0.9),
+				Color(0.4, 0.7, 0.9),
+				Color(0.9, 0.6, 0.3),
+				Color(0.4, 0.9, 0.6),
+				Color(0.9, 0.4, 0.5),
+			]
+			for i in range(5):
+				var angle := (float(i) / 5.0) * TAU
+				var member := MeshInstance3D.new()
+				var s := SphereMesh.new()
+				s.radius = 0.18
+				s.height = 0.36
+				member.mesh = s
+				var mat_m := StandardMaterial3D.new()
+				mat_m.albedo_color = choir_colors[i]
+				mat_m.emission_enabled = true
+				mat_m.emission = choir_colors[i]
+				mat_m.emission_energy_multiplier = 2.0
+				member.material_override = mat_m
+				member.position = Vector3(cos(angle) * 0.6, sin(angle) * 0.3, sin(angle) * 0.2)
+				root.add_child(member)
+			# 中心导唱球
+			var leader := MeshInstance3D.new()
+			var ls := SphereMesh.new()
+			ls.radius = 0.25
+			ls.height = 0.5
+			leader.mesh = ls
+			var mat_l := StandardMaterial3D.new()
+			mat_l.albedo_color = Color(1.0, 0.95, 0.8)
+			mat_l.emission_enabled = true
+			mat_l.emission = Color(1.0, 0.95, 0.8)
+			mat_l.emission_energy_multiplier = 2.5
+			leader.material_override = mat_l
+			leader.position = Vector3(0, 0.2, 0)
+			root.add_child(leader)
+
+		# ============================================================
+		# 第三章敌人：巴洛克风格
+		# ============================================================
+		"ch3_counterpoint_crawler":
+			# 成对的镜像爫虫：两个对称的圆柱体
+			var crawler_color_a := Color(0.3, 0.8, 0.6)
+			var crawler_color_b := Color(0.8, 0.3, 0.6)
+			for side in range(2):
+				var crawler := MeshInstance3D.new()
+				var c_cyl := CylinderMesh.new()
+				c_cyl.top_radius = 0.12
+				c_cyl.bottom_radius = 0.12
+				c_cyl.height = 0.8
+				crawler.mesh = c_cyl
+				var mat_c := StandardMaterial3D.new()
+				mat_c.albedo_color = crawler_color_a if side == 0 else crawler_color_b
+				mat_c.emission_enabled = true
+				mat_c.emission = crawler_color_a if side == 0 else crawler_color_b
+				mat_c.emission_energy_multiplier = 2.0
+				crawler.material_override = mat_c
+				crawler.rotation_degrees = Vector3(90, 0, 0)
+				crawler.position = Vector3(-0.4 + side * 0.8, 0, 0)
+				root.add_child(crawler)
+			# 连接线
+			var link := MeshInstance3D.new()
+			var link_box := BoxMesh.new()
+			link_box.size = Vector3(0.8, 0.05, 0.05)
+			link.mesh = link_box
+			var mat_link := StandardMaterial3D.new()
+			mat_link.albedo_color = Color(0.6, 0.6, 0.9)
+			mat_link.emission_enabled = true
+			mat_link.emission = Color(0.6, 0.6, 0.9)
+			mat_link.emission_energy_multiplier = 1.5
+			link.material_override = mat_link
+			root.add_child(link)
+
+		# ============================================================
+		# 第四章敌人：古典风格
+		# ============================================================
+		"ch4_minuet_dancer":
+			# 旋转的舞者形状：洛可可风格烛台几何体
+			var dancer_color := Color(0.95, 0.88, 0.92)
+			# 底座
+			var base := MeshInstance3D.new()
+			var base_cyl := CylinderMesh.new()
+			base_cyl.top_radius = 0.3
+			base_cyl.bottom_radius = 0.4
+			base_cyl.height = 0.15
+			base.mesh = base_cyl
+			var mat_base := StandardMaterial3D.new()
+			mat_base.albedo_color = dancer_color
+			mat_base.emission_enabled = true
+			mat_base.emission = dancer_color
+			mat_base.emission_energy_multiplier = 1.2
+			base.material_override = mat_base
+			base.position = Vector3(0, -0.5, 0)
+			root.add_child(base)
+			# 柱身
+			var column := MeshInstance3D.new()
+			var col_cyl := CylinderMesh.new()
+			col_cyl.top_radius = 0.1
+			col_cyl.bottom_radius = 0.2
+			col_cyl.height = 0.8
+			column.mesh = col_cyl
+			var mat_col := StandardMaterial3D.new()
+			mat_col.albedo_color = Color(0.92, 0.88, 0.78)
+			mat_col.emission_enabled = true
+			mat_col.emission = Color(0.92, 0.88, 0.78)
+			mat_col.emission_energy_multiplier = 1.5
+			column.material_override = mat_col
+			column.position = Vector3(0, -0.05, 0)
+			root.add_child(column)
+			# 顶部火焰球
+			var flame := MeshInstance3D.new()
+			var flame_sphere := SphereMesh.new()
+			flame_sphere.radius = 0.15
+			flame_sphere.height = 0.3
+			flame.mesh = flame_sphere
+			var mat_flame := StandardMaterial3D.new()
+			mat_flame.albedo_color = Color(1.0, 0.92, 0.6)
+			mat_flame.emission_enabled = true
+			mat_flame.emission = Color(1.0, 0.92, 0.6)
+			mat_flame.emission_energy_multiplier = 4.0
+			flame.material_override = mat_flame
+			flame.position = Vector3(0, 0.55, 0)
+			root.add_child(flame)
+
+		# ============================================================
+		# 第五章敌人：浪漫主义风格
+		# ============================================================
+		"ch5_crescendo_surge":
+			# 膨胀的能量体：多层同心球
+			var surge_color := Color(1.0, 0.5, 0.1)
+			var radii := [0.15, 0.28, 0.42, 0.55]
+			var alphas := [1.0, 0.7, 0.5, 0.3]
+			for i in range(4):
+				var ring := MeshInstance3D.new()
+				var torus := TorusMesh.new()
+				torus.inner_radius = radii[i] * 0.7
+				torus.outer_radius = radii[i]
+				ring.mesh = torus
+				var mat_ring := StandardMaterial3D.new()
+				var ring_color := Color(surge_color.r, surge_color.g, surge_color.b, alphas[i])
+				mat_ring.albedo_color = ring_color
+				mat_ring.emission_enabled = true
+				mat_ring.emission = surge_color
+				mat_ring.emission_energy_multiplier = 3.0 - float(i) * 0.5
+				mat_ring.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				ring.material_override = mat_ring
+				ring.rotation_degrees = Vector3(90, float(i) * 45, 0)
+				root.add_child(ring)
+			# 核心球
+			var core := MeshInstance3D.new()
+			var core_s := SphereMesh.new()
+			core_s.radius = 0.12
+			core_s.height = 0.24
+			core.mesh = core_s
+			var mat_core := StandardMaterial3D.new()
+			mat_core.albedo_color = Color(1.0, 0.9, 0.5)
+			mat_core.emission_enabled = true
+			mat_core.emission = Color(1.0, 0.9, 0.5)
+			mat_core.emission_energy_multiplier = 5.0
+			core.material_override = mat_core
+			root.add_child(core)
+
+		"ch5_fate_knocker":
+			# 命运动机节奏形状：短短短长四个球
+			var fate_color := Color(0.2, 0.2, 0.8)
+			# 三个小球（短短短）
+			for i in range(3):
+				var small_ball := MeshInstance3D.new()
+				var ss := SphereMesh.new()
+				ss.radius = 0.15
+				ss.height = 0.3
+				small_ball.mesh = ss
+				var mat_sb := StandardMaterial3D.new()
+				mat_sb.albedo_color = fate_color
+				mat_sb.emission_enabled = true
+				mat_sb.emission = fate_color
+				mat_sb.emission_energy_multiplier = 2.0
+				small_ball.material_override = mat_sb
+				small_ball.position = Vector3(-0.5 + float(i) * 0.35, 0.2, 0)
+				root.add_child(small_ball)
+			# 一个大球（长）
+			var big_ball := MeshInstance3D.new()
+			var bs := SphereMesh.new()
+			bs.radius = 0.28
+			bs.height = 0.56
+			big_ball.mesh = bs
+			var mat_bb := StandardMaterial3D.new()
+			mat_bb.albedo_color = Color(0.5, 0.5, 1.0)
+			mat_bb.emission_enabled = true
+			mat_bb.emission = Color(0.5, 0.5, 1.0)
+			mat_bb.emission_energy_multiplier = 3.0
+			big_ball.material_override = mat_bb
+			big_ball.position = Vector3(0.4, -0.1, 0)
+			root.add_child(big_ball)
+
+		"ch5_fury_spirit":
+			# 闪电构成的不定形体：核心球 + 闪电触须
+			var fury_color := Color(0.3, 0.5, 1.0)
+			# 核心球
+			var fury_core := MeshInstance3D.new()
+			var fc_s := SphereMesh.new()
+			fc_s.radius = 0.22
+			fc_s.height = 0.44
+			fury_core.mesh = fc_s
+			var mat_fc := StandardMaterial3D.new()
+			mat_fc.albedo_color = Color(0.6, 0.7, 1.0)
+			mat_fc.emission_enabled = true
+			mat_fc.emission = Color(0.6, 0.7, 1.0)
+			mat_fc.emission_energy_multiplier = 4.0
+			fury_core.material_override = mat_fc
+			root.add_child(fury_core)
+			# 闪电触须（细长圆柱）
+			var lightning_angles := [0.0, PI * 0.5, PI, PI * 1.5, PI * 0.25, PI * 0.75]
+			for angle in lightning_angles:
+				var bolt := MeshInstance3D.new()
+				var b_cyl := CylinderMesh.new()
+				b_cyl.top_radius = 0.02
+				b_cyl.bottom_radius = 0.02
+				b_cyl.height = 0.5
+				bolt.mesh = b_cyl
+				var mat_bolt := StandardMaterial3D.new()
+				mat_bolt.albedo_color = fury_color
+				mat_bolt.emission_enabled = true
+				mat_bolt.emission = fury_color
+				mat_bolt.emission_energy_multiplier = 3.0
+				bolt.material_override = mat_bolt
+				bolt.position = Vector3(cos(angle) * 0.35, sin(angle) * 0.2, 0)
+				bolt.rotation_degrees = Vector3(0, 0, rad_to_deg(angle) + 90)
+				root.add_child(bolt)
+
+		# ============================================================
+		# 第六章敌人：爵士风格
+		# ============================================================
+		"ch6_walking_bass":
+			# 低音提琴形状霓虹轮廓
+			var bass_color := Color(0.0, 0.8, 1.0)
+			# 提琴主体（橄橄形球体）
+			var body := MeshInstance3D.new()
+			var body_s := SphereMesh.new()
+			body_s.radius = 0.35
+			body_s.height = 0.9
+			body.mesh = body_s
+			var mat_body := StandardMaterial3D.new()
+			mat_body.albedo_color = Color(0.0, 0.15, 0.2)
+			mat_body.emission_enabled = true
+			mat_body.emission = bass_color
+			mat_body.emission_energy_multiplier = 0.5
+			body.material_override = mat_body
+			body.position = Vector3(0, -0.1, 0)
+			root.add_child(body)
+			# 霓虹轮廓圈
+			var neon_ring := MeshInstance3D.new()
+			var nr_torus := TorusMesh.new()
+			nr_torus.inner_radius = 0.32
+			nr_torus.outer_radius = 0.38
+			neon_ring.mesh = nr_torus
+			var mat_nr := StandardMaterial3D.new()
+			mat_nr.albedo_color = bass_color
+			mat_nr.emission_enabled = true
+			mat_nr.emission = bass_color
+			mat_nr.emission_energy_multiplier = 4.0
+			neon_ring.material_override = mat_nr
+			neon_ring.position = Vector3(0, -0.1, 0)
+			neon_ring.rotation_degrees = Vector3(90, 0, 0)
+			root.add_child(neon_ring)
+			# 琴颈
+			var neck := MeshInstance3D.new()
+			var neck_cyl := CylinderMesh.new()
+			neck_cyl.top_radius = 0.04
+			neck_cyl.bottom_radius = 0.06
+			neck_cyl.height = 0.7
+			neck.mesh = neck_cyl
+			var mat_neck := StandardMaterial3D.new()
+			mat_neck.albedo_color = Color(0.9, 0.2, 0.8)
+			mat_neck.emission_enabled = true
+			mat_neck.emission = Color(0.9, 0.2, 0.8)
+			mat_neck.emission_energy_multiplier = 2.0
+			neck.material_override = mat_neck
+			neck.position = Vector3(0, 0.65, 0)
+			root.add_child(neck)
+
+		"ch6_scat_singer":
+			# 快速穿梭的小型体：小球 + 运动拖尾
+			var scat_color := Color(1.0, 0.6, 0.0)
+			# 主体球
+			var scat_ball := MeshInstance3D.new()
+			var sb_s := SphereMesh.new()
+			sb_s.radius = 0.2
+			sb_s.height = 0.4
+			scat_ball.mesh = sb_s
+			var mat_scat := StandardMaterial3D.new()
+			mat_scat.albedo_color = scat_color
+			mat_scat.emission_enabled = true
+			mat_scat.emission = scat_color
+			mat_scat.emission_energy_multiplier = 3.0
+			scat_ball.material_override = mat_scat
+			root.add_child(scat_ball)
+			# 运动拖尾（多个逐渐缩小的球）
+			for i in range(1, 5):
+				var trail := MeshInstance3D.new()
+				var ts := SphereMesh.new()
+				var t_radius := 0.2 * (1.0 - float(i) * 0.18)
+				ts.radius = t_radius
+				ts.height = t_radius * 2
+				trail.mesh = ts
+				var mat_trail := StandardMaterial3D.new()
+				var alpha := 1.0 - float(i) * 0.2
+				mat_trail.albedo_color = Color(scat_color.r, scat_color.g, scat_color.b, alpha)
+				mat_trail.emission_enabled = true
+				mat_trail.emission = scat_color
+				mat_trail.emission_energy_multiplier = 2.0 - float(i) * 0.4
+				mat_trail.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				trail.material_override = mat_trail
+				trail.position = Vector3(-float(i) * 0.25, float(i) * 0.1, 0)
+				root.add_child(trail)
+
+		# ============================================================
+		# 第七章敌人：电子风格
+		# ============================================================
+		"ch7_bitcrusher_worm":
+			# 像素块段组成的蠠虫：多个不同大小的方块
+			var worm_colors := [
+				Color(0.0, 1.0, 0.5),
+				Color(0.0, 0.8, 0.4),
+				Color(0.0, 0.6, 0.3),
+				Color(0.0, 0.4, 0.2),
+				Color(0.0, 0.3, 0.15),
+			]
+			var worm_sizes := [0.28, 0.22, 0.18, 0.14, 0.1]
+			for i in range(5):
+				var segment := MeshInstance3D.new()
+				var seg_box := BoxMesh.new()
+				var sz := worm_sizes[i]
+				seg_box.size = Vector3(sz, sz, sz)
+				segment.mesh = seg_box
+				var mat_seg := StandardMaterial3D.new()
+				mat_seg.albedo_color = worm_colors[i]
+				mat_seg.emission_enabled = true
+				mat_seg.emission = worm_colors[i]
+				mat_seg.emission_energy_multiplier = 2.5 - float(i) * 0.3
+				segment.material_override = mat_seg
+				segment.position = Vector3(-0.5 + float(i) * 0.28, sin(float(i) * 0.8) * 0.15, 0)
+				root.add_child(segment)
+
+		"ch7_glitch_phantom":
+			# 闪烁错位的幽灵：主体 + 错位层
+			var ghost_color := Color(0.7, 0.3, 1.0)
+			# 主体
+			var ghost_body := MeshInstance3D.new()
+			var gb_s := SphereMesh.new()
+			gb_s.radius = 0.3
+			gb_s.height = 0.6
+			ghost_body.mesh = gb_s
+			var mat_gb := StandardMaterial3D.new()
+			mat_gb.albedo_color = Color(ghost_color.r, ghost_color.g, ghost_color.b, 0.8)
+			mat_gb.emission_enabled = true
+			mat_gb.emission = ghost_color
+			mat_gb.emission_energy_multiplier = 2.0
+			mat_gb.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			ghost_body.material_override = mat_gb
+			root.add_child(ghost_body)
+			# 错位层（偏移的半透明副本）
+			for i in range(3):
+				var glitch := MeshInstance3D.new()
+				var gl_box := BoxMesh.new()
+				gl_box.size = Vector3(0.5 + float(i) * 0.1, 0.08, 0.08)
+				glitch.mesh = gl_box
+				var mat_gl := StandardMaterial3D.new()
+				var gl_color := Color(1.0 - float(i) * 0.3, 0.1, 1.0 - float(i) * 0.2)
+				mat_gl.albedo_color = Color(gl_color.r, gl_color.g, gl_color.b, 0.6)
+				mat_gl.emission_enabled = true
+				mat_gl.emission = gl_color
+				mat_gl.emission_energy_multiplier = 3.0
+				mat_gl.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				glitch.material_override = mat_gl
+				glitch.position = Vector3(float(i) * 0.12 - 0.12, float(i) * 0.15 - 0.15, float(i) * 0.05)
+				root.add_child(glitch)
+
+		# ============================================================
+		# 精英敌人
+		# ============================================================
+		"ch1_harmony_guardian":
+			# 带护盾光环的守卫：中心球 + 光环
+			var guardian_color := Color(0.3, 0.9, 0.7)
+			# 守卫主体
+			var guardian_body := MeshInstance3D.new()
+			var gb2 := CylinderMesh.new()
+			gb2.top_radius = 0.2
+			gb2.bottom_radius = 0.25
+			gb2.height = 0.7
+			guardian_body.mesh = gb2
+			var mat_gb2 := StandardMaterial3D.new()
+			mat_gb2.albedo_color = guardian_color
+			mat_gb2.emission_enabled = true
+			mat_gb2.emission = guardian_color
+			mat_gb2.emission_energy_multiplier = 2.0
+			guardian_body.material_override = mat_gb2
+			root.add_child(guardian_body)
+			# 护盾光环
+			for i in range(2):
+				var shield_ring := MeshInstance3D.new()
+				var sr_torus := TorusMesh.new()
+				sr_torus.inner_radius = 0.45 + float(i) * 0.12
+				sr_torus.outer_radius = 0.52 + float(i) * 0.12
+				shield_ring.mesh = sr_torus
+				var mat_sr := StandardMaterial3D.new()
+				mat_sr.albedo_color = Color(0.5, 1.0, 0.8)
+				mat_sr.emission_enabled = true
+				mat_sr.emission = Color(0.5, 1.0, 0.8)
+				mat_sr.emission_energy_multiplier = 3.0
+				shield_ring.material_override = mat_sr
+				shield_ring.rotation_degrees = Vector3(float(i) * 60, float(i) * 45, 0)
+				root.add_child(shield_ring)
+
+		"ch1_frequency_sentinel":
+			# 发出共振波的哨兵：中心体 + 同心波环
+			var sentinel_color := Color(0.5, 0.7, 1.0)
+			# 哨兵主体
+			var sentinel_body := MeshInstance3D.new()
+			var sb2 := BoxMesh.new()
+			sb2.size = Vector3(0.4, 0.6, 0.4)
+			sentinel_body.mesh = sb2
+			var mat_sb2 := StandardMaterial3D.new()
+			mat_sb2.albedo_color = sentinel_color
+			mat_sb2.emission_enabled = true
+			mat_sb2.emission = sentinel_color
+			mat_sb2.emission_energy_multiplier = 2.0
+			sentinel_body.material_override = mat_sb2
+			root.add_child(sentinel_body)
+			# 共振波环
+			var wave_radii := [0.4, 0.65, 0.9]
+			for i in range(3):
+				var wave_ring := MeshInstance3D.new()
+				var wr_torus := TorusMesh.new()
+				wr_torus.inner_radius = wave_radii[i] - 0.03
+				wr_torus.outer_radius = wave_radii[i]
+				wave_ring.mesh = wr_torus
+				var mat_wr := StandardMaterial3D.new()
+				var alpha := 1.0 - float(i) * 0.3
+				mat_wr.albedo_color = Color(sentinel_color.r, sentinel_color.g, sentinel_color.b, alpha)
+				mat_wr.emission_enabled = true
+				mat_wr.emission = sentinel_color
+				mat_wr.emission_energy_multiplier = 2.5 - float(i) * 0.5
+				mat_wr.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				wave_ring.material_override = mat_wr
+				wave_ring.rotation_degrees = Vector3(90, 0, 0)
+				root.add_child(wave_ring)
+
+		"ch2_cantor_commander":
+			# 手持指挥棒的形象：主体 + 指挥棒
+			var cantor_color := Color(0.9, 0.7, 0.3)
+			# 指挥主体
+			var cantor_body := MeshInstance3D.new()
+			var cb := SphereMesh.new()
+			cb.radius = 0.28
+			cb.height = 0.56
+			cantor_body.mesh = cb
+			var mat_cb := StandardMaterial3D.new()
+			mat_cb.albedo_color = cantor_color
+			mat_cb.emission_enabled = true
+			mat_cb.emission = cantor_color
+			mat_cb.emission_energy_multiplier = 2.0
+			cantor_body.material_override = mat_cb
+			root.add_child(cantor_body)
+			# 指挥棒
+			var baton := MeshInstance3D.new()
+			var baton_cyl := CylinderMesh.new()
+			baton_cyl.top_radius = 0.02
+			baton_cyl.bottom_radius = 0.04
+			baton_cyl.height = 0.7
+			baton.mesh = baton_cyl
+			var mat_baton := StandardMaterial3D.new()
+			mat_baton.albedo_color = Color(1.0, 0.95, 0.7)
+			mat_baton.emission_enabled = true
+			mat_baton.emission = Color(1.0, 0.95, 0.7)
+			mat_baton.emission_energy_multiplier = 3.0
+			baton.material_override = mat_baton
+			baton.position = Vector3(0.35, 0.15, 0)
+			baton.rotation_degrees = Vector3(0, 0, -45)
+			root.add_child(baton)
+			# 强化光环
+			var aura := MeshInstance3D.new()
+			var aura_torus := TorusMesh.new()
+			aura_torus.inner_radius = 0.45
+			aura_torus.outer_radius = 0.5
+			aura.mesh = aura_torus
+			var mat_aura := StandardMaterial3D.new()
+			mat_aura.albedo_color = Color(1.0, 0.8, 0.3)
+			mat_aura.emission_enabled = true
+			mat_aura.emission = Color(1.0, 0.8, 0.3)
+			mat_aura.emission_energy_multiplier = 2.5
+			aura.material_override = mat_aura
+			aura.rotation_degrees = Vector3(90, 0, 0)
+			root.add_child(aura)
+
+		"ch3_fugue_weaver":
+			# 带镜像分身的织者：主体 + 镜像分身
+			var fugue_color := Color(0.7, 0.4, 0.9)
+			# 主体
+			var fugue_body := MeshInstance3D.new()
+			var fb := SphereMesh.new()
+			fb.radius = 0.28
+			fb.height = 0.56
+			fugue_body.mesh = fb
+			var mat_fb := StandardMaterial3D.new()
+			mat_fb.albedo_color = fugue_color
+			mat_fb.emission_enabled = true
+			mat_fb.emission = fugue_color
+			mat_fb.emission_energy_multiplier = 2.5
+			fugue_body.material_override = mat_fb
+			fugue_body.position = Vector3(-0.3, 0, 0)
+			root.add_child(fugue_body)
+			# 镜像分身（半透明）
+			var mirror := MeshInstance3D.new()
+			var mb := SphereMesh.new()
+			mb.radius = 0.22
+			mb.height = 0.44
+			mirror.mesh = mb
+			var mat_mb := StandardMaterial3D.new()
+			mat_mb.albedo_color = Color(fugue_color.r, fugue_color.g, fugue_color.b, 0.5)
+			mat_mb.emission_enabled = true
+			mat_mb.emission = fugue_color
+			mat_mb.emission_energy_multiplier = 1.5
+			mat_mb.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mirror.material_override = mat_mb
+			mirror.position = Vector3(0.3, 0, 0)
+			root.add_child(mirror)
+			# 连接线
+			var fugue_link := MeshInstance3D.new()
+			var fl_box := BoxMesh.new()
+			fl_box.size = Vector3(0.6, 0.03, 0.03)
+			fugue_link.mesh = fl_box
+			var mat_fl := StandardMaterial3D.new()
+			mat_fl.albedo_color = fugue_color
+			mat_fl.emission_enabled = true
+			mat_fl.emission = fugue_color
+			mat_fl.emission_energy_multiplier = 2.0
+			fugue_link.material_override = mat_fl
+			root.add_child(fugue_link)
+
+		"ch4_court_kapellmeister":
+			# 华丽的宫廷指挥：主体 + 测山帽 + 指挥棒
+			var kap_color := Color(1.0, 0.85, 0.3)
+			# 指挥主体
+			var kap_body := MeshInstance3D.new()
+			var kb := CylinderMesh.new()
+			kb.top_radius = 0.18
+			kb.bottom_radius = 0.22
+			kb.height = 0.65
+			kap_body.mesh = kb
+			var mat_kb := StandardMaterial3D.new()
+			mat_kb.albedo_color = kap_color
+			mat_kb.emission_enabled = true
+			mat_kb.emission = kap_color
+			mat_kb.emission_energy_multiplier = 2.0
+			kap_body.material_override = mat_kb
+			root.add_child(kap_body)
+			# 测山帽
+			var hat := MeshInstance3D.new()
+			var hat_cyl := CylinderMesh.new()
+			hat_cyl.top_radius = 0.05
+			hat_cyl.bottom_radius = 0.22
+			hat_cyl.height = 0.3
+			hat.mesh = hat_cyl
+			var mat_hat := StandardMaterial3D.new()
+			mat_hat.albedo_color = Color(0.9, 0.7, 0.1)
+			mat_hat.emission_enabled = true
+			mat_hat.emission = Color(0.9, 0.7, 0.1)
+			mat_hat.emission_energy_multiplier = 2.5
+			hat.material_override = mat_hat
+			hat.position = Vector3(0, 0.5, 0)
+			root.add_child(hat)
+			# 指挥棒
+			var kap_baton := MeshInstance3D.new()
+			var kb2 := CylinderMesh.new()
+			kb2.top_radius = 0.02
+			kb2.bottom_radius = 0.03
+			kb2.height = 0.65
+			kap_baton.mesh = kb2
+			var mat_kb2 := StandardMaterial3D.new()
+			mat_kb2.albedo_color = Color(1.0, 1.0, 0.8)
+			mat_kb2.emission_enabled = true
+			mat_kb2.emission = Color(1.0, 1.0, 0.8)
+			mat_kb2.emission_energy_multiplier = 3.5
+			kap_baton.material_override = mat_kb2
+			kap_baton.position = Vector3(0.4, 0.1, 0)
+			kap_baton.rotation_degrees = Vector3(0, 0, -35)
+			root.add_child(kap_baton)
+
+		"ch5_symphony_commander":
+			# 四乐章形态的指挥：中心球 + 四个不同颜色的小球
+			var sym_colors := [
+				Color(0.3, 0.5, 1.0),   # 第一乐章：蓝色
+				Color(0.8, 0.4, 0.2),   # 第二乐章：橙色
+				Color(0.3, 0.8, 0.4),   # 第三乐章：绿色
+				Color(0.9, 0.2, 0.3),   # 第四乐章：红色
+			]
+			# 中心核
+			var sym_core := MeshInstance3D.new()
+			var sc_s := SphereMesh.new()
+			sc_s.radius = 0.25
+			sc_s.height = 0.5
+			sym_core.mesh = sc_s
+			var mat_sc := StandardMaterial3D.new()
+			mat_sc.albedo_color = Color(1.0, 0.9, 0.7)
+			mat_sc.emission_enabled = true
+			mat_sc.emission = Color(1.0, 0.9, 0.7)
+			mat_sc.emission_energy_multiplier = 3.0
+			sym_core.material_override = mat_sc
+			root.add_child(sym_core)
+			# 四个乐章小球
+			for i in range(4):
+				var angle := (float(i) / 4.0) * TAU
+				var movement := MeshInstance3D.new()
+				var ms := SphereMesh.new()
+				ms.radius = 0.15
+				ms.height = 0.3
+				movement.mesh = ms
+				var mat_ms := StandardMaterial3D.new()
+				mat_ms.albedo_color = sym_colors[i]
+				mat_ms.emission_enabled = true
+				mat_ms.emission = sym_colors[i]
+				mat_ms.emission_energy_multiplier = 2.5
+				movement.material_override = mat_ms
+				movement.position = Vector3(cos(angle) * 0.55, sin(angle) * 0.55, 0)
+				root.add_child(movement)
+
+		"ch6_bebop_virtuoso":
+			# 爵士风格的快速形态：主体 + 即兴粒子
+			var bebop_color := Color(1.0, 0.4, 0.0)
+			# 主体
+			var bebop_body := MeshInstance3D.new()
+			var bb := SphereMesh.new()
+			bb.radius = 0.28
+			bb.height = 0.56
+			bebop_body.mesh = bb
+			var mat_bb2 := StandardMaterial3D.new()
+			mat_bb2.albedo_color = bebop_color
+			mat_bb2.emission_enabled = true
+			mat_bb2.emission = bebop_color
+			mat_bb2.emission_energy_multiplier = 3.0
+			bebop_body.material_override = mat_bb2
+			root.add_child(bebop_body)
+			# 即兴粒子（快速运动轨迹）
+			var jazz_colors := [Color(1.0, 0.8, 0.0), Color(0.0, 0.8, 1.0), Color(1.0, 0.2, 0.5)]
+			for i in range(6):
+				var angle := (float(i) / 6.0) * TAU
+				var radius_var := 0.5 + float(i % 3) * 0.1
+				var particle := MeshInstance3D.new()
+				var ps := SphereMesh.new()
+				ps.radius = 0.06
+				ps.height = 0.12
+				particle.mesh = ps
+				var mat_p := StandardMaterial3D.new()
+				mat_p.albedo_color = jazz_colors[i % 3]
+				mat_p.emission_enabled = true
+				mat_p.emission = jazz_colors[i % 3]
+				mat_p.emission_energy_multiplier = 4.0
+				particle.material_override = mat_p
+				particle.position = Vector3(cos(angle) * radius_var, sin(angle) * radius_var * 0.5, 0)
+				root.add_child(particle)
+
+		"ch7_frequency_overlord":
+			# 控制频率的数字霸主：中心体 + 频率环
+			var overlord_color := Color(0.0, 1.0, 0.8)
+			# 主体（八面体）
+			var overlord_body := MeshInstance3D.new()
+			var ob := SphereMesh.new()
+			ob.radius = 0.3
+			ob.height = 0.6
+			overlord_body.mesh = ob
+			var mat_ob := StandardMaterial3D.new()
+			mat_ob.albedo_color = Color(0.0, 0.2, 0.15)
+			mat_ob.emission_enabled = true
+			mat_ob.emission = overlord_color
+			mat_ob.emission_energy_multiplier = 2.0
+			overlord_body.material_override = mat_ob
+			root.add_child(overlord_body)
+			# 频率控制环
+			var freq_colors := [Color(0.0, 1.0, 0.8), Color(0.0, 0.8, 1.0), Color(0.5, 0.0, 1.0)]
+			for i in range(3):
+				var freq_ring := MeshInstance3D.new()
+				var fr_torus := TorusMesh.new()
+				fr_torus.inner_radius = 0.38 + float(i) * 0.15
+				fr_torus.outer_radius = 0.43 + float(i) * 0.15
+				freq_ring.mesh = fr_torus
+				var mat_fr := StandardMaterial3D.new()
+				mat_fr.albedo_color = freq_colors[i]
+				mat_fr.emission_enabled = true
+				mat_fr.emission = freq_colors[i]
+				mat_fr.emission_energy_multiplier = 3.5
+				freq_ring.material_override = mat_fr
+				freq_ring.rotation_degrees = Vector3(float(i) * 30, float(i) * 45, float(i) * 60)
+				root.add_child(freq_ring)
+			# 数字小方块粒子
+			for i in range(8):
+				var angle := (float(i) / 8.0) * TAU
+				var pixel := MeshInstance3D.new()
+				var pb := BoxMesh.new()
+				pb.size = Vector3(0.08, 0.08, 0.08)
+				pixel.mesh = pb
+				var mat_pix := StandardMaterial3D.new()
+				mat_pix.albedo_color = overlord_color
+				mat_pix.emission_enabled = true
+				mat_pix.emission = overlord_color
+				mat_pix.emission_energy_multiplier = 4.0
+				pixel.material_override = mat_pix
+				pixel.position = Vector3(cos(angle) * 0.75, sin(angle) * 0.75, 0)
+				root.add_child(pixel)
+
+		# 默认处理：未知敌人使用通用外观
+		_:
+			var default_mesh := MeshInstance3D.new()
+			var default_sphere := SphereMesh.new()
+			default_sphere.radius = 0.3
+			default_sphere.height = 0.6
+			default_mesh.mesh = default_sphere
+			var mat_default := StandardMaterial3D.new()
+			mat_default.albedo_color = Color(0.6, 0.4, 0.8)
+			mat_default.emission_enabled = true
+			mat_default.emission = Color(0.6, 0.4, 0.8)
+			mat_default.emission_energy_multiplier = 2.0
+			default_mesh.material_override = mat_default
+			root.add_child(default_mesh)
 
 func _cleanup_enemy_preview() -> void:
 	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):
