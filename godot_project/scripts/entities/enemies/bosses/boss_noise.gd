@@ -808,7 +808,7 @@ func take_damage(damage_info: Dictionary) -> void:
 	if not _is_spectrum_collapse and current_hp / max_hp <= SPECTRUM_COLLAPSE_THRESHOLD:
 		_start_spectrum_collapse()
 
-func _on_death() -> void:
+func _on_death_effect() -> void:
 	# 停止所有攻击
 	_stop_all_attacks()
 	
@@ -828,7 +828,7 @@ func _on_death() -> void:
 	death_tween.tween_property(_sprite.material, "shader_parameter/pixel_size", 20.0, 2.0).from(1.0)
 	death_tween.tween_property(_sprite, "modulate:a", 0.0, 2.5).from(1.0)
 	death_tween.tween_callback(func():
-		.die() # 调用基类死亡处理
+		super._boss_die() # 调用基类 Boss 死亡处理
 	)
 
 # ============================================================
