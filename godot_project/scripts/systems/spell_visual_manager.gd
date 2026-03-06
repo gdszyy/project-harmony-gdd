@@ -1152,12 +1152,12 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 	func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:
 		var aim_dir := _get_aim_direction()
 		var target_pos := pos + aim_dir * 200.0
-		var color := Color(0.3, 0.3, 0.7)  # 深蓝紫色
+		var slow_color := Color(0.3, 0.3, 0.7)  # 深蓝紫色
 		
 		# 从天而降的减速标记
 		var pillar := Line2D.new()
 		pillar.width = 35.0
-		pillar.default_color = Color(color.r, color.g, color.b, 0.25)
+		pillar.default_color = Color(slow_color.r, slow_color.g, slow_color.b, 0.25)
 		pillar.add_point(Vector2(0, -400))
 		pillar.add_point(Vector2(0, 0))
 		pillar.global_position = target_pos
@@ -1169,19 +1169,19 @@ func _vfx_finale(pos: Vector2, _data: Dictionary) -> void:
 		p_tween.tween_callback(pillar.queue_free)
 		
 		# 减速波纹外环（六边形）
-		var outer := _create_polygon(target_pos, 70.0, 6, Color(color.r, color.g, color.b, 0.15))
+		var outer := _create_polygon(target_pos, 70.0, 6, Color(slow_color.r, slow_color.g, slow_color.b, 0.15))
 		
 		# 内环波纹
-		var inner := _create_polygon(target_pos, 50.0, 6, Color(color.r, color.g, color.b, 0.12))
+		var inner := _create_polygon(target_pos, 50.0, 6, Color(slow_color.r, slow_color.g, slow_color.b, 0.12))
 		inner.rotation = PI / 6.0
 		
 		# 减速领域边框
-		var border := _create_ring(target_pos, 65.0, color, 0.35)
+		var border := _create_ring(target_pos, 65.0, slow_color, 0.35)
 		
 		# 减速波纹扩散效果
 		for i in range(3):
 			get_tree().create_timer(i * 0.2).timeout.connect(func():
-				var wave := _create_ring(target_pos, 10.0, Color(color.r, color.g, color.b, 0.5 - i * 0.1), 0.4)
+				var wave := _create_ring(target_pos, 10.0, Color(slow_color.r, slow_color.g, slow_color.b, 0.5 - i * 0.1), 0.4)
 				var w_tween := wave.create_tween()
 				w_tween.set_parallel(true)
 				w_tween.tween_property(wave, "scale", Vector2(8.0, 8.0), 0.8)

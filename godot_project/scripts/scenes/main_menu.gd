@@ -330,7 +330,7 @@ func _on_start_pressed() -> void:
 func _on_settings_pressed() -> void:
 	var settings_scene := load("res://scenes/settings_menu.tscn")
 	if settings_scene:
-		var settings_menu := settings_scene.instantiate()
+		var settings_menu: Node = settings_scene.instantiate()
 		settings_menu.z_index = 50
 		add_child(settings_menu)
 		# 连接设置菜单的关闭信号

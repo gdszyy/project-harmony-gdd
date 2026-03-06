@@ -19,7 +19,7 @@ const CharacterClass = preload("res://scripts/data/character_class.gd")
 # ============================================================
 # 信号
 # ============================================================
-signal class_applied(class_id: String, class_name: String)
+signal class_applied(class_id: String, applied_class_name: String)
 signal passive_triggered(passive_id: String, effect: Dictionary)
 signal auto_cleanse_triggered()
 

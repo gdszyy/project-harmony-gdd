@@ -261,7 +261,7 @@ func _update_ripples(progress: float) -> void:
 		return
 	for ripple in _ripple_nodes:
 		var delay: float = ripple.get_meta("start_delay", 0.0)
-		var ripple_progress := clamp((progress - delay) / 0.5, 0.0, 1.0)
+		var ripple_progress: float = clamp((progress - delay) / 0.5, 0.0, 1.0)
 		ripple.set_meta("radius", ripple_progress * 40.0)
 		ripple.set_meta("alpha", (1.0 - ripple_progress) * 0.5)
 	queue_redraw()

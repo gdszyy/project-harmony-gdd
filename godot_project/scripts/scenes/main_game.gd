@@ -582,9 +582,9 @@ func _on_progression_resolved(progression: Dictionary) -> void:
 		var effect_type: String = progression.get("effect", {}).get("type", "")
 		_debug_log("★ 和弦进行解决: %s (效果: %s)" % [progression.get("name", ""), effect_type])
 
-func _on_timbre_changed(timbre) -> void:
+func _on_timbre_changed(timbre: int) -> void:
 	if GameManager.is_test_mode:
-		var timbre_info := SpellcraftSystem.get_timbre_info(timbre)
+		var timbre_info: Dictionary = SpellcraftSystem.get_timbre_info(timbre)
 		_debug_log("音色切换: %s" % timbre_info.get("name", "未知"))
 
 # ============================================================
@@ -1001,7 +1001,7 @@ func test_cast_note(white_key: int) -> void:
 	var meta_dmg_mult := SaveManager.get_damage_multiplier()
 	var meta_spd_mult := SaveManager.get_speed_multiplier()
 	var mode_dmg_mult := ModeSystem.get_damage_multiplier()
-	var timbre := SpellcraftSystem.get_current_timbre()
+	var timbre: int = SpellcraftSystem.get_current_timbre()
 	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
 	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
 		FatigueManager.current_level, 1.0
@@ -1048,7 +1048,7 @@ func test_cast_note_with_modifier(white_key: int, modifier: int) -> void:
 	var meta_dmg_mult := SaveManager.get_damage_multiplier()
 	var meta_spd_mult := SaveManager.get_speed_multiplier()
 	var mode_dmg_mult := ModeSystem.get_damage_multiplier()
-	var timbre := SpellcraftSystem.get_current_timbre()
+	var timbre: int = SpellcraftSystem.get_current_timbre()
 	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
 	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
 		FatigueManager.current_level, 1.0
@@ -1108,7 +1108,7 @@ func test_cast_chord(chord_type: int) -> void:
 	var fatigue := FatigueManager.query_fatigue()
 	var damage_mult: float = fatigue.get("penalty", {}).get("damage_multiplier", 1.0)
 	var chord_multiplier: float = spell_info.get("multiplier", 1.0)
-	var timbre := SpellcraftSystem.get_current_timbre()
+	var timbre: int = SpellcraftSystem.get_current_timbre()
 	var timbre_data: Dictionary = MusicData.TIMBRE_ADSR.get(timbre, {})
 	var timbre_fatigue_mult: float = MusicData.TIMBRE_FATIGUE_PENALTY.get(
 		FatigueManager.current_level, 1.0

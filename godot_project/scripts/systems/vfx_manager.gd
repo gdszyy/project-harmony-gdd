@@ -310,6 +310,7 @@ func play_screen_flash(color: Color = Color.WHITE, duration: float = 0.15) -> vo
 	tween.tween_property(_flash_rect, "color:a", 0.0, duration).set_ease(Tween.EASE_IN)
 	tween.tween_callback(func():
 		# [Removed] vfx_finished signal was deprecated and removed (Issue #86)
+		pass
 	)
 
 # ============================================================

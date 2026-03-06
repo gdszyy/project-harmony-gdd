@@ -1202,6 +1202,7 @@ func _init_pool_manager() -> void:
 		if parent:
 			_pool_manager = parent.get_node_or_null("PoolManager")
 	if _pool_manager:
+		pass
 	else:
 		push_warning("EnemySpawner: PoolManager not found, falling back to instantiate/queue_free")
 
