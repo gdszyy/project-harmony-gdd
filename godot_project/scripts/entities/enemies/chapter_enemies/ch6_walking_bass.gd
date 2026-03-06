@@ -513,7 +513,7 @@ func _update_note_trails(delta: float) -> void:
 func _update_trails(delta: float) -> void:
 	var expired: Array[int] = []
 	for i in range(_trail_segments.size()):
-		var seg: Color = _trail_segments[i]
+		var seg: Dictionary = _trail_segments[i]
 		seg["timer"] -= delta
 		if seg["timer"] <= 0.0:
 			expired.append(i)

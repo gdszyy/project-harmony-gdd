@@ -103,7 +103,7 @@ func _draw_sequencer_ring() -> void:
 
 	for i in range(AUTO_CAST_TICKS):
 		var angle := (TAU / AUTO_CAST_TICKS) * i - PI / 2.0
-		var is_active: Color = _tick_states[i] if i < _tick_states.size() else false
+		var is_active: bool = _tick_states[i] if i < _tick_states.size() else false
 		var is_current := (i == _current_beat)
 
 		# 刻度标记

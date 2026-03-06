@@ -552,7 +552,7 @@ func _update_arc_trails(delta: float) -> void:
 	var expired: Array[int] = []
 	
 	for i in range(_arc_trails.size()):
-		var trail: Color = _arc_trails[i]
+		var trail = _arc_trails[i]
 		trail["timer"] -= delta
 		
 		if trail["timer"] <= 0.0:

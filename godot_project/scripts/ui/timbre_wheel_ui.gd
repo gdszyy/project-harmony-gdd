@@ -459,7 +459,7 @@ func _draw() -> void:
 		draw_line(center_points[i], center_points[next_idx], center_border, 1.0)
 
 	# 中心文字
-	var center_name: Color = CENTER_TIMBRE["name"]
+	var center_name: String = CENTER_TIMBRE["name"]
 	var center_name_color: Color = CENTER_TIMBRE["color"] if center_selected else UIColors.TEXT_SECONDARY
 	center_name_color.a = alpha
 	draw_string(font, _center + Vector2(-16, -4), center_name,

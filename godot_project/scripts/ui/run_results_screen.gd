@@ -405,7 +405,7 @@ func _draw_actions_phase(canvas: Control, center: Vector2, font: Font, vp: Vecto
 		var rect := Rect2(Vector2(center.x - btn_w / 2.0, y), Vector2(btn_w, btn_h))
 		_btn_rects[btn["key"]] = rect
 
-		var is_hover := (_hover_btn == btn["key"])
+		var is_hover: bool = (_hover_btn == btn["key"])
 		var btn_color: Color = btn["color"]
 		var bg_alpha := 0.12 if is_hover else 0.06
 		canvas.draw_rect(rect, UIColors.with_alpha(btn_color, bg_alpha))

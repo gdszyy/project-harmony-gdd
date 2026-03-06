@@ -188,7 +188,7 @@ func _draw_flow_particles(center: Vector2) -> void:
 ## 绘制刻度标记
 func _draw_tick_marks(center: Vector2) -> void:
 	for tick in TICK_POSITIONS:
-		var angle := PI / 2.0 + tick * TAU
+		var angle: float = PI / 2.0 + tick * TAU
 		var inner_pos := center + Vector2.from_angle(angle) * RING_INNER_R
 		var outer_pos := center + Vector2.from_angle(angle) * RING_OUTER_R
 		var tick_color := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.25)
@@ -197,13 +197,13 @@ func _draw_tick_marks(center: Vector2) -> void:
 ## 绘制蒸发/汇入效果粒子
 func _draw_effect_particles(center: Vector2) -> void:
 	for p in _evaporation_particles:
-		var pos := center + Vector2.from_angle(p["angle"]) * p["radius"]
+		var pos: Vector2 = center + Vector2.from_angle(p["angle"]) * p["radius"]
 		var p_color: Color = p["color"]
 		p_color.a = p["life"]
 		draw_circle(pos, p["size"] * p["life"], p_color)
 
 	for p in _inflow_particles:
-		var pos := center + Vector2.from_angle(p["angle"]) * p["radius"]
+		var pos: Vector2 = center + Vector2.from_angle(p["angle"]) * p["radius"]
 		var p_color: Color = p["color"]
 		p_color.a = p["life"]
 		draw_circle(pos, p["size"] * p["life"], p_color)

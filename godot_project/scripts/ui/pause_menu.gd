@@ -149,7 +149,7 @@ func _show_menu() -> void:
 
 	# --- 按钮依次淡入 ---
 	for i in range(_menu_buttons.size()):
-		var button: Color = _menu_buttons[i]
+		var button: Button = _menu_buttons[i]
 		button.modulate.a = 0.0
 		var delay := PANEL_ANIM_DURATION * 0.5 + i * 0.06
 		var tween := create_tween()
