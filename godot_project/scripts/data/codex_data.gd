@@ -998,14 +998,14 @@ const VOL3_BOSSES: Dictionary = {
 # ============================================================
 ## ★ 修饰符描述已与 MusicData.BLACK_KEY_MODIFIERS 和 ProjectileManager 实现同步
 const VOL4_MODIFIERS: Dictionary = {
-	"modifier_pierce": {
-		"name": "锐化 (C#/Db)",
-		"subtitle": "穿透修饰符",
-		"description": "使弹体获得穿透能力，可以穿过敌人继续飞行（最多穿透 3 个目标）。穿透后伤害不衰减。在 ProjectileManager 中实现为 pierce=true, max_pierce=3。适合对付成排的敌人。\n\n使用方式：在和弦缓冲区为空时按下 C# 键，然后施放下一个音符。",
-		"black_key": "C#",
-		"rarity": Rarity.COMMON,
-		"unlock_type": UnlockType.DEFAULT,
-	},
+		"modifier_pierce": {
+			"name": "锐化 (C#/Db)",
+			"subtitle": "穿透修饰符",
+			"description": "使弹体获得穿透能力，可以穿过敌人继续飞行（最多穿透 3 个目标）。穿透后伤害不衰减。在 ProjectileManager 中实现为 pierce=true, max_pierce=3。适合对付成排的敌人。\n\n【组合效果】\n- 穿透 + 大三和弦：巨大的能量球前端带有一道锐利的青色激光指示器，对路径上的所有敌人造成毁灭性打击。\n- 穿透 + 弹拨系音色：弹体呈现为锋利的金针，穿透时产生多重水墨波纹。\n\n使用方式：在和弦缓冲区为空时按下 C# 键，然后施放下一个音符。",
+			"black_key": "C#",
+			"rarity": Rarity.COMMON,
+			"unlock_type": UnlockType.DEFAULT,
+		},
 	"modifier_homing": {
 		"name": "追踪 (D#/Eb)",
 		"subtitle": "追踪修饰符",
@@ -1015,14 +1015,14 @@ const VOL4_MODIFIERS: Dictionary = {
 		"unlock_type": UnlockType.META_UNLOCK,
 		"unlock_key": "modifier_homing",
 	},
-	"modifier_split": {
-		"name": "分裂 (F#/Gb)",
-		"subtitle": "分裂修饰符",
-		"description": "使弹体在命中敌人后分裂为 3 个小弹体，呈等角扇形散开（120 度间隔）。小弹体继承原弹体 50% 的伤害、70% 的速度和大小，持续时间为原来的 50%。适合扩大覆盖范围。\n\n使用方式：在和弦缓冲区为空时按下 F# 键，然后施放下一个音符。",
-		"black_key": "F#",
-		"rarity": Rarity.COMMON,
-		"unlock_type": UnlockType.DEFAULT,
-	},
+		"modifier_split": {
+			"name": "分裂 (F#/Gb)",
+			"subtitle": "分裂修饰符",
+			"description": "使弹体在命中敌人后分裂为 3 个小弹体，呈等角扇形散开（120 度间隔）。小弹体继承原弹体 50% 的伤害、70% 的速度和大小，持续时间为原来的 50%。适合扩大覆盖范围。\n\n【组合效果】\n- 分裂 + 减七和弦：天降打击命中后，向四周散射出多道追踪闪电。\n- 分裂 + 吹奏系音色：主气流命中后化为三股细小的旋风，自动寻找附近目标。\n\n使用方式：在和弦缓冲区为空时按下 F# 键，然后施放下一个音符。",
+			"black_key": "F#",
+			"rarity": Rarity.COMMON,
+			"unlock_type": UnlockType.DEFAULT,
+		},
 	"modifier_echo": {
 		"name": "回响 (G#/Ab)",
 		"subtitle": "回响修饰符",
