@@ -353,6 +353,12 @@ func _apply_tutti_mechanic(spell_data: Dictionary) -> void:
 		spell_data["damage"] = spell_data.get("damage", 30.0) * params.get("fortissimo_damage_mult", 1.5)
 		spell_data["size"] = spell_data.get("size", 24.0) * params.get("fortissimo_size_mult", 1.3)
 	# else: 中等强度，保持原始数值
+	
+	# 触发 VFX 信号
+	timbre_vfx_triggered.emit(MusicData.ChapterTimbre.TUTTI, {
+		"emotional_intensity": emotional_intensity,
+		"is_climax": _is_climax_active
+	})
 
 ## Ch6 萨克斯 — 摇摆攻击
 ## 检测反拍触发加成；累积反拍次数触发即兴独奏
@@ -393,6 +399,12 @@ func _apply_saxophone_mechanic(spell_data: Dictionary) -> void:
 	if _is_improvising:
 		spell_data["homing"] = true
 		spell_data["homing_strength"] = 6.0
+		
+	# 触发 VFX 信号
+	timbre_vfx_triggered.emit(MusicData.ChapterTimbre.SAXOPHONE, {
+		"is_offbeat": is_offbeat,
+		"is_improvising": _is_improvising
+	})
 
 ## Ch7 合成主脑 — 波形变换
 ## 根据当前波形应用不同属性加成；过渡期混合两种波形效果

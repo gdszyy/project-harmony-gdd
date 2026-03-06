@@ -32,19 +32,25 @@ const MODIFIER_COLORS: Dictionary = {
 	MusicData.ModifierEffect.SCATTER: Color(1.0, 1.0, 0.0),    # 黄色扇形
 }
 
-## 音色系别颜色映射（层级三）
+## 音色系别颜色映射（层级三）- v2.0 扩展为7种章节音色
 const TIMBRE_COLORS: Dictionary = {
-	MusicData.TimbreType.NONE: Color(0.0, 1.0, 0.8),
-	MusicData.TimbreType.PLUCKED: Color(0.85, 0.75, 0.3),   # 金色/水墨
-	MusicData.TimbreType.BOWED: Color(0.8, 0.2, 0.3),       # 暗红丝线
-	MusicData.TimbreType.WIND: Color(0.6, 0.9, 0.7),        # 半透明气流
-	MusicData.TimbreType.PERCUSSIVE: Color(0.9, 0.9, 0.9),  # 坚实白色
+	MusicData.ChapterTimbre.NONE: Color(0.0, 1.0, 0.8),
+	MusicData.ChapterTimbre.LYRE: Color(1.0, 0.84, 0.0),        # 圣光金
+	MusicData.ChapterTimbre.ORGAN: Color(0.8, 0.2, 0.3),        # 暗红/琥珀
+	MusicData.ChapterTimbre.HARPSICHORD: Color(0.8, 0.7, 0.3),  # 黄铜色
+	MusicData.ChapterTimbre.FORTEPIANO: Color(1.0, 1.0, 1.0),   # 纯白/水晶
+	MusicData.ChapterTimbre.TUTTI: Color(1.0, 0.2, 0.1),        # 炽红/冷蓝
+	MusicData.ChapterTimbre.SAXOPHONE: Color(1.0, 0.8, 0.2),    # 金色/霓虹紫
+	MusicData.ChapterTimbre.SYNTHESIZER: Color(0.0, 1.0, 0.8),  # 青色/故障色
 }
 
 ## 预加载 Shader（审计报告 2.4 修复：激活闲置 Shader）
 var _timbre_projectile_shader: Shader = null
 var _modifier_vfx_shader: Shader = null
 var _scanline_glow_shader: Shader = null
+
+## 预加载7种专属音色 Shader
+var _timbre_shaders: Dictionary = {}
 
 ## 和弦进行颜色映射（层级五）
 const PROGRESSION_COLORS: Dictionary = {
@@ -63,7 +69,7 @@ var _cleanup_timer: float = 0.0
 var _current_phase: String = "fundamental"  # "fundamental", "overtone", "sub_bass"
 
 ## 当前音色（层级三）
-var _current_timbre: MusicData.TimbreType = MusicData.TimbreType.NONE
+var _current_timbre: int = MusicData.ChapterTimbre.NONE
 
 # ============================================================
 # 生命周期
@@ -74,6 +80,15 @@ func _ready() -> void:
 	_timbre_projectile_shader = load("res://shaders/timbre_projectile.gdshader")
 	_modifier_vfx_shader = load("res://shaders/modifier_vfx.gdshader")
 	_scanline_glow_shader = load("res://shaders/scanline_glow.gdshader")
+	
+	# 预加载7种专属音色 Shader
+	_timbre_shaders[MusicData.ChapterTimbre.LYRE] = load("res://shaders/timbre_lyre.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.ORGAN] = load("res://shaders/timbre_organ.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.HARPSICHORD] = load("res://shaders/timbre_harpsichord.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.FORTEPIANO] = load("res://shaders/timbre_piano.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.TUTTI] = load("res://shaders/timbre_orchestra.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.SAXOPHONE] = load("res://shaders/timbre_saxophone.gdshader")
+	_timbre_shaders[MusicData.ChapterTimbre.SYNTHESIZER] = load("res://shaders/timbre_synth.gdshader")
 
 	# 连接法术系统信号
 	SpellcraftSystem.spell_cast.connect(_on_spell_cast)
@@ -196,7 +211,7 @@ func _on_modifier_applied(modifier: MusicData.ModifierEffect) -> void:
 	var player_pos := _get_player_position()
 	_spawn_modifier_ready_indicator_enhanced(player_pos, modifier)
 
-func _on_timbre_changed(new_timbre: MusicData.TimbreType) -> void:
+func _on_timbre_changed(new_timbre: int) -> void:
 	_current_timbre = new_timbre
 
 func _on_phase_switched(phase_name: String) -> void:
@@ -1948,7 +1963,7 @@ func _find_nearest_enemy(pos: Vector2) -> Vector2:
 # ============================================================
 
 ## 应用音色弹体 Shader 到施法反馈
-func _apply_timbre_shader_to_cast(pos: Vector2, timbre: MusicData.TimbreType, _spell_data: Dictionary) -> void:
+func _apply_timbre_shader_to_cast(pos: Vector2, timbre: int, spell_data: Dictionary) -> void:
 	if _timbre_projectile_shader == null:
 		return
 	var timbre_sprite := Sprite2D.new()
@@ -1964,17 +1979,66 @@ func _apply_timbre_shader_to_cast(pos: Vector2, timbre: MusicData.TimbreType, _s
 	timbre_sprite.texture = tex
 	timbre_sprite.global_position = pos
 	var mat := ShaderMaterial.new()
-	mat.shader = _timbre_projectile_shader
-	mat.set_shader_parameter("timbre_type", timbre)
-	mat.set_shader_parameter("timbre_color", timbre_color)
+	
+	# 使用专属 Shader 或通用 Shader
+	if _timbre_shaders.has(timbre) and _timbre_shaders[timbre] != null:
+		mat.shader = _timbre_shaders[timbre]
+		mat.set_shader_parameter("base_color", timbre_color)
+		
+		# 传递特定音色的参数
+		match timbre:
+			MusicData.ChapterTimbre.LYRE:
+				mat.set_shader_parameter("resonance_ratio", 0.5) # 示例值
+			MusicData.ChapterTimbre.ORGAN:
+				mat.set_shader_parameter("voice_layers", spell_data.get("organ_layers", 0))
+			MusicData.ChapterTimbre.HARPSICHORD:
+				mat.set_shader_parameter("is_counterpoint", spell_data.get("is_counterpoint", false))
+			MusicData.ChapterTimbre.FORTEPIANO:
+				var vel = spell_data.get("velocity_dynamics", "mezzo")
+				var vel_state = 1
+				if vel == "piano": vel_state = 0
+				elif vel == "forte": vel_state = 2
+				mat.set_shader_parameter("velocity_state", vel_state)
+			MusicData.ChapterTimbre.TUTTI:
+				mat.set_shader_parameter("emotional_intensity", spell_data.get("emotional_intensity", 50.0))
+				mat.set_shader_parameter("is_climax", spell_data.get("is_climax", false))
+			MusicData.ChapterTimbre.SAXOPHONE:
+				mat.set_shader_parameter("is_offbeat", spell_data.get("is_offbeat", false))
+				mat.set_shader_parameter("is_improvising", spell_data.get("is_improvising", false))
+			MusicData.ChapterTimbre.SYNTHESIZER:
+				mat.set_shader_parameter("waveform_type", spell_data.get("waveform_type", 0))
+				mat.set_shader_parameter("is_morphing", spell_data.get("is_morphing", false))
+	else:
+		mat.shader = _timbre_projectile_shader
+		mat.set_shader_parameter("timbre_type", timbre)
+		mat.set_shader_parameter("timbre_color", timbre_color)
+		mat.set_shader_parameter("beat_phase", GlobalMusicManager.get_beat_energy() if GlobalMusicManager else 0.0)
+	
+	# 传递 ADSR 参数
+	if MusicData.CHAPTER_TIMBRE_ADSR.has(timbre):
+		var adsr = MusicData.CHAPTER_TIMBRE_ADSR[timbre]
+		mat.set_shader_parameter("attack_time", adsr.get("attack", 0.1))
+		mat.set_shader_parameter("decay_time", adsr.get("decay", 0.1))
+		mat.set_shader_parameter("sustain_level", adsr.get("sustain", 0.8))
+		mat.set_shader_parameter("release_time", adsr.get("release", 0.2))
+	
 	mat.set_shader_parameter("intensity", 1.0)
-	mat.set_shader_parameter("beat_phase", GlobalMusicManager.get_beat_energy())
+	mat.set_shader_parameter("time_alive", 0.0) # 初始存活时间
+	
 	timbre_sprite.material = mat
 	add_child(timbre_sprite)
 	var tween := timbre_sprite.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(timbre_sprite, "scale", Vector2(3.0, 3.0), 0.2)
 	tween.tween_property(timbre_sprite, "modulate:a", 0.0, 0.25)
+	
+	# 更新 Shader 中的 time_alive
+	var time_tween := timbre_sprite.create_tween()
+	time_tween.tween_method(func(t: float):
+		if is_instance_valid(timbre_sprite) and timbre_sprite.material:
+			timbre_sprite.material.set_shader_parameter("time_alive", t)
+	, 0.0, 0.25, 0.25)
+	
 	tween.chain()
 	tween.tween_callback(timbre_sprite.queue_free)
 
