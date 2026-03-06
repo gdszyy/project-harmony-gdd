@@ -1899,6 +1899,8 @@ func _demo_cast_rhythm(config: Dictionary) -> void:
 
 func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
 	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(white_key, {})
+	# BUG FIX: WHITE_KEY_STATS 中没有 color 字段，必需从 NOTE_COLORS 获取音符颜色
+	var color: Color = MusicData.NOTE_COLORS.get(white_key, Color.WHITE)
 	return {
 		"white_key": white_key,
 		"modifier": modifier,
@@ -1906,7 +1908,7 @@ func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
 		"spd": stats.get("spd", 2),
 		"dur": stats.get("dur", 2),
 		"size": stats.get("size", 2),
-		"color": stats.get("color", Color.WHITE),
+		"color": color,
 	}
 
 func _spawn_demo_3d_projectile(spell_data: Dictionary) -> void:
