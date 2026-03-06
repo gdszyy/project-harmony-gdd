@@ -24,7 +24,7 @@ signal miss_beat()
 @export var good_window_ms: float = 100.0
 
 # 颜色
-var COLOR_RESONANCE_CYAN := UIColors.RESONANCE_CYAN     # #00FFD4
+var COLOR_RESONANCE_CYAN: Color = UIColors.RESONANCE_CYAN  # #00FFD4
 const COLOR_STARRY_PURPLE  := UIColors.PANEL_BG # #141026
 
 # ============================================================

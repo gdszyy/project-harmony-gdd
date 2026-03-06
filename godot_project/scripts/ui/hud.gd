@@ -599,10 +599,7 @@ func _update_silence_indicators() -> void:
 				"font_color", UIColors.with_alpha(UIColors.DANGER, alpha)
 			)
 			var note_name: String = ""
-			if MusicData.get("WHITE_KEY_STATS") != null:
-				note_name = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", "?")
-			else:
-				note_name = ["C", "D", "E", "F", "G", "A", "B"][i]
+			note_name = MusicData.WHITE_KEY_STATS.get(white_key, {}).get("name", ["C", "D", "E", "F", "G", "A", "B"][i])
 			_silence_indicators[i].text = "%s [X]" % note_name
 		else:
 			_silence_indicators[i].visible = false

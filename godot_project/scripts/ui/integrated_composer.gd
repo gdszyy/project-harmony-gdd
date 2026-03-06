@@ -20,6 +20,7 @@
 ##
 ## 使用 Godot 内置拖拽 API（_get_drag_data / _can_drop_data / _drop_data）
 ## 与 SpellcraftSystem、NoteInventory 等全局单例对接
+class_name IntegratedComposer
 extends CanvasLayer
 
 # ============================================================
@@ -42,9 +43,9 @@ signal panel_toggled(is_open: bool)
 # 常量 — 全局 UI 主题规范（来自美术文档）
 # ============================================================
 ## 面板背景色：星空紫，80% 不透明度
-const THEME_BG_COLOR := UIColors.with_alpha(UIColors.PANEL_BG, 0.80)
+static var THEME_BG_COLOR := UIColors.with_alpha(UIColors.PANEL_BG, 0.80)
 ## 面板边框色：主强调色，40% 不透明度
-const THEME_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.40)
+static var THEME_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.40)
 ## 文本色：晶体白
 const THEME_TEXT_COLOR := UIColors.TEXT_PRIMARY
 ## 按钮/强调色：主强调色

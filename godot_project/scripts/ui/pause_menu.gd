@@ -32,7 +32,7 @@ extends Control
 # ============================================================
 
 ## 背景遮罩色: 深渊黑 #0A0814, 50% 透明
-const COLOR_OVERLAY := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
+static var COLOR_OVERLAY := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
 ## 标题色: 晶体白
 const COLOR_TITLE := UIColors.TEXT_PRIMARY
 ## 统计信息色: 次级文本

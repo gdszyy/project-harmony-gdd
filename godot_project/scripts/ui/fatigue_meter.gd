@@ -19,9 +19,9 @@ const TOTAL_WIDTH: float = BAR_WIDTH + GLOW_EXTEND * 2.0
 const TOTAL_HEIGHT: float = BAR_HEIGHT + 40.0
 
 # 颜色常量
-var COLOR_CYAN   := UIColors.RESONANCE_CYAN   # #00FFD4
-var COLOR_YELLOW := UIColors.FATIGUE_YELLOW    # #FFE066
-var COLOR_ORANGE := UIColors.DATA_ORANGE    # #FF8800
+var COLOR_CYAN: Color   = UIColors.RESONANCE_CYAN   # #00FFD4
+var COLOR_YELLOW: Color = UIColors.FATIGUE_YELLOW    # #FFE066
+var COLOR_ORANGE: Color = UIColors.DATA_ORANGE    # #FF8800
 const COLOR_RED    := UIColors.ERROR_RED  # #FF2244
 
 # 疲劳等级名称

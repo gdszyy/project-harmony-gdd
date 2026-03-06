@@ -174,7 +174,7 @@ func _on_entry_unlocked(entry_id: String, entry_name: String, volume: int) -> vo
 	var volume_name: String = VOLUME_NAMES.get(volume, "未知")
 
 	show_unlock(entry_id, entry_name,
-		"第%s卷 · %s" % [["一","二","三","四"].get(volume, "?"), volume_name],
+		"第%s卷 · %s" % [(["一","二","三","四"][volume] if volume >= 0 and volume < 4 else "?"), volume_name],
 		rarity, rarity_color, rarity_color)
 
 # ============================================================
