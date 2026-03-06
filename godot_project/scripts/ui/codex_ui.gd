@@ -1869,13 +1869,16 @@ func _demo_cast_note(config: Dictionary) -> void:
 	var note_key: int = config.get("demo_note", 0)
 	var spell_data := _build_demo_spell_data(note_key, -1)
 	_spawn_demo_3d_projectile(spell_data)
-	_update_demo_status("施放 %s 音符" % MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?"))
+	var note_name: String = MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?")
+	_update_demo_status("施放 %s 音符" % note_name)
 
 func _demo_cast_note_modifier(config: Dictionary) -> void:
 	var note_key: int = config.get("demo_note", 0)
 	var modifier: int = config.get("demo_modifier", 0)
 	var spell_data := _build_demo_spell_data(note_key, modifier)
 	_spawn_demo_3d_projectile(spell_data)
+	# 额外生成修饰符视觉特效
+	_spawn_demo_modifier_vfx(modifier, spell_data)
 	_update_demo_status("施放 %s + %s" % [
 		MusicData.WHITE_KEY_STATS.get(note_key, {}).get("name", "?"),
 		_get_modifier_display_name(modifier)
@@ -1885,26 +1888,14 @@ func _demo_cast_chord(config: Dictionary) -> void:
 	var chord_type: int = config.get("demo_chord_type", 0)
 	var chord_name: String = MusicData.CHORD_SPELL_MAP.get(chord_type, {}).get("name", "未知")
 	_update_demo_status("施放 %s 和弦" % chord_name)
-	# 创建简单的和弦视觉效果
-	if _demo_3d_entity_layer:
-		var sphere := MeshInstance3D.new()
-		sphere.mesh = SphereMesh.new()
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = UIColors.ACCENT
-		mat.emission_enabled = true
-		mat.emission = UIColors.ACCENT
-		mat.emission_energy_multiplier = 3.0
-		sphere.material_override = mat
-		sphere.position = Vector3(0, 1, 0)
-		_demo_3d_entity_layer.add_child(sphere)
-		# 动画
-		var tween := create_tween()
-		tween.tween_property(sphere, "scale", Vector3(3, 3, 3), 0.5)
-		tween.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.8)
-		tween.tween_callback(sphere.queue_free)
+	_spawn_demo_chord_vfx(chord_type)
 
 func _demo_cast_rhythm(config: Dictionary) -> void:
-	_update_demo_status("节奏型演示")
+	var rhythm_pattern: String = config.get("demo_rhythm_pattern", "")
+	var note_key: int = config.get("demo_note", 4)  # 默认 G 音符
+	var spell_data := _build_demo_spell_data(note_key, -1)
+	_spawn_demo_rhythm_vfx(rhythm_pattern, spell_data)
+	_update_demo_status("节奏型演示: %s" % rhythm_pattern)
 
 func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
 	var stats: Dictionary = MusicData.WHITE_KEY_STATS.get(white_key, {})
@@ -1922,27 +1913,1124 @@ func _spawn_demo_3d_projectile(spell_data: Dictionary) -> void:
 	if not _demo_3d_entity_layer:
 		return
 
-	var projectile := MeshInstance3D.new()
-	projectile.mesh = SphereMesh.new()
-	(projectile.mesh as SphereMesh).radius = 0.2
-	(projectile.mesh as SphereMesh).height = 0.4
-
 	var color: Color = spell_data.get("color", Color.WHITE)
+	var size_param: float = spell_data.get("size", 2.0)
+	var spd_param: float = spell_data.get("spd", 2.0)
+	var dur_param: float = spell_data.get("dur", 2.0)
+	var dmg_param: float = spell_data.get("dmg", 2.0)
+
+	# 根据 SIZE 参数计算弹体半径 (0.15 ~ 0.45)
+	var radius: float = clampf(size_param * 0.08, 0.12, 0.5)
+	# 根据 SPD 参数计算飞行时长 (SPD高则快)
+	var duration: float = clampf(6.0 / max(spd_param, 0.5), 0.4, 3.0)
+
+	# 主弹体网格实例
+	var projectile := MeshInstance3D.new()
+	var sphere_mesh := SphereMesh.new()
+	sphere_mesh.radius = radius
+	sphere_mesh.height = radius * 2.0
+	projectile.mesh = sphere_mesh
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	# 根据 DMG 参数调整发光强度
+	mat.emission_energy_multiplier = 2.0 + dmg_param * 0.5
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	projectile.material_override = mat
+	projectile.position = Vector3(-5, 0.5, 0)
+	_demo_3d_entity_layer.add_child(projectile)
+
+	# 拖尾粒子系统：根据 SIZE 和 SPD 生成不同数量的拖尾
+	var trail_count: int = int(clampf(size_param * 1.5, 2, 8))
+	for i in range(trail_count):
+		var trail_delay: float = (i + 1) * 0.05
+		get_tree().create_timer(trail_delay).timeout.connect(func():
+			if not is_instance_valid(projectile) or not is_instance_valid(_demo_3d_entity_layer):
+				return
+			var trail := MeshInstance3D.new()
+			var trail_mesh := SphereMesh.new()
+			var trail_radius: float = radius * (1.0 - float(i) / float(trail_count))
+			trail_mesh.radius = trail_radius
+			trail_mesh.height = trail_radius * 2.0
+			trail.mesh = trail_mesh
+			var trail_mat := StandardMaterial3D.new()
+			var trail_alpha: float = 0.6 - float(i) * 0.08
+			trail_mat.albedo_color = Color(color.r, color.g, color.b, trail_alpha)
+			trail_mat.emission_enabled = true
+			trail_mat.emission = color
+			trail_mat.emission_energy_multiplier = 1.5
+			trail_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			trail.material_override = trail_mat
+			trail.position = projectile.position
+			_demo_3d_entity_layer.add_child(trail)
+			var trail_tween := create_tween()
+			trail_tween.tween_property(trail_mat, "albedo_color:a", 0.0, 0.3)
+			trail_tween.tween_callback(trail.queue_free)
+		)
+
+	# 主弹体飞行动画
+	var tween := create_tween()
+	tween.tween_property(projectile, "position:x", 5.0, duration)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_LINEAR)
+	# 命中闪光效果
+	tween.tween_callback(func():
+		if is_instance_valid(_demo_3d_entity_layer):
+			_spawn_demo_3d_impact(projectile.position, color, radius)
+	)
+	tween.tween_callback(projectile.queue_free)
+
+## 弹体命中闪光特效
+func _spawn_demo_3d_impact(pos: Vector3, color: Color, radius: float) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var burst_count: int = 6
+	for i in range(burst_count):
+		var spark := MeshInstance3D.new()
+		var spark_mesh := SphereMesh.new()
+		spark_mesh.radius = radius * 0.3
+		spark_mesh.height = radius * 0.6
+		spark.mesh = spark_mesh
+		var spark_mat := StandardMaterial3D.new()
+		spark_mat.albedo_color = color
+		spark_mat.emission_enabled = true
+		spark_mat.emission = color
+		spark_mat.emission_energy_multiplier = 3.0
+		spark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		spark.material_override = spark_mat
+		spark.position = pos
+		_demo_3d_entity_layer.add_child(spark)
+		var angle: float = (TAU / burst_count) * i
+		var target_pos := pos + Vector3(cos(angle) * 0.8, sin(angle) * 0.5, 0)
+		var spark_tween := create_tween()
+		spark_tween.set_parallel(true)
+		spark_tween.tween_property(spark, "position", target_pos, 0.3)
+		spark_tween.tween_property(spark_mat, "albedo_color:a", 0.0, 0.4)
+		spark_tween.chain()
+		spark_tween.tween_callback(spark.queue_free)
+
+## 和弦法术演示特效：根据和弦类型生成独特视觉效果
+func _spawn_demo_chord_vfx(chord_type: int) -> void:
+	if not _demo_3d_entity_layer:
+		return
+
+	# 和弦法术颜色映射
+	var chord_colors: Dictionary = {
+		0: Color(1.0, 0.9, 0.3),   # MAJOR 大三 - 圣光金
+		1: Color(0.4, 0.2, 0.8),   # MINOR 小三 - 暗紫
+		2: Color(1.0, 0.5, 0.0),   # AUGMENTED 增三 - 烈焰橙
+		3: Color(0.5, 0.0, 0.8),   # DIMINISHED 减三 - 深紫
+		4: Color(0.9, 0.8, 0.0),   # DOMINANT_7 属七 - 黄金
+		5: Color(0.8, 0.0, 0.0),   # DIMINISHED_7 减七 - 血红
+		6: Color(0.2, 0.9, 0.4),   # MAJOR_7 大七 - 治愈绿
+		7: Color(0.15, 0.15, 0.7), # MINOR_7 小七 - 深蓝
+		8: Color(0.9, 0.9, 1.0),   # SUSPENDED 挂留 - 银白
+		9: Color(0.3, 0.8, 1.0),   # DOMINANT_9 属九 - 风暴蓝
+		10: Color(1.0, 0.95, 0.6), # MAJOR_9 大九 - 圣光金
+		11: Color(0.8, 0.0, 0.8),  # DIMINISHED_9 减九 - 湮灭紫
+		13: Color(1.0, 0.6, 0.0),  # DOMINANT_13 属十三 - 交响橙
+		14: Color(1.0, 0.0, 0.0),  # DIMINISHED_13 减十三 - 终焉红
+	}
+	var color: Color = chord_colors.get(chord_type, UIColors.ACCENT)
+
+	match chord_type:
+		0:  # MAJOR 大三 - 强化弹体：金色光球扩展
+			_demo_chord_enhanced_projectile(color)
+		1:  # MINOR 小三 - DOT弹体：暗色漩渍碗云
+			_demo_chord_dot_projectile(color)
+		2:  # AUGMENTED 增三 - 爆炸弹体：火焰爆炸
+			_demo_chord_explosive(color)
+		3:  # DIMINISHED 减三 - 冲击波：环形波纹
+			_demo_chord_shockwave(color)
+		4:  # DOMINANT_7 属七 - 法阵：旋转几何法阵
+			_demo_chord_field(color)
+		5:  # DIMINISHED_7 减七 - 天降打击：预警+光柱
+			_demo_chord_divine_strike(color)
+		6:  # MAJOR_7 大七 - 护盾/治疗：绿色护盾泡
+			_demo_chord_shield_heal(color)
+		7:  # MINOR_7 小七 - 召唤：构造体生成
+			_demo_chord_summon(color)
+		8:  # SUSPENDED 挂留 - 蓄力弹体：能量踟缩释放
+			_demo_chord_charged(color)
+		9:  # DOMINANT_9 属九 - 风暴区域：旋转风暴
+			_demo_chord_storm_field(color)
+		10: # MAJOR_9 大九 - 圣光领域：金色光柱治疗光环
+			_demo_chord_holy_domain(color)
+		11: # DIMINISHED_9 减九 - 湮灭射线：紫色激光
+			_demo_chord_annihilation_ray(color)
+		13: # DOMINANT_13 属十三 - 交响风暴：多波次弹幕
+			_demo_chord_symphony_storm(color)
+		14: # DIMINISHED_13 减十三 - 终焉乐章：全屏毁灭
+			_demo_chord_finale(color)
+		_:  # 默认处理
+			_demo_chord_default(color)
+
+## 强化弹体演示：金色光球+六边形能量网格
+func _demo_chord_enhanced_projectile(color: Color) -> void:
+	var orb := MeshInstance3D.new()
+	orb.mesh = SphereMesh.new()
+	(orb.mesh as SphereMesh).radius = 0.4
+	(orb.mesh as SphereMesh).height = 0.8
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 5.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	orb.material_override = mat
+	orb.position = Vector3(-3, 1, 0)
+	_demo_3d_entity_layer.add_child(orb)
+	# 外圈光环
+	var ring := MeshInstance3D.new()
+	ring.mesh = TorusMesh.new()
+	(ring.mesh as TorusMesh).inner_radius = 0.45
+	(ring.mesh as TorusMesh).outer_radius = 0.55
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = color.lightened(0.3)
+	ring_mat.emission_enabled = true
+	ring_mat.emission = color
+	ring_mat.emission_energy_multiplier = 3.0
+	ring.material_override = ring_mat
+	ring.position = Vector3(-3, 1, 0)
+	_demo_3d_entity_layer.add_child(ring)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(orb, "position:x", 3.0, 1.2)
+	tween.tween_property(ring, "position:x", 3.0, 1.2)
+	tween.tween_property(ring, "rotation:y", TAU, 1.2)
+	tween.chain()
+	tween.tween_callback(orb.queue_free)
+	tween.tween_callback(ring.queue_free)
+
+## DOT弹体演示：暗色漩渍碗云+漩渍滚落
+func _demo_chord_dot_projectile(color: Color) -> void:
+	var orb := MeshInstance3D.new()
+	orb.mesh = SphereMesh.new()
+	(orb.mesh as SphereMesh).radius = 0.35
+	(orb.mesh as SphereMesh).height = 0.7
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 3.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	orb.material_override = mat
+	orb.position = Vector3(-3, 1, 0)
+	_demo_3d_entity_layer.add_child(orb)
+	# 漩渍碗云拖尾
+	for i in range(5):
+		get_tree().create_timer(i * 0.1).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var cloud := MeshInstance3D.new()
+			cloud.mesh = SphereMesh.new()
+			(cloud.mesh as SphereMesh).radius = 0.2 + i * 0.05
+			(cloud.mesh as SphereMesh).height = (0.2 + i * 0.05) * 2
+			var cloud_mat := StandardMaterial3D.new()
+			cloud_mat.albedo_color = Color(color.r, color.g, color.b, 0.5 - i * 0.08)
+			cloud_mat.emission_enabled = true
+			cloud_mat.emission = color
+			cloud_mat.emission_energy_multiplier = 1.5
+			cloud_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			cloud.material_override = cloud_mat
+			cloud.position = orb.position
+			_demo_3d_entity_layer.add_child(cloud)
+			var cloud_tween := create_tween()
+			cloud_tween.tween_property(cloud_mat, "albedo_color:a", 0.0, 0.6)
+			cloud_tween.tween_callback(cloud.queue_free)
+		)
+	var tween := create_tween()
+	tween.tween_property(orb, "position:x", 3.0, 1.5)
+	tween.tween_callback(orb.queue_free)
+
+## 爆炸弹体演示：火焰球命中爆炸
+func _demo_chord_explosive(color: Color) -> void:
+	var orb := MeshInstance3D.new()
+	orb.mesh = SphereMesh.new()
+	(orb.mesh as SphereMesh).radius = 0.3
+	(orb.mesh as SphereMesh).height = 0.6
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 6.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	orb.material_override = mat
+	orb.position = Vector3(-3, 1, 0)
+	_demo_3d_entity_layer.add_child(orb)
+	var tween := create_tween()
+	tween.tween_property(orb, "position:x", 1.0, 0.6)
+	tween.tween_callback(func():
+		if is_instance_valid(orb): orb.queue_free()
+		if not is_instance_valid(_demo_3d_entity_layer): return
+		# 爆炸效果：多个火花向外扩散
+		for i in range(8):
+			var spark := MeshInstance3D.new()
+			spark.mesh = SphereMesh.new()
+			(spark.mesh as SphereMesh).radius = 0.15
+			(spark.mesh as SphereMesh).height = 0.3
+			var spark_mat := StandardMaterial3D.new()
+			spark_mat.albedo_color = color
+			spark_mat.emission_enabled = true
+			spark_mat.emission = color
+			spark_mat.emission_energy_multiplier = 5.0
+			spark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			spark.material_override = spark_mat
+			spark.position = Vector3(1, 1, 0)
+			_demo_3d_entity_layer.add_child(spark)
+			var angle: float = (TAU / 8) * i
+			var target := Vector3(1 + cos(angle) * 2.0, 1 + sin(angle) * 1.5, 0)
+			var s_tween := create_tween()
+			s_tween.set_parallel(true)
+			s_tween.tween_property(spark, "position", target, 0.5)
+			s_tween.tween_property(spark_mat, "albedo_color:a", 0.0, 0.6)
+			s_tween.chain()
+			s_tween.tween_callback(spark.queue_free)
+	)
+
+## 冲击波演示：环形波纹向外扩散
+func _demo_chord_shockwave(color: Color) -> void:
+	# 创建多层冲击波环
+	for i in range(3):
+		get_tree().create_timer(i * 0.15).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var ring := MeshInstance3D.new()
+			ring.mesh = TorusMesh.new()
+			(ring.mesh as TorusMesh).inner_radius = 0.05
+			(ring.mesh as TorusMesh).outer_radius = 0.15
+			var ring_mat := StandardMaterial3D.new()
+			ring_mat.albedo_color = Color(color.r, color.g, color.b, 0.8 - i * 0.2)
+			ring_mat.emission_enabled = true
+			ring_mat.emission = color
+			ring_mat.emission_energy_multiplier = 4.0
+			ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			ring.material_override = ring_mat
+			ring.position = Vector3(0, 0.5, 0)
+			ring.rotation = Vector3(PI / 2, 0, 0)
+			_demo_3d_entity_layer.add_child(ring)
+			var r_tween := create_tween()
+			r_tween.set_parallel(true)
+			r_tween.tween_property(ring, "scale", Vector3(8, 8, 8), 0.8)
+			r_tween.tween_property(ring_mat, "albedo_color:a", 0.0, 1.0)
+			r_tween.chain()
+			r_tween.tween_callback(ring.queue_free)
+		)
+
+## 法阵演示：旋转几何法阵+上升粒子
+func _demo_chord_field(color: Color) -> void:
+	# 外圈圆盘
+	var outer := MeshInstance3D.new()
+	outer.mesh = CylinderMesh.new()
+	(outer.mesh as CylinderMesh).top_radius = 2.5
+	(outer.mesh as CylinderMesh).bottom_radius = 2.5
+	(outer.mesh as CylinderMesh).height = 0.05
+	var outer_mat := StandardMaterial3D.new()
+	outer_mat.albedo_color = Color(color.r, color.g, color.b, 0.3)
+	outer_mat.emission_enabled = true
+	outer_mat.emission = color
+	outer_mat.emission_energy_multiplier = 2.0
+	outer_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	outer.material_override = outer_mat
+	outer.position = Vector3(0, 0.1, 0)
+	_demo_3d_entity_layer.add_child(outer)
+	# 内圈旋转六边形
+	var inner := MeshInstance3D.new()
+	inner.mesh = CylinderMesh.new()
+	(inner.mesh as CylinderMesh).top_radius = 1.5
+	(inner.mesh as CylinderMesh).bottom_radius = 1.5
+	(inner.mesh as CylinderMesh).height = 0.05
+	var inner_mat := StandardMaterial3D.new()
+	inner_mat.albedo_color = Color(color.r, color.g, color.b, 0.4)
+	inner_mat.emission_enabled = true
+	inner_mat.emission = color
+	inner_mat.emission_energy_multiplier = 3.0
+	inner_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	inner.material_override = inner_mat
+	inner.position = Vector3(0, 0.1, 0)
+	_demo_3d_entity_layer.add_child(inner)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(outer, "rotation:y", TAU, 3.0)
+	tween.tween_property(inner, "rotation:y", -TAU, 3.0)
+	tween.chain()
+	tween.tween_callback(outer.queue_free)
+	tween.tween_callback(inner.queue_free)
+
+## 天降打击演示：预警标记+光柱落下
+func _demo_chord_divine_strike(color: Color) -> void:
+	# 预警圆圈
+	var warning := MeshInstance3D.new()
+	warning.mesh = TorusMesh.new()
+	(warning.mesh as TorusMesh).inner_radius = 1.4
+	(warning.mesh as TorusMesh).outer_radius = 1.6
+	var warn_mat := StandardMaterial3D.new()
+	warn_mat.albedo_color = Color(1.0, 0.0, 0.0, 0.5)
+	warn_mat.emission_enabled = true
+	warn_mat.emission = Color(1.0, 0.0, 0.0)
+	warn_mat.emission_energy_multiplier = 3.0
+	warn_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	warning.material_override = warn_mat
+	warning.position = Vector3(0, 0.1, 0)
+	warning.rotation = Vector3(PI / 2, 0, 0)
+	_demo_3d_entity_layer.add_child(warning)
+	# 预警收缩动画
+	var tween := create_tween()
+	tween.tween_property(warning, "scale", Vector3(0.5, 0.5, 0.5), 0.8)
+	tween.tween_callback(func():
+		if is_instance_valid(warning): warning.queue_free()
+		if not is_instance_valid(_demo_3d_entity_layer): return
+		# 天降光柱
+		var strike := MeshInstance3D.new()
+		strike.mesh = CylinderMesh.new()
+		(strike.mesh as CylinderMesh).top_radius = 0.3
+		(strike.mesh as CylinderMesh).bottom_radius = 0.3
+		(strike.mesh as CylinderMesh).height = 8.0
+		var strike_mat := StandardMaterial3D.new()
+		strike_mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+		strike_mat.emission_enabled = true
+		strike_mat.emission = color
+		strike_mat.emission_energy_multiplier = 8.0
+		strike_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		strike.material_override = strike_mat
+		strike.position = Vector3(0, 4, 0)
+		_demo_3d_entity_layer.add_child(strike)
+		var s_tween := create_tween()
+		s_tween.tween_property(strike_mat, "albedo_color:a", 0.0, 0.5)
+		s_tween.tween_callback(strike.queue_free)
+	)
+
+## 护盾/治疗演示：绿色护盾泡泡+治疗光点
+func _demo_chord_shield_heal(color: Color) -> void:
+	# 护盾半球
+	var shield := MeshInstance3D.new()
+	shield.mesh = SphereMesh.new()
+	(shield.mesh as SphereMesh).radius = 1.5
+	(shield.mesh as SphereMesh).height = 3.0
+	var shield_mat := StandardMaterial3D.new()
+	shield_mat.albedo_color = Color(color.r, color.g, color.b, 0.2)
+	shield_mat.emission_enabled = true
+	shield_mat.emission = color
+	shield_mat.emission_energy_multiplier = 2.0
+	shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shield_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shield.material_override = shield_mat
+	shield.position = Vector3(0, 0.5, 0)
+	_demo_3d_entity_layer.add_child(shield)
+	# 治疗光点从外向内汇聚
+	for i in range(8):
+		get_tree().create_timer(i * 0.1).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var particle := MeshInstance3D.new()
+			particle.mesh = SphereMesh.new()
+			(particle.mesh as SphereMesh).radius = 0.08
+			(particle.mesh as SphereMesh).height = 0.16
+			var p_mat := StandardMaterial3D.new()
+			p_mat.albedo_color = Color(0.5, 1.0, 0.6, 0.9)
+			p_mat.emission_enabled = true
+			p_mat.emission = Color(0.3, 1.0, 0.5)
+			p_mat.emission_energy_multiplier = 4.0
+			p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			particle.material_override = p_mat
+			var angle: float = (TAU / 8) * i
+			particle.position = Vector3(cos(angle) * 2.5, 0.5, sin(angle) * 2.5)
+			_demo_3d_entity_layer.add_child(particle)
+			var p_tween := create_tween()
+			p_tween.set_parallel(true)
+			p_tween.tween_property(particle, "position", Vector3(0, 0.5, 0), 0.6)
+			p_tween.tween_property(p_mat, "albedo_color:a", 0.0, 0.7)
+			p_tween.chain()
+			p_tween.tween_callback(particle.queue_free)
+		)
+	var tween := create_tween()
+	tween.tween_property(shield_mat, "albedo_color:a", 0.0, 3.0)
+	tween.tween_callback(shield.queue_free)
+
+## 召唤演示：构造体从地面生长
+func _demo_chord_summon(color: Color) -> void:
+	# 召唤阵圆
+	var circle := MeshInstance3D.new()
+	circle.mesh = TorusMesh.new()
+	(circle.mesh as TorusMesh).inner_radius = 1.2
+	(circle.mesh as TorusMesh).outer_radius = 1.4
+	var circle_mat := StandardMaterial3D.new()
+	circle_mat.albedo_color = Color(color.r, color.g, color.b, 0.7)
+	circle_mat.emission_enabled = true
+	circle_mat.emission = color
+	circle_mat.emission_energy_multiplier = 3.0
+	circle_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	circle.material_override = circle_mat
+	circle.position = Vector3(0, 0.1, 0)
+	circle.rotation = Vector3(PI / 2, 0, 0)
+	_demo_3d_entity_layer.add_child(circle)
+	var c_tween := create_tween()
+	c_tween.tween_property(circle, "rotation:z", TAU, 1.5)
+	c_tween.parallel().tween_property(circle_mat, "albedo_color:a", 0.0, 1.8)
+	c_tween.tween_callback(circle.queue_free)
+	# 构造体从下方生长
+	get_tree().create_timer(0.5).timeout.connect(func():
+		if not is_instance_valid(_demo_3d_entity_layer): return
+		var construct := MeshInstance3D.new()
+		construct.mesh = BoxMesh.new()
+		(construct.mesh as BoxMesh).size = Vector3(0.6, 0.6, 0.6)
+		var c_mat := StandardMaterial3D.new()
+		c_mat.albedo_color = color
+		c_mat.emission_enabled = true
+		c_mat.emission = color
+		c_mat.emission_energy_multiplier = 3.0
+		construct.material_override = c_mat
+		construct.position = Vector3(0, -0.5, 0)
+		_demo_3d_entity_layer.add_child(construct)
+		var grow_tween := create_tween()
+		grow_tween.tween_property(construct, "position:y", 0.8, 0.6)
+		grow_tween.tween_property(construct, "rotation:y", TAU, 2.0)
+		grow_tween.tween_callback(construct.queue_free)
+	)
+
+## 蓄力弹体演示：能量球蓄力至最大后释放
+func _demo_chord_charged(color: Color) -> void:
+	# 蓄力能量球
+	var orb := MeshInstance3D.new()
+	orb.mesh = SphereMesh.new()
+	(orb.mesh as SphereMesh).radius = 0.15
+	(orb.mesh as SphereMesh).height = 0.3
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 6.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	orb.material_override = mat
+	orb.position = Vector3(-2, 1, 0)
+	_demo_3d_entity_layer.add_child(orb)
+	# 能量线条被吸入
+	for i in range(6):
+		var angle: float = (TAU / 6) * i
+		var start_pos := Vector3(-2 + cos(angle) * 1.5, 1 + sin(angle) * 1.0, 0)
+		get_tree().create_timer(i * 0.1).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var line_node := MeshInstance3D.new()
+			line_node.mesh = CylinderMesh.new()
+			(line_node.mesh as CylinderMesh).top_radius = 0.02
+			(line_node.mesh as CylinderMesh).bottom_radius = 0.02
+			(line_node.mesh as CylinderMesh).height = 1.5
+			var l_mat := StandardMaterial3D.new()
+			l_mat.albedo_color = Color(color.r, color.g, color.b, 0.6)
+			l_mat.emission_enabled = true
+			l_mat.emission = color
+			l_mat.emission_energy_multiplier = 2.0
+			l_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			line_node.material_override = l_mat
+			line_node.position = start_pos.lerp(Vector3(-2, 1, 0), 0.5)
+			line_node.look_at(Vector3(-2, 1, 0))
+			_demo_3d_entity_layer.add_child(line_node)
+			var l_tween := create_tween()
+			l_tween.tween_property(l_mat, "albedo_color:a", 0.0, 0.4)
+			l_tween.tween_callback(line_node.queue_free)
+		)
+	# 蓄力膨胀动画
+	var tween := create_tween()
+	tween.tween_property(orb, "scale", Vector3(4, 4, 4), 1.0)
+	tween.tween_callback(func():
+		if is_instance_valid(orb): orb.queue_free()
+		if not is_instance_valid(_demo_3d_entity_layer): return
+		# 释放闪光
+		var flash := MeshInstance3D.new()
+		flash.mesh = SphereMesh.new()
+		(flash.mesh as SphereMesh).radius = 0.8
+		(flash.mesh as SphereMesh).height = 1.6
+		var f_mat := StandardMaterial3D.new()
+		f_mat.albedo_color = Color.WHITE
+		f_mat.emission_enabled = true
+		f_mat.emission = Color.WHITE
+		f_mat.emission_energy_multiplier = 10.0
+		f_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		flash.material_override = f_mat
+		flash.position = Vector3(-2, 1, 0)
+		_demo_3d_entity_layer.add_child(flash)
+		var f_tween := create_tween()
+		f_tween.tween_property(f_mat, "albedo_color:a", 0.0, 0.3)
+		f_tween.tween_callback(flash.queue_free)
+	)
+
+## 风暴区域演示：旋转风暴漩渍
+func _demo_chord_storm_field(color: Color) -> void:
+	# 中心旋转圆盘
+	var disk := MeshInstance3D.new()
+	disk.mesh = CylinderMesh.new()
+	(disk.mesh as CylinderMesh).top_radius = 2.0
+	(disk.mesh as CylinderMesh).bottom_radius = 2.0
+	(disk.mesh as CylinderMesh).height = 0.05
+	var disk_mat := StandardMaterial3D.new()
+	disk_mat.albedo_color = Color(color.r, color.g, color.b, 0.2)
+	disk_mat.emission_enabled = true
+	disk_mat.emission = color
+	disk_mat.emission_energy_multiplier = 2.0
+	disk_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	disk.material_override = disk_mat
+	disk.position = Vector3(0, 0.1, 0)
+	_demo_3d_entity_layer.add_child(disk)
+	# 旋转风暴臂
+	for i in range(3):
+		var arm := MeshInstance3D.new()
+		arm.mesh = CylinderMesh.new()
+		(arm.mesh as CylinderMesh).top_radius = 0.08
+		(arm.mesh as CylinderMesh).bottom_radius = 0.08
+		(arm.mesh as CylinderMesh).height = 2.0
+		var arm_mat := StandardMaterial3D.new()
+		arm_mat.albedo_color = Color(color.r, color.g, color.b, 0.7)
+		arm_mat.emission_enabled = true
+		arm_mat.emission = color
+		arm_mat.emission_energy_multiplier = 4.0
+		arm_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		arm.material_override = arm_mat
+		arm.position = Vector3(0, 0.5, 0)
+		arm.rotation = Vector3(0, (TAU / 3) * i, PI / 2)
+		_demo_3d_entity_layer.add_child(arm)
+		var a_tween := create_tween()
+		a_tween.tween_property(arm, "rotation:y", (TAU / 3) * i + TAU, 3.0)
+		a_tween.tween_callback(arm.queue_free)
+	var d_tween := create_tween()
+	d_tween.tween_property(disk, "rotation:y", TAU, 3.0)
+	d_tween.tween_callback(disk.queue_free)
+
+## 圣光领域演示：金色光柱+治疗光环
+func _demo_chord_holy_domain(color: Color) -> void:
+	# 光柱
+	var pillar := MeshInstance3D.new()
+	pillar.mesh = CylinderMesh.new()
+	(pillar.mesh as CylinderMesh).top_radius = 0.8
+	(pillar.mesh as CylinderMesh).bottom_radius = 0.8
+	(pillar.mesh as CylinderMesh).height = 6.0
+	var pillar_mat := StandardMaterial3D.new()
+	pillar_mat.albedo_color = Color(color.r, color.g, color.b, 0.25)
+	pillar_mat.emission_enabled = true
+	pillar_mat.emission = color
+	pillar_mat.emission_energy_multiplier = 3.0
+	pillar_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pillar_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	pillar.material_override = pillar_mat
+	pillar.position = Vector3(0, 3, 0)
+	_demo_3d_entity_layer.add_child(pillar)
+	# 圆形光环
+	var aura := MeshInstance3D.new()
+	aura.mesh = TorusMesh.new()
+	(aura.mesh as TorusMesh).inner_radius = 1.8
+	(aura.mesh as TorusMesh).outer_radius = 2.0
+	var aura_mat := StandardMaterial3D.new()
+	aura_mat.albedo_color = Color(color.r, color.g, color.b, 0.5)
+	aura_mat.emission_enabled = true
+	aura_mat.emission = color
+	aura_mat.emission_energy_multiplier = 3.0
+	aura_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	aura.material_override = aura_mat
+	aura.position = Vector3(0, 0.3, 0)
+	aura.rotation = Vector3(PI / 2, 0, 0)
+	_demo_3d_entity_layer.add_child(aura)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(pillar_mat, "albedo_color:a", 0.0, 3.0)
+	tween.tween_property(aura, "rotation:z", TAU, 3.0)
+	tween.chain()
+	tween.tween_callback(pillar.queue_free)
+	tween.tween_callback(aura.queue_free)
+
+## 湮灭射线演示：紫色激光贯穿全屏
+func _demo_chord_annihilation_ray(color: Color) -> void:
+	# 主射线圆柱
+	var ray := MeshInstance3D.new()
+	ray.mesh = CylinderMesh.new()
+	(ray.mesh as CylinderMesh).top_radius = 0.15
+	(ray.mesh as CylinderMesh).bottom_radius = 0.15
+	(ray.mesh as CylinderMesh).height = 12.0
+	var ray_mat := StandardMaterial3D.new()
+	ray_mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+	ray_mat.emission_enabled = true
+	ray_mat.emission = color
+	ray_mat.emission_energy_multiplier = 8.0
+	ray_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ray.material_override = ray_mat
+	ray.position = Vector3(0, 0.5, 0)
+	ray.rotation = Vector3(0, 0, PI / 2)
+	_demo_3d_entity_layer.add_child(ray)
+	# 外圈光晕
+	var glow := MeshInstance3D.new()
+	glow.mesh = CylinderMesh.new()
+	(glow.mesh as CylinderMesh).top_radius = 0.5
+	(glow.mesh as CylinderMesh).bottom_radius = 0.5
+	(glow.mesh as CylinderMesh).height = 12.0
+	var glow_mat := StandardMaterial3D.new()
+	glow_mat.albedo_color = Color(color.r, color.g, color.b, 0.2)
+	glow_mat.emission_enabled = true
+	glow_mat.emission = color
+	glow_mat.emission_energy_multiplier = 2.0
+	glow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow.material_override = glow_mat
+	glow.position = Vector3(0, 0.5, 0)
+	glow.rotation = Vector3(0, 0, PI / 2)
+	_demo_3d_entity_layer.add_child(glow)
+	var tween := create_tween()
+	tween.tween_property(ray, "scale:x", 3.0, 0.1)
+	tween.tween_property(ray, "scale:x", 0.3, 0.5)
+	tween.parallel().tween_property(ray_mat, "albedo_color:a", 0.0, 0.6)
+	tween.tween_callback(ray.queue_free)
+	var g_tween := create_tween()
+	g_tween.tween_property(glow_mat, "albedo_color:a", 0.0, 0.7)
+	g_tween.tween_callback(glow.queue_free)
+
+## 交响风暴演示：多波次环形弹幕
+func _demo_chord_symphony_storm(color: Color) -> void:
+	var wave_colors: Array = [
+		Color(1.0, 0.3, 0.0),
+		Color(0.0, 0.8, 1.0),
+		Color(1.0, 1.0, 0.0),
+	]
+	for wave in range(3):
+		get_tree().create_timer(wave * 0.4).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var wave_color: Color = wave_colors[wave % wave_colors.size()]
+			var ring := MeshInstance3D.new()
+			ring.mesh = TorusMesh.new()
+			(ring.mesh as TorusMesh).inner_radius = 0.1
+			(ring.mesh as TorusMesh).outer_radius = 0.2
+			var ring_mat := StandardMaterial3D.new()
+			ring_mat.albedo_color = Color(wave_color.r, wave_color.g, wave_color.b, 0.8)
+			ring_mat.emission_enabled = true
+			ring_mat.emission = wave_color
+			ring_mat.emission_energy_multiplier = 5.0
+			ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			ring.material_override = ring_mat
+			ring.position = Vector3(0, 0.5, 0)
+			ring.rotation = Vector3(PI / 2, 0, 0)
+			_demo_3d_entity_layer.add_child(ring)
+			var r_tween := create_tween()
+			r_tween.set_parallel(true)
+			r_tween.tween_property(ring, "scale", Vector3(12, 12, 12), 0.6)
+			r_tween.tween_property(ring_mat, "albedo_color:a", 0.0, 0.7)
+			r_tween.chain()
+			r_tween.tween_callback(ring.queue_free)
+		)
+
+## 终焉乐章演示：全屏收缩后爆发
+func _demo_chord_finale(color: Color) -> void:
+	# 先创建多个向中心收缩的环
+	for i in range(4):
+		get_tree().create_timer(i * 0.1).timeout.connect(func():
+			if not is_instance_valid(_demo_3d_entity_layer): return
+			var ring := MeshInstance3D.new()
+			ring.mesh = TorusMesh.new()
+			(ring.mesh as TorusMesh).inner_radius = 0.1
+			(ring.mesh as TorusMesh).outer_radius = 0.2
+			var ring_mat := StandardMaterial3D.new()
+			ring_mat.albedo_color = Color(color.r, color.g, color.b, 0.6)
+			ring_mat.emission_enabled = true
+			ring_mat.emission = color
+			ring_mat.emission_energy_multiplier = 5.0
+			ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			ring.material_override = ring_mat
+			ring.position = Vector3(0, 0.5, 0)
+			ring.rotation = Vector3(PI / 2, 0, 0)
+			ring.scale = Vector3(8 - i, 8 - i, 8 - i)
+			_demo_3d_entity_layer.add_child(ring)
+			var r_tween := create_tween()
+			r_tween.tween_property(ring, "scale", Vector3(0.5, 0.5, 0.5), 0.6)
+			r_tween.tween_callback(func():
+				if is_instance_valid(ring): ring.queue_free()
+			)
+		)
+	# 最终爆发
+	get_tree().create_timer(0.7).timeout.connect(func():
+		if not is_instance_valid(_demo_3d_entity_layer): return
+		for i in range(12):
+			var spark := MeshInstance3D.new()
+			spark.mesh = SphereMesh.new()
+			(spark.mesh as SphereMesh).radius = 0.2
+			(spark.mesh as SphereMesh).height = 0.4
+			var spark_mat := StandardMaterial3D.new()
+			spark_mat.albedo_color = color
+			spark_mat.emission_enabled = true
+			spark_mat.emission = color
+			spark_mat.emission_energy_multiplier = 8.0
+			spark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			spark.material_override = spark_mat
+			spark.position = Vector3(0, 0.5, 0)
+			_demo_3d_entity_layer.add_child(spark)
+			var angle: float = (TAU / 12) * i
+			var target := Vector3(cos(angle) * 3.0, 0.5 + sin(angle) * 2.0, 0)
+			var s_tween := create_tween()
+			s_tween.set_parallel(true)
+			s_tween.tween_property(spark, "position", target, 0.6)
+			s_tween.tween_property(spark_mat, "albedo_color:a", 0.0, 0.7)
+			s_tween.chain()
+			s_tween.tween_callback(spark.queue_free)
+	)
+
+## 默认和弦演示：通用光球扩展
+func _demo_chord_default(color: Color) -> void:
+	var sphere := MeshInstance3D.new()
+	sphere.mesh = SphereMesh.new()
+	(sphere.mesh as SphereMesh).radius = 0.4
+	(sphere.mesh as SphereMesh).height = 0.8
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.emission_enabled = true
 	mat.emission = color
 	mat.emission_energy_multiplier = 4.0
-	projectile.material_override = mat
-	projectile.position = Vector3(-5, 0.5, 0)
-	_demo_3d_entity_layer.add_child(projectile)
-
-	var speed: float = spell_data.get("spd", 2) * 1.5
-	var duration: float = spell_data.get("dur", 2) * 0.5
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material_override = mat
+	sphere.position = Vector3(0, 1, 0)
+	_demo_3d_entity_layer.add_child(sphere)
 	var tween := create_tween()
-	tween.tween_property(projectile, "position:x", 5.0, duration)\
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_LINEAR)
-	tween.tween_callback(projectile.queue_free)
+	tween.tween_property(sphere, "scale", Vector3(4, 4, 4), 0.6)
+	tween.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.8)
+	tween.tween_callback(sphere.queue_free)
+
+## 修饰符演示特效
+func _spawn_demo_modifier_vfx(modifier: int, spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color: Color = spell_data.get("color", Color.WHITE)
+	match modifier:
+		0:  # PIERCE 穿透：多个弹体排成一行穿透
+			for i in range(3):
+				get_tree().create_timer(i * 0.25).timeout.connect(func():
+					if not is_instance_valid(_demo_3d_entity_layer): return
+					var extra := MeshInstance3D.new()
+					extra.mesh = SphereMesh.new()
+					(extra.mesh as SphereMesh).radius = 0.18
+					(extra.mesh as SphereMesh).height = 0.36
+					var e_mat := StandardMaterial3D.new()
+					e_mat.albedo_color = Color(0.0, 0.9, 0.9)
+					e_mat.emission_enabled = true
+					e_mat.emission = Color(0.0, 0.9, 0.9)
+					e_mat.emission_energy_multiplier = 4.0
+					e_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					extra.material_override = e_mat
+					extra.position = Vector3(-3.5 + i * 2.0, 0.5, 0)
+					_demo_3d_entity_layer.add_child(extra)
+					var e_tween := create_tween()
+					e_tween.tween_property(extra, "position:x", extra.position.x + 6.0, 0.8)
+					e_tween.tween_callback(extra.queue_free)
+				)
+		1:  # HOMING 追踪：弹体先向上弧形轨迹追踪目标
+			var target_orb := MeshInstance3D.new()
+			target_orb.mesh = SphereMesh.new()
+			(target_orb.mesh as SphereMesh).radius = 0.3
+			(target_orb.mesh as SphereMesh).height = 0.6
+			var t_mat := StandardMaterial3D.new()
+			t_mat.albedo_color = Color(1.0, 0.3, 0.3, 0.7)
+			t_mat.emission_enabled = true
+			t_mat.emission = Color(1.0, 0.3, 0.3)
+			t_mat.emission_energy_multiplier = 3.0
+			t_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			target_orb.material_override = t_mat
+			target_orb.position = Vector3(3, 1, 0)
+			_demo_3d_entity_layer.add_child(target_orb)
+			# 弹体弧形轨迹追踪目标
+			var homing := MeshInstance3D.new()
+			homing.mesh = SphereMesh.new()
+			(homing.mesh as SphereMesh).radius = 0.2
+			(homing.mesh as SphereMesh).height = 0.4
+			var h_mat := StandardMaterial3D.new()
+			h_mat.albedo_color = Color(0.2, 0.6, 1.0)
+			h_mat.emission_enabled = true
+			h_mat.emission = Color(0.2, 0.6, 1.0)
+			h_mat.emission_energy_multiplier = 4.0
+			h_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			homing.material_override = h_mat
+			homing.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(homing)
+			var h_tween := create_tween()
+			h_tween.tween_property(homing, "position", Vector3(-1, 2.5, 0), 0.4)
+			h_tween.tween_property(homing, "position", Vector3(3, 1, 0), 0.4)
+			h_tween.tween_callback(homing.queue_free)
+			h_tween.tween_callback(target_orb.queue_free)
+		2:  # SPLIT 分裂：弹体命中后分裂为3个
+			var main_orb := MeshInstance3D.new()
+			main_orb.mesh = SphereMesh.new()
+			(main_orb.mesh as SphereMesh).radius = 0.25
+			(main_orb.mesh as SphereMesh).height = 0.5
+			var m_mat := StandardMaterial3D.new()
+			m_mat.albedo_color = Color(1.0, 0.5, 0.0)
+			m_mat.emission_enabled = true
+			m_mat.emission = Color(1.0, 0.5, 0.0)
+			m_mat.emission_energy_multiplier = 4.0
+			m_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			main_orb.material_override = m_mat
+			main_orb.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(main_orb)
+			var m_tween := create_tween()
+			m_tween.tween_property(main_orb, "position:x", 0.0, 0.5)
+			m_tween.tween_callback(func():
+				if is_instance_valid(main_orb): main_orb.queue_free()
+				if not is_instance_valid(_demo_3d_entity_layer): return
+				var split_dirs: Array = [
+					Vector3(2, 1, 0), Vector3(2, 0, 0), Vector3(2, -1, 0)
+				]
+				for dir in split_dirs:
+					var sub := MeshInstance3D.new()
+					sub.mesh = SphereMesh.new()
+					(sub.mesh as SphereMesh).radius = 0.15
+					(sub.mesh as SphereMesh).height = 0.3
+					var s_mat := StandardMaterial3D.new()
+					s_mat.albedo_color = Color(1.0, 0.7, 0.3)
+					s_mat.emission_enabled = true
+					s_mat.emission = Color(1.0, 0.5, 0.0)
+					s_mat.emission_energy_multiplier = 3.0
+					s_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					sub.material_override = s_mat
+					sub.position = Vector3(0, 0.5, 0)
+					_demo_3d_entity_layer.add_child(sub)
+					var s_tween := create_tween()
+					s_tween.tween_property(sub, "position", Vector3(0, 0.5, 0) + dir, 0.5)
+					s_tween.tween_callback(sub.queue_free)
+			)
+		3:  # ECHO 回响：延迟后在原位置生成回响弹体
+			get_tree().create_timer(0.6).timeout.connect(func():
+				if not is_instance_valid(_demo_3d_entity_layer): return
+				var echo := MeshInstance3D.new()
+				echo.mesh = SphereMesh.new()
+				(echo.mesh as SphereMesh).radius = 0.2
+				(echo.mesh as SphereMesh).height = 0.4
+				var e_mat := StandardMaterial3D.new()
+				e_mat.albedo_color = Color(0.5, 0.5, 1.0, 0.7)
+				e_mat.emission_enabled = true
+				e_mat.emission = Color(0.5, 0.5, 1.0)
+				e_mat.emission_energy_multiplier = 3.0
+				e_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				echo.material_override = e_mat
+				echo.position = Vector3(-5, 0.5, 0)
+				_demo_3d_entity_layer.add_child(echo)
+				var e_tween := create_tween()
+				e_tween.tween_property(echo, "position:x", 5.0, 1.0)
+				e_tween.tween_callback(echo.queue_free)
+			)
+		4:  # SCATTER 散射：生成扇形散射弹体
+			for i in range(5):
+				get_tree().create_timer(i * 0.05).timeout.connect(func():
+					if not is_instance_valid(_demo_3d_entity_layer): return
+					var scatter := MeshInstance3D.new()
+					scatter.mesh = SphereMesh.new()
+					(scatter.mesh as SphereMesh).radius = 0.15
+					(scatter.mesh as SphereMesh).height = 0.3
+					var s_mat := StandardMaterial3D.new()
+					s_mat.albedo_color = Color(1.0, 1.0, 0.0)
+					s_mat.emission_enabled = true
+					s_mat.emission = Color(1.0, 1.0, 0.0)
+					s_mat.emission_energy_multiplier = 4.0
+					s_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					scatter.material_override = s_mat
+					scatter.position = Vector3(-4, 0.5, 0)
+					_demo_3d_entity_layer.add_child(scatter)
+					var spread_angle: float = deg_to_rad(-20.0 + i * 10.0)
+					var target := Vector3(-4 + cos(spread_angle) * 8.0, 0.5 + sin(spread_angle) * 3.0, 0)
+					var s_tween := create_tween()
+					s_tween.tween_property(scatter, "position", target, 0.8)
+					s_tween.tween_callback(scatter.queue_free)
+				)
+
+## 节奏型演示特效
+func _spawn_demo_rhythm_vfx(rhythm_pattern: String, spell_data: Dictionary) -> void:
+	if not _demo_3d_entity_layer:
+		return
+	var color: Color = spell_data.get("color", Color(1.0, 0.3, 0.1))
+	match rhythm_pattern:
+		"full":  # 全音符 → 连射：快速发射多个弹体
+			for i in range(4):
+				get_tree().create_timer(i * 0.3).timeout.connect(func():
+					if not is_instance_valid(_demo_3d_entity_layer): return
+					var orb := MeshInstance3D.new()
+					orb.mesh = SphereMesh.new()
+					(orb.mesh as SphereMesh).radius = 0.18
+					(orb.mesh as SphereMesh).height = 0.36
+					var mat := StandardMaterial3D.new()
+					mat.albedo_color = color
+					mat.emission_enabled = true
+					mat.emission = color
+					mat.emission_energy_multiplier = 4.0
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					orb.material_override = mat
+					orb.position = Vector3(-5, 0.5 + i * 0.3, 0)
+					_demo_3d_entity_layer.add_child(orb)
+					var o_tween := create_tween()
+					o_tween.tween_property(orb, "position:x", 5.0, 0.6)
+					o_tween.tween_callback(orb.queue_free)
+				)
+		"dotted":  # 附点节奏 → 重击：大弹体+击退效果
+			var heavy := MeshInstance3D.new()
+			heavy.mesh = SphereMesh.new()
+			(heavy.mesh as SphereMesh).radius = 0.45
+			(heavy.mesh as SphereMesh).height = 0.9
+			var h_mat := StandardMaterial3D.new()
+			h_mat.albedo_color = Color(1.0, 0.6, 0.2)
+			h_mat.emission_enabled = true
+			h_mat.emission = Color(1.0, 0.6, 0.2)
+			h_mat.emission_energy_multiplier = 5.0
+			h_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			heavy.material_override = h_mat
+			heavy.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(heavy)
+			var h_tween := create_tween()
+			h_tween.tween_property(heavy, "position:x", 2.0, 0.8)
+			h_tween.tween_callback(func():
+				if is_instance_valid(heavy): heavy.queue_free()
+				# 击退波
+				if not is_instance_valid(_demo_3d_entity_layer): return
+				var wave := MeshInstance3D.new()
+				wave.mesh = TorusMesh.new()
+				(wave.mesh as TorusMesh).inner_radius = 0.05
+				(wave.mesh as TorusMesh).outer_radius = 0.15
+				var w_mat := StandardMaterial3D.new()
+				w_mat.albedo_color = Color(1.0, 0.8, 0.3, 0.8)
+				w_mat.emission_enabled = true
+				w_mat.emission = Color(1.0, 0.6, 0.2)
+				w_mat.emission_energy_multiplier = 4.0
+				w_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				wave.material_override = w_mat
+				wave.position = Vector3(2, 0.5, 0)
+				wave.rotation = Vector3(PI / 2, 0, 0)
+				_demo_3d_entity_layer.add_child(wave)
+				var w_tween := create_tween()
+				w_tween.set_parallel(true)
+				w_tween.tween_property(wave, "scale", Vector3(6, 6, 6), 0.5)
+				w_tween.tween_property(w_mat, "albedo_color:a", 0.0, 0.6)
+				w_tween.chain()
+				w_tween.tween_callback(wave.queue_free)
+			)
+		"syncopated":  # 切分节奏 → 闪避射击：弹体发射时玩家向后闪现
+			var orb := MeshInstance3D.new()
+			orb.mesh = SphereMesh.new()
+			(orb.mesh as SphereMesh).radius = 0.22
+			(orb.mesh as SphereMesh).height = 0.44
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = color
+			mat.emission_enabled = true
+			mat.emission = color
+			mat.emission_energy_multiplier = 4.0
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			orb.material_override = mat
+			orb.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(orb)
+			# 玩家模拟块向后闪现
+			var player_ghost := MeshInstance3D.new()
+			player_ghost.mesh = BoxMesh.new()
+			(player_ghost.mesh as BoxMesh).size = Vector3(0.5, 0.8, 0.3)
+			var pg_mat := StandardMaterial3D.new()
+			pg_mat.albedo_color = Color(0.5, 0.8, 1.0, 0.5)
+			pg_mat.emission_enabled = true
+			pg_mat.emission = Color(0.5, 0.8, 1.0)
+			pg_mat.emission_energy_multiplier = 2.0
+			pg_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			player_ghost.material_override = pg_mat
+			player_ghost.position = Vector3(0, 0.5, 0)
+			_demo_3d_entity_layer.add_child(player_ghost)
+			var o_tween := create_tween()
+			o_tween.tween_property(orb, "position:x", 5.0, 0.8)
+			o_tween.tween_callback(orb.queue_free)
+			var pg_tween := create_tween()
+			pg_tween.tween_property(player_ghost, "position:x", -1.5, 0.2)
+			pg_tween.tween_property(pg_mat, "albedo_color:a", 0.0, 0.4)
+			pg_tween.tween_callback(player_ghost.queue_free)
+		"swing":  # 摇摆节奏 → S型波浪弹道
+			var orb := MeshInstance3D.new()
+			orb.mesh = SphereMesh.new()
+			(orb.mesh as SphereMesh).radius = 0.22
+			(orb.mesh as SphereMesh).height = 0.44
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color(0.8, 0.5, 1.0)
+			mat.emission_enabled = true
+			mat.emission = Color(0.8, 0.5, 1.0)
+			mat.emission_energy_multiplier = 4.0
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			orb.material_override = mat
+			orb.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(orb)
+			# S型波浪轨迹
+			var tween := create_tween()
+			tween.tween_property(orb, "position", Vector3(-2, 1.5, 0), 0.3)
+			tween.tween_property(orb, "position", Vector3(0, 0.5, 0), 0.3)
+			tween.tween_property(orb, "position", Vector3(2, 1.5, 0), 0.3)
+			tween.tween_property(orb, "position", Vector3(4, 0.5, 0), 0.3)
+			tween.tween_callback(orb.queue_free)
+		"triplet":  # 三连音 → 三连发：扇形三弹体
+			var spread_angles: Array = [deg_to_rad(-15.0), 0.0, deg_to_rad(15.0)]
+			for i in range(3):
+				get_tree().create_timer(i * 0.08).timeout.connect(func():
+					if not is_instance_valid(_demo_3d_entity_layer): return
+					var orb := MeshInstance3D.new()
+					orb.mesh = SphereMesh.new()
+					(orb.mesh as SphereMesh).radius = 0.18
+					(orb.mesh as SphereMesh).height = 0.36
+					var mat := StandardMaterial3D.new()
+					mat.albedo_color = Color(0.0, 1.0, 0.5)
+					mat.emission_enabled = true
+					mat.emission = Color(0.0, 1.0, 0.5)
+					mat.emission_energy_multiplier = 4.0
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					orb.material_override = mat
+					orb.position = Vector3(-4, 0.5, 0)
+					_demo_3d_entity_layer.add_child(orb)
+					var angle: float = spread_angles[i]
+					var target := Vector3(-4 + cos(angle) * 8.0, 0.5 + sin(angle) * 3.0, 0)
+					var o_tween := create_tween()
+					o_tween.tween_property(orb, "position", target, 0.7)
+					o_tween.tween_callback(orb.queue_free)
+				)
+		"rest_boost":  # 精准蓄力：能量漩渍后释放强化弹体
+			# 蓄力阶段：能量环绕圆心旋转
+			var charge_ring := MeshInstance3D.new()
+			charge_ring.mesh = TorusMesh.new()
+			(charge_ring.mesh as TorusMesh).inner_radius = 0.6
+			(charge_ring.mesh as TorusMesh).outer_radius = 0.7
+			var cr_mat := StandardMaterial3D.new()
+			cr_mat.albedo_color = Color(1.0, 0.9, 0.3, 0.8)
+			cr_mat.emission_enabled = true
+			cr_mat.emission = Color(1.0, 0.9, 0.3)
+			cr_mat.emission_energy_multiplier = 4.0
+			cr_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			charge_ring.material_override = cr_mat
+			charge_ring.position = Vector3(-3, 0.5, 0)
+			charge_ring.rotation = Vector3(PI / 2, 0, 0)
+			_demo_3d_entity_layer.add_child(charge_ring)
+			var cr_tween := create_tween()
+			cr_tween.tween_property(charge_ring, "rotation:z", TAU, 0.8)
+			cr_tween.tween_callback(func():
+				if is_instance_valid(charge_ring): charge_ring.queue_free()
+				# 释放强化弹体
+				if not is_instance_valid(_demo_3d_entity_layer): return
+				var powered := MeshInstance3D.new()
+				powered.mesh = SphereMesh.new()
+				(powered.mesh as SphereMesh).radius = 0.4
+				(powered.mesh as SphereMesh).height = 0.8
+				var p_mat := StandardMaterial3D.new()
+				p_mat.albedo_color = Color(1.0, 1.0, 0.5)
+				p_mat.emission_enabled = true
+				p_mat.emission = Color(1.0, 0.9, 0.3)
+				p_mat.emission_energy_multiplier = 8.0
+				p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				powered.material_override = p_mat
+				powered.position = Vector3(-3, 0.5, 0)
+				_demo_3d_entity_layer.add_child(powered)
+				var p_tween := create_tween()
+				p_tween.tween_property(powered, "position:x", 5.0, 0.5)
+				p_tween.tween_callback(powered.queue_free)
+			)
+		_:  # 默认节奏型演示
+			var orb := MeshInstance3D.new()
+			orb.mesh = SphereMesh.new()
+			(orb.mesh as SphereMesh).radius = 0.22
+			(orb.mesh as SphereMesh).height = 0.44
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = color
+			mat.emission_enabled = true
+			mat.emission = color
+			mat.emission_energy_multiplier = 4.0
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			orb.material_override = mat
+			orb.position = Vector3(-4, 0.5, 0)
+			_demo_3d_entity_layer.add_child(orb)
+			var tween := create_tween()
+			tween.tween_property(orb, "position:x", 4.0, 1.0)
+			tween.tween_callback(orb.queue_free)
 
 func _clear_demo() -> void:
 	_demo_active = false
