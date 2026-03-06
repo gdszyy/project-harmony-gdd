@@ -670,7 +670,7 @@ func _update_fatigue_filter() -> void:
 	# 节拍脉冲
 	if GameManager.has_method("get_beat_progress"):
 		var beat_progress := GameManager.get_beat_progress()
-		var beat_pulse := max(0.0, 1.0 - beat_progress * 3.0)
+		var beat_pulse: float = maxf(0.0, 1.0 - beat_progress * 3.0)
 		mat.set_shader_parameter("beat_pulse", beat_pulse * 0.3)
 
 	# 不和谐度

@@ -1200,7 +1200,7 @@ func _vfx_slow_field(pos: Vector2, _data: Dictionary) -> void:
 		"position": target_pos,
 		"particle_timer": 0.0,
 		"particle_interval": 0.3,
-		"color": color,
+		"color": slow_color,
 	})
 	
 	# [Removed] visual_effect_spawned signal was deprecated and removed (Issue #86)

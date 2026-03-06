@@ -324,7 +324,7 @@ func _calculate_positions() -> void:
 func _calc_vertical_layout(nodes: Array, center: Vector2, vp: Vector2) -> void:
 	# 乐器调优：每个属性一根垂直推杆
 	var count := nodes.size()
-	var spacing := min(160.0, (vp.x - 200.0) / float(max(count, 1)))
+	var spacing: float = minf(160.0, (vp.x - 200.0) / float(maxi(count, 1)))
 	var start_x: float = center.x - (count - 1) * spacing / 2.0
 
 	for i in range(nodes.size()):

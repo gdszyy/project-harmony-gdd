@@ -802,7 +802,7 @@ func take_damage(damage_info: Dictionary) -> void:
 	var final_damage_info := damage_info.duplicate()
 	final_damage_info["amount"] *= damage_multiplier
 	
-	.take_damage(final_damage_info)
+	super.take_damage(final_damage_info)
 	
 	# 检查是否进入频谱崩溃
 	if not _is_spectrum_collapse and current_hp / max_hp <= SPECTRUM_COLLAPSE_THRESHOLD:
