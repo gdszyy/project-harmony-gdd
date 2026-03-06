@@ -758,7 +758,7 @@ func _on_beat(beat_index: int) -> void:
 		_start_frequency_shift()
 
 func _on_phase_changed(new_phase_index: int, old_phase_index: int) -> void:
-	._on_phase_changed(new_phase_index, old_phase_index)
+	super._on_phase_changed(new_phase_index, old_phase_index)
 	
 	# 进入波形切换阶段
 	if new_phase_index == 1:
