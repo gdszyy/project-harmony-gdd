@@ -920,35 +920,771 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 
 func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 	var root := Node3D.new()
-	var enemy_type: String = entry.get("enemy_type", "static")
-	var color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color.WHITE)
+	var enemy_type: String = entry.get("enemy_type", "")
 
-	# 简单几何体代表敌人
-	var mesh_instance := MeshInstance3D.new()
-	var mesh: Mesh
+	# 若 enemy_type 为空，尝试从 entry_id 推断
+	if enemy_type.is_empty():
+		if entry_id.begins_with("enemy_static") or entry_id == "enemy_static":
+			enemy_type = "static"
+		elif entry_id.begins_with("enemy_silence") or entry_id == "enemy_silence":
+			enemy_type = "silence"
+		elif entry_id.begins_with("enemy_screech") or entry_id == "enemy_screech":
+			enemy_type = "screech"
+		elif entry_id.begins_with("enemy_pulse") or entry_id == "enemy_pulse":
+			enemy_type = "pulse"
+		elif entry_id.begins_with("enemy_wall") or entry_id == "enemy_wall":
+			enemy_type = "wall"
+		else:
+			enemy_type = "static"
 
+	# 根据 enemy_type 分发到对应的构建函数
 	match enemy_type:
 		"static":
-			mesh = BoxMesh.new()
+			_build_static_model(root)
 		"silence":
-			mesh = SphereMesh.new()
+			_build_silence_model(root)
 		"screech":
-			mesh = CylinderMesh.new()
+			_build_screech_model(root)
 		"pulse":
-			mesh = TorusMesh.new()
+			_build_pulse_model(root)
+		"wall":
+			_build_wall_model(root)
+		"boss_pythagoras":
+			_build_boss_pythagoras_model(root)
+		"boss_guido":
+			_build_boss_guido_model(root)
+		"boss_bach":
+			_build_boss_bach_model(root)
+		"boss_mozart":
+			_build_boss_mozart_model(root)
+		"boss_beethoven":
+			_build_boss_beethoven_model(root)
 		_:
-			mesh = BoxMesh.new()
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.emission_enabled = true
-	material.emission = color
-	material.emission_energy_multiplier = 2.0
-	mesh_instance.mesh = mesh
-	mesh_instance.material_override = material
-	root.add_child(mesh_instance)
+			# 未知类型：使用通用几何体，颜色从 ENEMY_TYPE_COLORS 获取
+			var color: Color = ENEMY_TYPE_COLORS.get(enemy_type, Color(0.6, 0.6, 0.6))
+			var mi := MeshInstance3D.new()
+			mi.mesh = BoxMesh.new()
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = color
+			mat.emission_enabled = true
+			mat.emission = color
+			mat.emission_energy_multiplier = 1.5
+			mi.material_override = mat
+			root.add_child(mi)
 
 	return root
+
+## Static（底噪）：多个小型锯齿碎片，红色调，故障闪烁感
+func _build_static_model(root: Node3D) -> void:
+	var base_color := Color(1.0, 0.2, 0.3)  # 红色调
+	var accent_color := Color(1.0, 0.5, 0.5)
+
+	# 创建多个大小不一的碎片方块，模拟锯齿碎片
+	var fragment_data: Array = [
+		{"pos": Vector3(0, 0, 0),      "scale": Vector3(0.5, 0.5, 0.5),   "rot": Vector3(0.3, 0.5, 0.2)},
+		{"pos": Vector3(0.4, 0.3, 0),  "scale": Vector3(0.25, 0.35, 0.2), "rot": Vector3(0.8, 0.2, 0.6)},
+		{"pos": Vector3(-0.35, 0.2, 0.1), "scale": Vector3(0.3, 0.2, 0.25), "rot": Vector3(0.1, 1.0, 0.4)},
+		{"pos": Vector3(0.2, -0.35, 0.1), "scale": Vector3(0.2, 0.3, 0.2), "rot": Vector3(0.5, 0.3, 0.9)},
+		{"pos": Vector3(-0.2, -0.25, -0.1), "scale": Vector3(0.15, 0.15, 0.3), "rot": Vector3(0.7, 0.6, 0.1)},
+	]
+
+	for i in fragment_data.size():
+		var fd: Dictionary = fragment_data[i]
+		var mi := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = fd["scale"]
+		mi.mesh = box
+		mi.position = fd["pos"]
+		mi.rotation = fd["rot"]
+
+		var mat := StandardMaterial3D.new()
+		# 交替使用主色和强调色
+		var c: Color = base_color if i % 2 == 0 else accent_color
+		mat.albedo_color = c
+		mat.emission_enabled = true
+		mat.emission = c
+		mat.emission_energy_multiplier = 2.5
+		mat.roughness = 0.8
+		mi.material_override = mat
+		root.add_child(mi)
+
+	# 添加一个点光源增强故障闪烁感
+	var omni := OmniLight3D.new()
+	omni.light_color = base_color
+	omni.light_energy = 3.0
+	omni.omni_range = 3.0
+	omni.position = Vector3(0, 0.5, 0)
+	root.add_child(omni)
+
+## Silence（寂静）：深色旋涡球体，半透明，黑洞吸引感
+func _build_silence_model(root: Node3D) -> void:
+	var core_color := Color(0.15, 0.1, 0.35)  # 深紫色
+	var glow_color := Color(0.4, 0.2, 0.8)    # 紫色光晕
+
+	# 核心球体（深色，半透明）
+	var core := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.45
+	sphere.height = 0.9
+	sphere.radial_segments = 32
+	sphere.rings = 16
+	core.mesh = sphere
+
+	var core_mat := StandardMaterial3D.new()
+	core_mat.albedo_color = Color(0.05, 0.02, 0.15, 0.85)
+	core_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	core_mat.emission_enabled = true
+	core_mat.emission = Color(0.2, 0.05, 0.5)
+	core_mat.emission_energy_multiplier = 1.5
+	core_mat.roughness = 0.1
+	core_mat.metallic = 0.3
+	core.material_override = core_mat
+	root.add_child(core)
+
+	# 外层光晕球（更大，更透明）
+	var halo := MeshInstance3D.new()
+	var halo_sphere := SphereMesh.new()
+	halo_sphere.radius = 0.7
+	halo_sphere.height = 1.4
+	halo_sphere.radial_segments = 16
+	halo_sphere.rings = 8
+	halo.mesh = halo_sphere
+
+	var halo_mat := StandardMaterial3D.new()
+	halo_mat.albedo_color = Color(0.3, 0.1, 0.6, 0.15)
+	halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo_mat.emission_enabled = true
+	halo_mat.emission = glow_color
+	halo_mat.emission_energy_multiplier = 0.8
+	halo_mat.cull_mode = BaseMaterial3D.CULL_FRONT  # 内面渲染，营造旋涡感
+	halo.material_override = halo_mat
+	root.add_child(halo)
+
+	# 旋转环（模拟旋涡轨道）
+	for i in 3:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.55 + i * 0.15
+		torus.outer_radius = 0.65 + i * 0.15
+		torus.rings = 24
+		torus.ring_segments = 8
+		ring.mesh = torus
+		ring.rotation = Vector3(PI / 3.0 * i, PI / 4.0 * i, 0)
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = Color(0.5, 0.2, 0.9, 0.4 - i * 0.1)
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring_mat.emission_enabled = true
+		ring_mat.emission = glow_color
+		ring_mat.emission_energy_multiplier = 1.2 - i * 0.3
+		ring.material_override = ring_mat
+		root.add_child(ring)
+
+	# 点光源（紫色光晕）
+	var omni := OmniLight3D.new()
+	omni.light_color = glow_color
+	omni.light_energy = 2.0
+	omni.omni_range = 3.0
+	root.add_child(omni)
+
+## Screech（尖啸）：尖锐三角/锥体，黄白色调，高频闪烁感
+func _build_screech_model(root: Node3D) -> void:
+	var base_color := Color(1.0, 0.95, 0.5)  # 黄白色
+	var hot_color := Color(1.0, 1.0, 0.8)    # 高亮白黄
+
+	# 主体：尖锐锥体（朝上）
+	var cone := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.0    # 尖顶
+	cyl.bottom_radius = 0.35
+	cyl.height = 1.0
+	cyl.radial_segments = 4  # 4面，更尖锐
+	cyl.rings = 1
+	cone.mesh = cyl
+	cone.position = Vector3(0, 0.1, 0)
+
+	var cone_mat := StandardMaterial3D.new()
+	cone_mat.albedo_color = base_color
+	cone_mat.emission_enabled = true
+	cone_mat.emission = hot_color
+	cone_mat.emission_energy_multiplier = 3.0
+	cone_mat.roughness = 0.2
+	cone_mat.metallic = 0.5
+	cone.material_override = cone_mat
+	root.add_child(cone)
+
+	# 倒锥（朝下，镜像）
+	var cone2 := MeshInstance3D.new()
+	var cyl2 := CylinderMesh.new()
+	cyl2.top_radius = 0.25
+	cyl2.bottom_radius = 0.0  # 尖底
+	cyl2.height = 0.6
+	cyl2.radial_segments = 4
+	cyl2.rings = 1
+	cone2.mesh = cyl2
+	cone2.position = Vector3(0, -0.5, 0)
+	cone2.rotation = Vector3(0, PI / 4.0, 0)  # 旋转45度，形成星形
+
+	var cone2_mat := StandardMaterial3D.new()
+	cone2_mat.albedo_color = Color(1.0, 0.8, 0.3)
+	cone2_mat.emission_enabled = true
+	cone2_mat.emission = base_color
+	cone2_mat.emission_energy_multiplier = 2.0
+	cone2_mat.roughness = 0.3
+	cone2.material_override = cone2_mat
+	root.add_child(cone2)
+
+	# 侧翼三角形碎片
+	for i in 3:
+		var shard := MeshInstance3D.new()
+		var shard_cyl := CylinderMesh.new()
+		shard_cyl.top_radius = 0.0
+		shard_cyl.bottom_radius = 0.1
+		shard_cyl.height = 0.5
+		shard_cyl.radial_segments = 3
+		shard.mesh = shard_cyl
+		var angle := (TAU / 3.0) * i + PI / 6.0
+		shard.position = Vector3(cos(angle) * 0.5, 0.1, sin(angle) * 0.5)
+		shard.rotation = Vector3(0.3, angle, 0.5)
+
+		var shard_mat := StandardMaterial3D.new()
+		shard_mat.albedo_color = hot_color
+		shard_mat.emission_enabled = true
+		shard_mat.emission = hot_color
+		shard_mat.emission_energy_multiplier = 4.0
+		shard.material_override = shard_mat
+		root.add_child(shard)
+
+	# 强烈点光源（高频闪烁感）
+	var omni := OmniLight3D.new()
+	omni.light_color = hot_color
+	omni.light_energy = 4.0
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Pulse（脉冲）：菱形/八面体，电蓝色调，脉冲发光
+func _build_pulse_model(root: Node3D) -> void:
+	var base_color := Color(0.2, 0.5, 1.0)   # 电蓝色
+	var glow_color := Color(0.4, 0.8, 1.0)   # 亮蓝
+	var dark_color := Color(0.05, 0.15, 0.4) # 深蓝
+
+	# 主体：八面体（用两个锥体拼合）
+	# 上锥
+	var top_cone := MeshInstance3D.new()
+	var top_cyl := CylinderMesh.new()
+	top_cyl.top_radius = 0.0
+	top_cyl.bottom_radius = 0.45
+	top_cyl.height = 0.6
+	top_cyl.radial_segments = 4  # 4面菱形
+	top_cyl.rings = 1
+	top_cone.mesh = top_cyl
+	top_cone.position = Vector3(0, 0.3, 0)
+
+	var top_mat := StandardMaterial3D.new()
+	top_mat.albedo_color = base_color
+	top_mat.emission_enabled = true
+	top_mat.emission = glow_color
+	top_mat.emission_energy_multiplier = 2.5
+	top_mat.metallic = 0.8
+	top_mat.roughness = 0.1
+	top_cone.material_override = top_mat
+	root.add_child(top_cone)
+
+	# 下锥
+	var bot_cone := MeshInstance3D.new()
+	var bot_cyl := CylinderMesh.new()
+	bot_cyl.top_radius = 0.45
+	bot_cyl.bottom_radius = 0.0
+	bot_cyl.height = 0.6
+	bot_cyl.radial_segments = 4
+	bot_cyl.rings = 1
+	bot_cone.mesh = bot_cyl
+	bot_cone.position = Vector3(0, -0.3, 0)
+
+	var bot_mat := StandardMaterial3D.new()
+	bot_mat.albedo_color = dark_color
+	bot_mat.emission_enabled = true
+	bot_mat.emission = base_color
+	bot_mat.emission_energy_multiplier = 2.0
+	bot_mat.metallic = 0.8
+	bot_mat.roughness = 0.1
+	bot_cone.material_override = bot_mat
+	root.add_child(bot_cone)
+
+	# 外层光晕环（脉冲效果）
+	for i in 2:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.5 + i * 0.2
+		torus.outer_radius = 0.6 + i * 0.2
+		torus.rings = 32
+		torus.ring_segments = 8
+		ring.mesh = torus
+		ring.rotation.x = PI / 2.0
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = Color(0.3, 0.7, 1.0, 0.5 - i * 0.2)
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring_mat.emission_enabled = true
+		ring_mat.emission = glow_color
+		ring_mat.emission_energy_multiplier = 2.0 - i * 0.5
+		ring.material_override = ring_mat
+		root.add_child(ring)
+
+	# 点光源（电蓝脉冲光）
+	var omni := OmniLight3D.new()
+	omni.light_color = glow_color
+	omni.light_energy = 3.5
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Wall（音墙）：巨大多面体，灰紫色调，护盾层效果
+func _build_wall_model(root: Node3D) -> void:
+	var base_color := Color(0.5, 0.35, 0.6)  # 灰紫色
+	var shield_color := Color(0.7, 0.5, 0.9) # 护盾紫
+	var dark_color := Color(0.2, 0.15, 0.3)  # 深紫
+
+	# 主体：大型多面体（使用球体模拟多边形）
+	var body := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.6
+	sphere.height = 1.2
+	sphere.radial_segments = 6   # 低多边形，模拟多面体
+	sphere.rings = 4
+	body.mesh = sphere
+
+	var body_mat := StandardMaterial3D.new()
+	body_mat.albedo_color = dark_color
+	body_mat.emission_enabled = true
+	body_mat.emission = base_color
+	body_mat.emission_energy_multiplier = 1.5
+	body_mat.metallic = 0.6
+	body_mat.roughness = 0.4
+	var body_wireframe := StandardMaterial3D.new()
+	body.material_override = body_mat
+	root.add_child(body)
+
+	# 护盾层（外层半透明球）
+	var shield := MeshInstance3D.new()
+	var shield_sphere := SphereMesh.new()
+	shield_sphere.radius = 0.85
+	shield_sphere.height = 1.7
+	shield_sphere.radial_segments = 8
+	shield_sphere.rings = 6
+	shield.mesh = shield_sphere
+
+	var shield_mat := StandardMaterial3D.new()
+	shield_mat.albedo_color = Color(0.6, 0.4, 0.8, 0.2)
+	shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	shield_mat.emission_enabled = true
+	shield_mat.emission = shield_color
+	shield_mat.emission_energy_multiplier = 1.0
+	shield_mat.cull_mode = BaseMaterial3D.CULL_FRONT
+	shield.material_override = shield_mat
+	root.add_child(shield)
+
+	# 护盾环（水平方向，模拟护盾层）
+	for i in 3:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.7
+		torus.outer_radius = 0.85
+		torus.rings = 16
+		torus.ring_segments = 6
+		ring.mesh = torus
+		ring.rotation.x = PI / 2.0
+		ring.position.y = -0.3 + i * 0.3
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = Color(0.7, 0.5, 0.9, 0.6)
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring_mat.emission_enabled = true
+		ring_mat.emission = shield_color
+		ring_mat.emission_energy_multiplier = 1.5
+		ring.material_override = ring_mat
+		root.add_child(ring)
+
+	# 点光源
+	var omni := OmniLight3D.new()
+	omni.light_color = shield_color
+	omni.light_energy = 2.5
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Boss：毕达哥拉斯 — 多层旋转光环几何体，金色
+func _build_boss_pythagoras_model(root: Node3D) -> void:
+	var gold_color := Color(1.0, 0.85, 0.2)   # 金色
+	var bright_gold := Color(1.0, 0.95, 0.5)  # 亮金
+	var dark_gold := Color(0.6, 0.45, 0.05)   # 暗金
+
+	# 核心球体
+	var core := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.3
+	sphere.height = 0.6
+	sphere.radial_segments = 16
+	sphere.rings = 8
+	core.mesh = sphere
+
+	var core_mat := StandardMaterial3D.new()
+	core_mat.albedo_color = bright_gold
+	core_mat.emission_enabled = true
+	core_mat.emission = bright_gold
+	core_mat.emission_energy_multiplier = 4.0
+	core_mat.metallic = 1.0
+	core_mat.roughness = 0.05
+	core.material_override = core_mat
+	root.add_child(core)
+
+	# 多层旋转光环（毕达哥拉斯的标志性多层圆环）
+	var ring_configs: Array = [
+		{"radius": 0.55, "thickness": 0.04, "rot": Vector3(0, 0, 0),           "energy": 3.0},
+		{"radius": 0.75, "thickness": 0.035, "rot": Vector3(PI/3.0, 0, 0),     "energy": 2.5},
+		{"radius": 0.95, "thickness": 0.03, "rot": Vector3(PI/6.0, PI/4.0, 0), "energy": 2.0},
+		{"radius": 1.15, "thickness": 0.025, "rot": Vector3(PI/2.0, PI/6.0, 0), "energy": 1.5},
+		{"radius": 1.35, "thickness": 0.02, "rot": Vector3(PI/4.0, PI/3.0, 0), "energy": 1.0},
+	]
+
+	for rc in ring_configs:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = rc["radius"] - rc["thickness"]
+		torus.outer_radius = rc["radius"] + rc["thickness"]
+		torus.rings = 48
+		torus.ring_segments = 8
+		ring.mesh = torus
+		ring.rotation = rc["rot"]
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = gold_color
+		ring_mat.emission_enabled = true
+		ring_mat.emission = gold_color
+		ring_mat.emission_energy_multiplier = rc["energy"]
+		ring_mat.metallic = 0.9
+		ring_mat.roughness = 0.1
+		ring.material_override = ring_mat
+		root.add_child(ring)
+
+	# 金色点光源
+	var omni := OmniLight3D.new()
+	omni.light_color = gold_color
+	omni.light_energy = 4.0
+	omni.omni_range = 5.0
+	root.add_child(omni)
+
+## Boss：圭多 — 五线谱相关视觉元素，白银色调
+func _build_boss_guido_model(root: Node3D) -> void:
+	var staff_color := Color(0.9, 0.9, 1.0)   # 银白
+	var note_color := Color(0.6, 0.8, 1.0)    # 淡蓝（音符）
+	var glow_color := Color(0.8, 0.9, 1.0)    # 发光白
+
+	# 五条水平线（五线谱）
+	for i in 5:
+		var line_mi := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(1.6, 0.03, 0.03)
+		line_mi.mesh = box
+		line_mi.position = Vector3(0, -0.4 + i * 0.2, 0)
+
+		var line_mat := StandardMaterial3D.new()
+		line_mat.albedo_color = staff_color
+		line_mat.emission_enabled = true
+		line_mat.emission = glow_color
+		line_mat.emission_energy_multiplier = 2.0
+		line_mi.material_override = line_mat
+		root.add_child(line_mi)
+
+	# 音符球（在五线谱上的音符）
+	var note_positions: Array = [
+		Vector3(-0.5, -0.4, 0.05),  # 第一线
+		Vector3(-0.1, -0.2, 0.05),  # 第二线
+		Vector3(0.3, 0.0, 0.05),    # 第三线
+		Vector3(0.6, 0.2, 0.05),    # 第四线
+	]
+
+	for np in note_positions:
+		var note := MeshInstance3D.new()
+		var note_sphere := SphereMesh.new()
+		note_sphere.radius = 0.08
+		note_sphere.height = 0.16
+		note_sphere.radial_segments = 12
+		note_sphere.rings = 6
+		note.mesh = note_sphere
+		note.position = np
+
+		var note_mat := StandardMaterial3D.new()
+		note_mat.albedo_color = note_color
+		note_mat.emission_enabled = true
+		note_mat.emission = note_color
+		note_mat.emission_energy_multiplier = 3.0
+		note.material_override = note_mat
+		root.add_child(note)
+
+	# 竖线（小节线）
+	for i in 2:
+		var bar := MeshInstance3D.new()
+		var bar_box := BoxMesh.new()
+		bar_box.size = Vector3(0.03, 1.0, 0.03)
+		bar.mesh = bar_box
+		bar.position = Vector3(-0.7 + i * 1.4, 0, 0)
+
+		var bar_mat := StandardMaterial3D.new()
+		bar_mat.albedo_color = staff_color
+		bar_mat.emission_enabled = true
+		bar_mat.emission = glow_color
+		bar_mat.emission_energy_multiplier = 1.5
+		bar.material_override = bar_mat
+		root.add_child(bar)
+
+	# 点光源
+	var omni := OmniLight3D.new()
+	omni.light_color = glow_color
+	omni.light_energy = 3.0
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Boss：巴赫 — 赋格结构的多层对位几何体，琥珀棕色调
+func _build_boss_bach_model(root: Node3D) -> void:
+	var primary_color := Color(0.8, 0.55, 0.1)  # 琥珀棕
+	var secondary_color := Color(0.6, 0.35, 0.05) # 深棕
+	var accent_color := Color(1.0, 0.75, 0.3)    # 亮琥珀
+
+	# 赋格结构：主题（中心大方块）
+	var theme := MeshInstance3D.new()
+	var theme_box := BoxMesh.new()
+	theme_box.size = Vector3(0.5, 0.5, 0.5)
+	theme.mesh = theme_box
+	theme.position = Vector3(0, 0, 0)
+
+	var theme_mat := StandardMaterial3D.new()
+	theme_mat.albedo_color = primary_color
+	theme_mat.emission_enabled = true
+	theme_mat.emission = accent_color
+	theme_mat.emission_energy_multiplier = 2.5
+	theme_mat.metallic = 0.7
+	theme_mat.roughness = 0.2
+	theme.material_override = theme_mat
+	root.add_child(theme)
+
+	# 答题（对位：旋转45度的方块，稍小）
+	var answer := MeshInstance3D.new()
+	var answer_box := BoxMesh.new()
+	answer_box.size = Vector3(0.35, 0.35, 0.35)
+	answer.mesh = answer_box
+	answer.position = Vector3(0.5, 0.3, 0)
+	answer.rotation = Vector3(PI/4.0, PI/4.0, 0)
+
+	var answer_mat := StandardMaterial3D.new()
+	answer_mat.albedo_color = secondary_color
+	answer_mat.emission_enabled = true
+	answer_mat.emission = primary_color
+	answer_mat.emission_energy_multiplier = 2.0
+	answer_mat.metallic = 0.6
+	answer.material_override = answer_mat
+	root.add_child(answer)
+
+	# 对题（第三声部：更小的方块，不同位置）
+	var counter_subject := MeshInstance3D.new()
+	var cs_box := BoxMesh.new()
+	cs_box.size = Vector3(0.25, 0.25, 0.25)
+	counter_subject.mesh = cs_box
+	counter_subject.position = Vector3(-0.45, 0.4, 0)
+	counter_subject.rotation = Vector3(PI/6.0, PI/3.0, PI/4.0)
+
+	var cs_mat := StandardMaterial3D.new()
+	cs_mat.albedo_color = accent_color
+	cs_mat.emission_enabled = true
+	cs_mat.emission = accent_color
+	cs_mat.emission_energy_multiplier = 3.0
+	counter_subject.material_override = cs_mat
+	root.add_child(counter_subject)
+
+	# 第四声部（最小）
+	var voice4 := MeshInstance3D.new()
+	var v4_box := BoxMesh.new()
+	v4_box.size = Vector3(0.18, 0.18, 0.18)
+	voice4.mesh = v4_box
+	voice4.position = Vector3(0.2, -0.5, 0)
+	voice4.rotation = Vector3(PI/5.0, PI/5.0, PI/5.0)
+
+	var v4_mat := StandardMaterial3D.new()
+	v4_mat.albedo_color = primary_color
+	v4_mat.emission_enabled = true
+	v4_mat.emission = primary_color
+	v4_mat.emission_energy_multiplier = 1.5
+	voice4.material_override = v4_mat
+	root.add_child(voice4)
+
+	# 连接线（赋格的声部连接）
+	for i in 3:
+		var connector := MeshInstance3D.new()
+		var conn_box := BoxMesh.new()
+		conn_box.size = Vector3(0.02, 0.02, 0.6 + i * 0.1)
+		connector.mesh = conn_box
+		connector.position = Vector3(-0.1 + i * 0.2, 0.1 + i * 0.1, 0)
+		connector.rotation = Vector3(0.2 * i, 0.3 * i, 0.1 * i)
+
+		var conn_mat := StandardMaterial3D.new()
+		conn_mat.albedo_color = Color(0.9, 0.7, 0.3, 0.7)
+		conn_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		conn_mat.emission_enabled = true
+		conn_mat.emission = accent_color
+		conn_mat.emission_energy_multiplier = 1.0
+		connector.material_override = conn_mat
+		root.add_child(connector)
+
+	# 点光源
+	var omni := OmniLight3D.new()
+	omni.light_color = accent_color
+	omni.light_energy = 3.0
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Boss：莫扎特 — 优雅的古典几何体，银白蓝色调
+func _build_boss_mozart_model(root: Node3D) -> void:
+	var silver_color := Color(0.85, 0.88, 0.95)  # 银白
+	var blue_accent := Color(0.5, 0.65, 1.0)     # 古典蓝
+	var pearl_color := Color(0.95, 0.95, 1.0)    # 珍珠白
+
+	# 主体：优雅的球体（古典完美圆形）
+	var body := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.45
+	sphere.height = 0.9
+	sphere.radial_segments = 32
+	sphere.rings = 16
+	body.mesh = sphere
+
+	var body_mat := StandardMaterial3D.new()
+	body_mat.albedo_color = silver_color
+	body_mat.emission_enabled = true
+	body_mat.emission = pearl_color
+	body_mat.emission_energy_multiplier = 1.5
+	body_mat.metallic = 0.9
+	body_mat.roughness = 0.05
+	body.material_override = body_mat
+	root.add_child(body)
+
+	# 三层对称装饰环（奏鸣曲三段式）
+	var ring_heights: Array = [-0.3, 0.0, 0.3]
+	var ring_radii: Array = [0.55, 0.65, 0.55]
+
+	for i in 3:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = ring_radii[i] - 0.03
+		torus.outer_radius = ring_radii[i] + 0.03
+		torus.rings = 48
+		torus.ring_segments = 12
+		ring.mesh = torus
+		ring.rotation.x = PI / 2.0
+		ring.position.y = ring_heights[i]
+
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = blue_accent
+		ring_mat.emission_enabled = true
+		ring_mat.emission = blue_accent
+		ring_mat.emission_energy_multiplier = 2.0
+		ring_mat.metallic = 0.8
+		ring_mat.roughness = 0.1
+		ring.material_override = ring_mat
+		root.add_child(ring)
+
+	# 四个对称装饰球（古典对称美）
+	for i in 4:
+		var deco := MeshInstance3D.new()
+		var deco_sphere := SphereMesh.new()
+		deco_sphere.radius = 0.08
+		deco_sphere.height = 0.16
+		deco_sphere.radial_segments = 12
+		deco_sphere.rings = 6
+		deco.mesh = deco_sphere
+		var angle := (TAU / 4.0) * i + PI / 4.0
+		deco.position = Vector3(cos(angle) * 0.65, 0, sin(angle) * 0.65)
+
+		var deco_mat := StandardMaterial3D.new()
+		deco_mat.albedo_color = pearl_color
+		deco_mat.emission_enabled = true
+		deco_mat.emission = pearl_color
+		deco_mat.emission_energy_multiplier = 3.0
+		deco_mat.metallic = 1.0
+		deco_mat.roughness = 0.05
+		deco.material_override = deco_mat
+		root.add_child(deco)
+
+	# 点光源（柔和银白光）
+	var omni := OmniLight3D.new()
+	omni.light_color = pearl_color
+	omni.light_energy = 3.0
+	omni.omni_range = 4.0
+	root.add_child(omni)
+
+## Boss：贝多芬 — 狂暴的不规则几何体，深红橙色调
+func _build_boss_beethoven_model(root: Node3D) -> void:
+	var rage_color := Color(0.9, 0.2, 0.1)    # 狂暴红
+	var fire_color := Color(1.0, 0.5, 0.0)    # 火焰橙
+	var dark_color := Color(0.3, 0.05, 0.05)  # 深暗红
+	var white_hot := Color(1.0, 0.9, 0.7)     # 白热
+
+	# 核心：不规则扭曲的大球体
+	var core := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	sphere.radial_segments = 8   # 低多边形，粗犷感
+	sphere.rings = 5
+	core.mesh = sphere
+	core.rotation = Vector3(0.3, 0.5, 0.2)  # 不规则倾斜
+
+	var core_mat := StandardMaterial3D.new()
+	core_mat.albedo_color = dark_color
+	core_mat.emission_enabled = true
+	core_mat.emission = rage_color
+	core_mat.emission_energy_multiplier = 3.0
+	core_mat.roughness = 0.9
+	core.material_override = core_mat
+	root.add_child(core)
+
+	# 爆裂碎片（不规则散射的方块/锥体）
+	var shard_data: Array = [
+		{"pos": Vector3(0.6, 0.5, 0.1),  "scale": Vector3(0.2, 0.4, 0.15), "rot": Vector3(0.8, 0.3, 1.2), "color": fire_color},
+		{"pos": Vector3(-0.7, 0.3, -0.1), "scale": Vector3(0.15, 0.35, 0.2), "rot": Vector3(1.5, 0.7, 0.4), "color": rage_color},
+		{"pos": Vector3(0.3, -0.6, 0.2),  "scale": Vector3(0.25, 0.2, 0.15), "rot": Vector3(0.4, 1.8, 0.9), "color": fire_color},
+		{"pos": Vector3(-0.4, -0.5, -0.2), "scale": Vector3(0.18, 0.3, 0.12), "rot": Vector3(1.1, 0.5, 1.6), "color": rage_color},
+		{"pos": Vector3(0.7, -0.2, 0.3),  "scale": Vector3(0.12, 0.12, 0.35), "rot": Vector3(0.6, 1.2, 0.3), "color": white_hot},
+		{"pos": Vector3(-0.5, 0.6, 0.2),  "scale": Vector3(0.1, 0.1, 0.3),   "rot": Vector3(1.3, 0.8, 0.5), "color": white_hot},
+	]
+
+	for sd in shard_data:
+		var shard := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = sd["scale"]
+		shard.mesh = box
+		shard.position = sd["pos"]
+		shard.rotation = sd["rot"]
+
+		var shard_mat := StandardMaterial3D.new()
+		shard_mat.albedo_color = sd["color"]
+		shard_mat.emission_enabled = true
+		shard_mat.emission = sd["color"]
+		shard_mat.emission_energy_multiplier = 3.5
+		shard_mat.roughness = 0.7
+		shard.material_override = shard_mat
+		root.add_child(shard)
+
+	# 强烈的多色点光源（命运交响的戏剧性）
+	var omni1 := OmniLight3D.new()
+	omni1.light_color = rage_color
+	omni1.light_energy = 4.0
+	omni1.omni_range = 5.0
+	root.add_child(omni1)
+
+	var omni2 := OmniLight3D.new()
+	omni2.light_color = fire_color
+	omni2.light_energy = 2.0
+	omni2.omni_range = 3.0
+	omni2.position = Vector3(0.5, 0.5, 0.5)
+	root.add_child(omni2)
 
 func _cleanup_enemy_preview() -> void:
 	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):

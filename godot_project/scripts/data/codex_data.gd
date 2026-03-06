@@ -924,6 +924,7 @@ const VOL3_BOSSES: Dictionary = {
 		"phases": ["序曲 (Prelude)", "共鸣 (Resonance)", "天体乐章 (Musica Universalis)"],
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"enemy_type": "boss_pythagoras",
 	},
 	"boss_guido": {
 		"name": "圣咏宗师 · 圭多",
@@ -934,6 +935,7 @@ const VOL3_BOSSES: Dictionary = {
 		"phases": ["纽姆记谱", "四线谱", "圭多之手"],
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"enemy_type": "boss_guido",
 	},
 	"boss_bach": {
 		"name": "大构建师 · 巴赫",
@@ -944,6 +946,7 @@ const VOL3_BOSSES: Dictionary = {
 		"phases": ["创意曲 (Invention)", "赋格 (Fugue)", "恰空 (Chaconne)"],
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"enemy_type": "boss_bach",
 	},
 	"boss_mozart": {
 		"name": "古典完形 · 莫扎特",
@@ -954,6 +957,7 @@ const VOL3_BOSSES: Dictionary = {
 		"phases": ["呈示部 (Exposition)", "发展部 (Development)", "再现部 (Recapitulation)"],
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"enemy_type": "boss_mozart",
 	},
 	"boss_beethoven": {
 		"name": "狂想者 · 贝多芬",
@@ -964,6 +968,7 @@ const VOL3_BOSSES: Dictionary = {
 		"phases": ["命运 (Fate)", "月光 (Moonlight)", "英雄 (Eroica)", "欢乐颂 (Ode to Joy)"],
 		"rarity": Rarity.LEGENDARY,
 		"unlock_type": UnlockType.ENCOUNTER,
+		"enemy_type": "boss_beethoven",
 	},
 }
 
