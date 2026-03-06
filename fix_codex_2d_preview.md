@@ -1,3 +1,8 @@
+> **[DEPRECATED/ERROR]**
+> **注意：本文档描述的“修复”实际上是一个错误的回退。**
+> Project Harmony 的正确架构是 2.5D 混合渲染（RenderBridge3D），Codex 图鉴的敌人预览**应该**使用 3D 视口（Camera3D + MeshInstance3D）来展示“抽象矢量主义”的 3D 视觉风格，而不是直接实例化 2D 场景。
+> 此文档及其对应的代码提交已被撤销。
+
 # Codex 敌人预览修复说明
 
 ## 问题描述
