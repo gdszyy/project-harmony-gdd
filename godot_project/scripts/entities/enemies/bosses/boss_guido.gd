@@ -131,6 +131,7 @@ func _on_boss_ready() -> void:
 	
 	_projectile_container = Node2D.new()
 	_projectile_container.name = "GuidoProjectiles"
+	_projectile_container.top_level = true  # 使弹幕容器独立于 Boss 变换，避免 global_position 双重偏移
 	add_child(_projectile_container)
 	
 	# 初始化四线谱

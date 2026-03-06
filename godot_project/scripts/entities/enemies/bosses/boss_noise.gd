@@ -148,6 +148,7 @@ func _on_boss_ready() -> void:
 	# 创建弹幕容器
 	_projectile_container = Node2D.new()
 	_projectile_container.name = "NoiseProjectiles"
+	_projectile_container.top_level = true  # 使弹幕容器独立于 Boss 变换，避免 global_position 双重偏移
 	add_child(_projectile_container)
 
 # ============================================================
@@ -697,7 +698,7 @@ func _attack_bitcrush_zone(_attack_data: Dictionary) -> void:
 		visual.color = Color(0.5, 0.2, 0.8, 0.3)
 		zone.add_child(visual)
 		
-		add_child(zone)
+		get_parent().add_child(zone)  # 添加到场景根节点，避免 global_position 双重偏移
 		_bitcrush_zones.append(zone)
 		
 		var tween := create_tween()
@@ -806,7 +807,7 @@ func _attack_singularity_collapse(attack_data: Dictionary) -> void:
 	vortex.polygon = points
 	vortex.color = Color(0.1, 0.1, 0.1, 0.8)
 	vortex.global_position = pull_center
-	add_child(vortex)
+	get_parent().add_child(vortex)  # 添加到场景根节点，避免 global_position 双重偏移
 	
 	var tween := create_tween().set_parallel()
 	tween.tween_property(vortex, "scale", Vector2.ONE * 50, pull_duration)
