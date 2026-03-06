@@ -504,13 +504,12 @@ func _build_bg_3d_atmosphere() -> void:
 	bg_env.environment = env
 	_bg_3d_viewport.add_child(bg_env)
 
-	add_child(_bg_3d_viewport)
-
 	_bg_3d_viewport_container = SubViewportContainer.new()
 	_bg_3d_viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bg_3d_viewport_container.stretch = true
 	_bg_3d_viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bg_3d_viewport_container.modulate.a = 0.15
+	_bg_3d_viewport_container.add_child(_bg_3d_viewport)
 	add_child(_bg_3d_viewport_container)
 	move_child(_bg_3d_viewport_container, 1)  # 放在背景之后
 
@@ -888,7 +887,7 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 
 	_enemy_preview_camera = Camera3D.new()
 	_enemy_preview_camera.position = Vector3(0, 1, 3)
-	_enemy_preview_camera.look_at(Vector3.ZERO)
+	_enemy_preview_camera.look_at_from_position(Vector3(0, 1, 3), Vector3.ZERO)
 	_enemy_preview_camera.fov = 50
 	_enemy_preview_viewport.add_child(_enemy_preview_camera)
 
@@ -905,19 +904,18 @@ func _build_enemy_3d_preview(entry_id: String, entry: Dictionary) -> void:
 
 	var light := DirectionalLight3D.new()
 	light.position = Vector3(2, 3, 2)
-	light.look_at(Vector3.ZERO)
+	light.look_at_from_position(Vector3(2, 3, 2), Vector3.ZERO)
 	light.light_energy = 1.5
 	_enemy_preview_viewport.add_child(light)
 
 	_enemy_preview_model = _create_enemy_3d_model(entry_id, entry)
 	_enemy_preview_viewport.add_child(_enemy_preview_model)
 
-	add_child(_enemy_preview_viewport)
-
 	_enemy_preview_container = SubViewportContainer.new()
 	_enemy_preview_container.custom_minimum_size = Vector2(300, 200)
 	_enemy_preview_container.stretch = true
 	_enemy_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_enemy_preview_container.add_child(_enemy_preview_viewport)
 	_detail_container.add_child(_enemy_preview_container)
 
 func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
@@ -953,12 +951,13 @@ func _create_enemy_3d_model(entry_id: String, entry: Dictionary) -> Node3D:
 	return root
 
 func _cleanup_enemy_preview() -> void:
-	if _enemy_preview_viewport and is_instance_valid(_enemy_preview_viewport):
-		_enemy_preview_viewport.queue_free()
-		_enemy_preview_viewport = null
 	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):
 		_enemy_preview_container.queue_free()
 		_enemy_preview_container = null
+		_enemy_preview_viewport = null  # viewport 是 container 的子节点，随 container 一起释放
+	elif _enemy_preview_viewport and is_instance_valid(_enemy_preview_viewport):
+		_enemy_preview_viewport.queue_free()
+		_enemy_preview_viewport = null
 	_enemy_preview_model = null
 
 # ============================================================
@@ -996,7 +995,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 
 	_demo_3d_camera = Camera3D.new()
 	_demo_3d_camera.position = Vector3(0, 8, 8)
-	_demo_3d_camera.look_at(Vector3.ZERO)
+	_demo_3d_camera.look_at_from_position(Vector3(0, 8, 8), Vector3.ZERO)
 	_demo_3d_camera.fov = 45
 	_demo_3d_viewport.add_child(_demo_3d_camera)
 
@@ -1014,7 +1013,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 
 	_demo_3d_light = DirectionalLight3D.new()
 	_demo_3d_light.position = Vector3(3, 5, 3)
-	_demo_3d_light.look_at(Vector3.ZERO)
+	_demo_3d_light.look_at_from_position(Vector3(3, 5, 3), Vector3.ZERO)
 	_demo_3d_light.light_energy = 1.2
 	_demo_3d_viewport.add_child(_demo_3d_light)
 
@@ -1024,11 +1023,10 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 
 	_create_demo_grid()
 
-	add_child(_demo_3d_viewport)
-
 	_demo_3d_viewport_container = SubViewportContainer.new()
 	_demo_3d_viewport_container.custom_minimum_size = Vector2(600, 300)
 	_demo_3d_viewport_container.stretch = true
+	_demo_3d_viewport_container.add_child(_demo_3d_viewport)
 
 	var demo_panel := PanelContainer.new()
 	var demo_style := StyleBoxFlat.new()
