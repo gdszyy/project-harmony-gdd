@@ -1,17 +1,13 @@
 ## codex_ui.gd
-## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 — v6.1
+## 图鉴系统 "谐振法典 (Codex Resonare)" UI 主界面 — v6.0 重写
 ##
 ## 根据 UI_Design_Module4_CircleOfFifths.md §8 设计文档重写：
 ##   - 经典双栏布局：左栏分类导航(25%) + 右栏详细内容(75%)
 ##   - "古籍"质感：装饰性线条边框、带扫光效果的科幻字体
 ##   - 完整四卷数据浏览、条目解锁状态、搜索过滤、详情展示
 ##   - 法术演示区域（2.5D 渲染）
-##   - 敌人 2D 预览（SubViewport + Camera2D，直接实例化游戏内真实敌人场景）
+##   - 敌人 2D 预览（SubViewport + Camera2D，直接实例化敌人场景）
 ##   - 全局色彩体系与 UI 设计文档 §1.2 对齐
-##
-## [v6.1 修复] 将敌人预览从 3D（SubViewport + Camera3D + 硬编码几何体）
-##              改为 2D（SubViewport + Camera2D + 直接加载 .tscn 场景），
-##              确保 Codex 预览与游戏内实际视觉完全一致。
 ##
 ## 视觉风格：
 ##   - 星空紫面板背景 + 谐振紫分割线/边框
@@ -180,7 +176,6 @@ func _process(delta: float) -> void:
 		if _demo_timer > 5.0:
 			_clear_demo()
 
-	# [v6.1] 2D 预览：轻微旋转动画，展示敌人的动态感
 	if _enemy_preview_model and is_instance_valid(_enemy_preview_model):
 		_enemy_preview_model.rotation += delta * 0.8
 
@@ -733,7 +728,7 @@ func _show_entry_detail(entry_id: String) -> void:
 	# 装饰分割线
 	_detail_container.add_child(_create_decorative_separator())
 
-	# ---- 敌人 2D 预览 [v6.1 修复：改为 2D 实例化真实场景] ----
+	# ---- 敌人 2D 预览 ----
 	if _is_enemy_entry(entry_id, entry):
 		_build_enemy_2d_preview(entry_id, entry)
 
@@ -888,13 +883,9 @@ func _is_enemy_entry(entry_id: String, entry: Dictionary) -> bool:
 	# 检查 entry_id 前缀（用于 Boss 和基础敌人）
 	return entry_id.begins_with("enemy_") or entry_id.begins_with("boss_") or entry_id.begins_with("elite_")
 
-# ============================================================
-# 敌人 2D 预览 [v6.1 修复：直接实例化游戏内真实敌人场景]
-# ============================================================
-## 敌人 entry_id → 场景文件路径映射
-## 覆盖所有基础敌人、章节敌人、精英敌人和 Boss
-const ENEMY_SCENE_MAP: Dictionary = {
-	# 基础敌人（5 种）
+## 敌人场景路径映射（entry_id → res://scenes/enemies/*.tscn）
+const ENEMY_SCENE_PATHS: Dictionary = {
+	# 基础敌人
 	"enemy_static":              "res://scenes/enemies/enemy_static.tscn",
 	"enemy_silence":             "res://scenes/enemies/enemy_silence.tscn",
 	"enemy_screech":             "res://scenes/enemies/enemy_screech.tscn",
@@ -917,21 +908,21 @@ const ENEMY_SCENE_MAP: Dictionary = {
 	"ch4_sonata_form":           "res://scenes/enemies/ch4_sonata_form.tscn",
 	"ch4_court_kapellmeister":   "res://scenes/enemies/ch4_court_kapellmeister.tscn",
 	# 第五章敌人
-	"ch5_chromatic_wanderer":    "res://scenes/enemies/ch5_chromatic_wanderer.tscn",
 	"ch5_crescendo_surge":       "res://scenes/enemies/ch5_crescendo_surge.tscn",
 	"ch5_fate_knocker":          "res://scenes/enemies/ch5_fate_knocker.tscn",
 	"ch5_fury_spirit":           "res://scenes/enemies/ch5_fury_spirit.tscn",
+	"ch5_chromatic_wanderer":    "res://scenes/enemies/ch5_chromatic_wanderer.tscn",
 	"ch5_symphony_commander":    "res://scenes/enemies/ch5_symphony_commander.tscn",
 	# 第六章敌人
+	"ch6_walking_bass":          "res://scenes/enemies/ch6_walking_bass.tscn",
+	"ch6_scat_singer":           "res://scenes/enemies/ch6_scat_singer.tscn",
 	"ch6_atonal_shifter":        "res://scenes/enemies/ch6_atonal_shifter.tscn",
 	"ch6_bebop_virtuoso":        "res://scenes/enemies/ch6_bebop_virtuoso.tscn",
-	"ch6_scat_singer":           "res://scenes/enemies/ch6_scat_singer.tscn",
-	"ch6_walking_bass":          "res://scenes/enemies/ch6_walking_bass.tscn",
 	# 第七章敌人
 	"ch7_bitcrusher_worm":       "res://scenes/enemies/ch7_bitcrusher_worm.tscn",
-	"ch7_frequency_overlord":    "res://scenes/enemies/ch7_frequency_overlord.tscn",
 	"ch7_glitch_phantom":        "res://scenes/enemies/ch7_glitch_phantom.tscn",
-	# Boss（5 个）
+	"ch7_frequency_overlord":    "res://scenes/enemies/ch7_frequency_overlord.tscn",
+	# Boss
 	"boss_pythagoras":           "res://scenes/enemies/boss_pythagoras.tscn",
 	"boss_guido":                "res://scenes/enemies/boss_guido.tscn",
 	"boss_bach":                 "res://scenes/enemies/boss_bach.tscn",
@@ -941,93 +932,80 @@ const ENEMY_SCENE_MAP: Dictionary = {
 	"boss_jazz":                 "res://scenes/enemies/boss_jazz.tscn",
 }
 
-## 敌人预览的缩放系数（像素坐标 → 预览视口坐标）
-## 基础敌人约 10-30px 半径，Boss 约 40-50px 半径，预览视口 300x200
-## 缩放 2.5 使普通敌人在预览中呈现合适大小
-const ENEMY_PREVIEW_SCALE_DEFAULT := 2.5
-## Boss 尺寸较大，缩放系数稍小
-const ENEMY_PREVIEW_SCALE_BOSS := 1.5
-
-## [v6.1] 构建敌人 2D 预览区域
-## 直接加载并实例化游戏内的真实 .tscn 场景文件，
-## 放入 SubViewport + Camera2D，确保视觉与游戏内完全一致。
+## 构建敌人 2D 预览区域
+## 使用 SubViewport + Camera2D 直接实例化敌人场景，展示真实的游戏内 Polygon2D 视觉效果
 func _build_enemy_2d_preview(entry_id: String, _entry: Dictionary) -> void:
 	_cleanup_enemy_preview()
 
-	# 查找场景路径
-	var scene_path: String = ENEMY_SCENE_MAP.get(entry_id, "")
-	if scene_path.is_empty():
-		# 尝试通过 entry_id 前缀推断场景路径（兜底逻辑）
-		if entry_id.begins_with("enemy_"):
-			scene_path = "res://scenes/enemies/%s.tscn" % entry_id
-		elif entry_id.begins_with("boss_"):
-			scene_path = "res://scenes/enemies/%s.tscn" % entry_id
-		elif entry_id.begins_with("ch"):
-			scene_path = "res://scenes/enemies/%s.tscn" % entry_id
-
-	if scene_path.is_empty():
-		# 无法找到场景文件，不显示预览
-		return
-
-	# 加载场景资源
-	var scene_res: PackedScene = load(scene_path)
-	if scene_res == null:
-		# 场景文件不存在或加载失败，不显示预览
-		push_warning("CodexUI: 无法加载敌人场景: " + scene_path)
-		return
-
-	# 实例化场景
-	var enemy_instance: Node = scene_res.instantiate()
-	if enemy_instance == null:
-		return
-
-	# 禁用逻辑脚本（仅保留视觉表现）
-	# 将脚本设为 null 以防止 _ready/_process 中的游戏逻辑运行
-	if enemy_instance.get_script() != null:
-		enemy_instance.set_script(null)
-
-	# 禁用碰撞（避免物理引擎干扰）
-	for child in enemy_instance.get_children():
-		if child is CollisionShape2D or child is CollisionPolygon2D:
-			child.disabled = true
-		elif child is Area2D:
-			child.monitoring = false
-			child.monitorable = false
-
-	# 确保实例是 Node2D 类型（所有敌人场景根节点均为 CharacterBody2D，继承自 Node2D）
-	if not enemy_instance is Node2D:
-		enemy_instance.queue_free()
-		return
-
-	_enemy_preview_model = enemy_instance as Node2D
-
-	# 根据敌人类型确定缩放系数
-	var preview_scale: float = ENEMY_PREVIEW_SCALE_BOSS if entry_id.begins_with("boss_") else ENEMY_PREVIEW_SCALE_DEFAULT
-	_enemy_preview_model.scale = Vector2(preview_scale, preview_scale)
-
-	# 构建 SubViewport（2D 模式）
+	# ---- SubViewport（2D 渲染目标）----
 	_enemy_preview_viewport = SubViewport.new()
 	_enemy_preview_viewport.size = Vector2i(300, 200)
 	_enemy_preview_viewport.transparent_bg = true
 	_enemy_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	# 2D 抗锯齿
-	_enemy_preview_viewport.msaa_2d = SubViewport.MSAA_2X
+	# 2D 视口不需要 msaa_3d，改用 2D 抗锯齿
+	_enemy_preview_viewport.msaa_2d = SubViewport.MSAA_4X
 
-	# 构建 Camera2D，居中对准敌人
+	# ---- Camera2D（居中，缩放适配预览区域）----
 	_enemy_preview_camera = Camera2D.new()
-	_enemy_preview_camera.position = Vector2.ZERO  # 摄像机对准原点（敌人位于原点）
+	_enemy_preview_camera.position = Vector2.ZERO
+	# 根据 Boss 或普通敌人调整缩放：Boss 体型更大，需要拉远
+	var is_boss := entry_id.begins_with("boss_")
+	if is_boss:
+		_enemy_preview_camera.zoom = Vector2(2.5, 2.5)
+	else:
+		_enemy_preview_camera.zoom = Vector2(4.0, 4.0)
 	_enemy_preview_viewport.add_child(_enemy_preview_camera)
 
-	# 将敌人实例添加到视口
-	_enemy_preview_viewport.add_child(_enemy_preview_model)
+	# ---- 实例化敌人场景 ----
+	var scene_path: String = ENEMY_SCENE_PATHS.get(entry_id, "")
+	if not scene_path.is_empty() and ResourceLoader.exists(scene_path):
+		var scene_res := load(scene_path) as PackedScene
+		if scene_res:
+			var enemy_instance := scene_res.instantiate()
+			# 确保实例是 Node2D（所有敌人场景的根节点均为 CharacterBody2D，继承自 Node2D）
+			if enemy_instance is Node2D:
+				_enemy_preview_model = enemy_instance as Node2D
+				# 将敌人放置在视口中心
+				_enemy_preview_model.position = Vector2.ZERO
+				# 禁用物理处理，避免敌人在预览中移动或触发碰撞
+				_enemy_preview_model.set_physics_process(false)
+				_enemy_preview_model.set_process(false)
+				# 禁用碰撞层，防止预览实例影响游戏世界
+				if _enemy_preview_model.has_method("set_collision_layer"):
+					_enemy_preview_model.set_collision_layer(0)
+					_enemy_preview_model.set_collision_mask(0)
+				_enemy_preview_viewport.add_child(_enemy_preview_model)
+			else:
+				enemy_instance.queue_free()
+				_add_fallback_preview(entry_id)
+		else:
+			_add_fallback_preview(entry_id)
+	else:
+		_add_fallback_preview(entry_id)
 
-	# 构建 SubViewportContainer
+	# ---- SubViewportContainer（将 SubViewport 嵌入 UI）----
 	_enemy_preview_container = SubViewportContainer.new()
 	_enemy_preview_container.custom_minimum_size = Vector2(300, 200)
 	_enemy_preview_container.stretch = true
 	_enemy_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_enemy_preview_container.add_child(_enemy_preview_viewport)
 	_detail_container.add_child(_enemy_preview_container)
+
+## 回退预览：当场景文件不存在时，显示带颜色的占位多边形
+func _add_fallback_preview(entry_id: String) -> void:
+	var fallback := Polygon2D.new()
+	# 从 entry 数据获取颜色，或使用默认颜色
+	var color := ENEMY_TYPE_COLORS.get(entry_id, Color(0.6, 0.4, 0.8))
+	fallback.color = color
+	# 绘制一个简单的八边形作为占位符
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in range(8):
+		var angle := (float(i) / 8.0) * TAU
+		pts.append(Vector2(cos(angle) * 20.0, sin(angle) * 20.0))
+	fallback.polygon = pts
+	fallback.position = Vector2.ZERO
+	_enemy_preview_model = fallback
+	_enemy_preview_viewport.add_child(fallback)
 
 func _cleanup_enemy_preview() -> void:
 	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):
@@ -1038,7 +1016,6 @@ func _cleanup_enemy_preview() -> void:
 		_enemy_preview_viewport.queue_free()
 		_enemy_preview_viewport = null
 	_enemy_preview_model = null
-
 
 # ============================================================
 # 法术演示区域 (2.5D)
