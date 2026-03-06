@@ -232,3 +232,4 @@ func _on_chapter_timbre_changed(new_timbre: int) -> void:
 ## 声部播放完成回调
 func _on_voice_finished(voice_index: int) -> void:
 	# [Removed] synth_note_stopped signal was deprecated and removed (Issue #86)
+	pass
