@@ -293,7 +293,7 @@ func _update_selection(mouse_pos: Vector2) -> void:
 			var timbres: Array = q["timbres"]
 			if timbres.size() > 1:
 				# 多武器象限：根据径向距离选择
-				var radial_t := clamp((_mouse_distance - inner_radius) / (wheel_radius - inner_radius), 0.0, 1.0)
+				var radial_t: float = clamp((_mouse_distance - inner_radius) / (wheel_radius - inner_radius), 0.0, 1.0)
 				_selected_timbre_in_quadrant = int(radial_t * float(timbres.size()))
 				_selected_timbre_in_quadrant = min(_selected_timbre_in_quadrant, timbres.size() - 1)
 			else:
@@ -335,8 +335,8 @@ func _draw() -> void:
 			outer_r *= 1.08
 
 		# 检查是否为当前相位的增益象限
-		var is_gain_quadrant := (q["gain_phase"] == _current_phase)
-		var is_wind_flashing := (q["key"] == "wind" and _wind_flash_timer > 0.0)
+		var is_gain_quadrant: bool = (int(q["gain_phase"]) == _current_phase)
+		var is_wind_flashing: bool = (str(q["key"]) == "wind" and _wind_flash_timer > 0.0)
 
 		# 绘制象限多边形
 		var segment_count := 20
