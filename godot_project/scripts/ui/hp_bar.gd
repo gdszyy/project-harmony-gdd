@@ -184,8 +184,8 @@ func _draw_glitch_blocks(base_color: Color) -> void:
 		if seed_val > 0.3:
 			var bx := fmod(abs(sin(float(i) * 311.7 + _time * 5.0)) * ARC_WIDTH, ARC_WIDTH * _display_ratio)
 			var by := fmod(abs(cos(float(i) * 43.7 + _time * 7.0)) * ARC_HEIGHT, ARC_HEIGHT)
-			var bw := 4.0 + abs(sin(float(i) * 17.3)) * 20.0
-			var bh := 2.0 + abs(cos(float(i) * 23.1)) * 6.0
+			var bw: float = 4.0 + abs(sin(float(i) * 17.3)) * 20.0
+			var bh: float = 2.0 + abs(cos(float(i) * 23.1)) * 6.0
 			var block_color := UIColors.with_alpha(base_color, glitch_strength * 0.4)
 			draw_rect(Rect2(Vector2(bx, by), Vector2(bw, bh)), block_color)
 
@@ -195,7 +195,7 @@ func _draw_glitch_blocks(base_color: Color) -> void:
 
 func _get_waveform(t: float, hp: float) -> float:
 	var sine_val := sin(t)
-	var tri_val := abs(fmod(t / PI, 2.0) - 1.0) * 2.0 - 1.0
+	var tri_val: float = abs(fmod(t / PI, 2.0) - 1.0) * 2.0 - 1.0
 	var saw_val := fmod(t / PI + 1.0, 2.0) - 1.0
 	var sq_val := 1.0 if sin(t) > 0 else -1.0
 

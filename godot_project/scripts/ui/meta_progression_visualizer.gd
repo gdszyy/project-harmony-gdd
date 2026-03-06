@@ -325,11 +325,11 @@ func _calc_vertical_layout(nodes: Array, center: Vector2, vp: Vector2) -> void:
 	# 乐器调优：每个属性一根垂直推杆
 	var count := nodes.size()
 	var spacing := min(160.0, (vp.x - 200.0) / float(max(count, 1)))
-	var start_x := center.x - (count - 1) * spacing / 2.0
+	var start_x: float = center.x - (count - 1) * spacing / 2.0
 
 	for i in range(nodes.size()):
 		var node: Dictionary = nodes[i]
-		var x := start_x + i * spacing
+		var x: float = start_x + i * spacing
 		var y := center.y
 		_node_positions[node["id"]] = Vector2(x, y)
 
@@ -450,7 +450,7 @@ func _draw() -> void:
 
 	# 进度条
 	if _meta:
-		var progress := _meta.get_module_progress(_current_module)
+		var progress: float = _meta.get_module_progress(_current_module)
 		var bar_w := 300.0
 		var bar_h := 6.0
 		var bar_x := center.x - bar_w / 2.0
@@ -578,8 +578,8 @@ func _draw_dashed_line(from: Vector2, to: Vector2, color: Color, width: float, d
 	var drawn := 0.0
 	var is_dash := true
 	while drawn < total_len:
-		var seg_len := min(dash_len, total_len - drawn)
-		var end_pos := pos + dir * seg_len
+		var seg_len: float = min(dash_len, total_len - drawn)
+		var end_pos: Vector2 = pos + dir * seg_len
 		if is_dash:
 			draw_line(pos, end_pos, color, width)
 		pos = end_pos
@@ -842,7 +842,7 @@ func _gui_input(event: InputEvent) -> void:
 
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			var click_pos := event.position
+			var click_pos: Vector2 = event.position
 
 			# 导航按钮
 			if _back_btn_rect.has_point(click_pos):

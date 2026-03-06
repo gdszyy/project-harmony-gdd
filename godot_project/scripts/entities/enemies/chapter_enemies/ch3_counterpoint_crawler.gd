@@ -330,7 +330,7 @@ func _update_procedural_walking(delta: float) -> void:
 		var leg := _leg_bones[i]
 
 		# 理想落脚点 = 身体位置 + 腿根偏移 + 腿伸展方向
-		var ideal_foot_pos := global_position + leg["coxa_rest_pos"] + Vector2(
+		var ideal_foot_pos: Vector2 = global_position + leg["coxa_rest_pos"] + Vector2(
 			leg["side"] * leg_length,
 			leg["coxa_rest_pos"].y * 0.3
 		)
@@ -342,7 +342,7 @@ func _update_procedural_walking(delta: float) -> void:
 		leg["foot_target"] = ideal_foot_pos
 
 		# 检查是否需要迈步
-		var dist_to_target := leg["foot_current"].distance_to(leg["foot_target"])
+		var dist_to_target: float = leg["foot_current"].distance_to(leg["foot_target"])
 
 		if not leg["is_stepping"] and dist_to_target > step_distance:
 			# 检查步态协调：交替三脚架步态
@@ -361,7 +361,7 @@ func _update_procedural_walking(delta: float) -> void:
 			else:
 				# 插值脚位置 + 抬腿弧线
 				var t_val: float = leg["step_progress"]
-				var lerped := leg["step_start"].lerp(leg["step_end"], t_val)
+				var lerped: Vector2 = leg["step_start"].lerp(leg["step_end"], t_val)
 				# Y 轴弧线：sin 曲线模拟抬腿
 				var lift := sin(t_val * PI) * step_height
 				lerped.y -= lift
@@ -630,7 +630,7 @@ func _on_death_effect() -> void:
 		if is_instance_valid(leg["coxa"]):
 			# 腿部飞散
 			var scatter_dir := Vector2(leg["side"], randf_range(-1, 1)).normalized()
-			var tween := leg["coxa"].create_tween()
+			var tween: Tween = leg["coxa"].create_tween()
 			tween.set_parallel(true)
 			tween.tween_property(leg["coxa"], "global_position",
 				leg["coxa"].global_position + scatter_dir * 30.0, 0.4)

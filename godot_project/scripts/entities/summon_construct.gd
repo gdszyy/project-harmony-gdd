@@ -293,7 +293,7 @@ func _action_bass_wall(mult: float) -> void:
 			continue
 		var dist := global_position.distance_to(enemy.global_position)
 		if dist < pulse_radius:
-			var push_dir := (enemy.global_position - global_position).normalized()
+			var push_dir: Vector2 = (enemy.global_position - global_position).normalized()
 			var push_force := 200.0 * mult * (1.0 - dist / pulse_radius)
 			if enemy is CharacterBody2D:
 				enemy.velocity += push_dir * push_force
@@ -320,7 +320,7 @@ func _action_sub_bass(mult: float) -> void:
 				enemy.take_damage(damage * (1.0 - dist / pulse_radius))
 			# 击退
 			if enemy is CharacterBody2D:
-				var push_dir := (enemy.global_position - global_position).normalized()
+				var push_dir: Vector2 = (enemy.global_position - global_position).normalized()
 				enemy.velocity += push_dir * 300.0
 
 ## A — 和声光环：恢复疲劳

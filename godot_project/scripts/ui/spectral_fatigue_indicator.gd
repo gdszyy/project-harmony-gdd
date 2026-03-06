@@ -181,7 +181,7 @@ func _update_jitter(_delta: float) -> void:
 		return
 
 	var jitter_strength := (_display_value - 0.3) / 0.7
-	var jitter_freq := lerp(0.5, 5.0, jitter_strength)
+	var jitter_freq: float = lerp(0.5, 5.0, jitter_strength)
 
 	# 周期性抖动
 	if sin(_time * jitter_freq * TAU) > 0.7:

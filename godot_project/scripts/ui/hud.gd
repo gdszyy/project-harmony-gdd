@@ -401,7 +401,7 @@ func _on_recovery_suggestion(message: String) -> void:
 		_suggestion_label.add_theme_color_override("font_color", suggestion_color)
 
 		_suggestion_label.modulate.a = 0.0
-		var tween := create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(_suggestion_label, "modulate:a", 1.0, 0.3)
 
 func _update_suggestion(delta: float) -> void:

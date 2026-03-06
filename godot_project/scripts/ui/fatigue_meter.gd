@@ -113,7 +113,7 @@ func _draw() -> void:
 
 	# 波形边缘宽度
 	var base_width := BAR_WIDTH
-	var wave_strength := clamp((_display_afi - 0.4) / 0.6, 0.0, 1.0)
+	var wave_strength: float = clamp((_display_afi - 0.4) / 0.6, 0.0, 1.0)
 
 	# 绘制填充区域（带波形边缘）
 	var segments := int(fill_height / 2.0)
@@ -125,7 +125,7 @@ func _draw() -> void:
 		# 波形边缘偏移
 		var edge_offset := 0.0
 		if wave_strength > 0.0:
-			var freq := lerp(4.0, 15.0, wave_strength)
+			var freq: float = lerp(4.0, 15.0, wave_strength)
 			if _display_afi < 0.8:
 				# 三角波
 				edge_offset = abs(fmod((y / BAR_HEIGHT) * freq + _time * 2.0, 2.0) - 1.0) * 3.0 * wave_strength
@@ -173,7 +173,7 @@ func _draw() -> void:
 	# 阈值标记线
 	var thresholds := [0.4, 0.6, 0.8]
 	for threshold in thresholds:
-		var mark_y := bar_bottom - BAR_HEIGHT * threshold
+		var mark_y: float = bar_bottom - BAR_HEIGHT * threshold
 		draw_line(
 			Vector2(bar_x - 3, mark_y),
 			Vector2(bar_x + BAR_WIDTH + 3, mark_y),
@@ -207,8 +207,8 @@ func _draw_particles(bar_x: float, fill_top: float, fill_height: float, base_col
 		var seed_y := cos(float(i) * 37.7 + _time * 5.0)
 		if abs(seed_x) > 0.5:
 			var px := bar_x + BAR_WIDTH * 0.5 + seed_x * (BAR_WIDTH + 10.0)
-			var py := fill_top + abs(seed_y) * fill_height
-			var p_size := 1.5 + abs(seed_x) * 2.0
+			var py: float = fill_top + abs(seed_y) * fill_height
+			var p_size: float = 1.5 + abs(seed_x) * 2.0
 			draw_circle(Vector2(px, py), p_size, UIColors.with_alpha(base_color, particle_strength * 0.6))
 
 # ============================================================

@@ -1130,7 +1130,7 @@ func _spawn_xp_pickup(pos: Vector2, value: int, _enemy_type: String) -> void:
 	## 重构：使用 xp_pickup.gd 脚本创建经验拾取物 (Issue #51)
 	## xp_pickup.gd 已包含完整的视觉、磁吸、节拍脉冲、生命周期、颜色分级和合并机制
 	var XpPickupScript = load("res://scripts/entities/xp_pickup.gd")
-	var pickup := XpPickupScript.create(pos, value)
+	var pickup: Node2D = XpPickupScript.create(pos, value)
 	add_child(pickup)
 
 # ============================================================

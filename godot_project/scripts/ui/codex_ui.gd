@@ -979,7 +979,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_demo_section.add_child(demo_title)
 
 	# 演示信息
-	var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})
+	var demo_config: Dictionary = CodexData.DEMO_CONFIGS.get(entry_id, {})
 	_demo_info_label = Label.new()
 	_demo_info_label.text = demo_config.get("demo_desc", "点击施放按钮查看效果")
 	_demo_info_label.add_theme_font_size_override("font_size", 11)
@@ -1113,7 +1113,7 @@ func _on_demo_cast(entry_id: String) -> void:
 	_demo_active = true
 	_demo_timer = 0.0
 
-	var demo_config := CodexData.DEMO_CONFIGS.get(entry_id, {})
+	var demo_config: Dictionary = CodexData.DEMO_CONFIGS.get(entry_id, {})
 	if demo_config.is_empty():
 		_update_demo_status("无可用演示配置")
 		return

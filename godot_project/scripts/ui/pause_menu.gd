@@ -255,7 +255,7 @@ func _on_continue_pressed() -> void:
 func _on_settings_pressed() -> void:
 	var settings_scene := load("res://scenes/settings_menu.tscn")
 	if settings_scene:
-		var settings_menu := settings_scene.instantiate()
+		var settings_menu: Control = settings_scene.instantiate()
 		settings_menu.z_index = 100
 		add_child(settings_menu)
 		if settings_menu.has_signal("menu_closed"):

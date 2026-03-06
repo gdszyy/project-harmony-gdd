@@ -1436,7 +1436,7 @@ func _draw_breakthrough_event(font: Font) -> void:
 		draw_circle(geo_pos, 3.0, geo_color)
 
 	# 标题 — 传说标志
-	var title_text := "◆ " + _breakthrough_event.get("name", "???")
+	var title_text: String = "◆ " + _breakthrough_event.get("name", "???")
 	var title_color := COL_HOLY_GOLD
 	title_color.a = progress
 	var title_width := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 20).x

@@ -677,7 +677,7 @@ func _on_death_effect() -> void:
 	for i in range(min(12, patterns.size())):
 		var angle := float(i) / 12.0 * TAU
 		var dir := Vector2.from_angle(angle)
-		var color := _pattern_colors.get(patterns[i], Color.WHITE)
+		var color: Color = _pattern_colors.get(patterns[i], Color.WHITE)
 
 		var proj := Area2D.new()
 		proj.add_to_group("enemy_projectiles")

@@ -287,7 +287,7 @@ func _emit_white_info(idx: int) -> void:
 	var name_str: String = stats.get("name", "?")
 	var count: int = NoteInventory.get_note_count(idx)
 	var color: Color = UIColors.get_note_color_by_int(idx)
-	var desc := NOTE_DESCRIPTIONS.get(idx, "")
+	var desc: String = NOTE_DESCRIPTIONS.get(idx, "")
 	var stat_str := "DMG:%s SPD:%s DUR:%s SIZE:%s | 库存: ×%d" % [
 		str(stats.get("dmg", 0)), str(stats.get("spd", 0)),
 		str(stats.get("dur", 0)), str(stats.get("size", 0)), count
@@ -298,7 +298,7 @@ func _emit_white_info(idx: int) -> void:
 func _emit_black_info(idx: int) -> void:
 	var color: Color = UIColors.get_black_key_color(idx)
 	var count: int = NoteInventory.get_black_key_count(idx)
-	var desc := BLACK_KEY_DESCRIPTIONS.get(idx, "")
+	var desc: String = BLACK_KEY_DESCRIPTIONS.get(idx, "")
 	info_hover.emit("黑键修饰符", "%s | 库存: ×%d" % [desc, count], color)
 
 # ============================================================

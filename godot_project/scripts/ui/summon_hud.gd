@@ -132,7 +132,7 @@ func _draw() -> void:
 	var start_y := 5.0
 
 	# 面板背景
-	var total_height := max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28
+	var total_height: float = max(_summon_data.size(), 1) * (CARD_SIZE.y + CARD_MARGIN) + 28
 	draw_rect(Rect2(Vector2(0, 0), Vector2(CARD_SIZE.x + 10, total_height)), UIColors.PRIMARY_BG)
 
 	# 标题
@@ -210,7 +210,7 @@ func _draw_summon_card(data: Dictionary, pos: Vector2, alpha: float, font: Font)
 
 	# 持续时间进度条
 	var bar_y := pos.y + CARD_SIZE.y - PROGRESS_BAR_HEIGHT - 1
-	var time_ratio := clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0
+	var time_ratio: float = clamp(time_remaining / max_duration, 0.0, 1.0) if max_duration > 0 else 0.0
 
 	# 背景
 	draw_rect(Rect2(Vector2(pos.x + 1, bar_y), Vector2(CARD_SIZE.x - 2, PROGRESS_BAR_HEIGHT)), UIColors.with_alpha(UIColors.PANEL_DARK, 0.5 * alpha))

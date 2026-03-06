@@ -255,8 +255,8 @@ func _update_core_visual(delta: float) -> void:
 	# 心跳脉动：sin 驱动的缩放
 	var heartbeat := sin(_core_phase) * 0.2 + 1.0
 	# 双脉冲心跳效果
-	var double_beat := max(sin(_core_phase * 2.0) * 0.15, 0.0)
-	var total_pulse := heartbeat + double_beat
+	var double_beat: float = max(sin(_core_phase * 2.0) * 0.15, 0.0)
+	var total_pulse: float = heartbeat + double_beat
 	
 	_core_visual.scale = Vector2(total_pulse, total_pulse)
 	
@@ -569,7 +569,7 @@ func _update_arc_trails(delta: float) -> void:
 			
 			# 淡出 + 闪烁
 			if is_instance_valid(trail["node"]):
-				var fade := trail["timer"] / arc_trail_duration
+				var fade: float = trail["timer"] / arc_trail_duration
 				trail["node"].modulate.a = fade * (0.7 + randf() * 0.3)
 				# 随机重新生成闪电形状
 				if randf() < 0.1:

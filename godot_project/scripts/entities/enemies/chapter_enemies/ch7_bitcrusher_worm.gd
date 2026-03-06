@@ -252,7 +252,7 @@ func _update_segments() -> void:
 		# 动态更新着色器的 beat_energy（衰减）
 		if seg["node"].material is ShaderMaterial:
 			var mat := seg["node"].material as ShaderMaterial
-			var current_beat := mat.get_shader_parameter("beat_energy")
+			var current_beat: Variant = mat.get_shader_parameter("beat_energy")
 			if current_beat is float and current_beat > 0.0:
 				mat.set_shader_parameter("beat_energy", maxf(current_beat - 0.05, 0.0))
 
@@ -286,7 +286,7 @@ func _update_bitcrush_zones(delta: float) -> void:
 		else:
 			# 淡出效果
 			if is_instance_valid(zone["node"]):
-				var fade_ratio := zone["timer"] / bitcrush_duration
+				var fade_ratio: float = zone["timer"] / bitcrush_duration
 				zone["node"].modulate.a = fade_ratio * 0.3
 
 				# 更新腐蚀区域着色器的衰减参数

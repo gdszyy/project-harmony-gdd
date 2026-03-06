@@ -277,7 +277,7 @@ func _update_color_flow(delta: float) -> void:
 	# 辉光层使用相同渐变但降低透明度
 	var glow_gradient := gradient.duplicate()
 	for i in range(glow_gradient.get_point_count()):
-		var c := glow_gradient.get_color(i)
+		var c: Color = glow_gradient.get_color(i)
 		c.a = 0.25
 		glow_gradient.set_color(i, c)
 	_neon_glow.gradient = glow_gradient
@@ -488,7 +488,7 @@ func _update_bass_sway(delta: float) -> void:
 	
 	# 反拍时的弹跳
 	if _is_offbeat:
-		var bounce := abs(sin(_sway_phase * 4.0)) * 3.0
+		var bounce: float = abs(sin(_sway_phase * 4.0)) * 3.0
 		_bass_visual.position.y = -bounce
 
 ## 更新音符轨迹
