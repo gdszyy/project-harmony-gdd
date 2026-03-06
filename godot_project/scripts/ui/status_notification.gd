@@ -113,8 +113,8 @@ func _draw_density_overload(font: Font, center: Vector2, alpha: float) -> void:
 	for i in range(block_count):
 		var bx := center.x + sin(float(i) * 73.1 + _time * 20.0) * 100.0
 		var by := center.y + cos(float(i) * 37.7 + _time * 15.0) * 20.0
-		var bw := 10.0 + abs(sin(float(i) * 17.3 + _time * 10.0)) * 30.0
-		var bh := 3.0 + abs(cos(float(i) * 23.1)) * 5.0
+		var bw: float = 10.0 + abs(sin(float(i) * 17.3 + _time * 10.0)) * 30.0
+		var bh: float = 3.0 + abs(cos(float(i) * 23.1)) * 5.0
 		draw_rect(Rect2(Vector2(bx, by), Vector2(bw, bh)), UIColors.with_alpha(UIColors.ERROR_RED, alpha * 0.4))
 
 ## 和弦进行提示 — 圣光金 + 放大出现 + 光点消散

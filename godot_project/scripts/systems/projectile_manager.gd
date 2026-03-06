@@ -122,7 +122,7 @@ func spawn_from_spell(spell_data: Dictionary, origin: Vector2, direction: Vector
 		projectile["core_mechanic"] = core_mechanic
 		# 里拉琴：记录生成位置用于飞行距离计算
 		if core_mechanic == "harmonic_resonance":
-			projectile["spawn_position"] = player_pos
+			projectile["spawn_position"] = origin
 			projectile["base_distance"] = spell_data.get("base_distance", 600.0)
 		# 羽管键琴：标记需要生成对位弹体
 		elif core_mechanic == "counterpoint_weave":
@@ -1106,10 +1106,10 @@ func _update_projectiles(delta: float) -> void:
 				for enemy in enemies:
 					if not is_instance_valid(enemy):
 						continue
-					var dist := proj["position"].distance_to(enemy.global_position)
+					var dist: float = proj["position"].distance_to(enemy.global_position)
 					if dist < attract_radius and enemy is CharacterBody2D:
-						var pull_dir := (proj["position"] - enemy.global_position).normalized()
-						var pull_strength := attract_force * (1.0 - dist / attract_radius)
+						var pull_dir: Vector2 = (proj["position"] - enemy.global_position).normalized()
+						var pull_strength: float = attract_force * (1.0 - dist / attract_radius)
 						enemy.velocity += pull_dir * pull_strength * delta
 			continue
 
@@ -1215,12 +1215,12 @@ func _update_projectiles(delta: float) -> void:
 				for enemy in enemies:
 					if not is_instance_valid(enemy):
 						continue
-					var dist := proj["position"].distance_to(enemy.global_position)
+					var dist: float = proj["position"].distance_to(enemy.global_position)
 					if dist < break_radius:
 						if enemy.has_method("take_damage"):
 							enemy.take_damage(break_damage * (1.0 - dist / break_radius))
 						if enemy is CharacterBody2D:
-							var push_dir := (enemy.global_position - proj["position"]).normalized()
+							var push_dir: Vector2 = (enemy.global_position - proj["position"]).normalized()
 							enemy.velocity += push_dir * 200.0
 				# 护盾破碎后提前结束
 				proj["duration"] = proj["time_alive"] + 0.5
@@ -1282,7 +1282,7 @@ func _update_projectiles(delta: float) -> void:
 			proj["rotation"] = proj.get("rotation", 0.0) + proj.get("rotation_speed", 4.0) * delta
 			proj["pulse_phase"] = proj.get("pulse_phase", 0.0) + delta * 5.0
 			# 召唤阵收缩效果
-			var progress := proj["time_alive"] / proj["duration"]
+			var progress: float = proj["time_alive"] / proj["duration"]
 			proj["size"] = proj.get("max_size", 50.0) * (1.0 - progress * 0.5)
 			# 召唤完成时爆发
 			if proj["time_alive"] >= proj["duration"] - 0.1 and not proj.get("_indicator_burst", false):
@@ -1368,15 +1368,15 @@ func _update_projectiles(delta: float) -> void:
 				for enemy in enemies:
 					if not is_instance_valid(enemy):
 						continue
-					var dist := proj["position"].distance_to(enemy.global_position)
+					var dist: float = proj["position"].distance_to(enemy.global_position)
 					if dist < proj["size"]:
 						if enemy.has_method("take_damage"):
 							enemy.take_damage(tick_damage)
 						# 减速效果（随距中心距离衰减）
 						var slow: float = proj.get("slow_factor", 0.0)
 						if slow > 0.0 and enemy is CharacterBody2D:
-							var dist_ratio := dist / proj["size"]
-							var actual_slow := slow * (1.0 - dist_ratio * 0.5)
+							var dist_ratio: float = dist / proj["size"]
+							var actual_slow: float = slow * (1.0 - dist_ratio * 0.5)
 							enemy.velocity *= (1.0 - actual_slow)
 						# 风暴眼增强减速
 						if proj.get("field_type", "") == "storm" and dist < proj.get("storm_eye_radius", 40.0):
@@ -1393,9 +1393,9 @@ func _update_projectiles(delta: float) -> void:
 					for enemy in enemies:
 						if not is_instance_valid(enemy):
 							continue
-						var dist := proj["position"].distance_to(enemy.global_position)
+						var dist: float = proj["position"].distance_to(enemy.global_position)
 						if dist < proj["size"] and enemy is CharacterBody2D:
-							var push_dir := (enemy.global_position - proj["position"]).normalized()
+							var push_dir: Vector2 = (enemy.global_position - proj["position"]).normalized()
 							enemy.velocity += push_dir * 120.0
 			# 风暴闪电弹体
 			if proj.has("storm_lightning_timer"):
@@ -1407,7 +1407,7 @@ func _update_projectiles(delta: float) -> void:
 					var targets: Array = []
 					for enemy in enemies_in_range:
 						if is_instance_valid(enemy):
-							var dist := proj["position"].distance_to(enemy.global_position)
+							var dist: float = proj["position"].distance_to(enemy.global_position)
 							if dist < proj["size"]:
 								targets.append(enemy)
 					if targets.size() > 0:
@@ -1434,7 +1434,7 @@ func _update_projectiles(delta: float) -> void:
 					var enemies_in_range := get_tree().get_nodes_in_group("enemies")
 					for enemy in enemies_in_range:
 						if is_instance_valid(enemy):
-							var dist := proj["position"].distance_to(enemy.global_position)
+							var dist: float = proj["position"].distance_to(enemy.global_position)
 							if dist < proj["size"]:
 								var smite := {
 									"position": proj["position"] + Vector2(0, -200),
@@ -1483,7 +1483,7 @@ func _update_projectiles(delta: float) -> void:
 					_projectiles.append(pulse)
 			# 法阵消失时的最终爆发
 			if proj.get("field_final_burst", false):
-				var remaining := proj["duration"] - proj["time_alive"]
+				var remaining: float = proj["duration"] - proj["time_alive"]
 				if remaining < 0.1 and remaining > 0.0:
 					proj["field_final_burst"] = false  # 只触发一次
 					var burst := {
@@ -1504,7 +1504,7 @@ func _update_projectiles(delta: float) -> void:
 					_projectiles.append(burst)
 			# 时空裂雙坍缩爆发
 			if proj.has("rift_collapse_damage"):
-				var remaining2 := proj["duration"] - proj["time_alive"]
+				var remaining2: float = proj["duration"] - proj["time_alive"]
 				if remaining2 < 0.15 and remaining2 > 0.0 and not proj.get("_rift_collapsed", false):
 					proj["_rift_collapsed"] = true
 					var collapse := {

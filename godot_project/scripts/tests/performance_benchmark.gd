@@ -338,7 +338,7 @@ func _process_enemy_pool_test(delta: float) -> void:
 		var types := ["static", "screech", "pulse", "silence", "wall"]
 		var type_name: String = types[randi() % types.size()]
 		if _pool_manager.has_method("acquire_enemy"):
-			var enemy := _pool_manager.acquire_enemy(type_name)
+			var enemy: Node = _pool_manager.acquire_enemy(type_name)
 			if enemy:
 				acquired_enemies.append(enemy)
 				_pool_acquire_count += 1
@@ -463,7 +463,7 @@ func _process_combined_stress(delta: float) -> void:
 	if _pool_manager and _pool_manager.has_method("acquire_enemy"):
 		var acquired: Array[Node] = []
 		for i in range(5):
-			var enemy := _pool_manager.acquire_enemy("static")
+			var enemy: Node = _pool_manager.acquire_enemy("static")
 			if enemy:
 				acquired.append(enemy)
 		for enemy in acquired:
@@ -480,7 +480,7 @@ func _compile_result() -> Dictionary:
 	# 计算 1% low FPS（最差 1% 帧的平均 FPS）
 	var sorted_times := _frame_times.duplicate()
 	sorted_times.sort()
-	var one_percent_count := max(1, int(sorted_times.size() * 0.01))
+	var one_percent_count: int = max(1, int(sorted_times.size() * 0.01))
 	var worst_times := sorted_times.slice(sorted_times.size() - one_percent_count)
 	var one_percent_low := 0.0
 	if not worst_times.is_empty():

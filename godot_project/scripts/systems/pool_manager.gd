@@ -137,7 +137,7 @@ func _preload_chapter_scenes(chapter_index: int) -> void:
 	var prefix := "ch%d_" % chapter_index
 	for type_name in ChapterData.ENEMY_SCENE_PATHS:
 		if type_name.begins_with(prefix):
-			var pool_name := "enemy_" + type_name
+			var pool_name: String = "enemy_" + type_name
 			if not _cached_scenes.has(pool_name):
 				var scene_path: String = ChapterData.ENEMY_SCENE_PATHS[type_name]
 				var scene := load(scene_path) as PackedScene
@@ -147,7 +147,7 @@ func _preload_chapter_scenes(chapter_index: int) -> void:
 	# 精英场景
 	for type_name in ChapterData.ELITE_SCENE_PATHS:
 		if type_name.begins_with(prefix):
-			var pool_name := "enemy_" + type_name
+			var pool_name: String = "enemy_" + type_name
 			if not _cached_scenes.has(pool_name):
 				var scene_path: String = ChapterData.ELITE_SCENE_PATHS[type_name]
 				var scene := load(scene_path) as PackedScene
