@@ -64,12 +64,20 @@ var _resonance_bonus: float = 0.0
 ## 共鸣更新计时
 var _resonance_update_timer: float = 0.0
 
+
 ## === v7.0 新增：根音构造体系统 (Issue #32) ===
 var _active_constructs: Array = []  ## SummonConstruct 节点引用
 var _next_construct_id: int = 0
 var _construct_network_timer: float = 0.0
 const CONSTRUCT_SCENE_PATH := "res://scripts/entities/summon_construct.gd"
 const MAX_CONSTRUCTS: int = 4  ## 最大复音数
+
+# === VFX: 共鸣网络线缆 ===
+var _cable_mesh: ImmediateMesh
+var _cable_mesh_instance: MeshInstance3D
+var _cable_material: ShaderMaterial
+var _cable_update_timer: float = 0.0
+
 
 # ============================================================
 # 召唤物类型配置
@@ -122,14 +130,19 @@ const SUMMON_CONFIGS: Dictionary = {
 # 生命周期
 # ============================================================
 
+
 func _ready() -> void:
-	# 连接节拍信号
-	if GameManager.beat_tick.is_connected(_on_beat_tick) == false:
-		GameManager.beat_tick.connect(_on_beat_tick)
-	
-	# 连接法术系统信号
-	if SpellcraftSystem.chord_cast.is_connected(_on_chord_cast) == false:
-		SpellcraftSystem.chord_cast.connect(_on_chord_cast)
+# 连接节拍信号
+if GameManager.beat_tick.is_connected(_on_beat_tick) == false:
+GameManager.beat_tick.connect(_on_beat_tick)
+
+# 连接法术系统信号
+if SpellcraftSystem.chord_cast.is_connected(_on_chord_cast) == false:
+SpellcraftSystem.chord_cast.connect(_on_chord_cast)
+
+# === VFX: 初始化共鸣线缆 ===
+_setup_resonance_cables()
+
 
 func _process(delta: float) -> void:
 	if GameManager.current_state != GameManager.GameState.PLAYING:
@@ -143,11 +156,19 @@ func _process(delta: float) -> void:
 		_resonance_update_timer = 0.0
 		_update_resonance_bonus()
 	
-	# === v7.0: 更新构造体共鸣网络 ===
-	_construct_network_timer += delta
-	if _construct_network_timer >= 1.0:
-		_construct_network_timer = 0.0
-		_update_construct_network()
+	
+# === v7.0: 更新构造体共鸣网络 ===
+_construct_network_timer += delta
+if _construct_network_timer >= 1.0:
+_construct_network_timer = 0.0
+_update_construct_network()
+
+# === VFX: 动态绘制共鸣线缆 (每2帧更新一次) ===
+_cable_update_timer += delta
+if _cable_update_timer >= 0.033: # ~30fps
+_cable_update_timer = 0.0
+_draw_resonance_cables()
+
 	# 清理已销毁的构造体引用
 	_active_constructs = _active_constructs.filter(func(c): return is_instance_valid(c))
 
@@ -883,3 +904,82 @@ func get_active_constructs_info() -> Array[Dictionary]:
 		"audio_info": construct.get_audio_info() if construct.has_method("get_audio_info") else {},
 		})
 	return info
+
+# ============================================================
+# VFX — 共鸣网络线缆
+# ============================================================
+
+func _setup_resonance_cables() -> void:
+_cable_mesh = ImmediateMesh.new()
+_cable_mesh_instance = MeshInstance3D.new()
+_cable_mesh_instance.mesh = _cable_mesh
+_cable_mesh_instance.name = "ResonanceCables"
+
+# 加载线缆 Shader
+var shader = load("res://shaders/resonance_cable.gdshader")
+if shader:
+_cable_material = ShaderMaterial.new()
+_cable_material.shader = shader
+_cable_mesh_instance.material_override = _cable_material
+
+# 添加到 3D 场景
+var render_bridge = get_tree().current_scene.get_node_or_null("RenderBridge3D")
+if render_bridge and render_bridge.has_method("get_3d_root"):
+var root_3d = render_bridge.get_3d_root()
+if root_3d:
+root_3d.add_child(_cable_mesh_instance)
+else:
+# 如果没有 3D 桥接，尝试直接添加（可能不可见）
+add_child(_cable_mesh_instance)
+
+func _draw_resonance_cables() -> void:
+if not _cable_mesh or _active_constructs.size() < 2:
+if _cable_mesh:
+_cable_mesh.clear_surfaces()
+return
+
+_cable_mesh.clear_surfaces()
+_cable_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+
+var drawn_pairs = {}
+
+for i in range(_active_constructs.size()):
+var c1 = _active_constructs[i]
+if not is_instance_valid(c1):
+continue
+
+for j in range(i + 1, _active_constructs.size()):
+var c2 = _active_constructs[j]
+if not is_instance_valid(c2):
+continue
+
+# 检查是否在共鸣距离内且类型相同
+if c1._category == c2._category:
+var dist = c1.global_position.distance_to(c2.global_position)
+# RESONANCE_LINK_DISTANCE = 400.0 (定义在 summon_construct.gd 中)
+if dist < 400.0:
+var pair_id = str(min(c1.construct_id, c2.construct_id)) + "_" + str(max(c1.construct_id, c2.construct_id))
+if not drawn_pairs.has(pair_id):
+drawn_pairs[pair_id] = true
+
+# 转换 2D 坐标到 3D 坐标 (假设 Z=0)
+var p1 = Vector3(c1.global_position.x, -c1.global_position.y, 0) * 0.01
+var p2 = Vector3(c2.global_position.x, -c2.global_position.y, 0) * 0.01
+
+# 绘制线段
+_cable_mesh.surface_add_vertex(p1)
+_cable_mesh.surface_add_vertex(p2)
+
+# 更新材质颜色 (基于类型)
+if _cable_material:
+var color = c1._config.get("color", Color.WHITE)
+_cable_material.set_shader_parameter("cable_color", color)
+
+_cable_mesh.surface_end()
+
+# 更新脉冲动画
+if _cable_material:
+var current_offset = _cable_material.get_shader_parameter("uv_offset")
+if current_offset == null:
+current_offset = 0.0
+_cable_material.set_shader_parameter("uv_offset", current_offset + 0.01)

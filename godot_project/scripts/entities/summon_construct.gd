@@ -160,6 +160,7 @@ var _excitation_cooldown: float = 0.0
 
 ## === OPT07: 音频控制器 ===
 var _audio_controller: Node2D = null  ## SummonAudioController 实例
+var _vfx_controller: Node3D = null  ## SummonVFXController 实例
 
 # ============================================================
 # 生命周期
@@ -177,8 +178,13 @@ func _ready() -> void:
 		if not GameManager.beat_tick.is_connected(_on_beat):
 			GameManager.beat_tick.connect(_on_beat)
 	
-	# === OPT07: 初始化音频控制器 ===
-	_setup_audio_controller()
+	
+# === OPT07: 初始化音频控制器 ===
+_setup_audio_controller()
+
+# === VFX: 初始化特效控制器 ===
+_setup_vfx_controller()
+
 	
 	# 入场动画
 	_play_spawn_animation()
@@ -263,8 +269,14 @@ func _perform_action(is_strong: bool, multiplier: float) -> void:
 		6:  # B — 高频陷阱：持续伤害
 			_action_hi_hat_trap(multiplier)
 	
-	# === OPT07: 触发事件型音频 ===
-	_trigger_event_audio()
+	
+# === OPT07: 触发事件型音频 ===
+_trigger_event_audio()
+
+# === VFX: 触发动作特效 ===
+if _vfx_controller and _vfx_controller.has_method("trigger_action"):
+_vfx_controller.trigger_action(is_strong, false)
+
 	
 	construct_action.emit(construct_id, _config.get("name", "unknown"))
 
@@ -385,9 +397,15 @@ func excite() -> void:
 	# 立即执行一次强拍效果
 	_perform_action(true, _config.get("strong_beat_mult", 1.0) * 1.5)
 	
-	# === OPT07: 激励时触发额外音频事件 ===
-	if _audio_controller and _audio_controller.has_method("trigger_on_event"):
-		_audio_controller.trigger_on_event()
+	
+# === OPT07: 激励时触发额外音频事件 ===
+if _audio_controller and _audio_controller.has_method("trigger_on_event"):
+_audio_controller.trigger_on_event()
+
+# === VFX: 触发激励特效 ===
+if _vfx_controller and _vfx_controller.has_method("trigger_action"):
+_vfx_controller.trigger_action(true, true)
+
 	
 	# 激励视觉
 	_play_excitation_visual()
@@ -553,9 +571,15 @@ func _start_fade_out() -> void:
 	_is_fading = true
 	_fade_timer = 0.0
 	
-	# === OPT07: 停用音频控制器 ===
-	if _audio_controller and _audio_controller.has_method("deactivate"):
-		_audio_controller.deactivate()
+	
+# === OPT07: 停用音频控制器 ===
+if _audio_controller and _audio_controller.has_method("deactivate"):
+_audio_controller.deactivate()
+
+# === VFX: 播放消散动画 ===
+if _vfx_controller and _vfx_controller.has_method("play_fade_out_animation"):
+_vfx_controller.play_fade_out_animation()
+
 	
 	construct_expired.emit(construct_id)
 
@@ -599,3 +623,28 @@ func get_audio_info() -> Dictionary:
 	if _audio_controller and _audio_controller.has_method("get_audio_info"):
 		return _audio_controller.get_audio_info()
 	return {}
+
+# ============================================================
+# VFX — 特效控制器集成
+# ============================================================
+
+## 初始化特效控制器
+func _setup_vfx_controller() -> void:
+var controller_script = load("res://scripts/systems/summon_vfx_controller.gd")
+if controller_script == null:
+push_warning("SummonConstruct: 无法加载 SummonVFXController 脚本")
+return
+
+_vfx_controller = Node3D.new()
+_vfx_controller.set_script(controller_script)
+_vfx_controller.name = "VFXController"
+
+# 如果存在 3D 渲染桥，则将 VFX 添加到 3D 场景中
+var render_bridge = get_tree().current_scene.get_node_or_null("RenderBridge3D")
+if render_bridge and render_bridge.has_method("add_3d_element"):
+render_bridge.add_3d_element(_vfx_controller, global_position)
+else:
+add_child(_vfx_controller)
+
+if _vfx_controller.has_method("setup"):
+_vfx_controller.setup(root_note, _category)
