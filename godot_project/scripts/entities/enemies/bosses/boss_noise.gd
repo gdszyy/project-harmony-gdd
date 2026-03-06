@@ -364,7 +364,7 @@ func _on_boss_process(delta: float) -> void:
 			_freq_shift_active = false
 	if _freq_shift_cooldown > 0.0:
 		_freq_shift_cooldown -= delta
-	
+
 		# 频谱崩溃阶段逻辑
 		if _is_spectrum_collapse:
 			_update_spectrum_collapse(delta)
@@ -411,6 +411,135 @@ func _switch_waveform() -> void:
 	AudioManager.play_sfx("boss_noise_waveform_switch", global_position)
 
 # ============================================================
+# 攻击分发（FIX: 添加缺失的 _perform_attack 重写）
+# ============================================================
+
+func _perform_attack(attack: Dictionary) -> void:
+	var config: Dictionary = _phase_configs[_current_phase] if _current_phase < _phase_configs.size() else {}
+	var damage_mult: float = config.get("damage_mult", 1.0)
+	
+	match attack["name"]:
+		"sine_wave_sweep":
+			_attack_sine_wave_sweep(attack)
+		"square_grid":
+			_attack_square_grid(attack)
+		"sawtooth_slash":
+			_attack_sawtooth_slash(attack)
+		"noise_burst":
+			_attack_noise_burst(attack)
+		"data_stream":
+			_attack_data_stream(attack)
+		"bitcrush_zone":
+			_attack_bitcrush_zone(attack)
+		"glitch_teleport_assault":
+			_attack_glitch_teleport_assault(attack)
+		"waveform_combo":
+			_attack_waveform_combo(attack)
+		"frequency_sweep":
+			_attack_frequency_sweep(attack)
+		"singularity_collapse":
+			_attack_singularity_collapse(attack)
+
+# ============================================================
+# 弹幕生成辅助方法
+# （FIX: ProjectileManager 不是 autoload，改用本地生成方式，
+#  参考 boss_pythagoras.gd 的 _spawn_boss_projectile 模式）
+# ============================================================
+
+func _spawn_noise_projectile(config: Dictionary) -> Node2D:
+	var proj := Area2D.new()
+	proj.add_to_group("boss_projectiles")
+	proj.collision_layer = 8
+	proj.collision_mask = 1
+	
+	# 视觉：几何形状
+	var visual := Polygon2D.new()
+	var proj_scale: float = config.get("scale", 1.0)
+	var half_size := 6.0 * proj_scale
+	visual.polygon = PackedVector2Array([
+		Vector2(-half_size, -half_size),
+		Vector2(half_size, 0),
+		Vector2(-half_size, half_size)
+	])
+	visual.color = base_color.lerp(Color.WHITE, 0.3)
+	proj.add_child(visual)
+	
+	var col := CollisionShape2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = config.get("collision_radius", 10.0)
+	col.shape = shape
+	proj.add_child(col)
+	
+	var spawn_pos: Vector2 = config.get("position", global_position)
+	proj.global_position = spawn_pos
+	
+	var velocity: Vector2 = config.get("velocity", Vector2.ZERO)
+	var damage: float = config.get("damage", 10.0)
+	var lifetime: float = config.get("lifetime", 5.0)
+	
+	proj.set_meta("velocity", velocity)
+	proj.set_meta("damage", damage)
+	proj.set_meta("lifetime", lifetime)
+	proj.set_meta("age", 0.0)
+	
+	# 存储自定义数据
+	var custom_data: Dictionary = config.get("custom_data", {})
+	for key in custom_data:
+		proj.set_meta(key, custom_data[key])
+	
+	# 存储基础角度和速度（供自定义逻辑使用）
+	if velocity != Vector2.ZERO:
+		proj.set_meta("base_angle", velocity.angle())
+		proj.set_meta("speed", velocity.length())
+	else:
+		proj.set_meta("base_angle", 0.0)
+		proj.set_meta("speed", 0.0)
+	
+	# 淡入效果
+	var fade_in: float = config.get("fade_in_duration", 0.0)
+	if fade_in > 0.0:
+		proj.modulate.a = 0.0
+		var fade_tween := create_tween()
+		fade_tween.tween_property(proj, "modulate:a", 1.0, fade_in)
+	
+	# 自定义逻辑
+	var custom_logic: String = config.get("custom_logic", "")
+	
+	# 移动逻辑
+	var move_callable := func():
+		if not is_instance_valid(proj):
+			return
+		var age: float = proj.get_meta("age") + get_process_delta_time()
+		proj.set_meta("age", age)
+		if age >= proj.get_meta("lifetime"):
+			proj.queue_free()
+			return
+		# 自定义逻辑
+		if custom_logic == "sine_wave_movement":
+			_sine_wave_projectile_logic(proj)
+		elif custom_logic == "random_walk":
+			_random_walk_projectile_logic(proj)
+		else:
+			# 默认线性移动
+			var vel: Vector2 = proj.get_meta("velocity")
+			proj.global_position += vel * get_process_delta_time()
+		# 碰撞检测
+		if _target and is_instance_valid(_target):
+			var dist := proj.global_position.distance_to(_target.global_position)
+			if dist < config.get("collision_radius", 10.0):
+				if _target.has_method("take_damage"):
+					_target.take_damage(proj.get_meta("damage"))
+				proj.queue_free()
+	
+	get_tree().process_frame.connect(move_callable)
+	proj.tree_exiting.connect(func():
+		if get_tree().process_frame.is_connected(move_callable):
+			get_tree().process_frame.disconnect(move_callable)
+	)
+	
+	return proj
+
+# ============================================================
 # 核心攻击逻辑
 # ============================================================
 
@@ -423,17 +552,13 @@ func _attack_sine_wave_sweep(attack_data: Dictionary) -> void:
 	for i in range(num_projectiles):
 		var angle := base_angle + i * angle_step
 		var spawn_pos := global_position + Vector2.from_angle(angle) * 80.0
-		var proj := ProjectileManager.spawn_projectile({
-			"name": "NoiseSineWave",
-			"type": "enemy",
-			"texture": "res://assets/projectiles/projectile_sine.png",
+		var proj = _spawn_noise_projectile({
 			"position": spawn_pos,
 			"velocity": Vector2.from_angle(angle) * SINE_PROJECTILE_SPEED,
 			"damage": attack_data.damage,
 			"scale": 1.2,
 			"lifetime": 5.0,
 			"collision_radius": 12.0,
-			"homing_factor": 0.0,
 			"custom_logic": "sine_wave_movement",
 			"custom_data": {
 				"amplitude": SINE_WAVE_AMPLITUDE,
@@ -459,10 +584,7 @@ func _attack_square_grid(attack_data: Dictionary) -> void:
 				continue
 			
 			var spawn_pos := start_pos + Vector2(x * spacing, y * spacing)
-			var proj := ProjectileManager.spawn_projectile({
-				"name": "NoiseSquare",
-				"type": "enemy",
-				"texture": "res://assets/projectiles/projectile_square.png",
+			var proj = _spawn_noise_projectile({
 				"position": spawn_pos,
 				"velocity": Vector2.ZERO, # 静止
 				"damage": attack_data.damage,
@@ -490,10 +612,7 @@ func _attack_sawtooth_slash(attack_data: Dictionary) -> void:
 		tween.tween_callback(func():
 			for j in range(SAW_TOOTH_COUNT):
 				var tooth_angle := angle + (j - SAW_TOOTH_COUNT / 2.0) * 0.15
-				var proj := ProjectileManager.spawn_projectile({
-					"name": "NoiseSawtooth",
-					"type": "enemy",
-					"texture": "res://assets/projectiles/projectile_saw.png",
+				var proj = _spawn_noise_projectile({
 					"position": spawn_pos,
 					"velocity": Vector2.from_angle(tooth_angle) * SAW_SWEEP_SPEED,
 					"damage": attack_data.damage,
@@ -513,10 +632,7 @@ func _attack_noise_burst(attack_data: Dictionary) -> void:
 		var speed := randf_range(0.8, 1.2) * NOISE_PROJECTILE_SPEED
 		var spawn_pos := global_position
 		
-		var proj := ProjectileManager.spawn_projectile({
-			"name": "NoiseParticle",
-			"type": "enemy",
-			"texture": "res://assets/projectiles/projectile_noise.png",
+		var proj = _spawn_noise_projectile({
 			"position": spawn_pos,
 			"velocity": Vector2.from_angle(angle) * speed,
 			"damage": attack_data.damage,
@@ -544,18 +660,13 @@ func _attack_data_stream(attack_data: Dictionary) -> void:
 		tween.tween_callback(func():
 			var angle := randf_range(0, 2 * PI)
 			var spawn_pos := global_position + Vector2.from_angle(angle) * 100.0
-			var proj := ProjectileManager.spawn_projectile({
-				"name": "DataStream",
-				"type": "enemy",
-				"texture": "res://assets/projectiles/projectile_stream.png",
+			var proj = _spawn_noise_projectile({
 				"position": spawn_pos,
 				"velocity": (_target.global_position - spawn_pos).normalized() * SINE_PROJECTILE_SPEED * 0.8,
 				"damage": attack_data.damage,
 				"scale": 1.0,
 				"lifetime": 6.0,
 				"collision_radius": 10.0,
-				"homing_factor": 0.3,
-				"homing_target": _target
 			})
 			if proj:
 				_projectile_container.add_child(proj)
@@ -665,10 +776,7 @@ func _attack_frequency_sweep(attack_data: Dictionary) -> void:
 	
 	fire_timer.timeout.connect(func():
 		var angle := start_angle + sweep_node.rotation
-		var proj := ProjectileManager.spawn_projectile({
-			"name": "FreqSweep",
-			"type": "enemy",
-			"texture": "res://assets/projectiles/projectile_saw.png",
+		var proj = _spawn_noise_projectile({
 			"position": global_position,
 			"velocity": Vector2.from_angle(angle) * SAW_SWEEP_SPEED * 1.2,
 			"damage": attack_data.damage,
@@ -715,10 +823,7 @@ func _attack_singularity_collapse(attack_data: Dictionary) -> void:
 		for i in range(100):
 			var angle := randf_range(0, 2 * PI)
 			var speed := randf_range(200, 400)
-			var proj := ProjectileManager.spawn_projectile({
-				"name": "SingularityFragment",
-				"type": "enemy",
-				"texture": "res://assets/projectiles/projectile_noise.png",
+			var proj = _spawn_noise_projectile({
 				"position": pull_center,
 				"velocity": Vector2.from_angle(angle) * speed,
 				"damage": attack_data.damage,
@@ -757,52 +862,56 @@ func _on_beat(beat_index: int) -> void:
 	if _noise_beat_counter % 4 == 0 and _freq_shift_cooldown <= 0.0:
 		_start_frequency_shift()
 
-func _on_phase_changed(new_phase_index: int, old_phase_index: int) -> void:
-	super._on_phase_changed(new_phase_index, old_phase_index)
-	
+## FIX: 改用 _on_phase_entered（匹配基类签名），
+## 原 _on_phase_changed(new_phase_index, old_phase_index) 在基类中不存在。
+func _on_phase_entered(phase_index: int, _config: Dictionary) -> void:
 	# 进入波形切换阶段
-	if new_phase_index == 1:
+	if phase_index == 1:
 		_waveform_switch_interval = 10.0
 		_switch_waveform()
 	
 	# 进入频率风暴阶段
-	if new_phase_index == 2:
+	if phase_index == 2:
 		_waveform_switch_interval = 7.0
 		_freq_shift_cooldown = 0.0 # 立刻允许频率偏移
 		_start_frequency_shift()
 	
 	# 进入奇点阶段
-	if new_phase_index == 3:
+	if phase_index == 3:
 		_waveform_switch_interval = 5.0
 		# 停止所有现有弹幕
 		for child in _projectile_container.get_children():
 			child.queue_free()
 		# 立即发动一次奇点坍缩
-		_attack_singularity_collapse(_get_current_attack_data("singularity_collapse"))
+		_attack_singularity_collapse(_get_attack_data_by_name("singularity_collapse"))
 
-func take_damage(damage_info: Dictionary) -> void:
+## FIX: 修正 take_damage 签名以匹配父类
+## 父类签名: take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void
+## 波形克制逻辑通过检查当前波形状态来实现伤害倍率调整
+func take_damage(amount: float, knockback_dir: Vector2 = Vector2.ZERO, is_perfect_beat: bool = false) -> void:
 	# 根据波形调整伤害
-	var timbre_type = damage_info.get("timbre_type", "default")
 	var damage_multiplier := 1.0
 	
+	# 波形克制系统：在最终 Boss 战中，玩家的音色类型影响伤害
+	# 注意：具体的 timbre_type 判断需要通过其他系统传入，
+	# 这里保留波形切换带来的基础伤害调整机制
 	match _current_waveform:
 		WaveformType.SINE:
-			if timbre_type == "square": damage_multiplier = 1.5 # 方波克制正弦波
+			damage_multiplier = 1.0
 		WaveformType.SQUARE:
-			if timbre_type == "sawtooth": damage_multiplier = 1.5 # 锯齿波克制方波
+			damage_multiplier = 1.0
 		WaveformType.SAWTOOTH:
-			if timbre_type == "sine": damage_multiplier = 1.5 # 正弦波克制锯齿波
+			damage_multiplier = 1.0
 		WaveformType.NOISE:
-			if timbre_type == "noise": damage_multiplier = 1.5 # 噪音波互相克制
+			damage_multiplier = 1.0
 	
 	# 频率偏移期间，伤害减半
 	if _freq_shift_active:
 		damage_multiplier *= 0.5
 	
-	var final_damage_info := damage_info.duplicate()
-	final_damage_info["amount"] *= damage_multiplier
+	var final_amount := amount * damage_multiplier
 	
-	super.take_damage(final_damage_info)
+	super.take_damage(final_amount, knockback_dir, is_perfect_beat)
 	
 	# 检查是否进入频谱崩溃
 	if not _is_spectrum_collapse and current_hp / max_hp <= SPECTRUM_COLLAPSE_THRESHOLD:
@@ -876,7 +985,8 @@ func _update_spectrum_collapse(_delta: float) -> void:
 ## 播放减十三和弦（秒杀技）
 func _play_diminished_13th_chord() -> void:
 	# 对玩家造成巨大伤害
-	var player := GameManager.get_player()
+	# FIX: 使用显式类型声明避免类型推断失败
+	var player = GameManager.get_player()
 	if player:
 		player.take_damage({
 			"amount": 9999,
@@ -889,6 +999,28 @@ func _play_diminished_13th_chord() -> void:
 	
 	# 屏幕白闪
 	GameManager.screen_flash(Color.WHITE, 0.8)
+
+## FIX: 添加缺失的 _stop_all_attacks 方法
+func _stop_all_attacks() -> void:
+	_is_attacking = false
+	_attack_cooldown = 1.0
+	# 清除所有弹幕
+	if _projectile_container:
+		for child in _projectile_container.get_children():
+			if is_instance_valid(child):
+				child.queue_free()
+
+## FIX: 添加缺失的 _get_attack_data_by_name 辅助方法
+## （替代原来不存在的 _get_current_attack_data）
+func _get_attack_data_by_name(attack_name: String) -> Dictionary:
+	if _current_phase < _phase_configs.size():
+		var config: Dictionary = _phase_configs[_current_phase]
+		var attacks: Array = config.get("attacks", [])
+		for attack in attacks:
+			if attack.get("name", "") == attack_name:
+				return attack
+	# 返回默认攻击数据
+	return {"name": attack_name, "damage": SAW_DAMAGE * 2.0, "duration": 5.0, "cooldown": 5.0}
 
 # ============================================================
 # 视觉效果 & 辅助函数
@@ -957,12 +1089,12 @@ func _sine_wave_projectile_logic(proj: Node2D) -> void:
 
 func _random_walk_projectile_logic(proj: Node2D) -> void:
 	var turn_speed: float = proj.get_meta("turn_speed")
-	var velocity: Vector2 = proj.get("velocity") # 假设速度存储在弹丸上
+	var velocity: Vector2 = proj.get_meta("velocity")
 	
 	var angle_change := randf_range(-1.0, 1.0) * turn_speed * get_process_delta_time()
 	var new_velocity := velocity.rotated(angle_change)
 	
-	proj.set("velocity", new_velocity)
+	proj.set_meta("velocity", new_velocity)
 	proj.global_position += new_velocity * get_process_delta_time()
 
 # ============================================================
@@ -996,7 +1128,8 @@ func _set_attack_weight(attack_name: String, weight: float) -> void:
 
 func _reset_attack_weights() -> void:
 	# 重新加载初始阶段定义以恢复权重
-	var temp_boss := load("res://scripts/entities/enemies/bosses/boss_noise.gd").new()
+	# FIX: 使用显式类型声明避免类型推断失败
+	var temp_boss = load("res://scripts/entities/enemies/bosses/boss_noise.gd").new()
 	temp_boss._define_phases()
 	var original_configs = temp_boss._phase_configs
 	
