@@ -37,6 +37,12 @@ signal tutorial_step_advanced(step: int)
 @export var bar_height: float = 10.0
 @export var bar_gap: float = 6.0
 @export var label_width: float = 50.0
+## 布局常量别名（供 _draw() 中使用）
+const PANEL_WIDTH: float = 220.0
+const LABEL_WIDTH: float = 50.0
+const BAR_WIDTH: float = 160.0
+const BAR_HEIGHT: float = 10.0
+const BAR_GAP: float = 6.0
 @export var panel_padding: float = 8.0
 
 # ============================================================
@@ -44,7 +50,7 @@ signal tutorial_step_advanced(step: int)
 # ============================================================
 
 ## HUD 状态面板颜色
-const TITLE_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.9)
+static var TITLE_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.9)
 
 ## 不和谐度颜色渐变
 const DISSONANCE_LOW_COLOR := UIColors.DISSONANCE_LOW
@@ -66,7 +72,7 @@ const DENSITY_SAFE_COLOR := UIColors.DENSITY_SAFE
 const DENSITY_OVERLOAD_COLOR := UIColors.DENSITY_OVERLOAD
 
 ## 护盾/暴击颜色
-const SHIELD_COLOR := UIColors.with_alpha(UIColors.DENSITY_SAFE, 0.8)
+static var SHIELD_COLOR := UIColors.with_alpha(UIColors.DENSITY_SAFE, 0.8)
 const CRIT_COLOR := UIColors.WARNING
 
 ## 帮助面板颜色 (§1.2)

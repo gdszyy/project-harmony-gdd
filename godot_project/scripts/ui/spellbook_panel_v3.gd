@@ -27,20 +27,20 @@ const CARD_GAP := 4.0
 const CARD_MARGIN_X := 6.0
 
 ## 颜色定义
-var CARD_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.69)
-const CARD_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.15)
-var CARD_EQUIPPED_BG := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
-const CARD_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.19)
-const CARD_HOVER_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.50)
-const CARD_EQUIPPED_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.09)
-const SPELL_NAME_EQUIPPED := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
-const FORM_DESC_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.69)
-var STATUS_READY_COLOR := UIColors.with_alpha(UIColors.SUCCESS, 0.69)
-var STATUS_EQUIPPED_COLOR := UIColors.with_alpha(UIColors.RARITY_RARE, 0.69)
-const EMPTY_HINT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
+var CARD_BG: Color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.69)
+static var CARD_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.15)
+var CARD_EQUIPPED_BG: Color = UIColors.with_alpha(UIColors.PRIMARY_BG, 0.5)
+static var CARD_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+static var CARD_HOVER_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.50)
+static var CARD_EQUIPPED_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.09)
+static var SPELL_NAME_EQUIPPED := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
+static var FORM_DESC_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.69)
+var STATUS_READY_COLOR: Color = UIColors.with_alpha(UIColors.SUCCESS, 0.69)
+var STATUS_EQUIPPED_COLOR: Color = UIColors.with_alpha(UIColors.RARITY_RARE, 0.69)
+static var EMPTY_HINT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
 
 ## 法术形态颜色
-
+const SPELL_FORM_COLORS: Dictionary = UIColors.FORM_COLORS
 ## 法术形态图标（来自 UI 设计文档 §4.2）
 const SPELL_FORM_ICONS := {
 	"enhanced_projectile": "▲",   # 大三和弦 → 强化弹体

@@ -30,19 +30,19 @@ const MEASURES := 4
 const TOTAL_CELLS := BEATS_PER_MEASURE * MEASURES
 
 ## 序列器格子尺寸
-const CELL_SIZE := Vector2(52, 52)
+static var CELL_SIZE := Vector2(52, 52)
 const CELL_GAP := 6.0
 const MEASURE_GAP := 14.0
 
 ## 颜色定义（遵循全局 UI 主题）
-const CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
-const CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
-var CELL_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
-const DROP_HIGHLIGHT_COLOR := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
-var PLAYHEAD_COLOR := UIColors.with_alpha(Color.WHITE, 0.8)
-const MEASURE_LINE_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
-const BEAT_LABEL_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.60)
-const CELL_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+static var CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+static var CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+var CELL_FILLED_BG: Color = UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+static var DROP_HIGHLIGHT_COLOR := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+var PLAYHEAD_COLOR: Color = UIColors.with_alpha(Color.WHITE, 0.8)
+static var MEASURE_LINE_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+static var BEAT_LABEL_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.60)
+static var CELL_BORDER_COLOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)
 
 ## 撤销/重做
 const MAX_UNDO: int = 32
@@ -160,7 +160,7 @@ func _draw_cell_content(rect: Rect2, slot: Dictionary, font: Font) -> void:
 	match slot_type:
 		"note":
 			var note_key: int = slot.get("note", 0)
-			var note_color: Color = IntegratedComposer.get_note_color(note_key) if has_node("/root/IntegratedComposer") else _get_note_color_fallback(note_key)
+			var note_color: Color = UIColors.get_note_color_by_int(note_key)
 			## 音符色块背景
 			var inner_rect := rect.grow(-3)
 			var bg := UIColors.with_alpha(note_color, 0.25)

@@ -28,25 +28,25 @@ const SLOT_COUNT: int = 3
 const SLOT_KEYS := ["1", "2", "3"]
 
 ## 施法槽尺寸
-const SLOT_SIZE := Vector2(64, 64)
+static var SLOT_SIZE := Vector2(64, 64)
 const SLOT_GAP := 16.0
 const KEY_LABEL_HEIGHT := 16.0
 
 ## 颜色定义
-const SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.69)
-const SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
-var SLOT_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
-const SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
-const SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.31)
-const SLOT_ACTIVE_BORDER := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
+static var SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.69)
+static var SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+var SLOT_FILLED_BG: Color = UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+static var SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+static var SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.31)
+static var SLOT_ACTIVE_BORDER := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
 const KEY_LABEL_COLOR := UIColors.TEXT_HINT
-const KEY_LABEL_BG := UIColors.with_alpha(UIColors.ACCENT, 0.13)
-var COOLDOWN_OVERLAY := UIColors.with_alpha(Color.BLACK, 0.5)
+static var KEY_LABEL_BG := UIColors.with_alpha(UIColors.ACCENT, 0.13)
+var COOLDOWN_OVERLAY: Color = UIColors.with_alpha(Color.BLACK, 0.5)
 
 ## 音符颜色
 
 ## 法术形态颜色
-
+const SPELL_FORM_COLORS: Dictionary = UIColors.FORM_COLORS
 ## 法术形态图标
 const SPELL_FORM_ICONS := {
 	"enhanced_projectile": "▲",

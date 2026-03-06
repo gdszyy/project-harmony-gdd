@@ -25,16 +25,16 @@ signal start_game_pressed()
 const FRAGMENT_COLOR := UIColors.ACCENT
 
 ## 节点状态颜色
-var NODE_LOCKED_BG := UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.4)
-var NODE_LOCKED_BORDER := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
-const NODE_UNLOCKABLE_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.7)
-var NODE_UNLOCKED_BG := UIColors.with_alpha(UIColors.ACCENT_2, 0.15)
-var NODE_UNLOCKED_BORDER := UIColors.with_alpha(UIColors.ACCENT_2, 0.8)
+var NODE_LOCKED_BG: Color = UIColors.with_alpha(UIColors.PANEL_LIGHT, 0.4)
+var NODE_LOCKED_BORDER: Color = UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.3)
+static var NODE_UNLOCKABLE_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.7)
+var NODE_UNLOCKED_BG: Color = UIColors.with_alpha(UIColors.ACCENT_2, 0.15)
+var NODE_UNLOCKED_BORDER: Color = UIColors.with_alpha(UIColors.ACCENT_2, 0.8)
 
 ## 连线颜色
-var LINK_LOCKED := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.2)
-const LINK_ACTIVE := UIColors.with_alpha(UIColors.ACCENT, 0.5)
-var LINK_UNLOCKED := UIColors.with_alpha(UIColors.ACCENT_2, 0.4)
+var LINK_LOCKED: Color = UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.2)
+static var LINK_ACTIVE := UIColors.with_alpha(UIColors.ACCENT, 0.5)
+var LINK_UNLOCKED: Color = UIColors.with_alpha(UIColors.ACCENT_2, 0.4)
 
 ## 模块主题色
 const MODULE_COLORS := {

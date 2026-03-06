@@ -24,8 +24,8 @@ const FLOAT_SPEED: float = 50.0
 const HORIZONTAL_SPREAD: float = 20.0
 
 # 颜色
-var COLOR_CORRUPT_PURPLE := UIColors.CORRUPT_PURPLE     # #8800FF
-var COLOR_HEAL_GREEN     := UIColors.HEAL_GREEN     # #66FFB2
+var COLOR_CORRUPT_PURPLE: Color = UIColors.CORRUPT_PURPLE  # #8800FF
+var COLOR_HEAL_GREEN: Color = UIColors.HEAL_GREEN  # #66FFB2
 
 # 字体大小
 const FONT_SIZE_NORMAL: int = 22

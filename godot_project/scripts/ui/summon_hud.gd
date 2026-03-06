@@ -6,15 +6,15 @@ extends Control
 # ============================================================
 # 配置
 # ============================================================
-const CARD_SIZE := Vector2(180, 48)
+static var CARD_SIZE := Vector2(180, 48)
 const CARD_MARGIN := 6.0
 const MAX_DISPLAY_CARDS := 5
 const ICON_SIZE := 36.0
 const PROGRESS_BAR_HEIGHT := 3.0
 
 # 颜色
-const BORDER_UPGRADE := UIColors.with_alpha(UIColors.GOLD, 0.8)
-const BORDER_BERSERK := UIColors.with_alpha(UIColors.ERROR_RED, 0.8)
+static var BORDER_UPGRADE := UIColors.with_alpha(UIColors.GOLD, 0.8)
+static var BORDER_BERSERK := UIColors.with_alpha(UIColors.ERROR_RED, 0.8)
 
 # ============================================================
 # 状态

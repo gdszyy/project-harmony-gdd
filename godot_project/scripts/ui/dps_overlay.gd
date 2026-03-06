@@ -13,11 +13,11 @@ const GRAPH_WIDTH := 230.0
 const MARGIN := 12.0
 const DPS_COLOR := UIColors.DIFFICULTY_EASY
 const PEAK_COLOR := UIColors.GOLD
-var AVG_COLOR := UIColors.SHIELD
-var GRAPH_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.9)
-const GRAPH_LINE := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.8)
-const GRAPH_FILL := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.15)
-const GRAPH_GRID := UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.5)
+var AVG_COLOR: Color = UIColors.SHIELD
+var GRAPH_BG: Color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.9)
+static var GRAPH_LINE := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.8)
+static var GRAPH_FILL := UIColors.with_alpha(UIColors.DIFFICULTY_EASY, 0.15)
+static var GRAPH_GRID := UIColors.with_alpha(UIColors.PANEL_LIGHTER, 0.5)
 
 # ============================================================
 # 状态

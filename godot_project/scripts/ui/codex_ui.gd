@@ -30,10 +30,10 @@ const COL_LOCKED := UIColors.TEXT_DIM          ## 锁定文本
 const COL_ENTRY_BG := UIColors.PANEL_LIGHT        ## 条目背景
 const COL_ENTRY_HOVER := UIColors.PANEL_LIGHTER     ## 条目悬停
 const COL_ENTRY_SELECTED := UIColors.PANEL_SELECTED  ## 条目选中
-var COL_DETAIL_BG := UIColors.with_alpha(UIColors.PANEL_DARK, 0.95)     ## 详情背景
-var COL_DEMO_BG := UIColors.PRIMARY_BG         ## 演示区背景
-const COL_DEMO_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.20)   ## 演示区边框
-const COL_SEPARATOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)     ## 分割线
+var COL_DETAIL_BG: Color = UIColors.with_alpha(UIColors.PANEL_DARK, 0.95)  ## 详情背景
+var COL_DEMO_BG: Color = UIColors.PRIMARY_BG  ## 演示区背景
+static var COL_DEMO_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.20)   ## 演示区边框
+static var COL_SEPARATOR := UIColors.with_alpha(UIColors.ACCENT, 0.25)     ## 分割线
 
 # ============================================================
 # 卷配置 — 完整四卷数据映射

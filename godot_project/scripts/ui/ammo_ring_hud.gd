@@ -25,8 +25,8 @@ const NOTE_COLORS: Dictionary = {
 	"B": UIColors.GLITCH_MAGENTA,      # 粉色
 }
 
-const COLOR_INACTIVE := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.4)
-const COLOR_DEPLETED := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.5)
+static var COLOR_INACTIVE := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.4)
+static var COLOR_DEPLETED := UIColors.with_alpha(UIColors.TEXT_LOCKED, 0.5)
 
 # ============================================================
 # 状态

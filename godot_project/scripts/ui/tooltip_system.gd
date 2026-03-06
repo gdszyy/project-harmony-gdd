@@ -150,7 +150,7 @@ func show_immediate_custom(data: Dictionary) -> void:
 	_display_tooltip()
 
 ## 强制隐藏
-func hide() -> void:
+func hide_tooltip() -> void:
 	_is_hovering = false
 	_hover_timer = 0.0
 	_hide_tooltip()

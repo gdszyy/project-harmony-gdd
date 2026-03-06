@@ -73,6 +73,9 @@ const DIRECTION_SYMBOLS := {
 @export var card_corner_radius: int = 12
 @export var icon_size: float = 64.0
 @export var top_bar_height: float = 4.0
+## 布局常量别名（供 _build_card_ui() 中使用）
+const CARD_CORNER_RADIUS: int = 12
+const TOP_BAR_HEIGHT: float = 4.0
 
 # ============================================================
 # 状态

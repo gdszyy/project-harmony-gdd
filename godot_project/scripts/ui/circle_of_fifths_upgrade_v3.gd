@@ -48,12 +48,14 @@ const CIRCLE_SIZE: int = 12
 @export var compass_middle_radius: float = 165.0   ## 中圈关系小调环半径
 @export var compass_inner_radius: float = 130.0    ## 内圈连接线半径
 @export var compass_core_radius: float = 80.0      ## 核心星云区半径
+const COMPASS_CORE_RADIUS: float = 80.0  ## 核心星云区半径（常量别名）
 @export var key_label_radius: float = 220.0        ## 大调标签半径
 @export var minor_label_radius: float = 180.0      ## 小调标签半径
 @export var tick_length: float = 15.0              ## 刻度线长度
 
 @export_group("Direction Runes")
 @export var rune_radius: float = 280.0             ## 符文距中心距离
+const RUNE_RADIUS: float = 280.0  ## 符文距中心距离（常量别名）
 @export var rune_size: float = 50.0                ## 符文图标大小
 @export var rune_hover_scale: float = 1.1          ## 悬停放大
 
@@ -94,7 +96,7 @@ const DIRECTION_COLORS := {
 }
 
 ## 背景遮罩
-var BG_OVERLAY := UIColors.with_alpha(Color.BLACK, 0.75)
+var BG_OVERLAY: Color = UIColors.with_alpha(Color.BLACK, 0.75)
 
 ## 稀有度颜色
 const RARITY_COLORS := {

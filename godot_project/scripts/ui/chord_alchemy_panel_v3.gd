@@ -31,18 +31,18 @@ signal info_hover(title: String, desc: String, color: Color)
 @export var slot_gap: float = 8.0
 
 ## 颜色定义
-const SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
-var SLOT_FILLED_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
-const SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
-const SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
-const SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
-const SLOT_REQUIRED_MARK := UIColors.with_alpha(UIColors.OFFENSE, 0.38)
+static var SLOT_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+var SLOT_FILLED_BG: Color = UIColors.with_alpha(UIColors.PANEL_BG, 0.82)
+static var SLOT_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+static var SLOT_DROP_HIGHLIGHT := UIColors.with_alpha(UIColors.ACCENT_2, 0.40)
+static var SLOT_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+static var SLOT_REQUIRED_MARK := UIColors.with_alpha(UIColors.OFFENSE, 0.38)
 
-const SYNTH_BTN_VALID := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
-const SYNTH_BTN_INVALID := UIColors.with_alpha(UIColors.ACCENT, 0.25)
-const SYNTH_BTN_HOVER := UIColors.with_alpha(UIColors.ACCENT_2, 1.00)
+static var SYNTH_BTN_VALID := UIColors.with_alpha(UIColors.ACCENT_2, 0.80)
+static var SYNTH_BTN_INVALID := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+static var SYNTH_BTN_HOVER := UIColors.with_alpha(UIColors.ACCENT_2, 1.00)
 var SYNTH_BTN_TEXT_VALID := Color.WHITE
-const SYNTH_BTN_TEXT_INVALID := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
+static var SYNTH_BTN_TEXT_INVALID := UIColors.with_alpha(UIColors.TEXT_HINT, 0.50)
 
 const PREVIEW_VALID_COLOR := UIColors.ACCENT_2
 const PREVIEW_INVALID_COLOR := UIColors.OFFENSE
@@ -113,6 +113,17 @@ const _CHORD_PATTERNS_LEGACY := {
 }
 
 ## 法术形态颜色
+const SPELL_FORM_COLORS: Dictionary = UIColors.FORM_COLORS
+## 黑键音符颜色（索引 7-11 对应 5 个黑键，映射到 UIColors.BLACK_KEY_COLORS 的 0-4）
+const BLACK_KEY_COLORS: Dictionary = {
+	7: UIColors.BLACK_KEY_COLORS[0],  # C#
+	8: UIColors.BLACK_KEY_COLORS[1],  # D#/Eb
+	9: UIColors.BLACK_KEY_COLORS[2],  # F#
+	10: UIColors.BLACK_KEY_COLORS[3], # G#/Ab
+	11: UIColors.BLACK_KEY_COLORS[4], # A#/Bb
+}
+## 最少音符数（与 @export var min_notes_for_chord 保持同步）
+const MIN_NOTES_FOR_CHORD: int = 3
 
 ## 白键到半音的映射
 const SEMITONE_MAP := [0, 2, 4, 5, 7, 9, 11]  # C D E F G A B

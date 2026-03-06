@@ -24,23 +24,23 @@ signal info_hover(title: String, desc: String, color: Color)
 # 常量
 # ============================================================
 ## 白键格子尺寸
-const WHITE_CELL_SIZE := Vector2(180, 36)
+static var WHITE_CELL_SIZE := Vector2(180, 36)
 const WHITE_CELL_GAP := 4.0
 
 ## 黑键格子尺寸（略小于白键）
-const BLACK_CELL_SIZE := Vector2(160, 30)
+static var BLACK_CELL_SIZE := Vector2(160, 30)
 const BLACK_CELL_GAP := 4.0
 
 ## 分隔区域间距
 const SECTION_GAP := 12.0
 
 ## 颜色定义
-const CELL_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
-const CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
-const CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.38)
-const CELL_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
-const EMPTY_COUNT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
-const INSUFFICIENT_FLASH_COLOR := UIColors.with_alpha(UIColors.OFFENSE, 0.50)
+static var CELL_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.63)
+static var CELL_HOVER_BG := UIColors.with_alpha(UIColors.ACCENT, 0.19)
+static var CELL_EMPTY_BG := UIColors.with_alpha(UIColors.PANEL_BG, 0.38)
+static var CELL_BORDER := UIColors.with_alpha(UIColors.ACCENT, 0.25)
+static var EMPTY_COUNT_COLOR := UIColors.with_alpha(UIColors.TEXT_HINT, 0.38)
+static var INSUFFICIENT_FLASH_COLOR := UIColors.with_alpha(UIColors.OFFENSE, 0.50)
 
 ## 闪烁效果
 const FLASH_DURATION: float = 0.5

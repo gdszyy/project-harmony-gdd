@@ -42,7 +42,7 @@ signal menu_closed
 const COLOR_TITLE := UIColors.TEXT_PRIMARY
 const COLOR_SUBTITLE := UIColors.TEXT_SECONDARY
 const COLOR_ACCENT := UIColors.ACCENT
-const COLOR_DIM_BG := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.6)
+static var COLOR_DIM_BG := UIColors.with_alpha(UIColors.PRIMARY_BG, 0.6)
 
 # ============================================================
 # 节点引用 — 音频标签页

@@ -153,7 +153,7 @@ func _draw_fill_bar(start: Vector2) -> void:
 		# 扫描线效果
 		var scanline := 0.0
 		if break_strength > 0.3:
-			scanline = step(0.9, sin(float(i) * 5.0 + _time * 10.0)) * 0.4
+			scanline = (1.0 if sin(float(i) * 5.0 + _time * 10.0) >= 0.9 else 0.0) * 0.4
 
 		seg_color = seg_color.lightened(scanline)
 
