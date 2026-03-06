@@ -1230,6 +1230,7 @@ func _apply_chord_change(root: int, type: int) -> void:
 	harmony_context_changed.emit(current_chord_root, current_chord_type, current_chord_notes)
 
 	if old_root != root:
+		pass
 
 ## 计算和弦包含的音高类
 func _calculate_chord_notes(root: int, type: int) -> Array[int]:
