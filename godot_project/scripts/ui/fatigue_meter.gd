@@ -62,6 +62,8 @@ func _ready() -> void:
 	_setup_shader()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_display_afi = lerp(_display_afi, _afi, delta * 8.0)
 	_beat_intensity = max(0.0, _beat_intensity - delta * 4.0)

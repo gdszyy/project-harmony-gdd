@@ -107,6 +107,8 @@ func _ready() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	queue_redraw()
 

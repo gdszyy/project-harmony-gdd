@@ -91,6 +91,8 @@ func _ready() -> void:
 		gmm.beat_energy_updated.connect(_on_beat_energy_updated)
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 
 	# 节拍脉冲衰减

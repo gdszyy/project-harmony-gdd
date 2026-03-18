@@ -56,9 +56,9 @@ func _process(delta: float) -> void:
 	if _sample_timer >= SAMPLE_INTERVAL:
 		_sample_timer -= SAMPLE_INTERVAL
 		_record_sample()
-
-	if _draw_panel:
-		_draw_panel.queue_redraw()
+		# 仅在采样更新后触发重绘，避免每帧重绘
+		if _draw_panel:
+			_draw_panel.queue_redraw()
 
 # ============================================================
 # UI 构建

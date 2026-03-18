@@ -52,6 +52,8 @@ func _ready() -> void:
 	_setup_shader()
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	_time += delta
 	_display_ratio = lerp(_display_ratio, _hp_ratio, delta * 5.0)
 

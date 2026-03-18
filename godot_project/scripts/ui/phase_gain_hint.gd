@@ -76,8 +76,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	_beat_pulse = max(0.0, _beat_pulse - delta * 3.0)
-
-	if _is_visible:
+	# 仅在可见或节拍脉冲衰减时重绘
+	if _is_visible or _beat_pulse > 0.0:
 		queue_redraw()
 
 # ============================================================

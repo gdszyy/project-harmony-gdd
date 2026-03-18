@@ -79,10 +79,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	clip_contents = true  # 裁剪超出区域的内容
 
-func _process(_delta: float) -> void:
-	## 仅在可见时刷新
-	if is_visible_in_tree():
-		queue_redraw()
+# 注：重绘已改为事件驱动，仅在数据变化（悬停、滚动、刷新）时调用 queue_redraw()
+# 删除了每帧无条件重绘的 _process 函数
 
 # ============================================================
 # 绘制
