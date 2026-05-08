@@ -1,0 +1,1833 @@
+{
+  "indexed": [
+    {
+      "file": "godot_project/scripts/ui/codex_ui.gd",
+      "lines": 3979,
+      "funcs": 78,
+      "sections": 0,
+      "mega_funcs": 2,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_codex_ui_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/spell_visual_manager.gd",
+      "lines": 2194,
+      "funcs": 72,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_spell_visual_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/projectile_manager.gd",
+      "lines": 2089,
+      "funcs": 55,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_projectile_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/circle_of_fifths_upgrade_v3.gd",
+      "lines": 1601,
+      "funcs": 49,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_circle_of_fifths_upgrade_v3_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/scenes/main_game.gd",
+      "lines": 1557,
+      "funcs": 87,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_scenes_main_game_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/data/chapter_data.gd",
+      "lines": 1554,
+      "funcs": 18,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_data_chapter_data_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/audio_manager.gd",
+      "lines": 1528,
+      "funcs": 78,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_audio_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/bgm_manager.gd",
+      "lines": 1520,
+      "funcs": 85,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_bgm_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "Scripts/aesthetic_fatigue_system.py",
+      "lines": 1395,
+      "funcs": 39,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/Scripts_aesthetic_fatigue_system_py_index.md",
+      "language": "python"
+    },
+    {
+      "file": "godot_project/scripts/autoload/spellcraft_system.gd",
+      "lines": 1380,
+      "funcs": 72,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_spellcraft_system_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/data/music_data.gd",
+      "lines": 1270,
+      "funcs": 16,
+      "sections": 0,
+      "mega_funcs": 2,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_data_music_data_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/enemy_spawner.gd",
+      "lines": 1249,
+      "funcs": 76,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_enemy_spawner_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/scenes/test_chamber.gd",
+      "lines": 1235,
+      "funcs": 65,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_scenes_test_chamber_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_jazz.gd",
+      "lines": 1228,
+      "funcs": 38,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_jazz_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/debug_panel.gd",
+      "lines": 1196,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_debug_panel_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "BalanceKit/balance_scorer.py",
+      "lines": 1180,
+      "funcs": 32,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/BalanceKit_balance_scorer_py_index.md",
+      "language": "python"
+    },
+    {
+      "file": "godot_project/scripts/data/codex_data.gd",
+      "lines": 1164,
+      "funcs": 10,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_data_codex_data_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_noise.gd",
+      "lines": 1141,
+      "funcs": 36,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_noise_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/game_mechanics_panel.gd",
+      "lines": 1063,
+      "funcs": 46,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_game_mechanics_panel_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_pythagoras.gd",
+      "lines": 1051,
+      "funcs": 38,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_pythagoras_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/fatigue_manager.gd",
+      "lines": 1015,
+      "funcs": 55,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_fatigue_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_beethoven.gd",
+      "lines": 1010,
+      "funcs": 27,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_beethoven_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/summon_manager.gd",
+      "lines": 985,
+      "funcs": 48,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_summon_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/meta_progression_visualizer.gd",
+      "lines": 966,
+      "funcs": 40,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_meta_progression_visualizer_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/hud.gd",
+      "lines": 939,
+      "funcs": 61,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_hud_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/tutorial_hint_manager.gd",
+      "lines": 909,
+      "funcs": 45,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_tutorial_hint_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/meta_progression_manager.gd",
+      "lines": 895,
+      "funcs": 51,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_meta_progression_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_mozart.gd",
+      "lines": 856,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_mozart_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_guido.gd",
+      "lines": 855,
+      "funcs": 30,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_guido_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/bosses/boss_bach.gd",
+      "lines": 836,
+      "funcs": 19,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_bosses_boss_bach_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/chapter_manager.gd",
+      "lines": 800,
+      "funcs": 71,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_chapter_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch6_walking_bass.gd",
+      "lines": 752,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch6_walking_bass_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/boss_base.gd",
+      "lines": 741,
+      "funcs": 43,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_boss_base_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/timbre_combat_handler.gd",
+      "lines": 741,
+      "funcs": 40,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_timbre_combat_handler_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/boss_dialogue.gd",
+      "lines": 712,
+      "funcs": 24,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_boss_dialogue_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch4_minuet_dancer.gd",
+      "lines": 710,
+      "funcs": 24,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch4_minuet_dancer_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch6_atonal_shifter.gd",
+      "lines": 707,
+      "funcs": 29,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch6_atonal_shifter_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/summon_audio_controller.gd",
+      "lines": 684,
+      "funcs": 36,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_summon_audio_controller_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/boss_arena_decorator.gd",
+      "lines": 669,
+      "funcs": 29,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_boss_arena_decorator_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch3_counterpoint_crawler.gd",
+      "lines": 661,
+      "funcs": 18,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch3_counterpoint_crawler_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch5_fury_spirit.gd",
+      "lines": 659,
+      "funcs": 22,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch5_fury_spirit_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/summon_construct.gd",
+      "lines": 650,
+      "funcs": 31,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_summon_construct_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/render_bridge_3d.gd",
+      "lines": 645,
+      "funcs": 34,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_render_bridge_3d_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemy_base.gd",
+      "lines": 642,
+      "funcs": 42,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemy_base_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/chord_alchemy_panel_v3.gd",
+      "lines": 640,
+      "funcs": 23,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_chord_alchemy_panel_v3_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/pool_manager.gd",
+      "lines": 625,
+      "funcs": 33,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_pool_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/timbre_wheel_ui.gd",
+      "lines": 621,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_timbre_wheel_ui_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/signal_bridge.gd",
+      "lines": 607,
+      "funcs": 56,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_signal_bridge_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/tests/performance_benchmark.gd",
+      "lines": 594,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_tests_performance_benchmark_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/game_manager.gd",
+      "lines": 566,
+      "funcs": 54,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_game_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch7_bitcrusher_worm.gd",
+      "lines": 565,
+      "funcs": 18,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch7_bitcrusher_worm_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/tutorial_sequence.gd",
+      "lines": 558,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_tutorial_sequence_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/help_panel.gd",
+      "lines": 555,
+      "funcs": 30,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_help_panel_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/boss_spawner.gd",
+      "lines": 550,
+      "funcs": 31,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_boss_spawner_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/sequencer_ui.gd",
+      "lines": 550,
+      "funcs": 28,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_sequencer_ui_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/abstract_skeleton.gd",
+      "lines": 537,
+      "funcs": 37,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_abstract_skeleton_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/run_results_screen.gd",
+      "lines": 529,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_run_results_screen_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/audio/synth/synth_voice.gd",
+      "lines": 525,
+      "funcs": 22,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_audio_synth_synth_voice_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/mutator_manager.gd",
+      "lines": 519,
+      "funcs": 33,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_mutator_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/scenes/game_over.gd",
+      "lines": 518,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_scenes_game_over_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch4_sonata_form.gd",
+      "lines": 515,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_chapter_enemies_ch4_sonata_form_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/global_music_manager.gd",
+      "lines": 511,
+      "funcs": 23,
+      "sections": 0,
+      "mega_funcs": 1,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_global_music_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/note_synthesizer.gd",
+      "lines": 511,
+      "funcs": 18,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_note_synthesizer_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/boss_bgm_controller.gd",
+      "lines": 498,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_boss_bgm_controller_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/hall_of_harmony.gd",
+      "lines": 491,
+      "funcs": 22,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_hall_of_harmony_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/settings_menu.gd",
+      "lines": 473,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_settings_menu_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elite_base.gd",
+      "lines": 461,
+      "funcs": 24,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_enemies_elite_base_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/spatial_audio_controller.gd",
+      "lines": 452,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_spatial_audio_controller_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/dialog_system.gd",
+      "lines": 446,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_dialog_system_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/vfx_manager.gd",
+      "lines": 440,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_vfx_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/obstacle_spawner.gd",
+      "lines": 434,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_obstacle_spawner_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/codex_manager.gd",
+      "lines": 424,
+      "funcs": 30,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_codex_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/ai/embedding/service.go",
+      "lines": 416,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/server_internal_ai_embedding_service_go_index.md",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/scripts/ui/tooltip_system.gd",
+      "lines": 406,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_tooltip_system_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/toast_notification.gd",
+      "lines": 387,
+      "funcs": 24,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_toast_notification_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/harmonic_avatar_manager.gd",
+      "lines": 384,
+      "funcs": 28,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_entities_harmonic_avatar_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/integrated_composer.gd",
+      "lines": 381,
+      "funcs": 31,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_integrated_composer_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/tutorial_manager.gd",
+      "lines": 378,
+      "funcs": 22,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_tutorial_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/note_inventory.gd",
+      "lines": 345,
+      "funcs": 32,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_note_inventory_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/save_manager.gd",
+      "lines": 343,
+      "funcs": 39,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_save_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/resonance_slicing_manager.gd",
+      "lines": 309,
+      "funcs": 21,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_resonance_slicing_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/mode_system.gd",
+      "lines": 298,
+      "funcs": 26,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_autoload_mode_system_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/difficulty_manager.gd",
+      "lines": 295,
+      "funcs": 25,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_difficulty_manager_gd_index.md",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/character_class_manager.gd",
+      "lines": 270,
+      "funcs": 22,
+      "sections": 0,
+      "mega_funcs": 0,
+      "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_character_class_manager_gd_index.md",
+      "language": "gdscript"
+    }
+  ],
+  "skipped": [
+    {
+      "file": "BalanceKit/generate_report.py",
+      "lines": 478,
+      "funcs": 10,
+      "reason": "未达阈值 (行数=478<=500, 函数数=10<=20)",
+      "language": "python"
+    },
+    {
+      "file": "godot_project/scripts/systems/enemy_audio_controller.gd",
+      "lines": 478,
+      "funcs": 20,
+      "reason": "未达阈值 (行数=478<=500, 函数数=20<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/death_vfx_manager.gd",
+      "lines": 451,
+      "funcs": 19,
+      "reason": "未达阈值 (行数=451<=500, 函数数=19<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/manual_slot_config_v3.gd",
+      "lines": 451,
+      "funcs": 17,
+      "reason": "未达阈值 (行数=451<=500, 函数数=17<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/mode_selection_screen.gd",
+      "lines": 442,
+      "funcs": 20,
+      "reason": "未达阈值 (行数=442<=500, 函数数=20<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch7_glitch_phantom.gd",
+      "lines": 428,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=428<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/ui_colors.gd",
+      "lines": 419,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=419<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/note_inventory_ui.gd",
+      "lines": 414,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=414<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/audio/synth/timbre_synth_presets.gd",
+      "lines": 410,
+      "funcs": 5,
+      "reason": "未达阈值 (行数=410<=500, 函数数=5<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch2_choir.gd",
+      "lines": 402,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=402<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch5_chromatic_wanderer.gd",
+      "lines": 399,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=399<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/upgrade_card.gd",
+      "lines": 387,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=387<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/audio_effect_processor.gd",
+      "lines": 382,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=382<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/loading_screen.gd",
+      "lines": 382,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=382<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch7_frequency_overlord.gd",
+      "lines": 381,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=381<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/context_hint.gd",
+      "lines": 376,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=376<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/enemy_wall.gd",
+      "lines": 361,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=361<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/enemy_pulse.gd",
+      "lines": 357,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=357<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/phase_indicator_ui.gd",
+      "lines": 357,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=357<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/scenes/main_menu.gd",
+      "lines": 355,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=355<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/hit_feedback_manager.gd",
+      "lines": 342,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=342<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/phase_energy_bar.gd",
+      "lines": 338,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=338<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/codex_unlock_popup.gd",
+      "lines": 337,
+      "funcs": 10,
+      "reason": "未达阈值 (行数=337<=500, 函数数=10<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/ai/embedding/mysql_store.go",
+      "lines": 334,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=334<=500, 函数数=13<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/scripts/ui/theory_breakthrough_popup.gd",
+      "lines": 332,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=332<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch6_scat_singer.gd",
+      "lines": 328,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=328<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/spellbook_panel_v3.gd",
+      "lines": 327,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=327<=500, 函数数=9<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/music_theory_engine.gd",
+      "lines": 323,
+      "funcs": 17,
+      "reason": "未达阈值 (行数=323<=500, 函数数=17<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch6_bebop_virtuoso.gd",
+      "lines": 316,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=316<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/damage_number.gd",
+      "lines": 310,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=310<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/visual/player_visual_enhancer.gd",
+      "lines": 306,
+      "funcs": 20,
+      "reason": "未达阈值 (行数=306<=500, 函数数=20<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch1_harmony_guardian.gd",
+      "lines": 293,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=293<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch5_symphony_commander.gd",
+      "lines": 293,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=293<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/boss_hp_bar_ui.gd",
+      "lines": 290,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=290<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch1_frequency_sentinel.gd",
+      "lines": 289,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=289<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/skill_node.gd",
+      "lines": 289,
+      "funcs": 20,
+      "reason": "未达阈值 (行数=289<=500, 函数数=20<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/xp_pickup.gd",
+      "lines": 287,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=287<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/difficulty_select_ui.gd",
+      "lines": 287,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=287<=500, 函数数=9<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/enemy_screech.gd",
+      "lines": 286,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=286<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/phase_gain_hint.gd",
+      "lines": 286,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=286<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/ui_transition_manager.gd",
+      "lines": 284,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=284<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch2_cantor_commander.gd",
+      "lines": 282,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=282<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/player.gd",
+      "lines": 280,
+      "funcs": 19,
+      "reason": "未达阈值 (行数=280<=500, 函数数=19<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/rhythm_indicator.gd",
+      "lines": 280,
+      "funcs": 17,
+      "reason": "未达阈值 (行数=280<=500, 函数数=17<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch3_fugue_weaver.gd",
+      "lines": 276,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=276<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/data/character_class.gd",
+      "lines": 275,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=275<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/modes/phrygian_mode.gd",
+      "lines": 273,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=273<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/pause_menu.gd",
+      "lines": 273,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=273<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch5_crescendo_surge.gd",
+      "lines": 270,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=270<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/audio/audio_event_queue.gd",
+      "lines": 269,
+      "funcs": 17,
+      "reason": "未达阈值 (行数=269<=500, 函数数=17<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/spectral_fatigue_indicator.gd",
+      "lines": 263,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=263<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/modes/ionian_mode.gd",
+      "lines": 262,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=262<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/modes/lydian_mode.gd",
+      "lines": 258,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=258<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/fatigue_meter.gd",
+      "lines": 258,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=258<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/timed_milestone_manager.gd",
+      "lines": 257,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=257<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/hp_bar.gd",
+      "lines": 255,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=255<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/relative_pitch_resolver.gd",
+      "lines": 253,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=253<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch1_metronome_pulse.gd",
+      "lines": 248,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=248<=500, 函数数=9<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/elites/ch4_court_kapellmeister.gd",
+      "lines": 248,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=248<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/player_visual_enhanced.gd",
+      "lines": 245,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=245<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/models/cognitive_tag.go",
+      "lines": 245,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=245<=500, 函数数=15<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/scripts/ui/ammo_ring_hud.gd",
+      "lines": 244,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=244<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/object_pool.gd",
+      "lines": 241,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=241<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/fatigue_audio_feedback.gd",
+      "lines": 238,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=238<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/spatial_hash.gd",
+      "lines": 237,
+      "funcs": 16,
+      "reason": "未达阈值 (行数=237<=500, 函数数=16<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/synth_manager.gd",
+      "lines": 235,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=235<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/modes/locrian_mode.gd",
+      "lines": 233,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=233<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/timbre_hotkey_manager.gd",
+      "lines": 230,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=230<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch7/wave_7_2.gd",
+      "lines": 226,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=226<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/summon_hud.gd",
+      "lines": 223,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=223<=500, 函数数=9<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/global_visual_environment_3d.gd",
+      "lines": 219,
+      "funcs": 20,
+      "reason": "未达阈值 (行数=219<=500, 函数数=20<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/visual/boss_visual_enhancer.gd",
+      "lines": 219,
+      "funcs": 14,
+      "reason": "未达阈值 (行数=219<=500, 函数数=14<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/manual_cast_slot.gd",
+      "lines": 215,
+      "funcs": 10,
+      "reason": "未达阈值 (行数=215<=500, 函数数=10<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/recovery_suggestion_ui.gd",
+      "lines": 215,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=215<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/status_notification.gd",
+      "lines": 211,
+      "funcs": 13,
+      "reason": "未达阈值 (行数=211<=500, 函数数=13<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/summon_vfx_controller.gd",
+      "lines": 208,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=208<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/fatigue_filter_controller.gd",
+      "lines": 208,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=208<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/ai/graph/adjacency.go",
+      "lines": 205,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=205<=500, 函数数=11<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/scripts/systems/collision_optimizer.gd",
+      "lines": 201,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=201<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch5_fate_knocker.gd",
+      "lines": 197,
+      "funcs": 8,
+      "reason": "未达阈值 (行数=197<=500, 函数数=8<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/enemy_static.gd",
+      "lines": 194,
+      "funcs": 8,
+      "reason": "未达阈值 (行数=194<=500, 函数数=8<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch6/wave_6_2.gd",
+      "lines": 193,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=193<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch1_grid_static.gd",
+      "lines": 193,
+      "funcs": 8,
+      "reason": "未达阈值 (行数=193<=500, 函数数=8<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/phase_transition_overlay.gd",
+      "lines": 190,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=190<=500, 函数数=9<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch5/wave_5_2.gd",
+      "lines": 189,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=189<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/audio/synth/adsr_envelope.gd",
+      "lines": 188,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=188<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/enemy_silence.gd",
+      "lines": 185,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=185<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/visual/enemy_visual_enhancer.gd",
+      "lines": 184,
+      "funcs": 10,
+      "reason": "未达阈值 (行数=184<=500, 函数数=10<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_2.gd",
+      "lines": 183,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=183<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/dps_overlay.gd",
+      "lines": 182,
+      "funcs": 5,
+      "reason": "未达阈值 (行数=182<=500, 函数数=5<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/enemies/chapter_enemies/ch2_scribe.gd",
+      "lines": 180,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=180<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/projectile_manager_3d.gd",
+      "lines": 180,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=180<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/phase_hud_tint_manager.gd",
+      "lines": 178,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=178<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/vfx_timing_controller.gd",
+      "lines": 173,
+      "funcs": 18,
+      "reason": "未达阈值 (行数=173<=500, 函数数=18<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/vfx_combinator.gd",
+      "lines": 172,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=172<=500, 函数数=7<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_2.gd",
+      "lines": 170,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=170<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/crystallized_obstacle.gd",
+      "lines": 170,
+      "funcs": 15,
+      "reason": "未达阈值 (行数=170<=500, 函数数=15<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/data/enemy_audio_profile.gd",
+      "lines": 168,
+      "funcs": 6,
+      "reason": "未达阈值 (行数=168<=500, 函数数=6<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/summon_audio_profile.gd",
+      "lines": 164,
+      "funcs": 11,
+      "reason": "未达阈值 (行数=164<=500, 函数数=11<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch2/wave_2_2.gd",
+      "lines": 159,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=159<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/data/wave_data.gd",
+      "lines": 158,
+      "funcs": 5,
+      "reason": "未达阈值 (行数=158<=500, 函数数=5<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch7/wave_7_1.gd",
+      "lines": 157,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=157<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch5/wave_5_1.gd",
+      "lines": 145,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=145<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_1.gd",
+      "lines": 144,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=144<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/performance_monitor.gd",
+      "lines": 144,
+      "funcs": 6,
+      "reason": "未达阈值 (行数=144<=500, 函数数=6<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/models/embedding.go",
+      "lines": 140,
+      "funcs": 9,
+      "reason": "未达阈值 (行数=140<=500, 函数数=9<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/data/waves/ch6/wave_6_1.gd",
+      "lines": 139,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=139<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/events.gd",
+      "lines": 139,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=139<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/visual/ui_theme_manager.gd",
+      "lines": 137,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=137<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_1.gd",
+      "lines": 126,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=126<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/audio/audio_event.gd",
+      "lines": 125,
+      "funcs": 2,
+      "reason": "未达阈值 (行数=125<=500, 函数数=2<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/notification_manager.gd",
+      "lines": 121,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=121<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/mutator_hud.gd",
+      "lines": 120,
+      "funcs": 6,
+      "reason": "未达阈值 (行数=120<=500, 函数数=6<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/database/database.go",
+      "lines": 120,
+      "funcs": 6,
+      "reason": "未达阈值 (行数=120<=500, 函数数=6<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/data/waves/ch2/wave_2_1.gd",
+      "lines": 119,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=119<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/milestone_hud.gd",
+      "lines": 113,
+      "funcs": 4,
+      "reason": "未达阈值 (行数=113<=500, 函数数=4<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/info_panel.gd",
+      "lines": 111,
+      "funcs": 6,
+      "reason": "未达阈值 (行数=111<=500, 函数数=6<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/visual/visual_enhancer_base.gd",
+      "lines": 110,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=110<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_2.gd",
+      "lines": 107,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=107<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch2/wave_2_5.gd",
+      "lines": 106,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=106<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch7/wave_7_5.gd",
+      "lines": 106,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=106<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch5/wave_5_5.gd",
+      "lines": 104,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=104<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_6.gd",
+      "lines": 98,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=98<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch6/wave_6_5.gd",
+      "lines": 93,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=93<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/ui/damage_number_pool.gd",
+      "lines": 93,
+      "funcs": 12,
+      "reason": "未达阈值 (行数=93<=500, 函数数=12<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_6.gd",
+      "lines": 88,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=88<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/chapter_visual_manager_3d.gd",
+      "lines": 87,
+      "funcs": 8,
+      "reason": "未达阈值 (行数=87<=500, 函数数=8<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/systems/damage_number_manager.gd",
+      "lines": 85,
+      "funcs": 4,
+      "reason": "未达阈值 (行数=85<=500, 函数数=4<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_6.gd",
+      "lines": 82,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=82<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch2/wave_2_3.gd",
+      "lines": 81,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=81<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch2/wave_2_4.gd",
+      "lines": 81,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=81<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_1.gd",
+      "lines": 76,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=76<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_4.gd",
+      "lines": 76,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=76<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch6/wave_6_3.gd",
+      "lines": 75,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=75<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "server/internal/models/base.go",
+      "lines": 74,
+      "funcs": 7,
+      "reason": "未达阈值 (行数=74<=500, 函数数=7<=20)",
+      "language": "go"
+    },
+    {
+      "file": "godot_project/scripts/autoload/input_setup.gd",
+      "lines": 71,
+      "funcs": 3,
+      "reason": "未达阈值 (行数=71<=500, 函数数=3<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch7/wave_7_4.gd",
+      "lines": 70,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=70<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch7/wave_7_3.gd",
+      "lines": 68,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=68<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_5.gd",
+      "lines": 65,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=65<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_4.gd",
+      "lines": 65,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=65<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch5/wave_5_4.gd",
+      "lines": 61,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=61<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_3.gd",
+      "lines": 60,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=60<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_3.gd",
+      "lines": 60,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=60<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch5/wave_5_3.gd",
+      "lines": 60,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=60<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch6/wave_6_4.gd",
+      "lines": 60,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=60<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch3/wave_3_5.gd",
+      "lines": 55,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=55<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/autoload/event_bus.gd",
+      "lines": 54,
+      "funcs": 5,
+      "reason": "未达阈值 (行数=54<=500, 函数数=5<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch1/wave_1_3.gd",
+      "lines": 50,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=50<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_5.gd",
+      "lines": 48,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=48<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/data/waves/ch4/wave_4_4.gd",
+      "lines": 47,
+      "funcs": 1,
+      "reason": "未达阈值 (行数=47<=500, 函数数=1<=20)",
+      "language": "gdscript"
+    },
+    {
+      "file": "godot_project/scripts/entities/obstacle.gd",
+      "lines": 34,
+      "funcs": 5,
+      "reason": "未达阈值 (行数=34<=500, 函数数=5<=20)",
+      "language": "gdscript"
+    }
+  ],
+  "warnings": [
+    {
+      "file": "godot_project/scripts/systems/projectile_manager.gd",
+      "warning": "文件超过 2000 行且未发现 @section 标记"
+    },
+    {
+      "file": "godot_project/scripts/systems/spell_visual_manager.gd",
+      "warning": "文件超过 2000 行且未发现 @section 标记"
+    },
+    {
+      "file": "godot_project/scripts/ui/codex_ui.gd",
+      "warning": "文件超过 2000 行且未发现 @section 标记"
+    }
+  ]
+}
