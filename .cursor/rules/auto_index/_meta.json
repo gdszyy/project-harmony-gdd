@@ -2,27 +2,27 @@
   "indexed": [
     {
       "file": "godot_project/scripts/ui/codex_ui.gd",
-      "lines": 3979,
+      "lines": 4004,
       "funcs": 78,
-      "sections": 0,
+      "sections": 25,
       "mega_funcs": 2,
       "index_path": ".cursor/rules/auto_index/godot_project_scripts_ui_codex_ui_gd_index.md",
       "language": "gdscript"
     },
     {
       "file": "godot_project/scripts/systems/spell_visual_manager.gd",
-      "lines": 2194,
+      "lines": 2210,
       "funcs": 72,
-      "sections": 0,
+      "sections": 16,
       "mega_funcs": 0,
       "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_spell_visual_manager_gd_index.md",
       "language": "gdscript"
     },
     {
       "file": "godot_project/scripts/systems/projectile_manager.gd",
-      "lines": 2089,
+      "lines": 2104,
       "funcs": 55,
-      "sections": 0,
+      "sections": 15,
       "mega_funcs": 1,
       "index_path": ".cursor/rules/auto_index/godot_project_scripts_systems_projectile_manager_gd_index.md",
       "language": "gdscript"
@@ -1816,18 +1816,5 @@
       "language": "gdscript"
     }
   ],
-  "warnings": [
-    {
-      "file": "godot_project/scripts/systems/projectile_manager.gd",
-      "warning": "文件超过 2000 行且未发现 @section 标记"
-    },
-    {
-      "file": "godot_project/scripts/systems/spell_visual_manager.gd",
-      "warning": "文件超过 2000 行且未发现 @section 标记"
-    },
-    {
-      "file": "godot_project/scripts/ui/codex_ui.gd",
-      "warning": "文件超过 2000 行且未发现 @section 标记"
-    }
-  ]
+  "warnings": []
 }

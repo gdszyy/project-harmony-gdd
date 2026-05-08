@@ -8,6 +8,7 @@ extends Node2D
 # ============================================================
 # 信号
 # ============================================================
+# @section:state_and_config - 信号、常量、渲染句柄与弹体运行时状态
 signal projectile_hit_enemy(projectile: Dictionary, enemy_position: Vector2)
 
 # ============================================================
@@ -41,6 +42,7 @@ var _timbre_handler: Node = null
 # 生命周期
 # ============================================================
 
+# @section:lifecycle_public_spawn - 初始化、帧更新与外部弹体生成入口
 func _ready() -> void:
 	# 尝试从场景树获取已有的 MultiMeshInstance2D 子节点
 	_multi_mesh_instance = get_node_or_null("MultiMeshInstance2D") as MultiMeshInstance2D
@@ -231,6 +233,7 @@ func _spawn_summon_demo(data: Dictionary, pos: Vector2) -> void:
 
 
 # ============================================================
+# @section:multimesh_render_setup - 弹体批量渲染 MultiMesh 初始化
 # MultiMesh 设置
 # ============================================================
 
@@ -260,6 +263,7 @@ func _setup_multi_mesh() -> void:
 	_multi_mesh_instance.multimesh = multi_mesh
 
 # ============================================================
+# @section:base_projectile_creation - 法术与和弦基础弹体创建
 # 弹体创建
 # ============================================================
 
@@ -393,6 +397,7 @@ func _create_chord_projectile(chord_data: Dictionary) -> void:
 # 各种法术形态生成
 # ============================================================
 
+# @section:specialized_spawn_forms - 单音与和弦派生弹体形态生成
 func _spawn_enhanced_projectile(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	var proj := _base_projectile(data, pos, dir)
 	proj["damage"] *= 1.5
@@ -657,6 +662,7 @@ func _spawn_charged(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 # 半减七和弦：迟缓领域 — 大范围减速场
 # ============================================================
 
+# @section:cadence_slow_field - 终止式减速场生成与持续伤害配置
 func _spawn_slow_field(data: Dictionary, pos: Vector2) -> void:
 	var base_dmg: float = data.get("damage", 40.0)
 	var field := {
@@ -688,6 +694,7 @@ func _spawn_slow_field(data: Dictionary, pos: Vector2) -> void:
 # 增大七和弦：增幅爆发 — 爆炸弹体 + 临时护盾
 # ============================================================
 
+# @section:augmented_burst - 增和弦爆发弹体生成
 func _spawn_augmented_burst(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	var base_dmg: float = data.get("damage", 60.0)
 	# 爆炸弹体（增强版）
@@ -725,6 +732,7 @@ func _spawn_augmented_burst(data: Dictionary, pos: Vector2, dir: Vector2) -> voi
 # 扩展和弦法术形态（修复：从嵌套函数移出为顶层函数）
 # ============================================================
 
+# @section:extended_spell_forms - 风暴、圣域、湮灭、时间与终曲等扩展法术形态
 func _spawn_extended_spell(data: Dictionary, pos: Vector2, dir: Vector2) -> void:
 	# Issue #17: 扩展和弦法术形态
 	var spell_form = data.get("spell_form", -1)
@@ -1060,6 +1068,7 @@ func _base_projectile(data: Dictionary, pos: Vector2, dir: Vector2) -> Dictionar
 # 弹体更新
 # ============================================================
 
+# @section:projectile_simulation_loop - 弹体移动、生命周期、追踪、拖尾与持续效果更新
 func _update_projectiles(delta: float) -> void:
 	for proj in _projectiles:
 		if not proj["active"]:
@@ -1537,6 +1546,7 @@ func _update_projectiles(delta: float) -> void:
 # 音色机制内联处理（TimbreCombatHandler 不可用时的回退）
 # ============================================================
 
+# @section:timbre_hit_mechanics - 音色核心机制与命中副效果处理
 func _process_timbre_inline(proj: Dictionary, delta: float) -> void:
 	var mech: String = proj.get("core_mechanic", "")
 	match mech:
@@ -1687,6 +1697,7 @@ func _summon_attack(summon_proj: Dictionary) -> void:
 # 回响（Echo）延迟队列
 # ============================================================
 
+# @section:echo_queue - 回声延迟队列与复制弹体创建
 func _update_echo_queue(delta: float) -> void:
 	var i := 0
 	while i < _echo_queue.size():
@@ -1724,6 +1735,7 @@ func _create_echo_projectile(spell_data: Dictionary) -> void:
 # 修饰符应用（已实现追踪和回响）
 # ============================================================
 
+# @section:modifier_rhythm_application - 修饰符与节奏型属性写入
 func _apply_modifier(proj: Dictionary, spell_data: Dictionary = {}) -> void:
 	var mod = proj.get("modifier", -1)
 	if mod < 0:
@@ -1811,6 +1823,7 @@ func _apply_rhythm_to_projectile(proj: Dictionary, rhythm, _spell_data: Dictiona
 # 碰撞优化器设置 (Issue #6)
 # ============================================================
 
+# @section:collision_system - 碰撞优化器、暴力回退与分裂命中
 func _setup_collision_optimizer() -> void:
 	# 单元格大小设为 128px，约为最大弹体尺寸的 2-4 倍
 	# 这个值在大多数情况下能提供良好的性能
@@ -1937,6 +1950,7 @@ func _split_projectile(proj: Dictionary) -> void:
 # 渲染更新
 # ============================================================
 
+# @section:render_sync - MultiMesh 实例同步与可视状态更新
 func _update_render() -> void:
 	if _multi_mesh_instance == null or _multi_mesh_instance.multimesh == null:
 		return
@@ -2004,6 +2018,7 @@ func _update_render() -> void:
 # 清理
 # ============================================================
 
+# @section:cleanup_and_queries - 过期清理、退出回收与外部查询
 func _cleanup_expired() -> void:
 	var active_projs: Array[Dictionary] = []
 	for p in _projectiles:

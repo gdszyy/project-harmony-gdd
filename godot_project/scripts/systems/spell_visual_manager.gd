@@ -21,6 +21,7 @@ extends Node2D
 # ============================================================
 # 配置
 # ============================================================
+# @section:config_shader_state - 视觉上限、颜色表、Shader 引用和运行时状态
 const MAX_VISUAL_EFFECTS: int = 300
 const CLEANUP_INTERVAL: float = 1.0
 
@@ -82,6 +83,7 @@ var _beat_pulse_nodes: Array[Node2D] = []
 # 生命周期
 # ============================================================
 
+# @section:lifecycle - 初始化、信号连接与逐帧清理入口
 func _ready() -> void:
 	# 预加载 Shader 资源（审计报告 2.4 修复）
 	_timbre_projectile_shader = load("res://shaders/timbre_projectile.gdshader")
@@ -137,6 +139,7 @@ func _process(delta: float) -> void:
 # 信号处理
 # ============================================================
 
+# @section:signal_handlers - 法术、和弦、进程、音色与惩罚事件响应
 func _on_spell_cast(spell_data: Dictionary) -> void:
 	var player_pos := _get_player_position()
 	var aim_dir := _get_aim_direction()
@@ -246,6 +249,7 @@ func _on_dissonance_corrosion(corrosion_data: Dictionary) -> void:
 # ============================================================
 
 ## 连接 VFXTimingController 的节拍信号
+# @section:vfx_timing_bridge - VFXTiming 节拍信号桥接与时间换算
 func _connect_vfx_timing() -> void:
 	_vfx_timing = get_node_or_null("/root/VFXTimingController")
 	if _vfx_timing:
@@ -305,6 +309,7 @@ func _get_fatigue_scale() -> float:
 # ============================================================
 
 ## 增强版修饰符视觉：弹体附着特效 + 施法瞬间反馈
+# @section:modifier_visuals - 穿透、追踪、分裂、回声与散射修饰符特效
 func _spawn_modifier_visual_enhanced(pos: Vector2, aim_dir: Vector2, modifier: MusicData.ModifierEffect, _data: Dictionary) -> void:
 	var color: Color = MODIFIER_COLORS.get(modifier, Color.WHITE)
 	
@@ -564,6 +569,7 @@ func _spawn_modifier_ready_indicator_enhanced(pos: Vector2, modifier: MusicData.
 # ============================================================
 
 ## 增强版施法光环：含音色修饰和节拍弹跳
+# @section:cast_aura_visuals - 单音与和弦施法光环反馈
 func _spawn_cast_aura_enhanced(pos: Vector2, spell_data: Dictionary) -> void:
 	var color: Color = spell_data.get("color", Color(0.0, 1.0, 0.8))
 	var timbre = spell_data.get("timbre", MusicData.TimbreType.NONE)
@@ -654,6 +660,7 @@ func _spawn_chord_cast_aura(pos: Vector2, chord_data: Dictionary) -> void:
 # ============================================================
 
 ## 强化弹体（大三）：圣光金 + 六边形能量网格 + 行星光球
+# @section:base_spellform_visuals - 基础和弦/法术形态 VFX
 func _vfx_enhanced_projectile(pos: Vector2, _data: Dictionary) -> void:
 	var color := Color(1.0, 0.9, 0.3)  # 圣光金
 	
@@ -1075,6 +1082,7 @@ func _vfx_charged(pos: Vector2, _data: Dictionary) -> void:
 # ============================================================
 
 ## 风暴区域：旋转的蓝色风暴漩涡
+# @section:extended_spellform_visuals - 高阶法术形态与终曲 VFX
 func _vfx_storm_field(pos: Vector2, _data: Dictionary) -> void:
 	var color := Color(0.3, 0.8, 1.0)
 	
@@ -1388,6 +1396,7 @@ func _vfx_augmented_burst(pos: Vector2, _data: Dictionary) -> void:
 # ============================================================
 
 ## 音色施法反馈（叠加在基础施法光环上）
+# @section:timbre_feedback - 音色施法反馈与和弦交互特效
 func _spawn_timbre_cast_feedback(pos: Vector2, timbre: MusicData.TimbreType) -> void:
 	var color: Color = TIMBRE_COLORS.get(timbre, Color.WHITE)
 	
@@ -1510,6 +1519,7 @@ func _spawn_timbre_chord_interaction(pos: Vector2, timbre: MusicData.TimbreType,
 # ============================================================
 
 ## 节奏型施法反馈
+# @section:rhythm_feedback - 节奏型施法反馈特效
 func _spawn_rhythm_cast_feedback(pos: Vector2, aim_dir: Vector2, rhythm: int, _data: Dictionary) -> void:
 	match rhythm:
 		MusicData.RhythmPattern.EVEN_EIGHTH:
@@ -1580,6 +1590,7 @@ func _spawn_rhythm_cast_feedback(pos: Vector2, aim_dir: Vector2, rhythm: int, _d
 # ============================================================
 
 ## 增强版和弦进行完成特效
+# @section:progression_vfx - 功能和声进行解决 VFX
 func _spawn_progression_resolve_vfx_enhanced(pos: Vector2, progression: Dictionary) -> void:
 	var effect_type: String = progression.get("effect", {}).get("type", "")
 	var color: Color = PROGRESSION_COLORS.get(effect_type, Color.WHITE)
@@ -1685,6 +1696,7 @@ func _vfx_progression_pd_to_d(pos: Vector2, color: Color) -> void:
 # ============================================================
 
 ## 单调寂静惩罚：法术槽死亡 + 灰色消散
+# @section:punishment_vfx - 单调、噪声过载与不协和腐蚀惩罚特效
 func _spawn_monotone_silence_vfx(pos: Vector2, note_data: Dictionary) -> void:
 	var note_color: Color = note_data.get("color", Color(0.5, 0.5, 0.5))
 	
@@ -1776,6 +1788,7 @@ func _spawn_dissonance_corrosion_vfx(pos: Vector2, _data: Dictionary) -> void:
 # ============================================================
 
 ## 频谱相位切换全局视觉
+# @section:phase_switch_vfx - 音色阶段切换特效
 func _spawn_phase_switch_vfx(pos: Vector2, phase_name: String) -> void:
 	match phase_name:
 		"overtone":
@@ -1860,6 +1873,7 @@ func _vfx_switch_to_fundamental(pos: Vector2) -> void:
 # 效果更新
 # ============================================================
 
+# @section:effect_lifecycle - 活跃特效生命周期、缩放、透明度与清理
 func _update_effects(delta: float) -> void:
 	var expired: Array[int] = []
 	
@@ -1946,6 +1960,7 @@ func _cleanup_expired() -> void:
 # 工具函数
 # ============================================================
 
+# @section:primitive_helpers - 环形、多边形、粒子、浮字与目标查询工具
 func _create_ring(pos: Vector2, radius: float, color: Color, alpha: float = 0.5) -> Polygon2D:
 	var ring := Polygon2D.new()
 	var points := PackedVector2Array()
@@ -2058,6 +2073,7 @@ func _find_nearest_enemy(pos: Vector2) -> Vector2:
 	return nearest_pos
 
 # ============================================================
+# @section:shader_integration - 音色、修饰符和扫描线 Shader 激活
 # Shader 集成（审计报告 2.4 修复：激活闲置 Shader）
 # ============================================================
 

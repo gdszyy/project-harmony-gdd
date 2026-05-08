@@ -1,6 +1,6 @@
 # godot_project/scripts/systems/projectile_manager.gd 函数索引
 
-> 自动生成于 2026-05-08 | 总行数: 2089 | 函数数: 55 | 语言: gdscript
+> 自动生成于 2026-05-08 | 总行数: 2104 | 函数数: 55 | 语言: gdscript
 > **本文件由 code-indexer 兼容脚本自动生成，严禁手动编辑。**
 
 ## 函数 / 类型列表
@@ -67,7 +67,21 @@
 
 | 节点 | 说明 | 定位方式 |
 |------|------|----------|
-| 无 | - | - |
+| `state_and_config` | 信号、常量、渲染句柄与弹体运行时状态 | `grep -n '@section:state_and_config' godot_project/scripts/systems/projectile_manager.gd` |
+| `lifecycle_public_spawn` | 初始化、帧更新与外部弹体生成入口 | `grep -n '@section:lifecycle_public_spawn' godot_project/scripts/systems/projectile_manager.gd` |
+| `multimesh_render_setup` | 弹体批量渲染 MultiMesh 初始化 | `grep -n '@section:multimesh_render_setup' godot_project/scripts/systems/projectile_manager.gd` |
+| `base_projectile_creation` | 法术与和弦基础弹体创建 | `grep -n '@section:base_projectile_creation' godot_project/scripts/systems/projectile_manager.gd` |
+| `specialized_spawn_forms` | 单音与和弦派生弹体形态生成 | `grep -n '@section:specialized_spawn_forms' godot_project/scripts/systems/projectile_manager.gd` |
+| `cadence_slow_field` | 终止式减速场生成与持续伤害配置 | `grep -n '@section:cadence_slow_field' godot_project/scripts/systems/projectile_manager.gd` |
+| `augmented_burst` | 增和弦爆发弹体生成 | `grep -n '@section:augmented_burst' godot_project/scripts/systems/projectile_manager.gd` |
+| `extended_spell_forms` | 风暴、圣域、湮灭、时间与终曲等扩展法术形态 | `grep -n '@section:extended_spell_forms' godot_project/scripts/systems/projectile_manager.gd` |
+| `projectile_simulation_loop` | 弹体移动、生命周期、追踪、拖尾与持续效果更新 | `grep -n '@section:projectile_simulation_loop' godot_project/scripts/systems/projectile_manager.gd` |
+| `timbre_hit_mechanics` | 音色核心机制与命中副效果处理 | `grep -n '@section:timbre_hit_mechanics' godot_project/scripts/systems/projectile_manager.gd` |
+| `echo_queue` | 回声延迟队列与复制弹体创建 | `grep -n '@section:echo_queue' godot_project/scripts/systems/projectile_manager.gd` |
+| `modifier_rhythm_application` | 修饰符与节奏型属性写入 | `grep -n '@section:modifier_rhythm_application' godot_project/scripts/systems/projectile_manager.gd` |
+| `collision_system` | 碰撞优化器、暴力回退与分裂命中 | `grep -n '@section:collision_system' godot_project/scripts/systems/projectile_manager.gd` |
+| `render_sync` | MultiMesh 实例同步与可视状态更新 | `grep -n '@section:render_sync' godot_project/scripts/systems/projectile_manager.gd` |
+| `cleanup_and_queries` | 过期清理、退出回收与外部查询 | `grep -n '@section:cleanup_and_queries' godot_project/scripts/systems/projectile_manager.gd` |
 
 ## 定位提示
 

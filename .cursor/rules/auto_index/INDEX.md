@@ -6,9 +6,9 @@
 
 | 文件 | 语言 | 总行数 | 函数数 | 巨型函数 | @section 标记 | 索引文件 |
 |------|------|--------|--------|----------|--------------|---------|
-| `godot_project/scripts/ui/codex_ui.gd` | gdscript | 3979 | 78 | **2** | 0 | [godot_project_scripts_ui_codex_ui_gd_index.md](godot_project_scripts_ui_codex_ui_gd_index.md) |
-| `godot_project/scripts/systems/spell_visual_manager.gd` | gdscript | 2194 | 72 | 0 | 0 | [godot_project_scripts_systems_spell_visual_manager_gd_index.md](godot_project_scripts_systems_spell_visual_manager_gd_index.md) |
-| `godot_project/scripts/systems/projectile_manager.gd` | gdscript | 2089 | 55 | **1** | 0 | [godot_project_scripts_systems_projectile_manager_gd_index.md](godot_project_scripts_systems_projectile_manager_gd_index.md) |
+| `godot_project/scripts/ui/codex_ui.gd` | gdscript | 4004 | 78 | **2** | 25 | [godot_project_scripts_ui_codex_ui_gd_index.md](godot_project_scripts_ui_codex_ui_gd_index.md) |
+| `godot_project/scripts/systems/spell_visual_manager.gd` | gdscript | 2210 | 72 | 0 | 16 | [godot_project_scripts_systems_spell_visual_manager_gd_index.md](godot_project_scripts_systems_spell_visual_manager_gd_index.md) |
+| `godot_project/scripts/systems/projectile_manager.gd` | gdscript | 2104 | 55 | **1** | 15 | [godot_project_scripts_systems_projectile_manager_gd_index.md](godot_project_scripts_systems_projectile_manager_gd_index.md) |
 | `godot_project/scripts/ui/circle_of_fifths_upgrade_v3.gd` | gdscript | 1601 | 49 | **1** | 0 | [godot_project_scripts_ui_circle_of_fifths_upgrade_v3_gd_index.md](godot_project_scripts_ui_circle_of_fifths_upgrade_v3_gd_index.md) |
 | `godot_project/scripts/scenes/main_game.gd` | gdscript | 1557 | 87 | 0 | 0 | [godot_project_scripts_scenes_main_game_gd_index.md](godot_project_scripts_scenes_main_game_gd_index.md) |
 | `godot_project/scripts/data/chapter_data.gd` | gdscript | 1554 | 18 | **1** | 0 | [godot_project_scripts_data_chapter_data_gd_index.md](godot_project_scripts_data_chapter_data_gd_index.md) |
@@ -90,14 +90,6 @@
 | `godot_project/scripts/autoload/mode_system.gd` | gdscript | 298 | 26 | 0 | 0 | [godot_project_scripts_autoload_mode_system_gd_index.md](godot_project_scripts_autoload_mode_system_gd_index.md) |
 | `godot_project/scripts/systems/difficulty_manager.gd` | gdscript | 295 | 25 | 0 | 0 | [godot_project_scripts_systems_difficulty_manager_gd_index.md](godot_project_scripts_systems_difficulty_manager_gd_index.md) |
 | `godot_project/scripts/systems/character_class_manager.gd` | gdscript | 270 | 22 | 0 | 0 | [godot_project_scripts_systems_character_class_manager_gd_index.md](godot_project_scripts_systems_character_class_manager_gd_index.md) |
-
-## 警告 (3 个)
-
-| 文件 | 警告 |
-|------|------|
-| `godot_project/scripts/systems/projectile_manager.gd` | 文件超过 2000 行且未发现 @section 标记 |
-| `godot_project/scripts/systems/spell_visual_manager.gd` | 文件超过 2000 行且未发现 @section 标记 |
-| `godot_project/scripts/ui/codex_ui.gd` | 文件超过 2000 行且未发现 @section 标记 |
 
 ## 未索引文件 (151 个)
 

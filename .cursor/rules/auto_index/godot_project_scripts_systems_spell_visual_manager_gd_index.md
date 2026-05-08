@@ -1,6 +1,6 @@
 # godot_project/scripts/systems/spell_visual_manager.gd 函数索引
 
-> 自动生成于 2026-05-08 | 总行数: 2194 | 函数数: 72 | 语言: gdscript
+> 自动生成于 2026-05-08 | 总行数: 2210 | 函数数: 72 | 语言: gdscript
 > **本文件由 code-indexer 兼容脚本自动生成，严禁手动编辑。**
 
 ## 函数 / 类型列表
@@ -84,7 +84,22 @@
 
 | 节点 | 说明 | 定位方式 |
 |------|------|----------|
-| 无 | - | - |
+| `config_shader_state` | 视觉上限、颜色表、Shader 引用和运行时状态 | `grep -n '@section:config_shader_state' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `lifecycle` | 初始化、信号连接与逐帧清理入口 | `grep -n '@section:lifecycle' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `signal_handlers` | 法术、和弦、进程、音色与惩罚事件响应 | `grep -n '@section:signal_handlers' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `vfx_timing_bridge` | VFXTiming 节拍信号桥接与时间换算 | `grep -n '@section:vfx_timing_bridge' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `modifier_visuals` | 穿透、追踪、分裂、回声与散射修饰符特效 | `grep -n '@section:modifier_visuals' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `cast_aura_visuals` | 单音与和弦施法光环反馈 | `grep -n '@section:cast_aura_visuals' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `base_spellform_visuals` | 基础和弦/法术形态 VFX | `grep -n '@section:base_spellform_visuals' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `extended_spellform_visuals` | 高阶法术形态与终曲 VFX | `grep -n '@section:extended_spellform_visuals' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `timbre_feedback` | 音色施法反馈与和弦交互特效 | `grep -n '@section:timbre_feedback' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `rhythm_feedback` | 节奏型施法反馈特效 | `grep -n '@section:rhythm_feedback' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `progression_vfx` | 功能和声进行解决 VFX | `grep -n '@section:progression_vfx' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `punishment_vfx` | 单调、噪声过载与不协和腐蚀惩罚特效 | `grep -n '@section:punishment_vfx' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `phase_switch_vfx` | 音色阶段切换特效 | `grep -n '@section:phase_switch_vfx' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `effect_lifecycle` | 活跃特效生命周期、缩放、透明度与清理 | `grep -n '@section:effect_lifecycle' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `primitive_helpers` | 环形、多边形、粒子、浮字与目标查询工具 | `grep -n '@section:primitive_helpers' godot_project/scripts/systems/spell_visual_manager.gd` |
+| `shader_integration` | 音色、修饰符和扫描线 Shader 激活 | `grep -n '@section:shader_integration' godot_project/scripts/systems/spell_visual_manager.gd` |
 
 ## 定位提示
 

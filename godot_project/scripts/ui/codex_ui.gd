@@ -19,6 +19,7 @@ extends Control
 # ============================================================
 # 信号
 # ============================================================
+# @section:signals_and_theme_config - 信号、配色、卷册配置、数据源和节点状态
 signal back_pressed()
 signal entry_viewed(entry_id: String)
 
@@ -163,6 +164,7 @@ var _codex_manager: Node = null
 # 生命周期
 # ============================================================
 
+# @section:lifecycle_unlock_state - 初始化、演示计时与图鉴解锁状态读取
 func _ready() -> void:
 	_codex_manager = get_node_or_null("/root/CodexManager")
 	_load_unlock_state()
@@ -198,6 +200,7 @@ func _is_entry_unlocked(entry_id: String) -> bool:
 # UI 构建 — 主布局 (设计文档 §8.2)
 # ============================================================
 
+# @section:main_layout_building - 图鉴主布局容器、左右面板与背景构建
 func _build_ui() -> void:
 	# 全屏背景
 	_background = ColorRect.new()
@@ -243,6 +246,7 @@ func _build_ui() -> void:
 # UI 构建 — 标题栏
 # ============================================================
 
+# @section:header_navigation_ui - 标题栏、返回按钮、进度与搜索输入构建
 func _build_header() -> Control:
 	var header := PanelContainer.new()
 	header.custom_minimum_size.y = 56
@@ -325,6 +329,7 @@ func _build_header() -> Control:
 # UI 构建 — 左侧面板 (§8.2 分类导航)
 # ============================================================
 
+# @section:volume_navigation_ui - 左侧卷册、子分类与条目导航构建
 func _build_left_panel() -> Control:
 	var left_panel := PanelContainer.new()
 	var left_style := StyleBoxFlat.new()
@@ -423,6 +428,7 @@ func _build_left_panel() -> Control:
 # UI 构建 — 右侧面板 (§8.2 详细内容)
 # ============================================================
 
+# @section:detail_shell_ui - 右侧详情面板骨架与装饰组件构建
 func _build_right_panel() -> Control:
 	var right_panel := PanelContainer.new()
 	var right_style := StyleBoxFlat.new()
@@ -481,6 +487,7 @@ func _create_vertical_separator() -> Control:
 # 背景 3D 氛围效果
 # ============================================================
 
+# @section:background_atmosphere - 3D 背景氛围层构建
 func _build_bg_3d_atmosphere() -> void:
 	# 背景 SubViewport 用于微妙的 3D 粒子氛围
 	_bg_3d_viewport = SubViewport.new()
@@ -517,6 +524,7 @@ func _build_bg_3d_atmosphere() -> void:
 # 数据获取
 # ============================================================
 
+# @section:data_access - 图鉴数据源解析与字典访问
 func _get_data_dict(data_source: String) -> Dictionary:
 	match data_source:
 		"VOL1_NOTES": return CodexData.VOL1_NOTES
@@ -537,6 +545,7 @@ func _get_data_dict(data_source: String) -> Dictionary:
 # 卷/子分类选择
 # ============================================================
 
+# @section:volume_subcategory_selection - 卷册选择、子分类重建与搜索过滤
 func _select_volume(idx: int) -> void:
 	_current_volume_idx = idx
 	_current_subcat_idx = 0
@@ -590,6 +599,7 @@ func _rebuild_subcat_bar() -> void:
 # 条目列表
 # ============================================================
 
+# @section:entry_list_rendering - 条目列表刷新、锁定态与点击行构建
 func _rebuild_entry_list() -> void:
 	for child in _entry_list_container.get_children():
 		child.queue_free()
@@ -675,6 +685,7 @@ func _build_entry_row(entry_id: String, entry: Dictionary, is_unlocked: bool) ->
 # 条目详情页 (§8.2 右栏)
 # ============================================================
 
+# @section:entry_detail_rendering - 条目详情、锁定页与基础内容渲染
 func _show_entry_detail(entry_id: String) -> void:
 	_current_entry_id = entry_id
 	var entry := CodexData.find_entry(entry_id)
@@ -797,6 +808,7 @@ func _show_locked_detail(entry_id: String, entry: Dictionary) -> void:
 # 属性表格
 # ============================================================
 
+# @section:detail_stats_table - 详情统计卡片与属性表构建
 func _build_detail_stats(entry_id: String, entry: Dictionary) -> void:
 	var stats_grid := GridContainer.new()
 	stats_grid.columns = 2
@@ -873,6 +885,7 @@ func _add_stat_row(grid: GridContainer, label_text: String, value_text: String) 
 # 敌人检测与 3D 预览
 # ============================================================
 
+# @section:enemy_preview_models - 敌人识别、3D 预览与章节/首领模型生成
 func _is_enemy_entry(entry_id: String, entry: Dictionary) -> bool:
 	# 检查 is_enemy 标记字段（用于章节敌人和精英敌人）
 	if entry.get("is_enemy", false):
@@ -2520,6 +2533,7 @@ func _create_chapter_enemy_model(entry_id: String, root: Node3D) -> void:
 			default_mesh.material_override = mat_default
 			root.add_child(default_mesh)
 
+# @section:enemy_preview_cleanup - 敌人预览资源清理
 func _cleanup_enemy_preview() -> void:
 	if _enemy_preview_container and is_instance_valid(_enemy_preview_container):
 		_enemy_preview_container.queue_free()
@@ -2534,6 +2548,7 @@ func _cleanup_enemy_preview() -> void:
 # 法术演示区域 (2.5D)
 # ============================================================
 
+# @section:spell_demo_section - 2.5D 法术演示面板、按钮与状态区域
 func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 	_detail_container.add_child(_create_decorative_separator())
 
@@ -2663,6 +2678,7 @@ func _build_demo_section_25d(entry_id: String, entry: Dictionary) -> void:
 
 	_detail_container.add_child(_demo_section)
 
+# @section:spell_demo_scene_helpers - 演示网格、施法分发与基础法术数据构造
 func _create_demo_grid() -> Node2D:
 	# 在 3D 场景中创建地面网格
 	if _demo_3d_entity_layer:
@@ -2745,6 +2761,7 @@ func _build_demo_spell_data(white_key: int, modifier: int) -> Dictionary:
 		"color": color,
 	}
 
+# @section:demo_projectile_impact - 3D 演示弹体飞行与命中特效
 func _spawn_demo_3d_projectile(spell_data: Dictionary) -> void:
 	if not _demo_3d_entity_layer:
 		return
@@ -2847,6 +2864,7 @@ func _spawn_demo_3d_impact(pos: Vector3, color: Color, radius: float) -> void:
 		spark_tween.tween_callback(spark.queue_free)
 
 ## 和弦法术演示特效：根据和弦类型生成独特视觉效果
+# @section:demo_chord_vfx_dispatch - 和弦类型到演示 VFX 的分发
 func _spawn_demo_chord_vfx(chord_type: int) -> void:
 	if not _demo_3d_entity_layer:
 		return
@@ -2903,6 +2921,7 @@ func _spawn_demo_chord_vfx(chord_type: int) -> void:
 			_demo_chord_default(color)
 
 ## 强化弹体演示：金色光球+六边形能量网格
+# @section:demo_chord_basic_forms - 强化、持续、爆炸、冲击、场域、圣击、护盾、召唤与蓄力演示
 func _demo_chord_enhanced_projectile(color: Color) -> void:
 	var orb := MeshInstance3D.new()
 	orb.mesh = SphereMesh.new()
@@ -3289,6 +3308,7 @@ func _demo_chord_charged(color: Color) -> void:
 	)
 
 ## 风暴区域演示：旋转风暴漩渍
+# @section:demo_chord_extended_forms - 风暴、圣域、湮灭、交响风暴、终曲与默认演示
 func _demo_chord_storm_field(color: Color) -> void:
 	# 中心旋转圆盘
 	var disk := MeshInstance3D.new()
@@ -3521,6 +3541,7 @@ func _demo_chord_default(color: Color) -> void:
 	tween.tween_callback(sphere.queue_free)
 
 ## 修饰符演示特效
+# @section:demo_modifier_vfx - 演示修饰符视觉反馈
 func _spawn_demo_modifier_vfx(modifier: int, spell_data: Dictionary) -> void:
 	if not _demo_3d_entity_layer:
 		return
@@ -3665,6 +3686,7 @@ func _spawn_demo_modifier_vfx(modifier: int, spell_data: Dictionary) -> void:
 				)
 
 ## 节奏型演示特效
+# @section:demo_rhythm_vfx - 演示节奏型视觉反馈
 func _spawn_demo_rhythm_vfx(rhythm_pattern: String, spell_data: Dictionary) -> void:
 	if not _demo_3d_entity_layer:
 		return
@@ -3894,6 +3916,7 @@ func _get_modifier_display_name(modifier: int) -> String:
 # 进度统计
 # ============================================================
 
+# @section:progress_display - 图鉴总进度统计与显示刷新
 func _update_progress() -> void:
 	if not _progress_label:
 		return
@@ -3915,6 +3938,7 @@ func _update_progress() -> void:
 # 信号回调
 # ============================================================
 
+# @section:ui_callbacks - 卷册、子分类、条目、搜索、返回与输入回调
 func _on_volume_selected(idx: int) -> void:
 	_select_volume(idx)
 
@@ -3948,6 +3972,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # ============================================================
 
 ## 解锁条目
+# @section:public_api - 外部解锁、跳转与进度查询接口
 func unlock_entry(entry_id: String) -> void:
 	_unlocked_entries[entry_id] = true
 	_rebuild_entry_list()
